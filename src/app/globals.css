@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* Brand palette - mirrors art/omc_art/palette.py */
+@theme {
+  --color-ink: #1b1f3b;
+  --color-night: #12152b;
+  --color-dusk: #2a2f5c;
+  --color-haze: #272c5a;
+  --color-mustard: #f2b33d;
+  --color-mustard-dk: #d3922a;
+  --color-coral: #ef5b5b;
+  --color-coral-dk: #c94545;
+  --color-cream: #fff4e0;
+  --color-cream-dk: #ebd9b8;
+  --color-teal: #3fb8af;
+  --color-lilac: #9b87f5;
+  --color-moon: #ffe6a7;
+
+  --shadow-pop: 0 6px 0 var(--color-ink);
+  --shadow-pop-sm: 0 3px 0 var(--color-ink);
+  --shadow-card: 0 10px 0 var(--color-ink);
+
+  --animate-float: float 8s ease-in-out infinite;
+  --animate-drift: drift 14s ease-in-out infinite;
+  --animate-bob: bob 3.4s ease-in-out infinite;
+  --animate-pop-in: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-stamp: stamp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-shake: shake 0.4s ease-in-out;
+  --animate-typing: typing 1.2s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(28px); }
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-6px) rotate(-1.5deg); }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(0.6) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes stamp {
+    from { opacity: 0; transform: scale(2.2) rotate(-24deg); }
+    to { opacity: 1; transform: scale(1) rotate(-12deg); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-7px); }
+    75% { transform: translateX(7px); }
+  }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+}
+
+@theme inline {
+  --font-display: var(--font-lilita), "Arial Black", sans-serif;
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+}
+
+/* Chunky drop shadow under display type */
+@utility text-pop {
+  text-shadow: 0 5px 0 var(--color-ink);
+}
+
+/* Black bar that hides a word, case-file style */
+@utility redacted {
+  border-radius: 0.25rem;
+  background: var(--color-ink);
+  color: transparent;
+  user-select: none;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-night);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+  }
+  ::selection {
+    background: var(--color-mustard);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

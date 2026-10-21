@@ -1,0 +1,3 @@
+skia-python>=138
+pillow>=11
+numpy>=2

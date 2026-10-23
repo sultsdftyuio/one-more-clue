@@ -1,0 +1,135 @@
+/* Styles for the "One Night" prototype at /night. */
+
+/* The blackout: a dark sheet with a hole cut where the flashlight points. */
+.night-dark {
+  --fx: 50%;
+  --fy: 60%;
+  --r: clamp(100px, 22vmin, 180px);
+  background: rgb(4 5 14 / 0.97);
+  -webkit-mask-image: radial-gradient(circle var(--r) at var(--fx) var(--fy), transparent 0%, transparent 42%, #000 100%);
+  mask-image: radial-gradient(circle var(--r) at var(--fx) var(--fy), transparent 0%, transparent 42%, #000 100%);
+  opacity: 0;
+  visibility: hidden;
+}
+.night-dark.is-off {
+  visibility: visible;
+  animation: night-lights-off 0.8s linear forwards;
+}
+.night-dark.is-on {
+  visibility: visible;
+  animation: night-lights-on 1s linear forwards;
+}
+
+@keyframes night-lights-off {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  22% { opacity: 0.2; }
+  34% { opacity: 1; }
+  46% { opacity: 0.5; }
+  58%, 100% { opacity: 1; }
+}
+@keyframes night-lights-on {
+  0%, 30% { opacity: 1; }
+  36% { opacity: 0.15; }
+  46% { opacity: 0.9; }
+  56% { opacity: 0.1; }
+  66% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+.night-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--color-moon);
+  animation: night-twinkle 3s ease-in-out infinite;
+}
+@keyframes night-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* A car's headlights sliding along the street. */
+.night-car {
+  position: absolute;
+  bottom: clamp(2px, 0.5vw, 8px);
+  left: 0;
+  width: clamp(70px, 9vw, 130px);
+  height: clamp(8px, 1vw, 14px);
+  background:
+    radial-gradient(closest-side, rgb(255 230 167 / 0.95), transparent) right / 30% 100% no-repeat,
+    linear-gradient(90deg, transparent, rgb(255 230 167 / 0.35)) left / 75% 60% no-repeat;
+  background-position: right center, left center;
+  filter: blur(1px);
+  animation: night-car 13s linear infinite;
+  animation-delay: -4s;
+}
+@keyframes night-car {
+  from { transform: translateX(-20vw); }
+  to { transform: translateX(120vw); }
+}
+
+/* Street lamp beside Rex. Sizes follow the suspect width --w. */
+.night-lamp {
+  position: absolute;
+  z-index: -1;
+  left: 86%;
+  bottom: calc(var(--w) * 0.1);
+  width: 6px;
+  height: calc(var(--w) * 2);
+  border-radius: 3px;
+  background: var(--color-ink);
+}
+.night-lamp::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: calc(var(--w) * 0.5);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-ink);
+}
+.night-lamp-head {
+  position: absolute;
+  top: 3px;
+  right: calc(var(--w) * 0.5 - 16px);
+  width: 30px;
+  height: 13px;
+  border: 3px solid var(--color-ink);
+  border-radius: 0 0 15px 15px;
+  background: var(--color-dusk);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.night-lamp-cone {
+  position: absolute;
+  top: 14px;
+  right: calc(var(--w) * -0.15);
+  width: calc(var(--w) * 1.3);
+  height: calc(100% - 14px + var(--w) * 0.08);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  background: linear-gradient(rgb(255 230 167 / 0.5), rgb(255 230 167 / 0.06));
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.night-lamp.is-lit .night-lamp-head {
+  background: var(--color-moon);
+  box-shadow: 0 0 26px 10px rgb(255 230 167 / 0.65);
+}
+.night-lamp.is-lit .night-lamp-cone {
+  opacity: 1;
+}
+
+/* Voices in the dark: no bubble, just words. */
+.night-whisper {
+  animation: night-whisper 0.6s ease-out both;
+}
+@keyframes night-whisper {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.night-clue {
+  filter: drop-shadow(0 0 10px rgb(242 179 61 / 0.8));
+  animation: night-twinkle 1.6s ease-in-out infinite;
+}

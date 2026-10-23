@@ -1,8 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { brandArt } from "@/lib/art";
+import "./game.css";
 import { Briefing } from "./Briefing";
 import { Investigation } from "./Investigation";
 import { Lobby } from "./Lobby";
@@ -83,20 +86,26 @@ export function GameRoom({ code }: { code: string }) {
       ) : view.phase === "investigation" ? (
         <Investigation {...props} />
       ) : (
-        <Reveal view={view} />
+        <Reveal {...props} />
       );
   }
 
+  // The investigation brings its own full-width layout and top bar.
+  const fullBleed = status.kind === "ready" && status.view.phase === "investigation";
+
   return (
-    <div className="min-h-[100svh] px-4 pt-5 pb-16 sm:px-6">
-      <Link href="/" className="mx-auto mb-6 block max-w-3xl font-display text-xl text-cream text-pop">
-        One More Clue
-      </Link>
+    <div className={fullBleed ? "min-h-[100svh]" : "min-h-[100svh] px-4 pt-5 pb-16 sm:px-6"}>
+      {!fullBleed && (
+        <Link href="/" className="mx-auto mb-6 flex max-w-3xl items-center gap-2 font-display text-xl text-cream text-pop">
+          <Image src={brandArt.logo} alt="" sizes="40px" className="size-9" />
+          One More Clue
+        </Link>
+      )}
       {content}
       {error && (
         <p
           role="alert"
-          className="fixed inset-x-0 top-4 z-40 mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
+          className="fixed inset-x-0 top-4 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
         >
           {error}
         </p>

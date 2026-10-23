@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, checkCase, createRoom, dealRoles, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, checkCase, createRoom, dealRoles, PIN_LIMIT, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
 
 let ids = 0;
@@ -14,130 +14,194 @@ function must(result: ReturnType<typeof applyAction>): RoomState {
   return result.state;
 }
 
+// With four players the core roles go round in order:
+const TECH = "p1";
+const INTERVIEWER = "p2";
+const PHOTOGRAPHER = "p3";
+const ARCHIVIST = "p4";
+
 /** A room with `count` players (p1 is host), started and past the briefing. */
 function roomWith(count: number) {
-  let state = createRoom({
-    code: "TEST",
-    caseFile: tipJar,
-    host: { id: "p1", token: "t1", name: "Ana" },
-    mode: "together",
-    now: 0,
-  });
-  for (let i = 2; i <= count; i++) {
-    state = must(addPlayer(state, tipJar, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
-  }
+  let state = createRoom({ code: "TEST", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= count; i++) state = must(addPlayer(state, tipJar, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
   state = must(applyAction(state, tipJar, "p1", { type: "start" }, 0, newId));
   for (let i = 1; i <= count; i++) state = must(applyAction(state, tipJar, `p${i}`, { type: "ready" }, 0, newId));
   return state;
 }
 
 const act = (state: RoomState, who: string, action: Action) => applyAction(state, tipJar, who, action, 1, newId);
+const doo = (state: RoomState, who: string, action: Action) => must(act(state, who, action));
+const sees = (state: RoomState, who: string) => viewFor(state, tipJar, who, new Set()).evidence.map((e) => e.id);
+
+/** Everyone in a 4-player room agrees to a proposal. */
+function agree(state: RoomState, proposer: string, action: Action) {
+  state = doo(state, proposer, action);
+  for (const p of ["p1", "p2", "p3", "p4"]) if (p !== proposer && state.proposal) state = doo(state, p, { type: "vote", proposalId: state.proposal.id, vote: "yes" });
+  return state;
+}
 
 test("every case file is valid", () => {
   for (const c of cases) assert.deepEqual(checkCase(c), [], c.id);
 });
 
 test("roles: core roles are always dealt, extras join with more players", () => {
-  const two = dealRoles(tipJar, ["a", "b"]);
-  assert.deepEqual(two, { a: ["interviewer", "photographer"], b: ["tech", "archivist"] });
-
+  assert.deepEqual(dealRoles(tipJar, ["a", "b"]), { a: ["tech", "photographer"], b: ["interviewer", "archivist"] });
   const six = dealRoles(tipJar, ["a", "b", "c", "d", "e", "f"]);
   assert.deepEqual(Object.values(six).flat().sort(), tipJar.roles.map((r) => r.id).sort());
-  assert.ok(Object.values(six).every((roles) => roles.length === 1));
 });
 
-test("briefing ends once everyone is ready", () => {
-  const state = roomWith(3);
+test("each role starts with its own chapter 1 desk, and nothing from later chapters", () => {
+  const state = roomWith(4);
   assert.equal(state.phase, "investigation");
+  assert.deepEqual(sees(state, TECH), ["door-log"]);
+  assert.deepEqual(sees(state, INTERVIEWER), ["statement-mo"]);
+  assert.deepEqual(sees(state, PHOTOGRAPHER), ["photo-instagram"]);
+  assert.deepEqual(sees(state, ARCHIVIST), ["receipts"]);
 });
 
-test("players only see their own evidence until it's shared", () => {
-  let state = roomWith(2);
-  const p1 = viewFor(state, tipJar, "p1", new Set());
-  const p2 = viewFor(state, tipJar, "p2", new Set());
-  assert.ok(p1.myEvidence.every((e) => ["interviewer", "photographer"].includes(e.role)));
-  assert.ok(p2.myEvidence.every((e) => ["tech", "archivist"].includes(e.role)));
-  assert.equal(p1.solution, null);
+test("search: only the Tech, forgiving about spelling, and locked to the open chapter", () => {
+  let state = roomWith(4);
+  assert.equal(act(state, INTERVIEWER, { type: "search", query: "0007" }).ok, false);
+  state = doo(state, TECH, { type: "search", query: "Card ****0007" });
+  assert.ok(sees(state, TECH).includes("card-history"));
+  assert.ok(!sees(state, INTERVIEWER).includes("card-history"), "others only see it once it's pinned");
 
-  assert.equal(act(state, "p1", { type: "share", evidenceId: "receipts" }).ok, false, "can't share someone else's");
-  state = must(act(state, "p2", { type: "share", evidenceId: "receipts" }));
-  assert.equal(viewFor(state, tipJar, "p1", new Set()).board[0].evidence.id, "receipts");
+  state = doo(state, TECH, { type: "search", query: "Page & Co." });
+  assert.ok(!sees(state, TECH).includes("cctv-still"), "chapter 3 records don't exist yet");
+  assert.equal(state.activity.at(-1)?.kind, "miss");
 });
 
-test("a view never contains other players' tokens or the answer", () => {
-  const view = JSON.stringify(viewFor(roomWith(4), tipJar, "p1", new Set()));
-  assert.ok(!view.includes('"t2"'));
-  assert.ok(!view.includes(tipJar.solution.explanation));
+test("interviews spend a shared budget", () => {
+  let state = roomWith(4);
+  assert.equal(act(state, TECH, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "only the Interviewer asks");
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" });
+  assert.equal(state.questionsUsed, 1);
+  assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "no asking twice");
+  assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-rex-inside" }).ok, false, "chapter 2 questions are locked");
+  const view = viewFor(state, tipJar, INTERVIEWER, new Set());
+  assert.equal(view.questionsLeft, tipJar.questionBudget - 1);
 });
 
-test("an accusation needs a majority, and a correct one solves the case", () => {
-  let state = roomWith(4); // majority of 4 is 3
-  state = must(act(state, "p1", { type: "propose", kind: "accuse", suspectId: "square" }));
-  const id = state.proposal!.id;
-  state = must(act(state, "p2", { type: "vote", proposalId: id, vote: "yes" }));
-  assert.equal(state.phase, "investigation", "2 of 4 is not a majority");
-  state = must(act(state, "p3", { type: "vote", proposalId: id, vote: "yes" }));
+test("inspect: only the Photographer, only on photos they can see", () => {
+  let state = roomWith(4);
+  assert.equal(act(state, TECH, { type: "inspect", scene: "photo-instagram", hotspot: "jar" }).ok, false);
+  assert.equal(act(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "nowhere" }).ok, false);
+  state = doo(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "jar" });
+  assert.ok(sees(state, PHOTOGRAPHER).includes("detail-jar"));
+});
+
+test("cross-check: the Archivist needs to see both pieces, and misses are remembered", () => {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  assert.equal(state.chapter, 2);
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" }).ok, false, "can't see the answer yet");
+
+  state = doo(state, INTERVIEWER, { type: "pin", evidenceId: "question-squarington-left" });
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "staff-chat" });
+  assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "receipts" }).ok, false, "same pair, any order");
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
+  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
+});
+
+test("the board holds a limited number of pins", () => {
+  let state = roomWith(4);
+  state = doo(state, TECH, { type: "pin", evidenceId: "door-log" });
+  assert.equal(act(state, TECH, { type: "pin", evidenceId: "door-log" }).ok, false);
+  assert.equal(act(state, TECH, { type: "pin", evidenceId: "receipts" }).ok, false, "can't pin what you can't see");
+  state = { ...state, pins: Array.from({ length: PIN_LIMIT }, (_, i) => ({ evidenceId: `x${i}`, by: TECH, at: 0 })) };
+  assert.equal(act(state, ARCHIVIST, { type: "pin", evidenceId: "receipts" }).ok, false, "board full");
+});
+
+test("checkpoints: a wrong answer costs, a right one opens the next chapter", () => {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "838-841" });
+  assert.equal(state.chapter, 1);
+  assert.equal(state.wrongAnswers, 1);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  assert.equal(state.chapter, 2);
+  assert.ok(sees(state, ARCHIVIST).includes("staff-chat"), "chapter 2 desk arrives");
+  assert.equal(act(state, TECH, { type: "propose", kind: "final", report: { suspectId: "rectangle", motiveId: "debt", evidenceIds: [] } }).ok, false, "no final report before the last chapter");
+});
+
+test("hints open one at a time per chapter", () => {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "hint" });
+  state = agree(state, TECH, { type: "propose", kind: "hint" });
+  assert.equal(viewFor(state, tipJar, TECH, new Set()).chapter.hints.length, 2);
+  assert.equal(act(state, TECH, { type: "propose", kind: "hint" }).ok, false);
+  assert.equal(state.hintsUsed, 2);
+});
+
+/** The intended route through the case, every role pulling its weight. */
+function solveToChapter3() {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  state = doo(state, INTERVIEWER, { type: "pin", evidenceId: "question-squarington-left" });
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" });
+  state = agree(state, ARCHIVIST, { type: "propose", kind: "answer", optionId: "square" });
+  assert.equal(state.chapter, 3);
+
+  // Ollie tips off the camera; the Tech pulls it; the Photographer reads it once it's pinned.
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-ollie-door" });
+  state = doo(state, TECH, { type: "search", query: "bookshop camera" });
+  assert.equal(act(state, PHOTOGRAPHER, { type: "inspect", scene: "cctv-still", hotspot: "hat" }).ok, false, "not pinned yet");
+  state = doo(state, TECH, { type: "pin", evidenceId: "cctv-still" });
+  state = doo(state, PHOTOGRAPHER, { type: "inspect", scene: "cctv-still", hotspot: "hat" });
+  state = doo(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-bus-stop", hotspot: "stop-clock" });
+  state = doo(state, PHOTOGRAPHER, { type: "pin", evidenceId: "detail-stop-clock" });
+  return state;
+}
+
+test("a perfect final report earns five stars", () => {
+  let state = solveToChapter3();
+  state = agree(state, TECH, {
+    type: "propose",
+    kind: "final",
+    report: { suspectId: "rectangle", motiveId: "debt", evidenceIds: ["cctv-still", "detail-stop-clock"] },
+  });
   assert.equal(state.phase, "reveal");
   assert.equal(state.outcome?.kind, "solved");
-  assert.ok(viewFor(state, tipJar, "p4", new Set()).solution);
+  assert.deepEqual(state.outcome?.score, { stars: 5, culprit: true, motive: true, evidence: true, sharp: true });
+  assert.ok(viewFor(state, tipJar, TECH, new Set()).solution);
 });
 
-test("a wrong accusation ends the case as wrong", () => {
-  let state = roomWith(2);
-  state = must(act(state, "p1", { type: "propose", kind: "accuse", suspectId: "triangle" }));
-  state = must(act(state, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }));
+test("the proof has to be on the board, and the red herring scores nothing", () => {
+  let state = solveToChapter3();
+  const report = { suspectId: "square", motiveId: "debt", evidenceIds: ["cctv-still", "depot-chat"] };
+  assert.equal(act(state, TECH, { type: "propose", kind: "final", report }).ok, false, "depot chat isn't pinned");
+  state = agree(state, TECH, { type: "propose", kind: "final", report: { ...report, evidenceIds: ["cctv-still", "detail-stop-clock"] } });
   assert.equal(state.outcome?.kind, "wrong");
+  assert.equal(state.outcome?.score.stars, 0);
 });
 
-test("a proposal fails once a majority is impossible", () => {
+test("views never leak tokens, the answer or other roles' evidence", () => {
+  const state = solveToChapter3();
+  const view = JSON.stringify(viewFor(state, tipJar, ARCHIVIST, new Set()));
+  assert.ok(!view.includes('"t2"'));
+  assert.ok(!view.includes(tipJar.solution.explanation));
+  assert.ok(!view.includes("Night shift · Depot Road"), "the depot chat hasn't been found");
+  assert.ok(!view.includes("Rex's alibi photo was taken"), "no timeline before the reveal");
+});
+
+test("a leaving player's roles pass on, abilities included", () => {
   let state = roomWith(4);
-  state = must(act(state, "p1", { type: "propose", kind: "accuse", suspectId: "square" }));
+  state = doo(state, TECH, { type: "leave" });
+  const heir = state.players.find((p) => !p.left && p.roles.includes("tech"))!;
+  state = doo(state, heir.id, { type: "search", query: "0007" });
+  assert.ok(state.found["card-history"]);
+});
+
+test("majority votes, and a proposal fails once a majority is impossible", () => {
+  let state = roomWith(4);
+  state = doo(state, TECH, { type: "propose", kind: "giveUp" });
   const id = state.proposal!.id;
-  state = must(act(state, "p2", { type: "vote", proposalId: id, vote: "no" }));
-  assert.ok(state.proposal, "still possible: 3 can still say yes");
-  state = must(act(state, "p3", { type: "vote", proposalId: id, vote: "no" }));
+  state = doo(state, INTERVIEWER, { type: "vote", proposalId: id, vote: "no" });
+  assert.ok(state.proposal);
+  state = doo(state, PHOTOGRAPHER, { type: "vote", proposalId: id, vote: "no" });
   assert.equal(state.proposal, null);
-  assert.equal(state.decided.at(-1)?.passed, false);
   assert.equal(state.phase, "investigation");
-});
-
-test("hints unlock one at a time by vote, and run out", () => {
-  let state = roomWith(2);
-  for (let i = 0; i < tipJar.hints.length; i++) {
-    state = must(act(state, "p1", { type: "propose", kind: "hint" }));
-    state = must(act(state, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }));
-  }
-  assert.equal(viewFor(state, tipJar, "p1", new Set()).hints.length, tipJar.hints.length);
-  assert.equal(act(state, "p1", { type: "propose", kind: "hint" }).ok, false);
-});
-
-test("giving up reveals the answer", () => {
-  let state = roomWith(2);
-  state = must(act(state, "p2", { type: "propose", kind: "giveUp" }));
-  state = must(act(state, "p1", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }));
-  assert.equal(state.outcome?.kind, "gaveUp");
-});
-
-test("a leaving player's roles pass on, so no evidence is lost", () => {
-  let state = roomWith(3);
-  const leaverRoles = state.players.find((p) => p.id === "p2")!.roles;
-  state = must(act(state, "p2", { type: "leave" }));
-  const held = state.players.filter((p) => !p.left).flatMap((p) => p.roles);
-  for (const role of leaverRoles) assert.ok(held.includes(role));
-});
-
-test("the host leaving hands the room to someone else", () => {
-  let state = roomWith(2);
-  state = must(act(state, "p1", { type: "leave" }));
-  assert.equal(state.hostId, "p2");
-});
-
-test("chat is only on in remote rooms", () => {
-  let state = roomWith(2);
-  assert.equal(act(state, "p1", { type: "chat", text: "hi" }).ok, false);
-  state = must(act(state, "p1", { type: "setMode", mode: "remote" }));
-  state = must(act(state, "p2", { type: "chat", text: "  look at the receipts  " }));
-  assert.equal(state.chat[0].text, "look at the receipts");
 });
 
 test("joining: lobby only, no duplicate names, room limit", () => {

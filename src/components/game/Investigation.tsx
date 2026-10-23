@@ -1,308 +1,288 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/Button";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PlayerView } from "@/lib/game/engine";
-import type { Action } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
-import { EvidenceView } from "./EvidenceView";
-import { nameOf, Panel, roleNames, SuspectPortrait } from "./parts";
+import { BoardPanel } from "./BoardPanel";
+import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
+import { DeskPanel } from "./desk/DeskPanel";
+import { EvidenceCard } from "./evidence/EvidenceCard";
+import { Avatar } from "./parts";
 import { ProposalBar } from "./ProposalBar";
+import { SolvePanel } from "./SolvePanel";
+import { TeamPanel } from "./TeamPanel";
+import { Icon, type IconName } from "./ui/Icon";
+import { Sheet } from "./ui/Sheet";
 
-type Tab = "evidence" | "board" | "suspects" | "chat";
-type Props = { view: PlayerView; act: (a: Action) => Promise<boolean>; busy: boolean };
+type Tab = "desk" | "board" | "solve" | "team";
 
-export function Investigation({ view, act, busy }: Props) {
-  const [tab, setTab] = useState<Tab>("evidence");
-  const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: "evidence", label: "Your evidence", count: view.myEvidence.length },
-    { id: "board", label: "Board", count: view.board.length },
-    { id: "suspects", label: "Suspects & hints" },
-    ...(view.mode === "remote" ? [{ id: "chat" as const, label: "Chat", count: view.chat.length }] : []),
-  ];
-  const current = tabs.some((t) => t.id === tab) ? tab : "evidence";
+function useClock(startedAt: number | null) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (!startedAt) return "0:00";
+  const s = Math.max(0, Math.floor((now - startedAt) / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 
+function ChapterSteps({ view }: { view: PlayerView }) {
   return (
-    <div className={cx("mx-auto max-w-3xl", view.proposal && "pb-56")}>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm font-extrabold tracking-widest text-mustard uppercase">
+    <ol className="flex items-center gap-1.5" aria-label={`Chapter ${view.chapter.number} of ${view.case.chapterTitles.length}`}>
+      {view.case.chapterTitles.map((title, i) => {
+        const n = i + 1;
+        const done = n < view.chapter.number;
+        const current = n === view.chapter.number;
+        return (
+          <li key={title} className="flex items-center gap-1.5">
+            {i > 0 && <span className={cx("h-0.5 w-3 rounded-full sm:w-6", done || current ? "bg-mustard" : "bg-cream/20")} />}
+            <span
+              title={title}
+              className={cx(
+                "grid size-7 place-items-center rounded-full border-2 text-xs font-black",
+                done && "border-ink bg-teal text-ink",
+                current && "border-ink bg-mustard text-ink",
+                !done && !current && "border-cream/25 text-cream/40",
+              )}
+            >
+              {done ? <Icon name="check" className="size-3.5" /> : n}
+            </span>
+            {current && <span className="hidden font-display text-cream lg:inline">{title}</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function TopBar({ view, act }: { view: PlayerView; act: Act }) {
+  const clock = useClock(view.startedAt);
+  const [menu, setMenu] = useState(false);
+  return (
+    <header className="sticky top-0 z-30 border-b-[3px] border-ink bg-night/90 backdrop-blur">
+      <div className="mx-auto flex max-w-[90rem] items-center gap-3 px-4 py-2.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.7rem] font-extrabold tracking-widest text-mustard uppercase">
             {view.case.code} · Room {view.code}
           </p>
-          <h1 className="font-display text-3xl text-cream sm:text-4xl">{view.case.title}</h1>
-          <p className="mt-1 text-sm font-bold text-cream/75">You are the {roleNames(view, view.me.roles).join(" & ")}.</p>
+          <p className="truncate font-display text-lg leading-tight text-cream sm:text-xl">{view.case.title}</p>
         </div>
-        <LeaveButton act={act} />
-      </header>
-
-      <nav className="sticky top-0 z-20 -mx-4 mb-5 flex gap-1 overflow-x-auto bg-night/90 [scrollbar-width:none] px-4 py-2 backdrop-blur" role="tablist">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={current === t.id}
-            onClick={() => setTab(t.id)}
-            className={cx(
-              "shrink-0 rounded-full border-[3px] px-4 py-1.5 font-display transition-colors",
-              current === t.id ? "border-ink bg-mustard text-ink" : "border-transparent text-cream hover:text-mustard",
-            )}
-          >
-            {t.label}
-            {t.count !== undefined && <span className="ml-1.5 opacity-70">{t.count}</span>}
-          </button>
-        ))}
-      </nav>
-
-      {current === "evidence" && <MyEvidence view={view} act={act} busy={busy} />}
-      {current === "board" && <Board view={view} />}
-      {current === "suspects" && <Suspects view={view} act={act} busy={busy} />}
-      {current === "chat" && <Chat view={view} act={act} busy={busy} />}
-
-      <ProposalBar view={view} act={act} busy={busy} />
-    </div>
-  );
-}
-
-function MyEvidence({ view, act, busy }: Props) {
-  const shared = new Set(view.board.map((b) => b.evidenceId));
-  return (
-    <div className="grid gap-4">
-      <p className="rounded-2xl border-2 border-cream/20 px-4 py-3 text-sm font-bold text-cream/80">
-        {view.mode === "together"
-          ? "Only you have these. Read the important bits out loud, or put them on the board for everyone."
-          : "Only you have these. Put the important ones on the board so everyone can see them."}
-      </p>
-      {view.myEvidence.map((e) => (
-        <EvidenceView
-          key={e.id}
-          evidence={e}
-          footer={
-            shared.has(e.id) ? (
-              <p className="text-sm font-extrabold text-teal">On the board</p>
-            ) : (
-              <Button
-                variant="coral"
-                className="px-4 py-2 text-base"
-                disabled={busy}
-                onClick={() => act({ type: "share", evidenceId: e.id })}
-              >
-                Share to board
-              </Button>
-            )
-          }
-        />
-      ))}
-    </div>
-  );
-}
-
-function Board({ view }: { view: PlayerView }) {
-  if (!view.board.length) {
-    return (
-      <Panel>
-        <p className="font-bold text-cream/80">Nothing on the board yet. Share evidence from your tab and it shows up here for everyone.</p>
-      </Panel>
-    );
-  }
-  return (
-    <div className="grid gap-4">
-      {[...view.board].reverse().map((b) => (
-        <EvidenceView key={b.evidenceId} evidence={b.evidence} tag={`Shared by ${nameOf(view, b.sharedBy)}`} />
-      ))}
-    </div>
-  );
-}
-
-function Suspects({ view, act, busy }: Props) {
-  const [accusing, setAccusing] = useState<string | null>(null);
-  const [givingUp, setGivingUp] = useState(false);
-  const voting = Boolean(view.proposal);
-  const hintsLeft = view.case.hintsTotal - view.hints.length;
-  const target = view.case.suspects.find((s) => s.id === accusing);
-
-  return (
-    <div className="grid gap-6">
-      <Panel title="Who did it?">
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {view.case.suspects.map((s) => (
-            <li key={s.id} className="flex flex-col rounded-2xl border-[3px] border-ink bg-cream p-2 text-center text-ink">
-              <SuspectPortrait suspect={s} className="mx-auto w-20" />
-              <p className="font-display text-lg leading-tight">{s.name}</p>
-              <p className="mb-2 flex-1 text-xs leading-snug font-semibold text-ink/70">{s.blurb}</p>
-              <button
-                type="button"
-                disabled={voting || busy}
-                onClick={() => setAccusing(s.id)}
-                className="rounded-full border-2 border-ink bg-coral py-1 font-display text-cream disabled:opacity-50"
-              >
-                Accuse
-              </button>
-            </li>
-          ))}
-        </ul>
-        {voting && <p className="mt-4 text-sm font-bold text-cream/70">Finish the current vote before proposing another.</p>}
-        {target && !voting && (
-          <div className="mt-5 rounded-2xl border-[3px] border-ink bg-mustard p-4 text-ink">
-            <p className="font-display text-xl">Accuse {target.name}?</p>
-            <p className="mt-1 text-sm font-bold">
-              Everyone votes. If the majority agrees, it&apos;s your group&apos;s final answer. There&apos;s no second try.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                variant="coral"
-                className="px-4 py-2 text-base"
-                disabled={busy}
-                onClick={async () => {
-                  if (await act({ type: "propose", kind: "accuse", suspectId: target.id })) setAccusing(null);
-                }}
-              >
-                Put it to a vote
-              </Button>
-              <Button variant="secondary" className="px-4 py-2 text-base" onClick={() => setAccusing(null)}>
-                Not yet
-              </Button>
-            </div>
-          </div>
-        )}
-      </Panel>
-
-      <Panel title="Hints">
-        {view.hints.length > 0 ? (
-          <ol className="mb-4 grid gap-2">
-            {view.hints.map((hint, i) => (
-              <li key={i} className="rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-semibold text-ink">
-                <span className="mr-2 font-display text-coral">#{i + 1}</span>
-                {hint}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="mb-4 font-bold text-cream/75">No hints used yet. Stuck? Ask the group.</p>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="secondary"
-            className="px-4 py-2 text-base"
-            disabled={voting || busy || hintsLeft === 0}
-            onClick={() => act({ type: "propose", kind: "hint" })}
-          >
-            {hintsLeft ? `Ask for a hint (${hintsLeft} left)` : "No hints left"}
-          </Button>
-          {givingUp ? (
-            <span className="flex flex-wrap items-center gap-2 text-sm font-bold text-cream">
-              End the case and see the answer?
-              <button
-                type="button"
-                disabled={voting || busy}
-                className="font-extrabold text-coral hover:underline"
-                onClick={async () => {
-                  if (await act({ type: "propose", kind: "giveUp" })) setGivingUp(false);
-                }}
-              >
-                Put it to a vote
-              </button>
-              <button type="button" className="font-extrabold text-cream/70 hover:underline" onClick={() => setGivingUp(false)}>
-                Cancel
-              </button>
+        <ChapterSteps view={view} />
+        <span className="hidden items-center gap-1 rounded-full bg-cream/10 px-3 py-1 font-mono text-sm font-bold text-cream sm:flex" title="Time on the case">
+          <Icon name="clock" className="size-4" /> {clock}
+        </span>
+        <div className="hidden -space-x-2 md:flex">
+          {view.players.map((p, i) => (
+            <span key={p.id} title={p.name}>
+              <Avatar name={p.name} index={i} online={p.online} size="sm" />
             </span>
-          ) : (
-            <button
-              type="button"
-              disabled={voting}
-              onClick={() => setGivingUp(true)}
-              className="text-sm font-extrabold text-cream/60 hover:text-coral disabled:opacity-50"
-            >
-              We give up
-            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <button type="button" onClick={() => setMenu((m) => !m)} className="grid size-9 place-items-center rounded-full bg-cream/10 font-black text-cream hover:bg-cream/20" aria-label="Menu" aria-expanded={menu}>
+            ⋯
+          </button>
+          {menu && (
+            <div className="absolute top-11 right-0 w-64 animate-pop-in rounded-2xl border-[3px] border-ink bg-cream p-3 text-ink shadow-card">
+              <p className="mb-2 font-mono text-sm font-bold">
+                <Icon name="clock" className="size-4" /> {clock} on the case
+              </p>
+              <p className="mb-3 text-sm font-semibold text-ink/70">Leaving passes your roles and evidence to someone else.</p>
+              <button type="button" onClick={() => act({ type: "leave" })} className="w-full rounded-xl border-2 border-ink bg-coral py-2 font-extrabold text-cream">
+                Leave the case
+              </button>
+            </div>
           )}
         </div>
-      </Panel>
+      </div>
+    </header>
+  );
+}
 
-      <Panel title="Who holds what">
-        <ul className="grid gap-2 text-sm font-bold text-cream/85">
-          {view.players.map((p) => (
-            <li key={p.id} className="flex flex-wrap gap-x-2">
-              <span className={cx("font-extrabold", p.online ? "text-cream" : "text-cream/40")}>
-                {p.id === view.me.id ? "You" : p.name}
-                {!p.online && " (away)"}
-              </span>
-              <span className="text-cream/60">{roleNames(view, p.roles).join(", ")}</span>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+/** A moment for each new chapter: what the last answer revealed and what's next. */
+function ChapterCurtain({ view, onClose }: { view: PlayerView; onClose: () => void }) {
+  const last = view.solved.at(-1);
+  return (
+    <div className="fixed inset-0 z-50 grid animate-[fade-in_0.3s_ease-out] place-items-center bg-night/90 p-4 backdrop-blur" role="dialog" aria-modal aria-label={`Chapter ${view.chapter.number}`}>
+      <div className="w-full max-w-lg animate-[curtain_0.5s_ease-out] text-center">
+        {last && (
+          <div className="mb-6 rounded-2xl border-2 border-teal/50 bg-teal/10 p-4 text-left">
+            <p className="flex items-center gap-2 text-sm font-extrabold text-teal">
+              <Icon name="check" className="size-4" /> Correct
+            </p>
+            <p className="mt-1 font-semibold text-cream/85">{last.reveal}</p>
+          </div>
+        )}
+        <p className="inline-block -rotate-3 animate-stamp rounded-xl border-[3px] border-ink bg-mustard px-4 py-1 font-display text-xl text-ink">
+          Chapter {view.chapter.number}
+        </p>
+        <h2 className="mt-4 font-display text-5xl leading-none text-cream text-pop sm:text-6xl">{view.chapter.title}</h2>
+        <p className="mx-auto mt-4 max-w-md text-lg leading-relaxed font-semibold text-cream/85">{view.chapter.intro}</p>
+        <p className="mt-3 text-sm font-bold text-cream/55">New evidence has arrived on everyone&apos;s desk.</p>
+        <button
+          type="button"
+          onClick={onClose}
+          autoFocus
+          className="mt-8 rounded-full border-[3px] border-ink bg-coral px-8 py-3 font-display text-xl text-cream shadow-pop transition-transform hover:-translate-y-0.5"
+        >
+          Open the chapter
+        </button>
+      </div>
     </div>
   );
 }
 
-function Chat({ view, act, busy }: Props) {
-  const [text, setText] = useState("");
-  const end = useRef<HTMLDivElement>(null);
+/** Brief pop-ups when teammates find, pin or unlock something. */
+function ActivityToasts({ view }: { view: PlayerView }) {
+  const seen = useRef<string | null>(null);
+  const [toasts, setToasts] = useState<PlayerView["activity"]>([]);
 
   useEffect(() => {
-    end.current?.scrollIntoView({ block: "end" });
-  }, [view.chat.length]);
+    const last = view.activity.at(-1)?.id ?? null;
+    if (seen.current === null) {
+      seen.current = last ?? "";
+      return;
+    }
+    const from = view.activity.findIndex((a) => a.id === seen.current);
+    const fresh = view.activity.slice(from + 1).filter((a) => a.playerId !== view.me.id && a.kind !== "miss" && a.kind !== "unpin");
+    seen.current = last;
+    if (!fresh.length) return;
+    setToasts((t) => [...t, ...fresh].slice(-3));
+    const ids = fresh.map((a) => a.id);
+    window.setTimeout(() => setToasts((t) => t.filter((x) => !ids.includes(x.id))), 4500);
+  }, [view.activity, view.me.id]);
 
-  const send = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    if (await act({ type: "chat", text })) setText("");
+  return (
+    <div className="pointer-events-none fixed top-20 right-3 z-40 grid w-[min(22rem,calc(100%-1.5rem))] gap-2" aria-live="polite">
+      {toasts.map((a) => (
+        <p key={a.id} className="animate-[toast-in_0.3s_ease-out] rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 text-sm leading-snug font-bold text-ink shadow-pop-sm">
+          {a.text}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+const TABS: { id: Tab; label: string; icon: IconName }[] = [
+  { id: "desk", label: "Desk", icon: "desk" },
+  { id: "board", label: "Board", icon: "board" },
+  { id: "solve", label: "Solve", icon: "target" },
+  { id: "team", label: "Team", icon: "users" },
+];
+
+/** True on laptop-width screens, where the three panels sit side by side. */
+function useWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return wide;
+}
+
+export function Investigation({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
+  const wide = useWide();
+  const [tab, setTab] = useState<Tab>("desk");
+  const [opened, setOpened] = useState<string | null>(null);
+  const chapterKey = `omc-chapter-${view.code}`;
+  const [seenChapter, setSeenChapter] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      setSeenChapter(Number(window.localStorage.getItem(chapterKey) ?? 1));
+    } catch {
+      setSeenChapter(1);
+    }
+  }, [chapterKey]);
+
+  const closeCurtain = () => {
+    setSeenChapter(view.chapter.number);
+    try {
+      window.localStorage.setItem(chapterKey, String(view.chapter.number));
+    } catch {}
+    setTab("desk");
+  };
+
+  const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
+  const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
+  const badges: Partial<Record<Tab, string>> = {
+    board: `${view.pins.length}/${view.pinLimit}`,
+    solve: view.proposal ? "vote" : undefined,
+  };
+
+  const panels: Record<Tab, React.ReactNode> = {
+    desk: <DeskPanel />,
+    board: <BoardPanel />,
+    solve: <SolvePanel />,
+    team: <TeamPanel />,
   };
 
   return (
-    <Panel>
-      <ul className="grid max-h-[55svh] gap-2 overflow-y-auto pr-1">
-        {view.chat.length === 0 && <li className="font-bold text-cream/70">No messages yet. Say hi to your fellow detectives.</li>}
-        {view.chat.map((line) => {
-          const mine = line.playerId === view.me.id;
-          return (
-            <li key={line.id} className={cx("max-w-[85%] rounded-2xl px-3 py-2", mine ? "ml-auto bg-mustard text-ink" : "bg-cream text-ink")}>
-              {!mine && <p className="text-xs font-extrabold text-ink/60">{nameOf(view, line.playerId)}</p>}
-              <p className="leading-snug font-semibold break-words">{line.text}</p>
-            </li>
-          );
-        })}
-        <div ref={end} />
-      </ul>
-      <form onSubmit={send} className="mt-4 flex gap-2">
-        <label className="sr-only" htmlFor="chat-input">
-          Message
-        </label>
-        <input
-          id="chat-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={300}
-          placeholder="Share a theory…"
-          className="min-w-0 flex-1 rounded-full border-[3px] border-ink bg-cream px-4 py-2 font-semibold text-ink outline-none focus:border-mustard"
-        />
-        <Button type="submit" className="px-5 py-2 text-base" disabled={busy || !text.trim()}>
-          Send
-        </Button>
-      </form>
-    </Panel>
-  );
-}
+    <GameProvider value={game}>
+      <TopBar view={view} act={act} />
 
-function LeaveButton({ act }: { act: (a: Action) => Promise<boolean> }) {
-  const [sure, setSure] = useState(false);
-  if (!sure) {
-    return (
-      <button type="button" onClick={() => setSure(true)} className="text-sm font-extrabold text-cream/60 hover:text-coral">
-        Leave
-      </button>
-    );
-  }
-  return (
-    <span className="flex items-center gap-3 text-sm font-bold text-cream">
-      Your evidence passes to the others.
-      <button type="button" onClick={() => act({ type: "leave" })} className="font-extrabold text-coral hover:underline">
-        Leave
-      </button>
-      <button type="button" onClick={() => setSure(false)} className="font-extrabold text-cream/70 hover:underline">
-        Stay
-      </button>
-    </span>
+      {wide ? (
+        // Laptops: desk, board and the case side by side
+        <main className={cx("mx-auto grid max-w-[90rem] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(20rem,0.9fr)] items-start gap-6 px-6 pt-6 pb-16", view.proposal && "pb-72")}>
+          <div className="grid gap-6">{panels.desk}</div>
+          <div className="sticky top-24 grid gap-6">{panels.board}</div>
+          <div className="grid gap-6">
+            {panels.solve}
+            {panels.team}
+          </div>
+        </main>
+      ) : (
+        // Phones and tablets: one panel at a time
+        <main className={cx("mx-auto max-w-2xl px-4 pt-5 pb-32", view.proposal && "pb-72")}>{panels[tab]}</main>
+      )}
+
+      {!wide && <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" role="tablist">
+        <div className="mx-auto grid max-w-2xl grid-cols-4">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => {
+                setTab(t.id);
+                window.scrollTo({ top: 0 });
+              }}
+              className={cx("relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-extrabold", tab === t.id ? "text-mustard" : "text-cream/60")}
+            >
+              <span className={cx("grid h-8 w-14 place-items-center rounded-full transition-colors", tab === t.id && "bg-mustard/15")}>
+                <Icon name={t.icon} />
+              </span>
+              {t.label}
+              {badges[t.id] && (
+                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+                  {badges[t.id]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>}
+
+      <ProposalBar view={view} act={act} busy={busy} />
+      <ActivityToasts view={view} />
+
+      {openedEvidence && (
+        <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>
+          <EvidenceCard evidence={openedEvidence} />
+          {openedEvidence.pinned && (
+            <p className="mt-3 text-center text-sm font-bold text-cream/60">
+              On the board · pinned by {nameOf(view, view.pins.find((p) => p.evidenceId === openedEvidence.id)?.by)}
+            </p>
+          )}
+        </Sheet>
+      )}
+
+      {seenChapter !== null && view.chapter.number > seenChapter && <ChapterCurtain view={view} onClose={closeCurtain} />}
+    </GameProvider>
   );
 }

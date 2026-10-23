@@ -4,25 +4,34 @@
  * sends each player only what viewFor lets them see.
  */
 import type {
+  Ability,
   Action,
-  BoardItem,
+  Activity,
+  ActivityKind,
   CaseEvidence,
   CaseFile,
   CaseRole,
   CaseSuspect,
   ChatLine,
   DecidedProposal,
+  FinalReport,
   Mode,
-  Outcome,
   Phase,
+  Pin,
   Player,
   Proposal,
   RoomState,
+  Score,
 } from "./types";
 
 export const MAX_NAME = 24;
 export const MAX_CHAT = 300;
+export const MAX_QUERY = 40;
+/** The board only holds this many pins, so the group has to agree on what matters. */
+export const PIN_LIMIT = 8;
 const CHAT_KEPT = 200;
+const ACTIVITY_KEPT = 120;
+const SEARCHES_KEPT = 60;
 
 export type Result = { ok: true; state: RoomState } | { ok: false; error: string };
 
@@ -36,6 +45,17 @@ export const votesNeeded = (state: RoomState) => Math.floor(activePlayers(state)
 export function cleanName(name: string) {
   return name.replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
 }
+
+/** Search terms compare without case, spaces, punctuation or accents: "Page & Co." matches "pageco". */
+export function normalizeTerm(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const pairKey = (a: string, b: string) => [a, b].sort().join("+");
 
 export function createRoom(input: {
   code: string;
@@ -54,9 +74,17 @@ export function createRoom(input: {
     createdAt: input.now,
     players: [{ ...input.host, name: cleanName(input.host.name), roles: [], joinedAt: input.now, left: false }],
     ready: [],
-    board: [],
+    chapter: 1,
+    found: {},
+    pins: [],
+    questionsUsed: 0,
+    searches: [],
+    checked: [],
     chat: [],
-    hintsUnlocked: 0,
+    activity: [],
+    hintsUsed: 0,
+    hintsOpen: {},
+    wrongAnswers: 0,
     proposal: null,
     decided: [],
     outcome: null,
@@ -96,7 +124,27 @@ export function dealRoles(caseFile: CaseFile, playerIds: string[]): Record<strin
   return dealt;
 }
 
-/** A player who leaves mid-case hands each role to whoever holds the fewest, so no evidence is lost. */
+/** The abilities a player has through the roles they hold. */
+export function abilitiesOf(caseFile: CaseFile, player: Pick<Player, "roles">): Ability[] {
+  return caseFile.roles.filter((r) => player.roles.includes(r.id) && r.ability !== "none").map((r) => r.ability);
+}
+
+/** Whether a player can see a piece of evidence right now. */
+export function canSee(state: RoomState, player: Pick<Player, "id" | "roles">, evidence: CaseEvidence) {
+  if (state.phase === "reveal") return true;
+  if (evidence.chapter > state.chapter) return false;
+  if (state.pins.some((p) => p.evidenceId === evidence.id)) return true;
+  if (evidence.access.kind === "desk") return player.roles.includes(evidence.role);
+  const found = state.found[evidence.id];
+  return Boolean(found) && (player.roles.includes(evidence.role) || found.by === player.id);
+}
+
+function log(state: RoomState, newId: () => string, now: number, kind: ActivityKind, text: string, playerId?: string, evidenceId?: string) {
+  state.activity.push({ id: newId(), at: now, kind, text, playerId, evidenceId } satisfies Activity);
+  state.activity = state.activity.slice(-ACTIVITY_KEPT);
+}
+
+/** A player who leaves mid-case hands each role to whoever holds the fewest, so no evidence or ability is lost. */
 function handOverRoles(state: RoomState, leaving: Player) {
   for (const role of leaving.roles) {
     const takers = activePlayers(state).filter((p) => p.id !== leaving.id);
@@ -107,12 +155,13 @@ function handOverRoles(state: RoomState, leaving: Player) {
   leaving.roles = [];
 }
 
-function removePlayer(state: RoomState, player: Player, now: number) {
+function removePlayer(state: RoomState, caseFile: CaseFile, player: Player, now: number, newId: () => string) {
   if (state.phase === "lobby") {
     state.players = state.players.filter((p) => p.id !== player.id);
   } else {
     handOverRoles(state, player);
     player.left = true;
+    log(state, newId, now, "leave", `${player.name} left. Their roles were passed on.`, player.id);
   }
   state.ready = state.ready.filter((id) => id !== player.id);
   if (state.proposal) delete state.proposal.votes[player.id];
@@ -120,17 +169,32 @@ function removePlayer(state: RoomState, player: Player, now: number) {
     const heir = activePlayers(state)[0];
     if (heir) state.hostId = heir.id;
   }
-  if (state.phase === "briefing") startInvestigationIfReady(state);
-  resolveProposal(state, now);
+  if (state.phase === "briefing") startInvestigationIfReady(state, now);
+  resolveProposal(state, caseFile, now, newId);
 }
 
-function startInvestigationIfReady(state: RoomState) {
+function startInvestigationIfReady(state: RoomState, now: number) {
   const active = activePlayers(state);
-  if (active.length && active.every((p) => state.ready.includes(p.id))) state.phase = "investigation";
+  if (active.length && active.every((p) => state.ready.includes(p.id))) {
+    state.phase = "investigation";
+    state.startedAt = now;
+  }
 }
+
+export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalReport): Score {
+  const { solution } = caseFile;
+  const culprit = report.suspectId === solution.culprit;
+  const motive = culprit && report.motiveId === solution.motive;
+  const evidence =
+    culprit && new Set(report.evidenceIds).size === 2 && report.evidenceIds.every((id) => solution.keyEvidence.includes(id));
+  const sharp = culprit && state.hintsUsed <= 1 && state.wrongAnswers <= 1;
+  return { culprit, motive, evidence, sharp, stars: culprit ? 2 + Number(motive) + Number(evidence) + Number(sharp) : 0 };
+}
+
+const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: false, sharp: false };
 
 /** Settles the open proposal once a majority is for it, or once it can no longer get one. */
-function resolveProposal(state: RoomState, now: number) {
+function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newId: () => string) {
   const proposal = state.proposal;
   if (!proposal) return;
   const active = activePlayers(state);
@@ -141,30 +205,50 @@ function resolveProposal(state: RoomState, now: number) {
   const failed = active.length - no < needed;
   if (!passed && !failed) return;
 
-  state.decided.push({
+  const decided: DecidedProposal = {
     id: proposal.id,
     kind: proposal.kind,
-    suspectId: proposal.suspectId,
+    optionId: proposal.optionId,
+    report: proposal.report,
     by: proposal.by,
     at: proposal.at,
     passed,
     decidedAt: now,
-  });
+  };
   state.proposal = null;
-  if (!passed) return;
 
-  if (proposal.kind === "hint") state.hintsUnlocked++;
-  if (proposal.kind === "accuse" || proposal.kind === "giveUp") {
-    state.outcome = {
-      kind: proposal.kind === "giveUp" ? "gaveUp" : "wrong",
-      suspectId: proposal.suspectId,
-      at: now,
-    } satisfies Outcome;
-    state.phase = "reveal";
+  if (passed) {
+    const chapter = caseFile.chapters[state.chapter - 1];
+    if (proposal.kind === "answer" && chapter.checkpoint) {
+      decided.correct = proposal.optionId === chapter.checkpoint.answer;
+      if (decided.correct) {
+        state.chapter++;
+        const opened = caseFile.chapters[state.chapter - 1];
+        log(state, newId, now, "chapter", `Chapter ${state.chapter} unlocked: ${opened.title}`);
+      } else {
+        state.wrongAnswers++;
+        const label = chapter.checkpoint.options.find((o) => o.id === proposal.optionId)?.label;
+        log(state, newId, now, "wrong", `"${label}" is wrong. Look again.`);
+      }
+    }
+    if (proposal.kind === "hint") {
+      state.hintsOpen[state.chapter] = (state.hintsOpen[state.chapter] ?? 0) + 1;
+      state.hintsUsed++;
+      log(state, newId, now, "hint", "A hint was opened.");
+    }
+    if (proposal.kind === "final" && proposal.report) {
+      const score = scoreReport(state, caseFile, proposal.report);
+      state.outcome = { kind: score.culprit ? "solved" : "wrong", report: proposal.report, score, at: now };
+      state.phase = "reveal";
+    }
+    if (proposal.kind === "giveUp") {
+      state.outcome = { kind: "gaveUp", score: NO_SCORE, at: now };
+      state.phase = "reveal";
+    }
   }
+  state.decided.push(decided);
+  state.decided = state.decided.slice(-20);
 }
-
-const OPEN_PHASES: Phase[] = ["investigation"];
 
 export function applyAction(
   state: RoomState,
@@ -179,6 +263,9 @@ export function applyAction(
   const isHost = state.hostId === me.id;
   const next = structuredClone(state);
   const self = next.players.find((p) => p.id === me.id)!;
+  const abilities = abilitiesOf(caseFile, self);
+  const investigating = state.phase === "investigation";
+  const evidenceById = (id: string) => caseFile.evidence.find((e) => e.id === id);
 
   switch (action.type) {
     case "setMode": {
@@ -205,16 +292,106 @@ export function applyAction(
     case "ready": {
       if (state.phase !== "briefing") return fail("There's nothing to get ready for.");
       if (!next.ready.includes(me.id)) next.ready.push(me.id);
-      startInvestigationIfReady(next);
+      startInvestigationIfReady(next, now);
       break;
     }
 
-    case "share": {
-      if (!OPEN_PHASES.includes(state.phase)) return fail("You can only share evidence during the investigation.");
-      const evidence = caseFile.evidence.find((e) => e.id === action.evidenceId);
-      if (!evidence || !self.roles.includes(evidence.role)) return fail("That isn't your evidence to share.");
-      if (next.board.some((b) => b.evidenceId === evidence.id)) return fail("That's already on the board.");
-      next.board.push({ evidenceId: evidence.id, sharedBy: me.id, at: now } satisfies BoardItem);
+    case "search": {
+      if (!investigating) return fail("Searches open once the investigation starts.");
+      if (!abilities.includes("search")) return fail("Only the Tech can search the records.");
+      const query = String(action.query ?? "").trim().slice(0, MAX_QUERY);
+      const term = normalizeTerm(query);
+      if (term.length < 2) return fail("Type a name, number or place to search for.");
+      const hit = caseFile.evidence.find(
+        (e) =>
+          e.access.kind === "search" &&
+          e.chapter <= state.chapter &&
+          e.access.terms.some((t) => term === t || (t.length >= 3 && term.includes(t))),
+      );
+      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, at: now });
+      next.searches = next.searches.slice(-SEARCHES_KEPT);
+      if (hit && !next.found[hit.id]) {
+        next.found[hit.id] = { by: me.id, at: now };
+        log(next, newId, now, "found", `${me.name} searched "${query}" and found: ${hit.title}`, me.id, hit.id);
+      } else if (!hit) {
+        log(next, newId, now, "miss", `${me.name} searched "${query}". No records.`, me.id);
+      }
+      break;
+    }
+
+    case "ask": {
+      if (!investigating) return fail("Interviews open once the investigation starts.");
+      if (!abilities.includes("interview")) return fail("Only the Interviewer can ask questions.");
+      const question = evidenceById(action.evidenceId);
+      if (!question || question.access.kind !== "interview" || question.chapter > state.chapter) return fail("That question isn't available.");
+      if (next.found[question.id]) return fail("You've already asked that.");
+      if (next.questionsUsed >= caseFile.questionBudget) return fail("The team has used all its questions.");
+      next.questionsUsed++;
+      next.found[question.id] = { by: me.id, at: now };
+      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"`, me.id, question.id);
+      break;
+    }
+
+    case "inspect": {
+      if (!investigating) return fail("Nothing to inspect yet.");
+      if (!abilities.includes("inspect")) return fail("Only the Photographer can inspect photos.");
+      const scene = evidenceById(action.scene);
+      if (!scene || scene.body.type !== "scene" || !canSee(state, self, scene)) return fail("You can't see that photo.");
+      const detail = caseFile.evidence.find(
+        (e) =>
+          e.access.kind === "inspect" &&
+          e.access.scene === scene.id &&
+          e.access.hotspot === action.hotspot &&
+          e.chapter <= state.chapter,
+      );
+      if (!detail) return fail("Nothing unusual there.");
+      if (next.found[detail.id]) return fail("Already noted.");
+      next.found[detail.id] = { by: me.id, at: now };
+      log(next, newId, now, "found", `${me.name} spotted something in "${scene.title}": ${detail.title}`, me.id, detail.id);
+      break;
+    }
+
+    case "crosscheck": {
+      if (!investigating) return fail("Nothing to cross-check yet.");
+      if (!abilities.includes("crosscheck")) return fail("Only the Archivist can cross-check evidence.");
+      const a = evidenceById(action.a);
+      const b = evidenceById(action.b);
+      if (!a || !b || a.id === b.id) return fail("Pick two different pieces of evidence.");
+      if (!canSee(state, self, a) || !canSee(state, self, b)) return fail("You can only compare evidence you can see.");
+      const key = pairKey(a.id, b.id);
+      const insight = caseFile.evidence.find(
+        (e) => e.access.kind === "crosscheck" && pairKey(...e.access.pair) === key && e.chapter <= state.chapter,
+      );
+      if (insight) {
+        if (next.found[insight.id]) return fail("You've already caught that one.");
+        next.found[insight.id] = { by: me.id, at: now };
+        log(next, newId, now, "found", `${me.name} caught a lie: ${insight.title}`, me.id, insight.id);
+      } else {
+        if (next.checked.includes(key)) return fail("You've already compared those two.");
+        next.checked.push(key);
+        log(next, newId, now, "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.`, me.id);
+      }
+      break;
+    }
+
+    case "pin": {
+      if (!investigating) return fail("The board opens once the investigation starts.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !canSee(state, self, evidence)) return fail("You can't pin that.");
+      if (next.pins.some((p) => p.evidenceId === evidence.id)) return fail("That's already on the board.");
+      if (next.pins.length >= PIN_LIMIT) return fail(`The board is full (${PIN_LIMIT}). Unpin something first.`);
+      next.pins.push({ evidenceId: evidence.id, by: me.id, at: now } satisfies Pin);
+      log(next, newId, now, "pin", `${me.name} pinned ${evidence.title}`, me.id, evidence.id);
+      break;
+    }
+
+    case "unpin": {
+      if (!investigating) return fail("The board is closed.");
+      const pin = next.pins.find((p) => p.evidenceId === action.evidenceId);
+      if (!pin) return fail("That isn't on the board.");
+      if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId)) return fail("That's part of the report being voted on.");
+      next.pins = next.pins.filter((p) => p !== pin);
+      log(next, newId, now, "unpin", `${me.name} unpinned ${evidenceById(pin.evidenceId)?.title}`, me.id, pin.evidenceId);
       break;
     }
 
@@ -228,21 +405,30 @@ export function applyAction(
     }
 
     case "propose": {
-      if (!OPEN_PHASES.includes(state.phase)) return fail("Proposals open once the investigation starts.");
+      if (!investigating) return fail("Proposals open once the investigation starts.");
       if (state.proposal) return fail("Settle the current vote first.");
-      if (action.kind === "accuse" && !caseFile.suspects.some((s) => s.id === action.suspectId)) {
-        return fail("Pick a suspect to accuse.");
+      const chapter = caseFile.chapters[state.chapter - 1];
+      const proposal: Proposal = { id: newId(), kind: action.kind, by: me.id, at: now, votes: { [me.id]: "yes" } };
+
+      if (action.kind === "answer") {
+        if (!chapter.checkpoint) return fail("This chapter ends with the final report.");
+        if (!chapter.checkpoint.options.some((o) => o.id === action.optionId)) return fail("Pick an answer.");
+        proposal.optionId = action.optionId;
+      } else if (action.kind === "final") {
+        if (chapter.checkpoint) return fail("Solve this chapter's question first.");
+        const report = action.report;
+        if (!report || !caseFile.suspects.some((s) => s.id === report.suspectId)) return fail("Name a suspect.");
+        if (!caseFile.solution.motives.some((m) => m.id === report.motiveId)) return fail("Pick a motive.");
+        const ids = Array.isArray(report.evidenceIds) ? report.evidenceIds.map(String) : [];
+        if (ids.length !== 2 || ids[0] === ids[1]) return fail("Pick two different pieces of proof.");
+        if (!ids.every((id) => state.pins.some((p) => p.evidenceId === id))) return fail("Your proof has to be pinned on the board.");
+        proposal.report = { suspectId: report.suspectId, motiveId: report.motiveId, evidenceIds: ids };
+      } else if (action.kind === "hint") {
+        if ((state.hintsOpen[state.chapter] ?? 0) >= chapter.hints.length) return fail("There are no hints left in this chapter.");
+      } else if (action.kind !== "giveUp") {
+        return fail("Unknown proposal.");
       }
-      if (action.kind === "hint" && state.hintsUnlocked >= caseFile.hints.length) return fail("There are no hints left.");
-      if (!["accuse", "hint", "giveUp"].includes(action.kind)) return fail("Unknown proposal.");
-      next.proposal = {
-        id: newId(),
-        kind: action.kind,
-        suspectId: action.kind === "accuse" ? action.suspectId : undefined,
-        by: me.id,
-        at: now,
-        votes: { [me.id]: "yes" },
-      } satisfies Proposal;
+      next.proposal = proposal;
       break;
     }
 
@@ -261,7 +447,7 @@ export function applyAction(
     }
 
     case "leave": {
-      removePlayer(next, self, now);
+      removePlayer(next, caseFile, self, now, newId);
       break;
     }
 
@@ -269,7 +455,7 @@ export function applyAction(
       if (!isHost) return fail("Only the host can remove players.");
       const target = next.players.find((p) => p.id === action.playerId && !p.left);
       if (!target || target.id === me.id) return fail("Can't remove that player.");
-      removePlayer(next, target, now);
+      removePlayer(next, caseFile, target, now, newId);
       break;
     }
 
@@ -277,9 +463,7 @@ export function applyAction(
       return fail("Unknown action.");
   }
 
-  resolveProposal(next, now);
-  // An accusation only becomes "solved" here, where the solution is known.
-  if (next.outcome?.kind === "wrong" && next.outcome.suspectId === caseFile.solution.culprit) next.outcome.kind = "solved";
+  resolveProposal(next, caseFile, now, newId);
   next.version++;
   return { ok: true, state: next };
 }
@@ -287,22 +471,53 @@ export function applyAction(
 /** Authoring mistakes in a case file. An empty list means the case can run. */
 export function checkCase(caseFile: CaseFile): string[] {
   const problems: string[] = [];
+  const byId = new Map(caseFile.evidence.map((e) => [e.id, e]));
   const roleIds = new Set(caseFile.roles.map((r) => r.id));
-  const core = caseFile.roles.filter((r) => r.core);
-  if (!core.length) problems.push("needs at least one core role");
+  const chapters = caseFile.chapters.length;
+
+  if (!caseFile.roles.some((r) => r.core)) problems.push("needs at least one core role");
   if (caseFile.minPlayers < 1 || caseFile.maxPlayers < caseFile.minPlayers) problems.push("player range is invalid");
-  if (caseFile.maxPlayers > caseFile.roles.length) {
-    problems.push("more players than roles: someone would get no evidence");
-  }
-  for (const role of caseFile.roles) {
-    if (!caseFile.evidence.some((e) => e.role === role.id)) problems.push(`role "${role.id}" has no evidence`);
-  }
+  if (caseFile.maxPlayers > caseFile.roles.length) problems.push("more players than roles: someone would get nothing");
+  if (!chapters) problems.push("needs at least one chapter");
+  caseFile.chapters.forEach((c, i) => {
+    const last = i === chapters - 1;
+    if (last && c.checkpoint) problems.push(`the last chapter must end with the final report, not a checkpoint`);
+    if (!last && !c.checkpoint) problems.push(`chapter ${i + 1} needs a checkpoint to open the next one`);
+    if (c.checkpoint && !c.checkpoint.options.some((o) => o.id === c.checkpoint!.answer)) problems.push(`chapter ${i + 1}'s answer isn't an option`);
+  });
+  if (byId.size !== caseFile.evidence.length) problems.push("evidence ids are not unique");
+
+  const needs: Record<Exclude<Ability, "none">, string> = { search: "search", interview: "interview", inspect: "inspect", crosscheck: "crosscheck" };
   for (const e of caseFile.evidence) {
-    if (!roleIds.has(e.role)) problems.push(`evidence "${e.id}" belongs to unknown role "${e.role}"`);
+    if (!roleIds.has(e.role)) problems.push(`"${e.id}" belongs to unknown role "${e.role}"`);
+    if (e.chapter < 1 || e.chapter > chapters) problems.push(`"${e.id}" is in a chapter that doesn't exist`);
+    const a = e.access;
+    if (a.kind === "search" && !a.terms.every((t) => t === normalizeTerm(t) && t.length >= 2)) {
+      problems.push(`"${e.id}" has search terms that aren't normalised (lowercase letters and digits only)`);
+    }
+    if (a.kind === "inspect") {
+      const scene = byId.get(a.scene);
+      if (!scene || scene.body.type !== "scene") problems.push(`"${e.id}" inspects "${a.scene}", which isn't a scene`);
+      else if (!scene.body.items.some((item) => item.hotspot === a.hotspot)) problems.push(`"${e.id}" points at a missing hotspot "${a.hotspot}"`);
+      else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
+    }
+    if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
+    if (a.kind !== "desk" && !caseFile.roles.some((r) => r.core && r.ability === needs[a.kind])) {
+      problems.push(`"${e.id}" needs the ${a.kind} ability, but no core role has it`);
+    }
   }
-  const ids = caseFile.evidence.map((e) => e.id);
-  if (new Set(ids).size !== ids.length) problems.push("evidence ids are not unique");
-  if (!caseFile.suspects.some((s) => s.id === caseFile.solution.culprit)) problems.push("the culprit is not a suspect");
+  for (const role of caseFile.roles.filter((r) => r.core)) {
+    if (!caseFile.evidence.some((e) => e.role === role.id && e.access.kind === "desk" && e.chapter === 1)) {
+      problems.push(`core role "${role.id}" starts with nothing on their desk`);
+    }
+  }
+  const { solution } = caseFile;
+  if (!caseFile.suspects.some((s) => s.id === solution.culprit)) problems.push("the culprit is not a suspect");
+  if (!solution.motives.some((m) => m.id === solution.motive)) problems.push("the motive is not one of the options");
+  if (solution.keyEvidence.length < 2) problems.push("needs at least two pieces of key evidence");
+  for (const id of solution.keyEvidence) if (!byId.has(id)) problems.push(`key evidence "${id}" doesn't exist`);
+  const questions = caseFile.evidence.filter((e) => e.access.kind === "interview").length;
+  if (questions && caseFile.questionBudget >= questions) problems.push("the question budget covers every question: no choices left to make");
   return problems;
 }
 
@@ -319,36 +534,69 @@ export type PublicPlayer = {
   bot: boolean;
 };
 
+export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
+  source: CaseEvidence["access"]["kind"];
+  /** For a found detail: where in which scene it was spotted. */
+  spot?: { scene: string; hotspot: string };
+  pinned: boolean;
+  /** Who found it, for evidence that had to be found. */
+  foundBy?: string;
+  foundAt?: number;
+  /** On this player's own desk or found through their roles, as opposed to only on the board. */
+  mine: boolean;
+};
+
 export type PlayerView = {
   code: string;
   version: number;
   phase: Phase;
   mode: Mode;
-  me: PublicPlayer;
+  startedAt: number | null;
+  me: PublicPlayer & { abilities: Ability[] };
   case: {
     id: string;
     code: string;
     title: string;
+    tagline: string;
     briefing: string;
     minPlayers: number;
     maxPlayers: number;
     suspects: CaseSuspect[];
     roles: CaseRole[];
+    chapterTitles: string[];
+    questionBudget: number;
+    motives: { id: string; label: string }[];
+  };
+  chapter: {
+    number: number;
+    title: string;
+    intro: string;
+    checkpoint: { question: string; options: { id: string; label: string }[] } | null;
+    hints: string[];
     hintsTotal: number;
   };
+  /** Checkpoints already answered, with what they revealed. */
+  solved: { number: number; title: string; question: string; reveal: string }[];
   players: PublicPlayer[];
-  /** Evidence held through this player's roles. */
-  myEvidence: CaseEvidence[];
-  board: (BoardItem & { evidence: CaseEvidence })[];
+  evidence: VisibleEvidence[];
+  pins: Pin[];
+  pinLimit: number;
+  /** For the Interviewer: the questions open so far. */
+  questions: { id: string; suspect: string; question: string; asked: boolean; chapter: number }[] | null;
+  questionsLeft: number;
+  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; at: number }[];
+  /** For the Archivist: pairs already compared without a result. */
+  checked: string[];
+  activity: Activity[];
   chat: ChatLine[];
-  hints: string[];
+  hintsUsed: number;
+  wrongAnswers: number;
   proposal: Proposal | null;
   votesNeeded: number;
   decided: DecidedProposal[];
-  outcome: Outcome | null;
-  /** Only after the reveal: the answer, and every piece of evidence for the recap. */
+  outcome: RoomState["outcome"];
+  /** Only after the reveal. */
   solution: CaseFile["solution"] | null;
-  allEvidence: CaseEvidence[] | null;
   /** Set by the room service: whether the host may add bots here. */
   testBots?: boolean;
 };
@@ -364,36 +612,95 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     bot: Boolean(p.bot),
   });
   const me = state.players.find((p) => p.id === playerId)!;
+  const abilities = abilitiesOf(caseFile, me);
   const revealed = state.phase === "reveal";
-  const evidenceById = new Map(caseFile.evidence.map((e) => [e.id, e]));
+  const chapter = caseFile.chapters[state.chapter - 1];
+  const pinned = new Set(state.pins.map((p) => p.evidenceId));
+
+  const evidence: VisibleEvidence[] = caseFile.evidence
+    .filter((e) => canSee(state, me, e))
+    .map(({ access, ...e }) => {
+      const found = state.found[e.id];
+      const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
+      const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
+      return {
+        ...e,
+        source: access.kind,
+        spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
+        pinned: pinned.has(e.id),
+        foundBy: found?.by,
+        foundAt: found?.at,
+        mine: ownDesk || ownFind,
+      };
+    });
+
+  const visibleIds = new Set(evidence.map((e) => e.id));
+  const questions = abilities.includes("interview")
+    ? caseFile.evidence.flatMap((e) =>
+        e.access.kind === "interview" && e.chapter <= state.chapter
+          ? [{ id: e.id, suspect: e.access.suspect, question: e.access.question, asked: Boolean(state.found[e.id]), chapter: e.chapter }]
+          : [],
+      )
+    : null;
 
   return {
     code: state.code,
     version: state.version,
     phase: state.phase,
     mode: state.mode,
-    me: toPublic(me),
+    startedAt: state.startedAt ?? null,
+    me: { ...toPublic(me), abilities },
     case: {
       id: caseFile.id,
       code: caseFile.code,
       title: caseFile.title,
+      tagline: caseFile.tagline,
       briefing: caseFile.briefing,
       minPlayers: caseFile.minPlayers,
       maxPlayers: caseFile.maxPlayers,
       suspects: caseFile.suspects,
       roles: caseFile.roles,
-      hintsTotal: caseFile.hints.length,
+      chapterTitles: caseFile.chapters.map((c) => c.title),
+      questionBudget: caseFile.questionBudget,
+      motives: caseFile.solution.motives,
     },
+    chapter: {
+      number: state.chapter,
+      title: chapter.title,
+      intro: chapter.intro,
+      checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question, options: chapter.checkpoint.options } : null,
+      hints: chapter.hints.slice(0, state.hintsOpen[state.chapter] ?? 0),
+      hintsTotal: chapter.hints.length,
+    },
+    solved: caseFile.chapters.slice(0, state.chapter - 1).map((c, i) => ({
+      number: i + 1,
+      title: c.title,
+      question: c.checkpoint!.question,
+      reveal: c.checkpoint!.reveal,
+    })),
     players: activePlayers(state).map(toPublic),
-    myEvidence: caseFile.evidence.filter((e) => me.roles.includes(e.role)),
-    board: state.board.map((b) => ({ ...b, evidence: evidenceById.get(b.evidenceId)! })),
+    evidence,
+    pins: state.pins,
+    pinLimit: PIN_LIMIT,
+    questions,
+    questionsLeft: caseFile.questionBudget - state.questionsUsed,
+    searches: state.searches.map((s) => ({
+      id: s.id,
+      by: s.by,
+      query: s.query,
+      hit: Boolean(s.hit),
+      hitTitle: s.hit && visibleIds.has(s.hit) ? evidence.find((e) => e.id === s.hit)?.title : undefined,
+      at: s.at,
+    })),
+    checked: abilities.includes("crosscheck") ? state.checked : [],
+    activity: state.activity.slice(-60),
     chat: state.mode === "remote" ? state.chat : [],
-    hints: caseFile.hints.slice(0, state.hintsUnlocked),
+    hintsUsed: state.hintsUsed,
+    wrongAnswers: state.wrongAnswers,
     proposal: state.proposal,
     votesNeeded: votesNeeded(state),
     decided: state.decided.slice(-5),
     outcome: state.outcome,
     solution: revealed ? caseFile.solution : null,
-    allEvidence: revealed ? caseFile.evidence : null,
   };
 }

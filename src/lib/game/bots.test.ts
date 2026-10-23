@@ -17,8 +17,8 @@ function must(result: ReturnType<typeof applyAction>): RoomState {
 
 /** Plays every bot move available, a few seconds apart, until the bots have nothing left to do. */
 function letBotsPlay(state: RoomState) {
-  for (let i = 0; i < 100; i++) {
-    clock += 3000;
+  for (let i = 0; i < 200; i++) {
+    clock += 4000;
     const move = nextBotMove(state, tipJar, clock);
     if (!move) return state;
     state = { ...must(applyAction(state, tipJar, move.playerId, move.action, clock, newId)), botMovedAt: clock };
@@ -26,9 +26,10 @@ function letBotsPlay(state: RoomState) {
   throw new Error("bots never settled");
 }
 
+/** Me plus three bots; with four players I'm the Tech. */
 function soloWithBots(mode: Mode) {
   let state = createRoom({ code: "BOTS", caseFile: tipJar, host: { id: "me", token: "t", name: "Me" }, mode, now: 0 });
-  for (const n of [1, 2]) state = must(addPlayer(state, tipJar, { id: `bot${n}`, token: `b${n}`, name: `Bot ${n}`, bot: true }, 0));
+  for (const n of [1, 2, 3]) state = must(addPlayer(state, tipJar, { id: `bot${n}`, token: `b${n}`, name: `Bot ${n}`, bot: true }, 0));
   state = must(applyAction(state, tipJar, "me", { type: "start" }, 0, newId));
   state = must(applyAction(state, tipJar, "me", { type: "ready" }, 0, newId));
   return letBotsPlay(state);
@@ -36,41 +37,46 @@ function soloWithBots(mode: Mode) {
 
 const act = (state: RoomState, action: Action) => must(applyAction(state, tipJar, "me", action, clock, newId));
 
-test("bots get ready and share all their evidence", () => {
+test("bots get ready, pin their desks and use their abilities once per chapter", () => {
   const state = soloWithBots("together");
   assert.equal(state.phase, "investigation");
-  const botRoles = state.players.filter((p) => p.bot).flatMap((p) => p.roles);
-  const botEvidence = tipJar.evidence.filter((e) => botRoles.includes(e.role)).map((e) => e.id);
-  assert.deepEqual(state.board.map((b) => b.evidenceId).sort(), botEvidence.sort());
+  const pinned = state.pins.map((p) => p.evidenceId);
+  assert.ok(pinned.includes("statement-mo") && pinned.includes("photo-instagram") && pinned.includes("receipts"));
+  assert.ok(state.found["question-mo-door"], "the Interviewer bot asked its question");
+  assert.ok(Object.keys(state.found).some((id) => id.startsWith("detail-")), "the Photographer bot inspected the photo");
+  assert.equal(state.chapter, 1, "bots never answer checkpoints");
 });
 
-test("bots say so in the chat of a remote room", () => {
+test("bots say hello in the chat of a remote room", () => {
   const state = soloWithBots("remote");
-  assert.equal(state.chat.filter((line) => line.playerId.startsWith("bot")).length, 2);
+  assert.equal(state.chat.filter((line) => line.playerId.startsWith("bot")).length, 3);
 });
 
 test("bots follow the human's vote, both ways", () => {
   let state = soloWithBots("together");
-  state = act(state, { type: "propose", kind: "hint" });
-  state = letBotsPlay(state);
-  assert.equal(state.hintsUnlocked, 1, "human said yes, bots agreed");
-
-  state = act(state, { type: "propose", kind: "hint" });
+  state = act(state, { type: "propose", kind: "answer", optionId: "838-841" });
   state = act(state, { type: "vote", proposalId: state.proposal!.id, vote: "no" });
   state = letBotsPlay(state);
-  assert.equal(state.hintsUnlocked, 1, "human changed to no, bots followed");
-  assert.equal(state.proposal, null);
+  assert.equal(state.wrongAnswers, 0, "human said no, bots followed");
 
-  state = act(state, { type: "propose", kind: "accuse", suspectId: "square" });
+  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
   state = letBotsPlay(state);
-  assert.equal(state.outcome?.kind, "solved");
+  assert.equal(state.chapter, 2);
+});
+
+test("in a new chapter, bots swap old pins for new finds so the team keeps moving", () => {
+  let state = soloWithBots("together");
+  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = letBotsPlay(state);
+  assert.equal(state.chapter, 2);
+  assert.ok(state.pins.some((p) => p.evidenceId === "question-squarington-left"), "the Interviewer bot's answer reached the board");
+  assert.ok(state.found["insight-squarington"], "so the Archivist bot could catch the lie");
 });
 
 test("bots wait between moves", () => {
   const state = createRoom({ code: "B", caseFile: tipJar, host: { id: "me", token: "t", name: "Me" }, mode: "together", now: 0 });
   const withBot = must(addPlayer(state, tipJar, { id: "bot", token: "b", name: "Bot", bot: true }, 0));
-  let started = must(applyAction(withBot, tipJar, "me", { type: "start" }, 0, newId));
-  started = { ...started, botMovedAt: 1000 };
+  const started = { ...must(applyAction(withBot, tipJar, "me", { type: "start" }, 0, newId)), botMovedAt: 1000 };
   assert.equal(nextBotMove(started, tipJar, 1200), null, "too soon after the last move");
   assert.ok(nextBotMove(started, tipJar, 2000));
 });

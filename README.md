@@ -15,9 +15,12 @@ npm test           # game engine tests
 
 Not linked from the site yet. Start a room at `/host`; friends join at `/r/<CODE>`.
 
-- **Cases are data.** Each one is a file in [`src/data/cases`](src/data/cases) (format in [`src/lib/game/types.ts`](src/lib/game/types.ts)), listed in `src/data/cases/index.ts`. `npm test` checks every case for authoring mistakes.
-- **Roles and evidence.** Every player gets a role, and each role holds its own evidence. Core roles are always dealt (with fewer players some hold two); extra roles only join with more players, so their evidence must be bonus, never the only route to the answer. A player who leaves passes their roles on.
-- **Group decisions.** Accusing, asking for a hint and giving up are all proposals that need a majority. One accusation, no second try.
+- **Cases are data.** Each one is a file in [`src/data/cases`](src/data/cases), listed in `src/data/cases/index.ts`. How to write one: [`docs/case-system.md`](docs/case-system.md). `npm test` checks every case for authoring mistakes.
+- **Chapters.** A case unfolds in chapters; the group opens the next one by answering a checkpoint question, and ends with a final report (who, why, two pinned proofs), scored out of 5 stars.
+- **Roles with abilities.** Every player gets a role with its own evidence and one ability: search records, interview (shared question budget), inspect photos, or cross-check two pieces for a contradiction. Core roles are always dealt (with fewer players some hold two); extra roles only join with more players. A player who leaves passes their roles on.
+- **The board** holds 8 pins: the only way to show evidence to everyone.
+- **Group decisions.** Checkpoint answers, the final report, hints and giving up are all proposals that need a majority.
+- **Test bots** (local dev and Vercel previews only): the host can add them in the lobby.
 - **Same room or remote.** A room setting; remote rooms get a chat.
 - **The server is the referee.** [`src/lib/game/engine.ts`](src/lib/game/engine.ts) holds the rules as pure functions; each player only receives their own view, and the answer is only sent at the reveal.
 - **Storage.** Rooms live in Upstash Redis on Vercel (they expire after a day). Local dev keeps them in `.data/rooms/` so testing doesn't use the Redis quota; set `ROOMS_STORE=redis` to try Redis locally. Clients poll every 2 seconds.

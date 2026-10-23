@@ -1,15 +1,10 @@
 import Image from "next/image";
-import type { PlayerView, PublicPlayer } from "@/lib/game/engine";
+import type { ReactNode } from "react";
+import type { PublicPlayer } from "@/lib/game/engine";
 import type { CaseSuspect } from "@/lib/game/types";
 import type { SuspectId } from "@/data/suspects";
 import { suspectArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
-
-export const nameOf = (view: PlayerView, playerId: string) =>
-  playerId === view.me.id ? "You" : (view.players.find((p) => p.id === playerId)?.name ?? "Someone who left");
-
-export const roleNames = (view: PlayerView, roleIds: string[]) =>
-  roleIds.map((id) => view.case.roles.find((r) => r.id === id)?.name ?? id);
 
 /** A suspect's portrait, when the case uses one of the house characters. */
 export function SuspectPortrait({ suspect, shocked, className }: { suspect: CaseSuspect; shocked?: boolean; className?: string }) {
@@ -24,13 +19,24 @@ export function SuspectPortrait({ suspect, shocked, className }: { suspect: Case
   return <Image src={shocked ? art.shocked : art.idle} alt="" sizes="160px" className={className} />;
 }
 
-export function PlayerRow({ player, children }: { player: PublicPlayer; children?: React.ReactNode }) {
+const AVATAR_TONES = ["bg-coral text-cream", "bg-teal text-ink", "bg-mustard text-ink", "bg-lilac text-ink", "bg-cream text-ink", "bg-moon text-ink"];
+
+/** A player's initial in a coloured circle, with an online dot. */
+export function Avatar({ name, index, online, size = "md" }: { name: string; index: number; online?: boolean; size?: "sm" | "md" }) {
+  return (
+    <span className={cx("relative grid shrink-0 place-items-center rounded-full border-[3px] border-ink font-display", AVATAR_TONES[index % AVATAR_TONES.length], size === "sm" ? "size-8 text-sm" : "size-10 text-lg")}>
+      {name.replace(/^Bot\s+/, "")[0]?.toUpperCase()}
+      {online !== undefined && (
+        <span className={cx("absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-ink", online ? "bg-teal" : "bg-ink/40")} />
+      )}
+    </span>
+  );
+}
+
+export function PlayerRow({ player, index, children }: { player: PublicPlayer; index: number; children?: ReactNode }) {
   return (
     <li className="flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 text-ink">
-      <span
-        aria-label={player.online ? "online" : "offline"}
-        className={cx("size-3 shrink-0 rounded-full border-2 border-ink", player.online ? "bg-teal" : "bg-ink/20")}
-      />
+      <Avatar name={player.name} index={index} online={player.online} />
       <span className="min-w-0 flex-1 truncate font-extrabold">
         {player.name}
         {player.isHost && <span className="ml-2 rounded-full bg-mustard px-2 py-0.5 text-xs">Host</span>}
@@ -42,7 +48,7 @@ export function PlayerRow({ player, children }: { player: PublicPlayer; children
 }
 
 /** Small panel used across the game screens. */
-export function Panel({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
+export function Panel({ title, children, className }: { title?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={cx("rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card sm:p-6", className)}>
       {title && <h2 className="mb-4 font-display text-2xl text-cream">{title}</h2>}

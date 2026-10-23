@@ -63,6 +63,8 @@ function caseOf(state: RoomState): CaseFile {
 async function load(store: RoomStore, code: string) {
   const state = await store.get(code);
   if (!state) throw new RoomError("There's no room with that code. It may have expired.", 404);
+  // Rooms made before chapters existed can't run on this engine.
+  if (typeof state.chapter !== "number") throw new RoomError("This room is from an older version of the game. Start a new one.", 410);
   return state;
 }
 

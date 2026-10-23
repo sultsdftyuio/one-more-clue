@@ -66,9 +66,9 @@ export function useRoom(code: string) {
     return () => window.clearTimeout(timer);
   }, [error]);
 
-  /** Sends an action; resolves to false (and shows the reason) if the room refused it. */
+  /** Sends an action; resolves to false if the room refused it, showing the reason unless `quiet`. */
   const act = useCallback(
-    async (action: Action) => {
+    async (action: Action, options?: { quiet?: boolean }) => {
       setBusy(true);
       try {
         const res = await fetch(`/api/rooms/${code}/actions`, {
@@ -78,7 +78,7 @@ export function useRoom(code: string) {
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setError(body.error ?? "That didn't work. Try again.");
+          if (!options?.quiet) setError(body.error ?? "That didn't work. Try again.");
           return false;
         }
         if (body.view) accept(body.view);

@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/Button";
+import { playCta } from "@/lib/game-open";
 import { hero } from "@/data/hero";
 import { CityScene } from "./CityScene";
 import { IncomingMessage } from "./IncomingMessage";
@@ -32,7 +33,7 @@ export function Hero() {
         </ul>
 
         <div className="mt-7 flex flex-wrap gap-4">
-          <ButtonLink href="/play">Play now</ButtonLink>
+          <ButtonLink href={playCta().href}>{playCta().label}</ButtonLink>
           <ButtonLink href="#mini-case" variant="secondary">
             Try a 30-second case
           </ButtonLink>

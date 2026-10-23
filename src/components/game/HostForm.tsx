@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 import type { Mode } from "@/lib/game/types";
 import { ModePicker } from "./Lobby";
 import { Panel } from "./parts";
@@ -33,6 +34,7 @@ export function HostForm({ cases }: { cases: CaseOption[] }) {
     }).catch(() => null);
     const body = await res?.json().catch(() => ({}));
     if (res?.ok) {
+      trackEvent("room_created", { case: caseId, mode });
       router.push(`/r/${body.code}`);
       return;
     }
@@ -92,7 +94,7 @@ export function HostForm({ cases }: { cases: CaseOption[] }) {
         </form>
       </Panel>
 
-      <Panel title="Got a code?">
+      <Panel title="Got a code?" id="join">
         <form onSubmit={joinByCode} className="flex gap-2">
           <label className="sr-only" htmlFor="room-code">
             Room code

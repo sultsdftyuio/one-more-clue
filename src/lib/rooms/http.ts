@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { normalizeCode, playerCookie, RoomError } from ".";
+import { allowed, type Bucket } from "./limits";
 import { ROOM_TTL_SECONDS } from "./types";
 
 export const NO_STORE = { "Cache-Control": "no-store" };
@@ -23,6 +24,16 @@ export async function codeFrom(params: Promise<{ code: string }>) {
 }
 
 export const tokenFor = (request: NextRequest, code: string) => request.cookies.get(playerCookie(code))?.value;
+
+/** The caller's address as Vercel reports it. */
+export function clientIp(request: NextRequest) {
+  return request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+/** Throws a 429 when this caller has hit the limit for `bucket`. */
+export async function limit(request: NextRequest, bucket: Bucket) {
+  if (!(await allowed(bucket, clientIp(request)))) throw new RoomError("Slow down a little and try again in a minute.", 429);
+}
 
 export function withPlayerCookie(response: NextResponse, code: string, token: string) {
   response.cookies.set(playerCookie(code), token, {

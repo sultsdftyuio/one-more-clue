@@ -27,6 +27,10 @@ export function createRedisStore(): RoomStore {
     async get(code) {
       return redis.get<RoomState>(stateKey(code));
     },
+    async version(code) {
+      const version = await redis.get<number | string>(versionKey(code));
+      return version === null ? null : Number(version);
+    },
     async replace(state, expectedVersion) {
       const written = await redis.eval(
         REPLACE,

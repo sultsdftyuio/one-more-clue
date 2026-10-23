@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { brandArt } from "@/lib/art";
+import { gameOpen, playCta } from "@/lib/game-open";
 import { authEnabled } from "@/lib/supabase/env";
 
 export function SiteHeader() {
@@ -19,8 +20,14 @@ export function SiteHeader() {
               Log in
             </Link>
           )}
-          <ButtonLink href="/play" className="px-5 py-2 text-base max-sm:hidden">
-            Play now
+          {gameOpen() && (
+            <Link href="/host#join" className="font-extrabold whitespace-nowrap text-cream hover:text-mustard">
+              <span className="sm:hidden">Join</span>
+              <span className="max-sm:hidden">Have a code?</span>
+            </Link>
+          )}
+          <ButtonLink href={playCta().href} className="px-5 py-2 text-base max-sm:hidden">
+            {playCta().label}
           </ButtonLink>
         </nav>
       </div>

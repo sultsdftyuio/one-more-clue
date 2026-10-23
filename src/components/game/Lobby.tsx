@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
 import type { Mode } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import type { Act } from "./context";
+import { useLiveRoom } from "./live/useLive";
+import { VoiceControl } from "./live/VoiceControl";
 import { Panel, PlayerRow, SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -65,6 +68,7 @@ export function CaseCover({ view }: { view: PlayerView }) {
 
 export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
   const [copied, setCopied] = useState(false);
+  const { speaking } = useLiveRoom();
   const isHost = view.me.isHost;
   const count = view.players.length;
   const enough = count >= view.case.minPlayers;
@@ -83,6 +87,7 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-28">
       <CaseCover view={view} />
+      <VoiceControl mode={view.mode} />
 
       <Panel>
         <p className="text-sm font-bold text-cream/70">Room code</p>
@@ -108,7 +113,7 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
       <Panel title={`Detectives ${count}/${view.case.maxPlayers}`}>
         <ul className="grid gap-2">
           {view.players.map((p, i) => (
-            <PlayerRow key={p.id} player={p} index={i}>
+            <PlayerRow key={p.id} player={p} index={i} speaking={speaking.has(p.id)}>
               {isHost && p.id !== view.me.id && (
                 <button type="button" onClick={() => act({ type: "kick", playerId: p.id })} className="text-sm font-extrabold text-coral-dk hover:underline">
                   Remove
@@ -147,7 +152,12 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
             Leave
           </button>
           {isHost ? (
-            <Button onClick={() => act({ type: "start" })} disabled={!enough || busy}>
+            <Button
+              onClick={async () => {
+                if (await act({ type: "start" })) trackEvent("game_started", { case: view.case.id, players: count, mode: view.mode });
+              }}
+              disabled={!enough || busy}
+            >
               {enough ? "Start the case" : `Need ${view.case.minPlayers - count} more`}
             </Button>
           ) : (

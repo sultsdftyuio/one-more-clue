@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ButtonLink } from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { GameProvider, nameOf, type Act } from "./context";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { FeedbackCard } from "./FeedbackCard";
 import { Panel, SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -42,6 +44,24 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
   const accused = view.case.suspects.find((s) => s.id === report?.suspectId);
   const headline = HEADLINES[outcome.kind];
   const game = useMemo(() => ({ view, act, busy, open: () => undefined }), [view, act, busy]);
+
+  // Count each finished case once per device, however often the page reloads.
+  useEffect(() => {
+    const key = `omc-finished-${view.code}`;
+    try {
+      if (window.localStorage.getItem(key)) return;
+      window.localStorage.setItem(key, "1");
+    } catch {}
+    trackEvent("case_finished", {
+      case: view.case.id,
+      outcome: outcome.kind,
+      stars: outcome.score.stars,
+      minutes: view.startedAt ? Math.round((outcome.at - view.startedAt) / 60000) : null,
+      players: view.players.length,
+      hints: view.hintsUsed,
+      mode: view.mode,
+    });
+  }, [outcome, view.case.id, view.code, view.hintsUsed, view.mode, view.players.length, view.startedAt]);
 
   const finds = view.activity.filter((a) => a.kind === "found" && a.playerId);
   const topFinder = Object.entries(
@@ -117,6 +137,8 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
             )}
           </Panel>
         )}
+
+        <FeedbackCard code={view.code} />
 
         <Panel title="What really happened">
           <ol className="relative grid gap-4 border-l-[3px] border-mustard/40 pl-5">

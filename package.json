@@ -13,9 +13,12 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.118.0",
+    "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
     "@vercel/analytics": "^1.6.1",
     "dodopayments": "^2.56.1",
+    "livekit-client": "^2.23.0",
+    "livekit-server-sdk": "^2.19.2",
     "next": "^15.5.28",
     "react": "^19.1.10",
     "react-dom": "^19.1.10"

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { brandArt } from "@/lib/art";
 
 const links = [
-  { href: "/play", label: "Play" },
   { href: "/#mini-case", label: "30-second case" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
 ];
 
 export function SiteFooter() {
@@ -15,7 +16,7 @@ export function SiteFooter() {
           <Image src={brandArt.logo} alt="" sizes="40px" className="size-10" />
           <span className="font-display text-xl text-cream">One More Clue</span>
         </Link>
-        <nav className="flex gap-6 font-bold text-cream/80">
+        <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-bold text-cream/80">
           {links.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-mustard">
               {l.label}

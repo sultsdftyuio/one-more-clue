@@ -11,6 +11,7 @@ import { Investigation } from "./Investigation";
 import { Lobby } from "./Lobby";
 import { Panel } from "./parts";
 import { Reveal } from "./Reveal";
+import { LiveProvider, useLive } from "./live/useLive";
 import { useRoom } from "./useRoom";
 
 function JoinForm({ code, onJoin }: { code: string; onJoin: (name: string) => Promise<void> }) {
@@ -49,8 +50,14 @@ function JoinForm({ code, onJoin }: { code: string; onJoin: (name: string) => Pr
 
 /** The whole game for one room: joining, then lobby → briefing → investigation → reveal. */
 export function GameRoom({ code }: { code: string }) {
-  const { status, error, busy, act, join } = useRoom(code);
+  const [liveUp, setLiveUp] = useState(false);
+  const { status, error, busy, act, join, nudge } = useRoom(code, liveUp);
   const phase = status.kind === "ready" ? status.view.phase : status.kind;
+  const live = useLive(code, status.kind === "ready", nudge);
+
+  useEffect(() => {
+    setLiveUp(live.connected);
+  }, [live.connected]);
 
   // Each phase is a new screen: start it from the top.
   useEffect(() => {
@@ -94,22 +101,24 @@ export function GameRoom({ code }: { code: string }) {
   const fullBleed = status.kind === "ready" && status.view.phase === "investigation";
 
   return (
-    <div className={fullBleed ? "min-h-[100svh]" : "min-h-[100svh] px-4 pt-5 pb-16 sm:px-6"}>
-      {!fullBleed && (
-        <Link href="/" className="mx-auto mb-6 flex max-w-3xl items-center gap-2 font-display text-xl text-cream text-pop">
-          <Image src={brandArt.logo} alt="" sizes="40px" className="size-9" />
-          One More Clue
-        </Link>
-      )}
-      {content}
-      {error && (
-        <p
-          role="alert"
-          className="fixed inset-x-0 top-4 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
-        >
-          {error}
-        </p>
-      )}
-    </div>
+    <LiveProvider value={live}>
+      <div className={fullBleed ? "min-h-[100svh]" : "min-h-[100svh] px-4 pt-5 pb-16 sm:px-6"}>
+        {!fullBleed && (
+          <Link href="/" className="mx-auto mb-6 flex max-w-3xl items-center gap-2 font-display text-xl text-cream text-pop">
+            <Image src={brandArt.logo} alt="" sizes="40px" className="size-9" />
+            One More Clue
+          </Link>
+        )}
+        {content}
+        {error && (
+          <p
+            role="alert"
+            className="fixed inset-x-0 top-4 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+    </LiveProvider>
   );
 }

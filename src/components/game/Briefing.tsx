@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/Button";
 import type { PlayerView } from "@/lib/game/engine";
 import { roleNames, type Act } from "./context";
 import { CaseCover } from "./Lobby";
+import { useLiveRoom } from "./live/useLive";
+import { VoiceControl } from "./live/VoiceControl";
 import { Panel, PlayerRow } from "./parts";
 import { Icon, type IconName } from "./ui/Icon";
 
@@ -25,10 +27,12 @@ const HOW: { icon: IconName; title: string; text: string }[] = [
 export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
   const myRoles = view.case.roles.filter((r) => view.me.roles.includes(r.id));
   const waitingFor = view.players.filter((p) => !p.ready).length;
+  const { speaking } = useLiveRoom();
 
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-28">
       <CaseCover view={view} />
+      <VoiceControl mode={view.mode} />
 
       <section className="relative rounded-[2rem] border-[3px] border-ink bg-cream p-5 text-ink shadow-card sm:p-7">
         <span className="absolute -top-4 right-6 rotate-6 rounded-lg border-[3px] border-coral px-3 py-0.5 font-display text-lg text-coral">CONFIDENTIAL</span>
@@ -71,7 +75,7 @@ export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy
       <Panel title="Who's who">
         <ul className="grid gap-2">
           {view.players.map((p, i) => (
-            <PlayerRow key={p.id} player={p} index={i}>
+            <PlayerRow key={p.id} player={p} index={i} speaking={speaking.has(p.id)}>
               <span className="text-right text-xs leading-tight font-extrabold text-ink/60">
                 {roleNames(view, p.roles).join(" & ")}
                 <span className={p.ready ? "block text-teal" : "block text-ink/40"}>{p.ready ? "Ready" : "Reading…"}</span>

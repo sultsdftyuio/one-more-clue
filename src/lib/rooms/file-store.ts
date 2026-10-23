@@ -44,6 +44,7 @@ export function createFileStore(): RoomStore {
         return true;
       }),
     get: read,
+    version: async (code) => (await read(code))?.version ?? null,
     replace: (state, expectedVersion) =>
       withLock(state.code, async () => {
         const current = await read(state.code);

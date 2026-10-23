@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ActivityKind } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { nameOf, roleNames, useGame } from "./context";
+import { useLiveRoom } from "./live/useLive";
 import { Avatar } from "./parts";
 import { Icon, type IconName } from "./ui/Icon";
 
@@ -78,6 +79,7 @@ function Chat() {
 
 export function TeamPanel() {
   const { view, open } = useGame();
+  const live = useLiveRoom();
   const activity = [...view.activity].reverse();
   const now = Date.now();
   return (
@@ -89,7 +91,7 @@ export function TeamPanel() {
         <ul className="grid gap-2">
           {view.players.map((p, i) => (
             <li key={p.id} className="flex items-center gap-3">
-              <Avatar name={p.name} index={i} online={p.online} />
+              <Avatar name={p.name} index={i} online={p.online} speaking={live.speaking.has(p.id)} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-extrabold text-cream">
                   {p.id === view.me.id ? `${p.name} (you)` : p.name}
@@ -98,6 +100,17 @@ export function TeamPanel() {
                 <span className="block truncate text-xs font-bold text-cream/55">{roleNames(view, p.roles).join(" & ")}</span>
               </span>
               {!p.online && <span className="text-xs font-bold text-cream/40">away</span>}
+              {live.voice === "on" && p.id !== view.me.id && !p.bot && (
+                <button
+                  type="button"
+                  onClick={() => live.toggleSilenced(p.id)}
+                  aria-pressed={live.silenced.has(p.id)}
+                  aria-label={live.silenced.has(p.id) ? `Hear ${p.name} again` : `Silence ${p.name} for you`}
+                  className={cx("grid size-8 place-items-center rounded-full", live.silenced.has(p.id) ? "bg-coral text-cream" : "bg-cream/10 text-cream/70 hover:bg-cream/20")}
+                >
+                  <Icon name={live.silenced.has(p.id) ? "speakerOff" : "speaker"} className="size-4" />
+                </button>
+              )}
             </li>
           ))}
         </ul>

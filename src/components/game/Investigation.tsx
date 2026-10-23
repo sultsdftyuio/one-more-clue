@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { BoardPanel } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel } from "./desk/DeskPanel";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { useLiveRoom } from "./live/useLive";
+import { VoiceControl } from "./live/VoiceControl";
 import { Avatar } from "./parts";
 import { ProposalBar } from "./ProposalBar";
 import { SolvePanel } from "./SolvePanel";
@@ -59,6 +62,7 @@ function ChapterSteps({ view }: { view: PlayerView }) {
 function TopBar({ view, act }: { view: PlayerView; act: Act }) {
   const clock = useClock(view.startedAt);
   const [menu, setMenu] = useState(false);
+  const { speaking } = useLiveRoom();
   return (
     <header className="sticky top-0 z-30 border-b-[3px] border-ink bg-night/90 backdrop-blur">
       <div className="mx-auto flex max-w-[90rem] items-center gap-3 px-4 py-2.5">
@@ -72,10 +76,11 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
         <span className="hidden items-center gap-1 rounded-full bg-cream/10 px-3 py-1 font-mono text-sm font-bold text-cream sm:flex" title="Time on the case">
           <Icon name="clock" className="size-4" /> {clock}
         </span>
+        <VoiceControl mode={view.mode} compact />
         <div className="hidden -space-x-2 md:flex">
           {view.players.map((p, i) => (
             <span key={p.id} title={p.name}>
-              <Avatar name={p.name} index={i} online={p.online} size="sm" />
+              <Avatar name={p.name} index={i} online={p.online} speaking={speaking.has(p.id)} size="sm" />
             </span>
           ))}
         </div>
@@ -200,6 +205,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
   }, [chapterKey]);
 
   const closeCurtain = () => {
+    trackEvent("chapter_opened", { case: view.case.id, chapter: view.chapter.number });
     setSeenChapter(view.chapter.number);
     try {
       window.localStorage.setItem(chapterKey, String(view.chapter.number));

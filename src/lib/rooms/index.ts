@@ -5,11 +5,13 @@ import { activePlayers, addPlayer, applyAction, cleanName, createRoom, viewFor, 
 import type { Action, CaseFile, Mode, RoomState } from "@/lib/game/types";
 import { redisConfigured } from "@/lib/waitlist/redis-store";
 import { createFileStore } from "./file-store";
+import { saveFeedback } from "./feedback";
+import { liveConfigured, liveToken, notifyRoom } from "./live";
 import { createRedisStore } from "./redis-store";
 import type { RoomStore } from "./types";
 
-/** A player counts as online if they checked in within this window (clients poll every few seconds). */
-const ONLINE_MS = 15_000;
+/** A player counts as online if they checked in within this window (clients send a heartbeat every ~10s). */
+const ONLINE_MS = 30_000;
 const WRITE_ATTEMPTS = 5;
 
 /** No 0/O or 1/I, so codes survive being read out loud. */
@@ -72,9 +74,9 @@ function playerByToken(state: RoomState, token: string | undefined) {
   return token ? state.players.find((p) => p.token === token && !p.left) : undefined;
 }
 
-async function viewOf(store: RoomStore, state: RoomState, playerId: string): Promise<PlayerView> {
+async function viewOf(store: RoomStore, state: RoomState, playerId: string, heartbeat: boolean): Promise<PlayerView> {
   const now = Date.now();
-  await store.touch(state.code, playerId, now);
+  if (heartbeat) await store.touch(state.code, playerId, now);
   const seen = await store.seen(state.code);
   const online = new Set(Object.entries(seen).flatMap(([id, at]) => (now - at < ONLINE_MS ? [id] : [])));
   online.add(playerId);
@@ -118,7 +120,10 @@ async function update(store: RoomStore, code: string, change: (state: RoomState)
     const current = await load(store, code);
     const next = change(current);
     if (next === current) return current;
-    if (await store.replace(next, current.version)) return next;
+    if (await store.replace(next, current.version)) {
+      await notifyRoom(code, next.version);
+      return next;
+    }
   }
   throw new RoomError("The room is busy. Try again.", 409);
 }
@@ -154,13 +159,31 @@ export async function joinGame(code: string, name: string, token: string | undef
   return { token: fresh };
 }
 
-/** The room as this player may see it, or a 403 when they still need to join. */
-export async function getGameView(code: string, token: string | undefined) {
+/**
+ * The room as this player may see it, or a 403 when they still need to join.
+ * A client that already holds version `known` gets null back when nothing has
+ * changed, which costs one read. `heartbeat` also marks the player as online.
+ */
+export async function getGameView(code: string, token: string | undefined, poll: { known?: number; heartbeat?: boolean } = {}) {
   const store = getRoomStore();
+  // Bots move on full polls; clients in rooms with bots send a heartbeat every time.
+  if (poll.known !== undefined && !poll.heartbeat) {
+    const version = await store.version(code);
+    if (version === null) throw new RoomError("There's no room with that code. It may have expired.", 404);
+    if (version === poll.known) return null;
+  }
   const state = await load(store, code);
   const me = playerByToken(state, token);
   if (!me) throw new RoomError(state.phase === "lobby" ? "Join this room first." : "This case has already started.", 403);
-  return viewOf(store, await moveBots(store, state), me.id);
+  return viewOf(store, await moveBots(store, state), me.id, poll.known === undefined || Boolean(poll.heartbeat));
+}
+
+/** This player's pass into the room's live channel (instant updates and voice), when LiveKit is set up. */
+export async function getLivePass(code: string, token: string | undefined) {
+  if (!liveConfigured()) return { enabled: false as const };
+  const me = playerByToken(await load(getRoomStore(), code), token);
+  if (!me) throw new RoomError("You're not in this room.", 403);
+  return { enabled: true as const, ...(await liveToken(code, me)) };
 }
 
 export async function actInGame(code: string, token: string | undefined, action: Action) {
@@ -180,5 +203,23 @@ export async function actInGame(code: string, token: string | undefined, action:
   });
   // Someone who just left can't see the room any more.
   if (!playerByToken(state, token)) return null;
-  return viewOf(store, state, playerId);
+  return viewOf(store, state, playerId, false);
+}
+
+/** A player's rating of the case, from the reveal screen. */
+export async function rateGame(code: string, token: string | undefined, rating: number, comment: string) {
+  const state = await load(getRoomStore(), code);
+  if (!playerByToken(state, token)) throw new RoomError("You're not in this room.", 403);
+  if (state.phase !== "reveal") throw new RoomError("Rate the case once it's over.", 400);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new RoomError("Pick a rating from 1 to 5.", 400);
+  await saveFeedback({
+    code,
+    caseId: state.caseId,
+    rating,
+    comment: comment.trim().slice(0, 600),
+    outcome: state.outcome?.kind ?? "unknown",
+    stars: state.outcome?.score.stars ?? 0,
+    players: activePlayers(state).length,
+    at: new Date().toISOString(),
+  });
 }

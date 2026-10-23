@@ -7,6 +7,8 @@ export type RoomStore = {
   /** Saves a new room. False if the code is already taken. */
   create(state: RoomState): Promise<boolean>;
   get(code: string): Promise<RoomState | null>;
+  /** Just the room's version: a cheap way to tell whether anything changed. */
+  version(code: string): Promise<number | null>;
   /**
    * Saves `state` only if the stored room is still at `expectedVersion`, so two
    * players acting at once can't overwrite each other. False means retry.

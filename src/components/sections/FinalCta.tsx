@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
+import { playCta } from "@/lib/game-open";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { brandArt, propArt } from "@/lib/art";
 
@@ -17,8 +18,8 @@ export function FinalCta() {
         One link. Up to six detectives. See who spots the lie first.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-4">
-        <ButtonLink href="/play" variant="coral">
-          Play now
+        <ButtonLink href={playCta().href} variant="coral">
+          {playCta().label}
         </ButtonLink>
         <ShareButton message="Bet you can't spot the liar before me." />
       </div>

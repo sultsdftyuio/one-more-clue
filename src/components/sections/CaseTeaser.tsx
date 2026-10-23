@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
+import { gameOpen, playCta } from "@/lib/game-open";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { case001 } from "@/data/case-001";
 import { propArt } from "@/lib/art";
@@ -68,8 +69,8 @@ export function CaseTeaser() {
           </ul>
 
           <div className="mt-8">
-            <ButtonLink href="/play" variant="coral">
-              Open Case 001
+            <ButtonLink href={playCta().href} variant="coral">
+              {gameOpen() ? "Host a game" : "Get notified when it opens"}
             </ButtonLink>
           </div>
         </article>

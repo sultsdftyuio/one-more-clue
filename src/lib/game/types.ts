@@ -79,6 +79,8 @@ export type Player = {
   roles: string[];
   joinedAt: number;
   left: boolean;
+  /** A computer player, for testing (see bots.ts). */
+  bot?: boolean;
 };
 
 /** A group decision. Hints and giving up go through the same vote as accusations. */
@@ -119,9 +121,13 @@ export type RoomState = {
   proposal: Proposal | null;
   decided: DecidedProposal[];
   outcome: Outcome | null;
+  /** When a bot last made a move, so they act at a human pace. */
+  botMovedAt?: number;
 };
 
 export type Action =
+  /** Test builds only; handled by the room service, not the engine. */
+  | { type: "addBot" }
   | { type: "setMode"; mode: Mode }
   | { type: "start" }
   | { type: "ready" }

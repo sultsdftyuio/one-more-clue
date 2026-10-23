@@ -1,6 +1,7 @@
 import { randomBytes, randomInt } from "node:crypto";
 import { caseById } from "@/data/cases";
-import { addPlayer, applyAction, cleanName, createRoom, viewFor, type PlayerView } from "@/lib/game/engine";
+import { BOT_NAMES, nextBotMove } from "@/lib/game/bots";
+import { activePlayers, addPlayer, applyAction, cleanName, createRoom, viewFor, type PlayerView } from "@/lib/game/engine";
 import type { Action, CaseFile, Mode, RoomState } from "@/lib/game/types";
 import { redisConfigured } from "@/lib/waitlist/redis-store";
 import { createFileStore } from "./file-store";
@@ -25,6 +26,10 @@ function getRoomStore(): RoomStore {
   if (redisConfigured()) return createRedisStore();
   throw new Error("Room storage is not configured. Connect Upstash Redis (KV_REST_API_URL / KV_REST_API_TOKEN).");
 }
+
+/** Bots are for testing: on locally and on Vercel previews, never on the live site (unless GAME_TEST_BOTS=1). */
+const botsAllowed = () =>
+  process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview" || process.env.GAME_TEST_BOTS === "1";
 
 /** A problem to show the player, with the HTTP status to send. */
 export class RoomError extends Error {
@@ -71,7 +76,38 @@ async function viewOf(store: RoomStore, state: RoomState, playerId: string): Pro
   const seen = await store.seen(state.code);
   const online = new Set(Object.entries(seen).flatMap(([id, at]) => (now - at < ONLINE_MS ? [id] : [])));
   online.add(playerId);
-  return viewFor(state, caseOf(state), playerId, online);
+  return { ...viewFor(state, caseOf(state), playerId, online), testBots: botsAllowed() };
+}
+
+/**
+ * Lets one bot make its next move, if it's due. Players' polling is the clock,
+ * so bots only move while someone has the room open.
+ */
+async function moveBots(store: RoomStore, state: RoomState): Promise<RoomState> {
+  if (!state.players.some((p) => p.bot && !p.left)) return state;
+  const caseFile = caseOf(state);
+  if (!nextBotMove(state, caseFile, Date.now())) return state;
+  try {
+    return await update(store, state.code, (current) => {
+      const now = Date.now();
+      const move = nextBotMove(current, caseFile, now);
+      if (!move) return current;
+      const result = applyAction(current, caseFile, move.playerId, move.action, now, newId);
+      return result.ok ? { ...result.state, botMovedAt: now } : { ...current, botMovedAt: now, version: current.version + 1 };
+    });
+  } catch {
+    // A busy room just means the bot waits for the next poll.
+    return state;
+  }
+}
+
+function addBot(state: RoomState): RoomState {
+  if (!botsAllowed()) throw new RoomError("Test players are only available on test builds.", 403);
+  const taken = new Set(activePlayers(state).map((p) => p.name));
+  const name = BOT_NAMES.find((n) => !taken.has(n)) ?? `Bot ${state.players.length + 1}`;
+  const result = addPlayer(state, caseOf(state), { id: newId(), token: newToken(), name, bot: true }, Date.now());
+  if (!result.ok) throw new RoomError(result.error, 400);
+  return result.state;
 }
 
 /** Read, change, write; retried when someone else's write lands in between. */
@@ -122,7 +158,7 @@ export async function getGameView(code: string, token: string | undefined) {
   const state = await load(store, code);
   const me = playerByToken(state, token);
   if (!me) throw new RoomError(state.phase === "lobby" ? "Join this room first." : "This case has already started.", 403);
-  return viewOf(store, state, me.id);
+  return viewOf(store, await moveBots(store, state), me.id);
 }
 
 export async function actInGame(code: string, token: string | undefined, action: Action) {
@@ -132,6 +168,10 @@ export async function actInGame(code: string, token: string | undefined, action:
     const me = playerByToken(current, token);
     if (!me) throw new RoomError("You're not in this room.", 403);
     playerId = me.id;
+    if (action.type === "addBot") {
+      if (current.hostId !== me.id) throw new RoomError("Only the host can add test players.", 400);
+      return addBot(current);
+    }
     const result = applyAction(current, caseOf(current), me.id, action, Date.now(), newId);
     if (!result.ok) throw new RoomError(result.error, 400);
     return result.state;

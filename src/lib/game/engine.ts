@@ -67,7 +67,7 @@ export function createRoom(input: {
 export function addPlayer(
   state: RoomState,
   caseFile: CaseFile,
-  player: { id: string; token: string; name: string },
+  player: { id: string; token: string; name: string; bot?: boolean },
   now: number,
 ): Result {
   const name = cleanName(player.name);
@@ -316,6 +316,7 @@ export type PublicPlayer = {
   isHost: boolean;
   online: boolean;
   ready: boolean;
+  bot: boolean;
 };
 
 export type PlayerView = {
@@ -348,6 +349,8 @@ export type PlayerView = {
   /** Only after the reveal: the answer, and every piece of evidence for the recap. */
   solution: CaseFile["solution"] | null;
   allEvidence: CaseEvidence[] | null;
+  /** Set by the room service: whether the host may add bots here. */
+  testBots?: boolean;
 };
 
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
@@ -356,8 +359,9 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     name: p.name,
     roles: p.roles,
     isHost: p.id === state.hostId,
-    online: online.has(p.id),
+    online: Boolean(p.bot) || online.has(p.id),
     ready: state.ready.includes(p.id),
+    bot: Boolean(p.bot),
   });
   const me = state.players.find((p) => p.id === playerId)!;
   const revealed = state.phase === "reveal";

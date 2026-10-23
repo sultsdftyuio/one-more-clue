@@ -34,6 +34,7 @@ export function PlayerRow({ player, children }: { player: PublicPlayer; children
       <span className="min-w-0 flex-1 truncate font-extrabold">
         {player.name}
         {player.isHost && <span className="ml-2 rounded-full bg-mustard px-2 py-0.5 text-xs">Host</span>}
+        {player.bot && <span className="ml-2 rounded-full bg-lilac px-2 py-0.5 text-xs">Bot</span>}
       </span>
       {children}
     </li>

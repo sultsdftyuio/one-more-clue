@@ -91,6 +91,16 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: (a: Action) 
             Waiting for at least {view.case.minPlayers} players. Send them the link or the code.
           </p>
         )}
+        {isHost && view.testBots && count < view.case.maxPlayers && (
+          <div className="mt-4 rounded-2xl border-2 border-dashed border-lilac/60 p-3">
+            <Button variant="secondary" className="px-4 py-2 text-base" disabled={busy} onClick={() => act({ type: "addBot" })}>
+              Add a test bot
+            </Button>
+            <p className="mt-2 text-sm font-bold text-cream/60">
+              Test builds only. Bots get ready, share their evidence and vote the way you do.
+            </p>
+          </div>
+        )}
       </Panel>
 
       <Panel title="Where are you playing?">

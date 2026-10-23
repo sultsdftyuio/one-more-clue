@@ -8,7 +8,19 @@ Landing page for One More Clue, a cooperative browser mystery game. Next.js 15 (
 npm run dev        # http://localhost:3000
 npm run build      # production build (stop the dev server first: they share .next)
 npm run art:sync   # copy regenerated art into the app
+npm test           # game engine tests
 ```
+
+## The game
+
+Not linked from the site yet. Start a room at `/host`; friends join at `/r/<CODE>`.
+
+- **Cases are data.** Each one is a file in [`src/data/cases`](src/data/cases) (format in [`src/lib/game/types.ts`](src/lib/game/types.ts)), listed in `src/data/cases/index.ts`. `npm test` checks every case for authoring mistakes.
+- **Roles and evidence.** Every player gets a role, and each role holds its own evidence. Core roles are always dealt (with fewer players some hold two); extra roles only join with more players, so their evidence must be bonus, never the only route to the answer. A player who leaves passes their roles on.
+- **Group decisions.** Accusing, asking for a hint and giving up are all proposals that need a majority. One accusation, no second try.
+- **Same room or remote.** A room setting; remote rooms get a chat.
+- **The server is the referee.** [`src/lib/game/engine.ts`](src/lib/game/engine.ts) holds the rules as pure functions; each player only receives their own view, and the answer is only sent at the reveal.
+- **Storage.** Rooms live in Upstash Redis on Vercel (they expire after a day). Local dev keeps them in `.data/rooms/` so testing doesn't use the Redis quota; set `ROOMS_STORE=redis` to try Redis locally. Clients poll every 2 seconds.
 
 ## Features and the settings that switch them on
 

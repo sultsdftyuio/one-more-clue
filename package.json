@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test src/lib/game/engine.test.ts",
     "art:sync": "node scripts/sync-art.mjs"
   },
   "dependencies": {

@@ -9,12 +9,14 @@ Outputs (transparent unless noted):
     out/png/      full-resolution masters
     out/webp/     web-sized copies for the site
     out/icons/    favicon and app icons
+    out/social/   link-preview card for Open Graph / Twitter
     out/preview/  contact sheets and a hero composite for review
 """
 from omc_art.catalog import ASSETS
 from omc_art.export import OUT, export_webp, make_icons, prepare_dirs, render
 from omc_art.palette import CREAM, DUSK, INK
 from omc_art.preview import contact_sheet, hero_preview
+from omc_art.social import make_social_card
 
 
 def main():
@@ -25,6 +27,7 @@ def main():
         print(f"  {asset.name:28s} master {round(w * asset.scale)}x{round(h * asset.scale)}"
               f"  web {web.width}x{web.height}")
     make_icons()
+    make_social_card()
     hero_preview()
     sheet = [a.name for a in ASSETS if not a.name.startswith(("sky", "city"))]
     contact_sheet(sheet, DUSK, CREAM, "contact-sheet-dark.png")

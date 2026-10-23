@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { brandArt } from "@/lib/art";
+import { authEnabled } from "@/lib/supabase/env";
 
 export function SiteHeader() {
   return (
@@ -11,9 +12,17 @@ export function SiteHeader() {
           <Image src={brandArt.logo} alt="" sizes="48px" priority className="size-11 sm:size-12" />
           <span className="font-display text-2xl text-cream text-pop">One More Clue</span>
         </Link>
-        <ButtonLink href="/play" className="px-5 py-2 text-base max-sm:hidden">
-          Play now
-        </ButtonLink>
+        <nav className="flex items-center gap-5">
+          {/* Signed-in visitors are sent from /login to their account by the middleware. */}
+          {authEnabled() && (
+            <Link href="/login" className="font-extrabold text-cream hover:text-mustard">
+              Log in
+            </Link>
+          )}
+          <ButtonLink href="/play" className="px-5 py-2 text-base max-sm:hidden">
+            Play now
+          </ButtonLink>
+        </nav>
       </div>
     </header>
   );

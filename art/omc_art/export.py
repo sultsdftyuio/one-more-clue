@@ -10,7 +10,7 @@ ICON_SIZES = (("favicon-32.png", 32), ("favicon-48.png", 48), ("apple-touch-icon
 
 
 def prepare_dirs():
-    for d in ("png", "webp", "icons", "preview"):
+    for d in ("png", "webp", "icons", "preview", "social"):
         (OUT / d).mkdir(parents=True, exist_ok=True)
 
 

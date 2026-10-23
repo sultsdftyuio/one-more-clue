@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { Button } from "./Button";
 
 type Props = {
@@ -15,6 +16,7 @@ export function ShareButton({ message, variant = "secondary", className }: Props
 
   async function share() {
     const url = window.location.origin;
+    trackEvent("share_clicked", { method: "share" in navigator ? "native" : "copy" });
     try {
       if (navigator.share) {
         await navigator.share({ title: "One More Clue", text: message, url });

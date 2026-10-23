@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { SuspectId } from "@/data/suspects";
+import { trackEvent } from "@/lib/analytics";
 
 export type Verdict = "cleared" | "busted";
 
@@ -18,6 +19,8 @@ export function useMiniCase(liar: SuspectId) {
     const verdict: Verdict = id === liar ? "busted" : "cleared";
     setVerdicts((prev) => ({ ...prev, [id]: verdict }));
     setLastWrong(verdict === "cleared" ? id : null);
+    trackEvent("warmup_accused", { suspect: id, correct: verdict === "busted" });
+    if (verdict === "busted") trackEvent("warmup_solved", { wrongGuesses });
   }
 
   function reset() {

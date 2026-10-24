@@ -58,6 +58,16 @@
     radial-gradient(ellipse at 20% 0%, rgb(255 236 200 / 0.5), transparent 55%),
     linear-gradient(#5b4a6b, #7a6a86 64%, #4a3d55 64%);
 }
+.scene-kitchen {
+  background:
+    radial-gradient(ellipse at 50% -20%, rgb(255 250 235 / 0.6), transparent 60%),
+    linear-gradient(#d9dde2, #b8c0c8 60%, #8b939c 60%);
+}
+.scene-snow {
+  background:
+    radial-gradient(circle at 78% 18%, rgb(255 255 255 / 0.25), transparent 25%),
+    linear-gradient(#1c2347, #34407a 62%, #e9f0fb 62%, #cfdcf0);
+}
 .scene-cctv {
   background: linear-gradient(#3a3a3a, #5a5a5a 78%, #2e2e2e 78%);
   filter: grayscale(1) contrast(1.15);

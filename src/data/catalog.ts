@@ -13,7 +13,9 @@ export type PaidCase = {
 };
 
 export const paidCases: PaidCase[] = [
-  { id: "case-002", title: "Case 002", price: "$4.99", productIdEnv: "DODO_PRODUCT_CASE_002" },
+  { id: "case-002", title: "Dead Air", price: "$4.99", productIdEnv: "DODO_PRODUCT_CASE_002" },
+  { id: "case-003", title: "The Last Course", price: "$4.99", productIdEnv: "DODO_PRODUCT_CASE_003" },
+  { id: "case-004", title: "Snowed In", price: "$4.99", productIdEnv: "DODO_PRODUCT_CASE_004" },
 ];
 
 export function paidCaseById(id: string) {

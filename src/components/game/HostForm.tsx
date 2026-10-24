@@ -8,7 +8,7 @@ import type { Mode } from "@/lib/game/types";
 import { ModePicker } from "./Lobby";
 import { Panel } from "./parts";
 
-type CaseOption = { id: string; code: string; title: string; players: string };
+type CaseOption = { id: string; code: string; title: string; players: string; tagline: string; price: string | null };
 
 const field =
   "rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-semibold text-ink outline-none focus:border-mustard";
@@ -61,11 +61,22 @@ export function HostForm({ cases }: { cases: CaseOption[] }) {
                 className="flex cursor-pointer items-center gap-3 rounded-2xl border-[3px] border-ink bg-cream p-3 text-ink has-[:checked]:bg-mustard"
               >
                 <input type="radio" name="case" value={c.id} checked={caseId === c.id} onChange={() => setCaseId(c.id)} className="sr-only" />
-                <span className="flex-1">
+                <span className="min-w-0 flex-1">
                   <span className="block text-xs font-extrabold tracking-widest uppercase opacity-70">{c.code}</span>
-                  <span className="font-display text-xl">{c.title}</span>
+                  <span className="block font-display text-xl leading-tight">{c.title}</span>
+                  <span className="mt-0.5 block text-sm leading-snug font-semibold opacity-75">{c.tagline}</span>
                 </span>
-                <span className="text-sm font-extrabold">{c.players}</span>
+                <span className="shrink-0 text-right text-sm font-extrabold">
+                  {c.price ? (
+                    <>
+                      <span className="block">{c.price}</span>
+                      <span className="block text-xs opacity-60">free while testing</span>
+                    </>
+                  ) : (
+                    <span className="block">Free</span>
+                  )}
+                  <span className="block text-xs opacity-60">{c.players}</span>
+                </span>
               </label>
             ))}
           </fieldset>

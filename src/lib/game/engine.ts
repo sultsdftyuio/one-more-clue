@@ -58,6 +58,22 @@ export function normalizeTerm(text: string) {
 
 const pairKey = (a: string, b: string) => [a, b].sort().join("+");
 
+/**
+ * The record a search finds. An exact term wins; otherwise the longest term
+ * found inside the query, so "studio a door" finds the door log, not the studio.
+ */
+export function bestSearchHit(caseFile: CaseFile, chapter: number, term: string) {
+  let best: { evidence: CaseEvidence; score: number } | null = null;
+  for (const e of caseFile.evidence) {
+    if (e.access.kind !== "search" || e.chapter > chapter) continue;
+    for (const t of e.access.terms) {
+      const score = term === t ? 1000 + t.length : t.length >= 3 && term.includes(t) ? t.length : 0;
+      if (score > (best?.score ?? 0)) best = { evidence: e, score };
+    }
+  }
+  return best?.evidence;
+}
+
 export function createRoom(input: {
   code: string;
   caseFile: CaseFile;
@@ -303,12 +319,7 @@ export function applyAction(
       const query = String(action.query ?? "").trim().slice(0, MAX_QUERY);
       const term = normalizeTerm(query);
       if (term.length < 2) return fail("Type a name, number or place to search for.");
-      const hit = caseFile.evidence.find(
-        (e) =>
-          e.access.kind === "search" &&
-          e.chapter <= state.chapter &&
-          e.access.terms.some((t) => term === t || (t.length >= 3 && term.includes(t))),
-      );
+      const hit = bestSearchHit(caseFile, state.chapter, term);
       next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, at: now });
       next.searches = next.searches.slice(-SEARCHES_KEPT);
       if (hit && !next.found[hit.id]) {

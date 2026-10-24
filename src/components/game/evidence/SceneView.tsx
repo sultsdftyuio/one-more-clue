@@ -92,9 +92,10 @@ export function SceneView({ scene, onInspect, found = [] }: Props) {
             rotate: "rotate" in item && item.rotate ? `${item.rotate}deg` : undefined,
           };
           const marked = item.hotspot && found.includes(item.hotspot);
-          // Decorations let taps through to whatever is under them; things worth a closer look sit on top.
+          // Decorations let taps through to whatever is under them, so details drawn on top of a
+          // clue (eyes on a face, notes in a jar) never block it.
           return (
-            <span key={i} className={cx("absolute", item.hotspot ? "z-10" : "pointer-events-none")} style={style}>
+            <span key={i} className={cx("absolute", !item.hotspot && "pointer-events-none")} style={style}>
               {inspectable && item.hotspot ? (
                 <button
                   type="button"

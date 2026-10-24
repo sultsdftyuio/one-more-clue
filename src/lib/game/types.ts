@@ -61,7 +61,7 @@ export type CaseRole = {
 export type ChatMessage = { from: string; time: string; text: string; edited?: boolean };
 export type LogRow = { time: string; text: string };
 
-export type SceneLook = "cafe" | "street" | "cctv" | "lab" | "office";
+export type SceneLook = "cafe" | "street" | "cctv" | "lab" | "office" | "kitchen" | "snow";
 
 /** Positions and sizes are percentages of the scene frame (4:3). */
 type Place = { x: number; y: number; hotspot?: string };

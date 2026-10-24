@@ -23,9 +23,11 @@ export const case003: CaseFile = {
   code: "Case 003",
   title: "The Last Course",
   tagline: "A food critic collapses after dessert. The dessert wasn't meant for her.",
+  theme: "bistro",
   minPlayers: 2,
   maxPlayers: 6,
   story: [
+    { kind: "effect", effect: "candles", text: "Course seven." },
     { kind: "title", text: "Maison Lune", sub: "Course seven · 9:52 PM" },
     { kind: "narration", text: "Tonight the most feared critic in the country, Celeste Hart, ate the seven-course tasting menu." },
     { kind: "message", from: "Celeste Hart (draft review)", time: "9:50 PM", text: "Course seven: chocolate, salt and smoke. Finally, a reason to—" },
@@ -36,10 +38,10 @@ export const case003: CaseFile = {
   briefing:
     "At 9:52 PM the food critic Celeste Hart collapsed at Table 1 of Maison Lune, minutes after the seventh course, a chocolate dessert. Paramedics say it was a severe allergic reaction. The kitchen swears it's nut-free. Four people handled that dinner. Find out what she ate, who it was really meant for, and who did it.",
   suspects: [
-    { id: "triangle", art: "triangle", name: "Amélie Duret", role: "Head chef", blurb: "A perfectionist. Tonight's review could make or break her." },
-    { id: "square", art: "square", name: "Bertrand Carré", role: "Owner", blurb: "Owns Maison Lune. Tastes the chocolate course every night." },
-    { id: "circle", art: "circle", name: "Olu Bello", role: "Sommelier", blurb: "Wine, charm and a habit of tidying other people's work." },
-    { id: "rectangle", art: "rectangle", name: "Ruth Vale", role: "Pastry chef", blurb: "Twelve years of desserts. Every chocolate course is hers." },
+    { id: "triangle", art: "triangle", name: "Amélie Duret", role: "Head chef", tint: 330, blurb: "A perfectionist. Tonight's review could make or break her." },
+    { id: "square", art: "square", name: "Bertrand Carré", role: "Owner", tint: 20, blurb: "Owns Maison Lune. Tastes the chocolate course every night." },
+    { id: "circle", art: "circle", name: "Olu Bello", role: "Sommelier", tint: 250, blurb: "Wine, charm and a habit of tidying other people's work." },
+    { id: "rectangle", art: "rectangle", name: "Ruth Vale", role: "Pastry chef", tint: 110, blurb: "Twelve years of desserts. Every chocolate course is hers." },
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records." },
@@ -75,7 +77,7 @@ export const case003: CaseFile = {
       intro: "Course seven left the kitchen as two plates, a minute apart. Find out which one Celeste ate.",
       story: [
         { kind: "narration", text: "Peanut, in a nut-free kitchen. And course seven left the pass as two plates, a minute apart." },
-        { kind: "line", who: "circle", text: "I may have... tidied the pass a little." },
+        { kind: "line", who: "circle", text: "I keep that pass immaculate. Im-mac-u-late. Check the camera if you like." },
       ],
       checkpoint: {
         question: "Whose plate did Celeste actually eat?",
@@ -97,8 +99,8 @@ export const case003: CaseFile = {
       title: "The target",
       intro: "Celeste ate a plate that was never meant for her. So who was it meant for?",
       story: [
-        { kind: "narration", text: "The critic ate a plate that was never meant for her." },
-        { kind: "line", who: "square", text: "Gold leaf? That's MY plate. I taste the chocolate course every night." },
+        { kind: "narration", text: "The critic ate a plate that was never meant for her. So whose plate was it?" },
+        { kind: "line", who: "square", text: "I don't see why I'm being kept here. I have a restaurant to run. And a buyer to meet." },
       ],
       checkpoint: {
         question: "Who was the peanut really meant for?",
@@ -121,6 +123,7 @@ export const case003: CaseFile = {
       intro: "Someone tried to kill the owner with his own dessert. Find the peanut, and find out why.",
       story: [
         { kind: "line", who: "square", text: "Someone tried to poison ME? In my own restaurant?", shocked: true },
+        { kind: "effect", effect: "flash", text: "The police photographer is in the kitchen." },
         { kind: "narration", text: "Only one section of the kitchen makes the gold-leaf plate. Find the peanut, and find out why." },
       ],
       hints: [
@@ -275,15 +278,39 @@ export const case003: CaseFile = {
       access: { kind: "desk" },
       title: "Pass camera",
       body: {
-        type: "scene",
-        caption: "Kitchen pass · camera 1",
+        type: "footage",
+        caption: "Kitchen pass · camera 1 · scrub through it",
         look: "cctv",
-        items: [
-          { kind: "label", x: 4, y: 4, text: "PASS 21:46:40", style: "stamp" },
-          { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
-          { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "gold" },
-          { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "smudge" },
-          { kind: "art", x: 78, y: 16, w: 15, art: "suspect:circle", hotspot: "olu" },
+        frames: [
+          {
+            time: "21:46:20",
+            items: [
+              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
+              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "gold" },
+              { kind: "box", x: 23, y: 52, w: 4, h: 3, color: "#ffffff", radius: 10 },
+              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "smudge" },
+              { kind: "box", x: 72, y: 58, w: 5, h: 3, color: "#555", radius: 20 },
+            ],
+          },
+          {
+            time: "21:46:48",
+            items: [
+              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
+              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
+              { kind: "box", x: 23, y: 52, w: 4, h: 3, color: "#ffffff", radius: 10 },
+              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
+              { kind: "art", x: 74, y: 14, w: 15, art: "suspect:circle", hotspot: "olu" },
+            ],
+          },
+          {
+            time: "21:47:05",
+            items: [
+              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
+              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#6a6a6a", radius: 50, hotspot: "gone" },
+              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
+              { kind: "box", x: 72, y: 58, w: 5, h: 3, color: "#555", radius: 20 },
+            ],
+          },
         ],
       },
     },
@@ -310,6 +337,14 @@ export const case003: CaseFile = {
       access: { kind: "inspect", scene: "pass-camera", hotspot: "olu" },
       title: "Olu at the pass",
       body: { type: "finding", text: "Olu is pointing the runner at the LEFT plate." },
+    },
+    {
+      id: "detail-gone",
+      role: "photographer",
+      chapter: 2,
+      access: { kind: "inspect", scene: "pass-camera", hotspot: "gone" },
+      title: "21:47:05",
+      body: { type: "finding", text: "The gold-leaf plate is gone first, to Table 1. The smudged plate is left for Table 9." },
     },
     {
       id: "house-rules",
@@ -604,6 +639,7 @@ export const case003: CaseFile = {
       "house-rules",
       "insight-gold",
       "question-olu-storeroom",
+      "detail-gone",
     ],
     explanation:
       "Ruth laced the owner's gold-leaf dessert with peanut oil she'd signed out at 9:15. Bertrand, deadly allergic, tastes it every night, and he was selling Maison Lune and closing her section. At the pass Olu swapped the plates over a smudge, so the critic, also allergic, ate the owner's plate. Bertrand ate hers and was fine.",

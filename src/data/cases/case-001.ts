@@ -24,10 +24,12 @@ export const case001: CaseFile = {
   code: "Case 001",
   title: "The Last Message",
   tagline: "A prototype vanishes. The last message says who took it. The message is lying.",
+  theme: "noir",
   minPlayers: 2,
   maxPlayers: 6,
   story: [
     { kind: "title", text: "Halden University", sub: "Innovation Lab 4 · 9:17 PM" },
+    { kind: "effect", effect: "flash", text: "9:17 PM. Cabinet B, wide open." },
     { kind: "message", from: "Ozzy (security)", time: "9:17 PM", text: "Lab 4, Cabinet B is wide open. HALO is GONE. Calling it in." },
     { kind: "narration", text: "HALO: smart glasses, three years of Priya Tran's work. The investor demo is tomorrow at nine." },
     { kind: "message", from: "Priya", time: "8:40 PM", text: "Taking HALO home tonight to fix the battery, don't panic", edited: true },
@@ -37,10 +39,10 @@ export const case001: CaseFile = {
   briefing:
     "At 9:17 PM the night guard found Cabinet B in Lab 4 open and HALO, a smart-glasses prototype, gone. The last message in the lab chat says its creator, Priya, took it home. Priya says she never wrote it. Four people were in the building. Work out who took HALO, and why.",
   suspects: [
-    { id: "triangle", art: "triangle", name: "Priya Tran", role: "PhD researcher", blurb: "Built HALO. Hasn't slept properly in a month." },
-    { id: "square", art: "square", name: "Prof. Edmund Squires", role: "Lab director", blurb: "Needs tomorrow's investor demo to go perfectly." },
-    { id: "circle", art: "circle", name: "Ozzy Reyes", role: "Night security", blurb: "Knows every corridor, and every football score." },
-    { id: "rectangle", art: "rectangle", name: "Rena Voss", role: "Visiting engineer", blurb: "Here from Northgate Capital, the investors. Nobody had met her before tonight." },
+    { id: "triangle", art: "triangle", name: "Priya Tran", role: "PhD researcher", tint: 30, blurb: "Built HALO. Hasn't slept properly in a month." },
+    { id: "square", art: "square", name: "Prof. Edmund Squires", role: "Lab director", tint: 310, blurb: "Needs tomorrow's investor demo to go perfectly." },
+    { id: "circle", art: "circle", name: "Ozzy Reyes", role: "Night security", tint: 330, blurb: "Knows every corridor, and every football score." },
+    { id: "rectangle", art: "rectangle", name: "Rena Voss", role: "Visiting engineer", tint: 20, blurb: "Here from Northgate Capital, the investors. Nobody had met her before tonight." },
   ],
   roles: [
     {

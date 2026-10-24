@@ -6,7 +6,8 @@ import type { EvidenceBody } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { foundHotspots, nameOf, useGame } from "../context";
 import { Icon, type IconName } from "../ui/Icon";
-import { SceneView } from "./SceneView";
+import { RecordingPlayer } from "./RecordingPlayer";
+import { FootageView, SceneView, type Tints } from "./SceneView";
 
 const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string; tone: string }> = {
   desk: { icon: "file", label: "Case file", tone: "bg-cream-dk" },
@@ -28,9 +29,16 @@ export function snippet(body: EvidenceBody) {
     case "log":
       return body.rows.map((r) => `${r.time} ${r.text}`).join(" · ");
     case "scene":
+    case "footage":
       return body.caption;
+    case "recording":
+      return body.segments.map((s) => `${s.at} ${s.text}`).join(" · ");
   }
 }
+
+/** This case's character colours, keyed by art name, for drawing scenes. */
+export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
+  Object.fromEntries(suspects.flatMap((s) => (s.art && s.tint ? [[s.art, s.tint]] : [])));
 
 function Body({ evidence }: { evidence: VisibleEvidence }) {
   const { view, act } = useGame();
@@ -91,15 +99,19 @@ function Body({ evidence }: { evidence: VisibleEvidence }) {
           {body.text}
         </p>
       );
-    case "scene": {
+    case "recording":
+      return <RecordingPlayer recording={body} />;
+    case "scene":
+    case "footage": {
       const canInspect = view.phase === "investigation" && view.me.abilities.includes("inspect");
+      const props = {
+        found: foundHotspots(view, evidence.id),
+        tints: tintsOf(view.case.suspects),
+        onInspect: canInspect ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
+      };
       return (
         <div>
-          <SceneView
-            scene={body}
-            found={foundHotspots(view, evidence.id)}
-            onInspect={canInspect ? (hotspot) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined}
-          />
+          {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
           <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-ink/55">
             <Icon name="eye" className="size-4" />
             {canInspect ? "You're the Photographer: tap anything to look closer." : "Only the Photographer can inspect photos. Pin it for them."}

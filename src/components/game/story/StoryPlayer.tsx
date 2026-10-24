@@ -42,12 +42,17 @@ function BeatView({ beat, suspects, typed }: { beat: Beat; suspects: CaseSuspect
   if (beat.kind === "title") {
     return (
       <div className="text-center">
-        <p className="mx-auto inline-block max-w-[85vw] -rotate-3 animate-stamp rounded-2xl border-4 border-mustard px-4 py-1.5 font-display text-[clamp(1.6rem,8vw,3.75rem)] leading-tight text-mustard uppercase">
+        <p className="font-case mx-auto inline-block max-w-[85vw] -rotate-3 animate-stamp rounded-2xl border-4 border-[var(--case-accent,var(--color-mustard))] px-4 py-1.5 text-[clamp(1.6rem,8vw,3.75rem)] leading-tight text-[var(--case-accent,var(--color-mustard))] uppercase">
           {beat.text}
         </p>
         {beat.sub && <p className="mt-8 animate-pop-in font-display text-2xl text-cream [animation-delay:0.3s] sm:text-3xl">{beat.sub}</p>}
       </div>
     );
+  }
+  if (beat.kind === "effect") {
+    return beat.text ? (
+      <p className="animate-[fade-in_1.2s_ease-out_0.6s_both] text-center font-display text-3xl text-cream/80 text-pop sm:text-4xl">{beat.text}</p>
+    ) : null;
   }
   if (beat.kind === "narration") {
     return (
@@ -89,7 +94,27 @@ function BeatView({ beat, suspects, typed }: { beat: Beat; suspects: CaseSuspect
   );
 }
 
-const SOUND: Record<Beat["kind"], "stamp" | "message" | "tap" | null> = { title: "stamp", message: "message", narration: null, line: null };
+const SOUND: Record<Beat["kind"], "stamp" | "message" | null> = { title: "stamp", message: "message", narration: null, line: null, effect: null };
+const EFFECT_SOUND = { blackout: "powerdown", static: "static", flash: "shutter", candles: "whoosh" } as const;
+
+/** The full-screen part of an effect beat, behind its text. */
+function EffectLayer({ effect }: { effect: Extract<Beat, { kind: "effect" }>["effect"] }) {
+  if (effect === "blackout") return <div aria-hidden className="absolute inset-0 animate-[blackout_1.4s_linear_forwards] bg-black" />;
+  // Oversized, so its jitter never shows an edge.
+  if (effect === "static") return <div aria-hidden className="effect-static absolute -inset-[6%] opacity-90" />;
+  if (effect === "flash") return <div aria-hidden className="absolute inset-0 animate-[flash_0.9s_ease-out_forwards] bg-white" />;
+  return (
+    <div aria-hidden className="absolute inset-0 bg-[#1a0f0a]">
+      {[20, 50, 80].map((x, i) => (
+        <span
+          key={x}
+          className="absolute size-72 -translate-x-1/2 -translate-y-1/2 rounded-full animate-[candle_2.4s_ease-in-out_infinite]"
+          style={{ left: `${x}%`, top: "62%", animationDelay: `${i * -0.7}s`, background: "radial-gradient(circle, rgb(255 180 90 / 0.45), transparent 65%)" }}
+        />
+      ))}
+    </div>
+  );
+}
 
 /**
  * Plays a story as a sequence of pop-ups. Tap (or Enter/Space/→) to finish the
@@ -100,11 +125,12 @@ export function StoryPlayer({ beats, suspects, onDone, finishLabel = "Let's go" 
   const [index, setIndex] = useState(0);
   const beat = beats[index];
   const typing = beat && (beat.kind === "narration" || beat.kind === "line");
-  const typed = useTypewriter(beat?.text ?? "", Boolean(typing));
+  const typed = useTypewriter((beat && beat.kind !== "effect" ? beat.text : "") ?? "", Boolean(typing));
   const last = index >= beats.length - 1;
 
   useEffect(() => {
-    const sound = beat && SOUND[beat.kind];
+    if (!beat) return;
+    const sound = beat.kind === "effect" ? EFFECT_SOUND[beat.effect] : SOUND[beat.kind];
     if (sound) play(sound);
   }, [beat]);
 
@@ -130,7 +156,8 @@ export function StoryPlayer({ beats, suspects, onDone, finishLabel = "Let's go" 
 
   return (
     <div className="fixed inset-0 z-[55] flex flex-col bg-night/95 backdrop-blur" role="dialog" aria-modal aria-label="Story">
-      <div className="flex items-center justify-between px-4 py-3">
+      {beat.kind === "effect" && <EffectLayer key={index} effect={beat.effect} />}
+      <div className="relative flex items-center justify-between px-4 py-3">
         <ol className="flex gap-1.5" aria-label={`${index + 1} of ${beats.length}`}>
           {beats.map((_, i) => (
             <li key={i} className={cx("h-1.5 w-6 rounded-full transition-colors", i <= index ? "bg-mustard" : "bg-cream/20")} />
@@ -141,13 +168,13 @@ export function StoryPlayer({ beats, suspects, onDone, finishLabel = "Let's go" 
         </button>
       </div>
 
-      <button type="button" onClick={next} className="flex flex-1 cursor-pointer items-center justify-center px-4 pb-6" aria-label={last && (!typing || typed.complete) ? finishLabel : "Next"}>
+      <button type="button" onClick={next} className="relative flex flex-1 cursor-pointer items-center justify-center px-4 pb-6" aria-label={last && (!typing || typed.complete) ? finishLabel : "Next"}>
         <div key={index} className="w-full animate-[curtain_0.35s_ease-out]">
           <BeatView beat={beat} suspects={suspects} typed={typed.text} />
         </div>
       </button>
 
-      <div className="flex justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div className="relative flex justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={next}

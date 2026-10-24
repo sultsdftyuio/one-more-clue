@@ -1,5 +1,7 @@
 "use client";
 
+import type { ThemeId } from "@/lib/game/types";
+
 /**
  * Every sound in the game, synthesised with the Web Audio API: no files to
  * load or license. Sound effects and music each have an on/off setting kept on
@@ -21,7 +23,11 @@ export type Sfx =
   | "solved"
   | "unsolved"
   | "message"
-  | "type";
+  | "type"
+  | "powerdown"
+  | "static"
+  | "shutter"
+  | "whoosh";
 
 type Settings = { sound: boolean; music: boolean };
 
@@ -209,10 +215,67 @@ export function play(sfx: Sfx) {
       [0, -1, -2, -3].forEach((n, i) => tone({ freq: NOTE(n - 5), type: "sawtooth", start: i * 0.32, length: i === 3 ? 1.4 : 0.34, volume: 0.06 }));
       tone({ freq: 70, glide: 40, start: 1.0, length: 0.8, volume: 0.4 });
       break;
+    case "powerdown":
+      // The lights die: a hum sliding to nothing, then a thunk.
+      tone({ freq: 220, glide: 30, length: 0.9, volume: 0.18, type: "sawtooth" });
+      tone({ freq: 60, start: 0.85, length: 0.3, volume: 0.4 });
+      break;
+    case "static":
+      hiss({ length: 0.9, volume: 0.22, from: 2000, to: 3500 });
+      break;
+    case "shutter":
+      tone({ freq: 1800, length: 0.02, volume: 0.2 });
+      hiss({ start: 0.02, length: 0.08, volume: 0.2, from: 3000, to: 1500 });
+      break;
+    case "whoosh":
+      hiss({ length: 0.7, volume: 0.1, from: 300, to: 1200, type: "lowpass" });
+      break;
     case "reveal":
       hiss({ length: 1.4, volume: 0.1, from: 300, to: 6000 });
       tone({ freq: 55, start: 1.35, length: 1.2, volume: 0.5 });
       [-21, -14, -9, -5].forEach((n) => tone({ freq: NOTE(n), type: "sawtooth", start: 1.35, length: 1.6, volume: 0.05 }));
+      break;
+  }
+}
+
+/** One moment of a tape recording, synthesised. Plays for about `seconds`. */
+export function playTape(sound: import("@/lib/game/types").TapeSound) {
+  load();
+  if (!settings.sound || !ctx || ctx.state !== "running") return;
+  switch (sound) {
+    case "speech":
+      // A murmur of voices: bursts of filtered noise, like words under tape hiss.
+      for (let i = 0; i < 6; i++) hiss({ start: i * 0.2, length: 0.16, volume: 0.07, from: 500 + Math.random() * 400, to: 900, bus: sfxBus });
+      break;
+    case "music":
+      [0, 4, 7, 4].forEach((n, i) => tone({ freq: NOTE(n - 5), type: "triangle", start: i * 0.25, length: 0.3, volume: 0.1 }));
+      break;
+    case "jingle":
+      [3, 7, 10, 15].forEach((n, i) => tone({ freq: NOTE(n), type: "square", start: i * 0.11, length: 0.25, volume: 0.06 }));
+      [3, 7, 10].forEach((n) => tone({ freq: NOTE(n), type: "sawtooth", start: 0.45, length: 0.7, volume: 0.04 }));
+      break;
+    case "static":
+      hiss({ length: 1.2, volume: 0.12, from: 2000, to: 3500 });
+      break;
+    case "click":
+      tone({ freq: 1800, length: 0.02, volume: 0.25 });
+      hiss({ length: 0.04, volume: 0.15, from: 4000, to: 3000 });
+      break;
+    case "creak":
+      tone({ freq: 110, glide: 160, type: "sawtooth", length: 0.45, volume: 0.05 });
+      break;
+    case "breath":
+      hiss({ length: 0.7, volume: 0.06, from: 500, to: 700, type: "lowpass" });
+      break;
+    case "beep":
+      tone({ freq: 1046, length: 0.1, volume: 0.15 });
+      tone({ freq: 1046, start: 0.16, length: 0.1, volume: 0.15 });
+      break;
+    case "door":
+      tone({ freq: 80, glide: 50, length: 0.25, volume: 0.4 });
+      tone({ freq: 1400, start: 0.22, length: 0.03, volume: 0.15 });
+      break;
+    case "silence":
       break;
   }
 }
@@ -223,8 +286,9 @@ export function play(sfx: Sfx) {
 export type Track = "lobby" | "briefing" | "investigation" | "solved" | "unsolved";
 
 /** What a track's player gets for each beat. `at` is seconds from now. */
-type BeatInfo = { at: number; beat: number; bar: number; chord: number[]; intensity: number; spb: number };
-type TrackDef = { bpm: number; level: number; bars: number[][]; play: (b: BeatInfo) => void };
+type BeatInfo = { at: number; beat: number; bar: number; chord: number[]; intensity: number; spb: number; per: number };
+/** `beatsPerBar` defaults to 4; the waltzes use 3. */
+type TrackDef = { bpm: number; level: number; beatsPerBar?: number; bars: number[][]; play: (b: BeatInfo) => void };
 
 function pick<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
@@ -267,7 +331,8 @@ const inst = {
 const SWING = 0.66;
 const offbeat = (at: number, spb: number) => at + (Math.random() < 0.5 ? 0 : spb * SWING);
 
-const TRACKS: Record<Track, TrackDef> = {
+/** The noir set: Case 001, the practice case, and any case without a theme. */
+const NOIR: Record<Track, TrackDef> = {
   // A relaxed detective-lounge swing in F while people gather.
   lobby: {
     bpm: 112,
@@ -367,9 +432,222 @@ const TRACKS: Record<Track, TrackDef> = {
   },
 };
 
-/** Under a vote: a heartbeat and trembling strings. 1 for a checkpoint answer, 2 for the final report. */
-function tensionLayer({ at, beat, chord, spb }: BeatInfo, level: number) {
-  if (beat === 0 || (level >= 2 && beat === 2)) {
+// ----- Radio (Case 002): late-night synth funk in A minor -------------------
+
+const synth = (n: number, at: number, length: number, volume = 0.05, type: OscillatorType = "square") =>
+  tone({ freq: NOTE(n), type, start: at, length, volume, bus: musicBus });
+const gated = (at: number, volume = 0.07) => hiss({ start: at, length: 0.16, volume, from: 1800, to: 1200, bus: musicBus });
+const hat = (at: number, volume = 0.02) => hiss({ start: at, length: 0.035, volume, from: 8000, to: 9000, type: "highpass", bus: musicBus });
+const radioStatic = (at: number, length: number, volume = 0.02) => hiss({ start: at, length, volume, from: 2500, to: 3200, type: "lowpass", bus: musicBus });
+
+const RADIO_MINOR = [
+  [-24, -12, -9, -5, -2], // Am7
+  [-28, -16, -12, -9, -5], // Fmaj7
+  [-31, -19, -16, -12, -9], // Dm7
+  [-29, -17, -13, -10, -7], // E7
+];
+const RADIO_MAJOR = [
+  [-21, -9, -5, -2], // C
+  [-24, -12, -9, -5], // Am
+  [-28, -16, -12, -9], // F
+  [-26, -14, -10, -7], // G
+];
+
+/** Octave-jumping synth bass, drum machine, and an arpeggio once things heat up. */
+function radioGroove({ at, beat, chord, intensity, spb }: BeatInfo) {
+  if (beat === 0) inst.pad(chord.slice(1), at, spb * 4, 0.012, true);
+  const root = chord[0];
+  synth(root, at, spb * 0.4, 0.06, "sawtooth");
+  synth(root + 12, at + spb / 2, spb * 0.3, 0.05, "sawtooth");
+  if (beat % 2 === 0) inst.kick(at, 0.26);
+  else gated(at);
+  if (intensity >= 2) {
+    hat(at + spb / 2);
+    if (intensity >= 3) [0.25, 0.75].forEach((f) => hat(at + spb * f, 0.012));
+  }
+  if (intensity >= 3) {
+    const tones = chord.slice(1).map((n) => n + 24);
+    for (let k = 0; k < 4; k++) synth(tones[(beat * 4 + k) % tones.length], at + (k * spb) / 4, spb / 5, 0.014);
+  }
+}
+
+const RADIO: Record<Track, TrackDef> = {
+  lobby: { bpm: 100, level: 0.14, bars: RADIO_MINOR, play: (b) => radioGroove({ ...b, intensity: 1 }) },
+  // On-air silence: a soft pad, a slow arpeggio and a bed of static.
+  briefing: {
+    bpm: 76,
+    level: 0.18,
+    bars: RADIO_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) {
+        inst.pad(chord.slice(1), at, spb * 4, 0.014, true);
+        radioStatic(at, spb * 1.5);
+      }
+      synth(chord.slice(1)[beat % (chord.length - 1)] + 12, at, spb * 0.8, 0.018);
+    },
+  },
+  investigation: { bpm: 104, level: 0.17, bars: RADIO_MINOR, play: radioGroove },
+  solved: { bpm: 112, level: 0.17, bars: RADIO_MAJOR, play: (b) => radioGroove({ ...b, intensity: 3 }) },
+  unsolved: {
+    bpm: 66,
+    level: 0.18,
+    bars: RADIO_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) {
+        inst.pad(chord.slice(1), at, spb * 4, 0.014, true);
+        radioStatic(at, spb * 3, 0.03);
+      }
+      if (Math.random() < 0.3) synth(pick(chord.slice(1)) + 12, at, spb, 0.016);
+    },
+  },
+};
+
+// ----- Bistro (Case 003): a French café waltz in E minor ---------------------
+
+/** Accordion: a square and a sawtooth tuned a hair apart, the musette wobble. */
+function accordion(notes: number[], at: number, length: number, volume = 0.018) {
+  notes.forEach((n) => {
+    tone({ freq: NOTE(n), type: "square", start: at, length, volume, bus: musicBus });
+    tone({ freq: NOTE(n) * 1.008, type: "sawtooth", start: at, length, volume: volume * 0.55, bus: musicBus });
+  });
+}
+
+const BISTRO_MINOR = [
+  [-29, -17, -14, -10], // Em
+  [-24, -12, -9, -5], // Am
+  [-22, -10, -6, -3], // B7
+  [-29, -17, -14, -10], // Em
+];
+const BISTRO_MAJOR = [
+  [-26, -14, -10, -7], // G
+  [-21, -9, -5, -2], // C
+  [-31, -19, -15, -12], // D7
+  [-26, -14, -10, -7], // G
+];
+const E_HARMONIC_MINOR = [-5, -3, -2, 0, 2, 3, 6, 7]; // E F# G A B C D# E
+
+/** Oom-pah-pah: bass on one, accordion chords on two and three, a tune from chapter 2. */
+function waltz({ at, beat, chord, intensity, spb }: BeatInfo) {
+  if (beat === 0) inst.bass(chord[0], at, spb * 0.9, 0.2);
+  else accordion(chord.slice(1).map((n) => n + 12), at, spb * 0.55, 0.012);
+  if (intensity >= 2 && Math.random() < 0.65) accordion([pick(E_HARMONIC_MINOR) + 12], at, spb * 0.9, 0.016);
+  if (intensity >= 3 && beat !== 0) inst.piano(pick(chord.slice(1)) + 24, at + spb / 2, 0.03);
+}
+
+const BISTRO: Record<Track, TrackDef> = {
+  lobby: { bpm: 140, level: 0.14, beatsPerBar: 3, bars: BISTRO_MAJOR, play: (b) => waltz({ ...b, intensity: 2 }) },
+  // Candlelight: held accordion chords and a slow, lonely tune.
+  briefing: {
+    bpm: 84,
+    level: 0.17,
+    beatsPerBar: 3,
+    bars: BISTRO_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) accordion(chord.slice(1), at, spb * 3, 0.01);
+      if (beat !== 1 && Math.random() < 0.7) accordion([pick(E_HARMONIC_MINOR) + 12], at, spb * 1.1, 0.014);
+    },
+  },
+  investigation: { bpm: 156, level: 0.15, beatsPerBar: 3, bars: BISTRO_MINOR, play: waltz },
+  solved: { bpm: 168, level: 0.15, beatsPerBar: 3, bars: BISTRO_MAJOR, play: (b) => waltz({ ...b, intensity: 3 }) },
+  unsolved: {
+    bpm: 72,
+    level: 0.17,
+    beatsPerBar: 3,
+    bars: BISTRO_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) {
+        accordion(chord.slice(1), at, spb * 3, 0.009);
+        inst.bass(chord[0], at, spb * 2.8, 0.15);
+      }
+      if (Math.random() < 0.25) accordion([pick(E_HARMONIC_MINOR)], at, spb * 1.5, 0.012);
+    },
+  },
+};
+
+// ----- Frost (Case 004): a music-box waltz in B minor, wind and sleigh bells --
+
+/** A music box: a pure tone with a faint metallic octave on top. */
+function musicBox(n: number, at: number, volume = 0.04) {
+  tone({ freq: NOTE(n), start: at, length: 1.1, volume, bus: musicBus });
+  tone({ freq: NOTE(n) * 2.01, start: at, length: 0.35, volume: volume * 0.3, bus: musicBus });
+}
+const wind = (at: number, length: number, volume = 0.03) => hiss({ start: at, length, volume, from: 350, to: 750, type: "lowpass", bus: musicBus });
+const bells = (at: number) => [0, 0.05].forEach((d) => hiss({ start: at + d, length: 0.07, volume: 0.022, from: 7000, to: 9500, type: "highpass", bus: musicBus }));
+
+const FROST_MINOR = [
+  [-22, -10, -7, -3], // Bm
+  [-26, -14, -10, -7], // G
+  [-31, -19, -15, -12], // D
+  [-24, -12, -8, -5], // A
+];
+const FROST_MAJOR = [
+  [-31, -19, -15, -12], // D
+  [-24, -12, -8, -5], // A
+  [-22, -10, -7, -3], // Bm
+  [-26, -14, -10, -7], // G
+];
+
+/** The music box turns, the wind gusts; bells from chapter 2, low strings in the last. */
+function musicBoxWaltz({ at, beat, chord, intensity, spb }: BeatInfo) {
+  const tones = chord.slice(1).map((n) => n + 24);
+  if (beat === 0) {
+    inst.pad(chord.slice(1), at, spb * 3, 0.01, true);
+    wind(at, spb * 3);
+    if (intensity >= 2) inst.bass(chord[0], at, spb * 0.9, 0.14);
+    if (intensity >= 3) chord.slice(1).forEach((n) => tone({ freq: NOTE(n), type: "sawtooth", start: at, length: spb * 3, volume: 0.008, bus: musicBus }));
+  }
+  musicBox(tones[(beat * 2) % tones.length], at);
+  musicBox(tones[(beat * 2 + 1) % tones.length], at + spb / 2, 0.03);
+  if (intensity >= 2 && beat !== 0) bells(at);
+}
+
+const FROST: Record<Track, TrackDef> = {
+  lobby: { bpm: 100, level: 0.16, beatsPerBar: 3, bars: FROST_MAJOR, play: (b) => musicBoxWaltz({ ...b, intensity: 2 }) },
+  // The storm outside: wind, and a music box winding down.
+  briefing: {
+    bpm: 66,
+    level: 0.2,
+    beatsPerBar: 3,
+    bars: FROST_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) {
+        wind(at, spb * 3, 0.05);
+        inst.pad(chord.slice(1), at, spb * 3, 0.01, true);
+      }
+      musicBox(chord.slice(1)[beat % (chord.length - 1)] + 24, at, 0.035);
+    },
+  },
+  investigation: { bpm: 96, level: 0.18, beatsPerBar: 3, bars: FROST_MINOR, play: musicBoxWaltz },
+  solved: { bpm: 108, level: 0.17, beatsPerBar: 3, bars: FROST_MAJOR, play: (b) => musicBoxWaltz({ ...b, intensity: 2 }) },
+  unsolved: {
+    bpm: 58,
+    level: 0.2,
+    beatsPerBar: 3,
+    bars: FROST_MINOR,
+    play({ at, beat, chord, spb }) {
+      if (beat === 0) {
+        wind(at, spb * 3, 0.06);
+        inst.pad(chord.slice(1), at, spb * 3, 0.01, true);
+      }
+      if (Math.random() < 0.35) musicBox(pick(chord.slice(1)) + 12, at, 0.03);
+    },
+  },
+};
+
+const TRACKS: Record<ThemeId, Record<Track, TrackDef>> = { noir: NOIR, radio: RADIO, bistro: BISTRO, frost: FROST };
+
+/**
+ * Under a vote: a heartbeat and trembling strings, 1 for a checkpoint answer
+ * and 2 for the final report. The bistro's is a kitchen timer ticking instead.
+ */
+function tensionLayer({ at, beat, chord, spb, per }: BeatInfo, level: number, set: ThemeId) {
+  if (set === "bistro") {
+    tone({ freq: 2200, start: at, length: 0.02, volume: 0.05 * level, bus: musicBus });
+    if (level >= 2) tone({ freq: 2200, start: at + spb / 2, length: 0.02, volume: 0.04, bus: musicBus });
+    if (beat === 0) inst.kick(at, 0.18 * level);
+    return;
+  }
+  if (beat === 0 || (level >= 2 && beat === Math.floor(per / 2))) {
     inst.kick(at, 0.22 * level);
     inst.kick(at + 0.22, 0.16 * level);
   }
@@ -380,8 +658,9 @@ function tensionLayer({ at, beat, chord, spb }: BeatInfo, level: number) {
 }
 
 const music = (() => {
-  let desired: Track | null = null;
-  let current: Track | null = null;
+  /** "set:track", so the same track in another case's set counts as a different piece. */
+  let desired: string | null = null;
+  let current: string | null = null;
   let intensity = 1;
   let tension = 0;
   let ducked = false;
@@ -390,7 +669,12 @@ const music = (() => {
   let nextBeat = 0;
   let beat = 0;
 
-  const level = () => (current ? TRACKS[current].level * (ducked ? 0.35 : 1) : 0);
+  const parse = (key: string) => key.split(":") as [ThemeId, Track];
+  const defOf = (key: string) => {
+    const [set, track] = parse(key);
+    return TRACKS[set][track];
+  };
+  const level = () => (current ? defOf(current).level * (ducked ? 0.35 : 1) : 0);
 
   function fade(to: number, seconds: number) {
     if (!ctx) return;
@@ -402,21 +686,23 @@ const music = (() => {
 
   function tick() {
     if (!ctx || !current) return;
-    const track = TRACKS[current];
+    const [set, name] = parse(current);
+    const track = TRACKS[set][name];
+    const per = track.beatsPerBar ?? 4;
     // The investigation quickens a little each chapter.
-    const spb = (60 / track.bpm) * (current === "investigation" ? 1 - (intensity - 1) * 0.04 : 1);
+    const spb = (60 / track.bpm) * (name === "investigation" ? 1 - (intensity - 1) * 0.04 : 1);
     while (nextBeat < ctx.currentTime + 0.25) {
-      const bar = Math.floor(beat / 4) % track.bars.length;
-      const info = { at: nextBeat - ctx.currentTime, beat: beat % 4, bar, chord: track.bars[bar], intensity, spb };
+      const bar = Math.floor(beat / per) % track.bars.length;
+      const info = { at: nextBeat - ctx.currentTime, beat: beat % per, bar, chord: track.bars[bar], intensity, spb, per };
       track.play(info);
-      if (tension && current === "investigation") tensionLayer(info, tension);
+      if (tension && name === "investigation") tensionLayer(info, tension, set);
       nextBeat += spb;
       beat++;
     }
   }
 
-  function begin(track: Track) {
-    current = track;
+  function begin(key: string) {
+    current = key;
     beat = 0;
     nextBeat = ctx!.currentTime + 0.05;
     if (!timer) timer = window.setInterval(tick, 50);
@@ -451,8 +737,8 @@ const music = (() => {
   }
 
   return {
-    set(track: Track | null, level_ = intensity) {
-      desired = track;
+    set(track: Track | null, level_: number, set: ThemeId) {
+      desired = track ? `${set}:${track}` : null;
       intensity = Math.max(1, Math.min(3, level_));
       apply();
     },
@@ -468,9 +754,9 @@ const music = (() => {
 })();
 
 export const Music = {
-  /** The track this screen wants (null for silence); `intensity` 1 to 3 grows the investigation. */
-  want: (track: Track | null, intensity = 1) => music.set(track, intensity),
-  /** A heartbeat under the music while a vote is open: 0 off, 1 checkpoint, 2 final report. */
+  /** The track this screen wants (null for silence) from a case's music set; `intensity` 1 to 3 grows the investigation. */
+  want: (track: Track | null, intensity = 1, set: ThemeId = "noir") => music.set(track, intensity, set),
+  /** Tension under the music while a vote is open: 0 off, 1 checkpoint, 2 final report. */
   tension: (level: number) => music.tension(level),
   /** Quieter while people talk in voice chat. */
   duck: (on: boolean) => music.duck(on),

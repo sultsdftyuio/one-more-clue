@@ -11,6 +11,9 @@ import { Investigation } from "./Investigation";
 import { Lobby } from "./Lobby";
 import { Panel } from "./parts";
 import { Reveal } from "./Reveal";
+import { themeOf } from "./themes";
+import { Weather } from "./Weather";
+import { cx } from "@/lib/cx";
 import { Music, unlock } from "./audio/sound";
 import { LiveProvider, useLive } from "./live/useLive";
 import { useRoom } from "./useRoom";
@@ -78,13 +81,15 @@ export function GameRoom({ code }: { code: string }) {
   const chapters = view?.case.chapterTitles.length ?? 1;
   const solved = view?.outcome?.kind === "solved";
   const voting = view?.proposal?.kind === "final" ? 2 : view?.proposal?.kind === "answer" ? 1 : 0;
+  const theme = themeOf(view?.case.theme);
   useEffect(() => {
-    if (phase === "lobby") Music.want("lobby");
-    else if (phase === "briefing") Music.want("briefing");
-    else if (phase === "investigation") Music.want("investigation", chapter === chapters ? 3 : Math.min(2, chapter));
-    else if (phase === "reveal") Music.want(solved ? "solved" : "unsolved");
+    const set = theme.id;
+    if (phase === "lobby") Music.want("lobby", 1, set);
+    else if (phase === "briefing") Music.want("briefing", 1, set);
+    else if (phase === "investigation") Music.want("investigation", chapter === chapters ? 3 : Math.min(2, chapter), set);
+    else if (phase === "reveal") Music.want(solved ? "solved" : "unsolved", 1, set);
     else Music.want(null);
-  }, [phase, chapter, chapters, solved]);
+  }, [phase, chapter, chapters, solved, theme.id]);
 
   useEffect(() => {
     Music.tension(voting);
@@ -137,7 +142,8 @@ export function GameRoom({ code }: { code: string }) {
 
   return (
     <LiveProvider value={live}>
-      <div className={fullBleed ? "min-h-[100svh]" : "min-h-[100svh] px-4 pt-5 pb-16 sm:px-6"}>
+      <div className={cx("relative isolate min-h-[100svh]", theme.font, theme.className, !fullBleed && "px-4 pt-5 pb-16 sm:px-6")}>
+        <Weather kind={theme.weather} />
         {!fullBleed && (
           <Link href="/" className="mx-auto mb-6 flex max-w-3xl items-center gap-2 font-display text-xl text-cream text-pop">
             <Image src={brandArt.logo} alt="" sizes="40px" className="size-9" />

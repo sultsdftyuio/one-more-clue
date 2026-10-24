@@ -17,7 +17,12 @@ export type CaseSuspect = {
   blurb: string;
   /** Optional art key, e.g. a SuspectId from src/data/suspects.ts. */
   art?: string;
+  /** Recolours the house character for this case (a hue rotation in degrees), so each cast looks its own. */
+  tint?: number;
 };
+
+/** A case's look, sound and weather. See src/components/game/themes.ts. */
+export type ThemeId = "noir" | "radio" | "bistro" | "frost";
 
 /**
  * One pop-up moment in a story sequence. Cases tell their story in short
@@ -32,7 +37,9 @@ export type Beat =
   /** A text message popping up on a phone. */
   | { kind: "message"; from: string; time?: string; text: string; edited?: boolean }
   /** A character speaking. `who` is a suspect id (shown with their portrait) or any name. */
-  | { kind: "line"; who: string; text: string; shocked?: boolean };
+  | { kind: "line"; who: string; text: string; shocked?: boolean }
+  /** A full-screen moment: the lights going out, radio static, a camera flash, candles guttering. */
+  | { kind: "effect"; effect: "blackout" | "static" | "flash" | "candles"; text?: string };
 
 /**
  * What a role can do besides reading its own evidence:
@@ -70,12 +77,24 @@ export type SceneItem =
   | (Place & { kind: "box"; w: number; h: number; color: string; radius?: number; text?: string; textColor?: string })
   | (Place & { kind: "label"; text: string; style: "clock" | "sign" | "note" | "stamp"; rotate?: number });
 
+/** What a moment on a recording sounds like; the tape player synthesises each one. */
+export type TapeSound = "speech" | "music" | "jingle" | "static" | "click" | "creak" | "breath" | "beep" | "door" | "silence";
+export type TapeSegment = { at: string; text: string; sound: TapeSound };
+
+/** One frame of camera footage: a timestamp and a scene drawn like any other. */
+export type FootageFrame = { time: string; items: SceneItem[] };
+
 export type EvidenceBody =
   | { type: "statement"; speaker: string; text: string }
   | { type: "chat"; title: string; messages: ChatMessage[] }
   | { type: "log"; source: string; rows: LogRow[] }
   | { type: "document"; text: string }
-  | { type: "scene"; caption: string; look: SceneLook; items: SceneItem[] }
+  /** A photo. `dark` scenes can only be searched with a flashlight. */
+  | { type: "scene"; caption: string; look: SceneLook; items: SceneItem[]; dark?: boolean }
+  /** Camera footage: frames you scrub through. Hotspots in any frame can be inspected. */
+  | { type: "footage"; caption: string; look: SceneLook; frames: FootageFrame[] }
+  /** An audio recording, played back with captions and synthesised sounds. */
+  | { type: "recording"; caption: string; segments: TapeSegment[] }
   /** A detail found by inspecting a scene, or a contradiction found by cross-checking. */
   | { type: "finding"; text: string };
 
@@ -120,6 +139,8 @@ export type CaseFile = {
   code: string;
   title: string;
   tagline: string;
+  /** The case's look, music and weather; noir if left out. */
+  theme?: ThemeId;
   minPlayers: number;
   maxPlayers: number;
   /** The briefing as one short paragraph, kept on the case file for reference. */

@@ -75,7 +75,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
           <p className="truncate text-[0.7rem] font-extrabold tracking-widest text-mustard uppercase">
             {view.case.code} · Room {view.code}
           </p>
-          <p className="truncate font-display text-lg leading-tight text-cream sm:text-xl">{view.case.title}</p>
+          <p className="font-case truncate text-lg leading-tight text-[var(--case-accent)] sm:text-xl">{view.case.title}</p>
         </div>
         <ChapterSteps view={view} />
         <span className="hidden items-center gap-1 rounded-full bg-cream/10 px-3 py-1 font-mono text-sm font-bold text-cream sm:flex" title="Time on the case">

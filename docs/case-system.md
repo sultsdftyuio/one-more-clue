@@ -32,6 +32,19 @@ Players should be tapping through moments, not reading paragraphs. `npm test` en
 - **End with a payoff.** The confession plays at the reveal, before the scores: the culprit's reason in their own words, plus a last line from someone else for a laugh or a sting.
 - **Sound and music are automatic.** Every find, stamp, vote and chapter has its sound, and the music grows tenser chapter by chapter. Nothing to write.
 
+## Make every case its own world
+
+Each case should look, sound and play differently from the others.
+
+- **Theme** (`theme`): `noir` (rain, typewriter titles, noir jazz), `radio` (neon, radio waves, synth funk), `bistro` (candlelight, steam, a café waltz) or `frost` (falling snow, a music-box waltz). It sets the title font, accent colour, background weather and the whole music set, including the tension under votes. New themes go in `src/components/game/themes.ts`, `game.css` and the music sets in `audio/sound.ts`.
+- **Cast colours** (`tint` on a suspect): recolours a house character (a hue rotation in degrees) so each case's cast looks like new people.
+- **Effect beats** (`{ kind: "effect", effect }`): `blackout`, `static`, `flash` or `candles`, a full-screen moment with a sound. Use one or two per case, at the turning points.
+- **Footage** (`type: "footage"`): camera frames players play or scrub through. Hotspots can sit in any frame, so the clue can be *when* something changes (an empty chair, a plate gone).
+- **Recordings** (`type: "recording"`): a tape with timed captions and synthesised sounds (`speech`, `music`, `jingle`, `static`, `click`, `creak`, `breath`, `beep`, `door`, `silence`). Great for "listen for what's missing".
+- **Dark scenes** (`dark: true` on a scene): pitch black until the Photographer sweeps a flashlight across it.
+- **Vary the culprit.** Don't let the nervous one always be innocent, or one shape always be guilty.
+- **Don't name the culprit at the second checkpoint.** Ask *how* or *when* instead of *who*, or point the group at the wrong person first.
+
 ## Rules of thumb
 
 - **Chain the abilities across roles.** The best moments are hand-offs: the Interviewer hears about a camera → tells the Tech what to search → the Tech pins the still → only the Photographer can inspect it. Search terms should come from *other* people's evidence.

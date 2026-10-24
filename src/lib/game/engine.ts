@@ -23,6 +23,7 @@ import type {
   Proposal,
   RoomState,
   Score,
+  ThemeId,
 } from "./types";
 
 export const MAX_NAME = 24;
@@ -348,7 +349,9 @@ export function applyAction(
       if (!investigating) return fail("Nothing to inspect yet.");
       if (!abilities.includes("inspect")) return fail("Only the Photographer can inspect photos.");
       const scene = evidenceById(action.scene);
-      if (!scene || scene.body.type !== "scene" || !canSee(state, self, scene)) return fail("You can't see that photo.");
+      if (!scene || (scene.body.type !== "scene" && scene.body.type !== "footage") || !canSee(state, self, scene)) {
+        return fail("You can't see that photo.");
+      }
       const detail = caseFile.evidence.find(
         (e) =>
           e.access.kind === "inspect" &&
@@ -509,8 +512,9 @@ export function checkCase(caseFile: CaseFile): string[] {
     }
     if (a.kind === "inspect") {
       const scene = byId.get(a.scene);
-      if (!scene || scene.body.type !== "scene") problems.push(`"${e.id}" inspects "${a.scene}", which isn't a scene`);
-      else if (!scene.body.items.some((item) => item.hotspot === a.hotspot)) problems.push(`"${e.id}" points at a missing hotspot "${a.hotspot}"`);
+      const items = !scene ? null : scene.body.type === "scene" ? scene.body.items : scene.body.type === "footage" ? scene.body.frames.flatMap((f) => f.items) : null;
+      if (!scene || !items) problems.push(`"${e.id}" inspects "${a.scene}", which isn't a photo or footage`);
+      else if (!items.some((item) => item.hotspot === a.hotspot)) problems.push(`"${e.id}" points at a missing hotspot "${a.hotspot}"`);
       else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
     }
     if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
@@ -558,7 +562,7 @@ function checkWriting(caseFile: CaseFile): string[] {
   const beats = (where: string, list: Beat[], min: number) => {
     if (list.length < min) problems.push(`${where} needs at least ${min} story beats`);
     list.forEach((b, i) => {
-      tooLong(`${where} beat ${i + 1}`, b.text, L.beat);
+      tooLong(`${where} beat ${i + 1}`, b.text ?? "", L.beat);
       if (b.kind === "line" && !caseFile.suspects.some((s) => s.id === b.who) && !b.who.trim()) problems.push(`${where} beat ${i + 1} has no speaker`);
     });
   };
@@ -581,6 +585,7 @@ function checkWriting(caseFile: CaseFile): string[] {
     if (b.type === "finding") tooLong(`"${e.id}"`, b.text, L.finding);
     if (b.type === "chat") b.messages.forEach((m, i) => tooLong(`"${e.id}" message ${i + 1}`, m.text, L.chatMessage));
     if (b.type === "log") b.rows.forEach((r, i) => tooLong(`"${e.id}" row ${i + 1}`, r.text, L.logRow));
+    if (b.type === "recording") b.segments.forEach((r, i) => tooLong(`"${e.id}" moment ${i + 1}`, r.text, L.logRow));
   }
   return problems;
 }
@@ -622,6 +627,7 @@ export type PlayerView = {
     code: string;
     title: string;
     tagline: string;
+    theme: ThemeId;
     briefing: string;
     story: Beat[];
     minPlayers: number;
@@ -721,6 +727,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       code: caseFile.code,
       title: caseFile.title,
       tagline: caseFile.tagline,
+      theme: caseFile.theme ?? "noir",
       briefing: caseFile.briefing,
       story: caseFile.story,
       minPlayers: caseFile.minPlayers,

@@ -121,8 +121,14 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.crosscheck("statement-vince", "door-log", "insight-nobody");
   g.search("Darla", "darla-phone");
   g.search("fire door", "fire-door");
-  g.answer("square");
+  g.inspect("photo-greenroom", "bag");
+  g.answer("nobody");
 
+  // The planted balaclava: bought with Vince's own card.
+  g.search("balaclava", "balaclava-receipt");
+  g.pin(TECH, "balaclava-receipt");
+  g.pin(PHOTOGRAPHER, "detail-balaclava");
+  g.crosscheck("detail-balaclava", "balaclava-receipt", "insight-planted");
   g.ask("question-darla-why");
   g.search("SpinKings", "spinkings");
   g.pin(TECH, "spinkings");
@@ -144,7 +150,8 @@ test("Case 003: The Last Course is solvable for five stars", () => {
   g.inspect("photo-table1", "plate");
   g.pin(PHOTOGRAPHER, "detail-plate-gold");
   g.crosscheck("detail-plate-gold", "house-rules", "insight-gold");
-  g.inspect("pass-camera", "olu");
+  g.inspect("pass-camera", "olu"); // a later frame of the footage
+  g.inspect("pass-camera", "gone");
   g.ask("question-olu-swap");
   g.answer("owner");
 
@@ -176,6 +183,7 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.pin(TECH, "door-log");
   g.crosscheck("door-log", "front-desk", "insight-stolen-card");
   g.inspect("video-still", "chair");
+  g.inspect("video-still", "back"); // the last frame: snow on his slippers
   g.answer("rectangle");
 
   g.ask("question-lily-snowman");

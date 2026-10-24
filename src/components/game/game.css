@@ -123,3 +123,92 @@
   -webkit-mask: radial-gradient(circle 6px at 50% 0, transparent 98%, #000) 0 0 / 14px 100% repeat-x;
   mask: radial-gradient(circle 6px at 50% 0, transparent 98%, #000) 0 0 / 14px 100% repeat-x;
 }
+
+/* ---------------------------------------------------------------------------
+   Case themes: background, accent colour and title font for each case. */
+
+.font-case {
+  font-family: var(--font-case), var(--font-display);
+}
+
+.theme-noir {
+  --case-accent: #f2b33d;
+  background: radial-gradient(ellipse at 50% -10%, #2a2f5c, #12152b 62%);
+}
+
+.theme-radio {
+  --case-accent: #ff5ccd;
+  background:
+    radial-gradient(ellipse at 95% 100%, rgb(255 92 205 / 0.22), transparent 55%),
+    radial-gradient(ellipse at 0% 0%, rgb(63 184 175 / 0.18), transparent 50%),
+    #120f24;
+}
+.theme-radio::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.025) 0 1px, transparent 1px 4px);
+}
+
+.theme-bistro {
+  --case-accent: #e8b46a;
+  background: radial-gradient(ellipse at 50% 120%, #4a2618, #1a1020 65%);
+}
+.theme-bistro::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 110%, rgb(255 170 80 / 0.22), transparent 55%);
+  animation: candle 3.2s ease-in-out infinite;
+}
+@keyframes candle {
+  0%, 100% { opacity: 0.85; }
+  20% { opacity: 1; }
+  45% { opacity: 0.7; }
+  70% { opacity: 0.95; }
+}
+
+.theme-frost {
+  --case-accent: #9fd8ff;
+  background:
+    radial-gradient(ellipse at 50% -20%, rgb(159 216 255 / 0.25), transparent 60%),
+    linear-gradient(#0f1a3a, #1b2752);
+}
+
+/* Story effects */
+@keyframes blackout {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  18% { opacity: 0.3; }
+  26%, 100% { opacity: 1; }
+}
+@keyframes static-burst {
+  0%, 100% { opacity: 0.9; transform: translate(0, 0); }
+  25% { opacity: 0.6; transform: translate(-2%, 1%); }
+  50% { opacity: 1; transform: translate(1%, -1%); }
+  75% { opacity: 0.7; transform: translate(2%, 2%); }
+}
+@keyframes flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.effect-static {
+  background:
+    repeating-radial-gradient(circle at 17% 32%, #fff 0 0.5px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 73% 68%, #888 0 0.5px, transparent 1px 2px),
+    #222;
+  animation: static-burst 0.12s steps(2) infinite;
+}
+
+/* The flashlight for dark scenes: a hole in the dark where the light points. */
+.flashlight {
+  --fx: 50%;
+  --fy: 50%;
+  background: rgb(2 3 10 / 0.96);
+  -webkit-mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
+  mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
+}

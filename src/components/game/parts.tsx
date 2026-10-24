@@ -16,7 +16,15 @@ export function SuspectPortrait({ suspect, shocked, className }: { suspect: Case
       </span>
     );
   }
-  return <Image src={shocked ? art.shocked : art.idle} alt="" sizes="160px" className={className} />;
+  return (
+    <Image
+      src={shocked ? art.shocked : art.idle}
+      alt=""
+      sizes="160px"
+      className={className}
+      style={suspect.tint ? { filter: `hue-rotate(${suspect.tint}deg)` } : undefined}
+    />
+  );
 }
 
 const AVATAR_TONES = ["bg-coral text-cream", "bg-teal text-ink", "bg-mustard text-ink", "bg-lilac text-ink", "bg-cream text-ink", "bg-moon text-ink"];

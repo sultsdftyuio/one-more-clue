@@ -47,9 +47,9 @@ export function ModePicker({ value, onChange, disabled }: { value: Mode; onChang
 
 export function CaseCover({ view }: { view: PlayerView }) {
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border-[3px] border-ink bg-[radial-gradient(circle_at_80%_0%,#3a3f78,#1b1f3b_60%)] p-5 shadow-card sm:p-7">
-      <p className="text-xs font-extrabold tracking-[0.25em] text-mustard uppercase">{view.case.code}</p>
-      <h1 className="mt-1 font-display text-4xl leading-[0.95] text-cream text-pop sm:text-5xl">{view.case.title}</h1>
+    <section className="relative overflow-hidden rounded-[2rem] border-[3px] border-ink bg-night/70 p-5 shadow-card ring-2 ring-[var(--case-accent)]/40 backdrop-blur-sm sm:p-7">
+      <p className="text-xs font-extrabold tracking-[0.25em] text-[var(--case-accent)] uppercase">{view.case.code}</p>
+      <h1 className="font-case mt-2 text-4xl leading-[1.05] text-cream text-pop sm:text-5xl">{view.case.title}</h1>
       <p className="mt-3 max-w-md text-lg font-bold text-cream/80">{view.case.tagline}</p>
       <ul className="mt-4 flex flex-wrap gap-2 text-sm font-extrabold">
         {[`${view.case.minPlayers}–${view.case.maxPlayers} players`, `${view.case.chapterTitles.length} chapters`, "15–25 min"].map((t) => (

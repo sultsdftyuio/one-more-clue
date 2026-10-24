@@ -23,23 +23,25 @@ export const case004: CaseFile = {
   code: "Case 004",
   title: "Snowed In",
   tagline: "A blizzard, a blackout at midnight, and a diamond that never left the building.",
+  theme: "frost",
   minPlayers: 2,
   maxPlayers: 6,
   story: [
     { kind: "title", text: "Pinecrest Lodge", sub: "New Year's Eve · midnight" },
     { kind: "narration", text: "The road has been closed since six. Nobody has come in or out. Inside, the countdown to midnight." },
     { kind: "line", who: "rectangle", text: "Five, four, three, two, one… Happy New Y—" },
-    { kind: "narration", text: "The lights went out. Two minutes of darkness. When they came back, the Aurora necklace was gone from its case." },
+    { kind: "effect", effect: "blackout", text: "…" },
+    { kind: "narration", text: "Two minutes of darkness. When the lights came back, the Aurora necklace was gone from its case." },
     { kind: "message", from: "Dame Agatha Ashford", time: "12:03 AM", text: "Nobody leaves this room. Not that any of you can." },
     { kind: "narration", text: "The necklace is still somewhere in this lodge. So is the person who took it." },
   ],
   briefing:
     "At midnight on New Year's Eve the lights went out at snowbound Pinecrest Lodge. When they came back two minutes later, Dame Agatha's diamond necklace, the Aurora, was gone from its display case. The road has been closed since 6 PM, so nobody could arrive or leave. Find out who took it, and how.",
   suspects: [
-    { id: "circle", art: "circle", name: "Otto Brennan", role: "Lodge owner", blurb: "Your host. Walks with a cane. Very keen on everyone's comfort." },
-    { id: "triangle", art: "triangle", name: "Lily Ashford", role: "Dame Agatha's niece", blurb: "Nervous. Films everything on her phone." },
-    { id: "square", art: "square", name: "Sir Reginald Pike", role: "Auctioneer", blurb: "Selling the Aurora tomorrow at ten. Holds a key to its case." },
-    { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", blurb: "Runs the lodge's ski trips. Has a master keycard." },
+    { id: "circle", art: "circle", name: "Otto Brennan", role: "Lodge owner", tint: 200, blurb: "Your host. Very keen on everyone's comfort, and on his old fireplaces." },
+    { id: "triangle", art: "triangle", name: "Lily Ashford", role: "Dame Agatha's niece", tint: 300, blurb: "Nervous. Films everything on her phone." },
+    { id: "square", art: "square", name: "Sir Reginald Pike", role: "Auctioneer", tint: 40, blurb: "Selling the Aurora tomorrow at ten. Holds a key to its case." },
+    { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", tint: 140, blurb: "Runs the lodge's ski trips. Has a master keycard." },
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records." },
@@ -291,15 +293,48 @@ export const case004: CaseFile = {
       access: { kind: "desk" },
       title: "Lily's countdown video",
       body: {
-        type: "scene",
-        caption: "Lily's video · paused at 23:59:55",
+        type: "footage",
+        caption: "Lily's phone video · the lounge, around midnight",
         look: "office",
-        items: [
-          { kind: "label", x: 4, y: 6, text: "● REC 23:59:55", style: "stamp" },
-          { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-          { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", hotspot: "greta" },
-          { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥", hotspot: "chair" },
-          { kind: "art", x: 12, y: 28, w: 13, art: "suspect:square" },
+        frames: [
+          {
+            time: "23:59:20",
+            items: [
+              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
+              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4 },
+              { kind: "box", x: 12, y: 44, w: 10, h: 6, color: "#e9f0fb", radius: 50 },
+              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle" },
+              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥" },
+              { kind: "art", x: 73, y: 28, w: 13, art: "suspect:circle", hotspot: "seated" },
+            ],
+          },
+          {
+            time: "23:59:55",
+            items: [
+              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
+              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4 },
+              { kind: "box", x: 12, y: 44, w: 10, h: 6, color: "#e9f0fb", radius: 50 },
+              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", hotspot: "greta" },
+              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥", hotspot: "chair" },
+            ],
+          },
+          {
+            time: "00:00:30",
+            items: [
+              { kind: "box", x: 0, y: 0, w: 100, h: 100, color: "#050508", radius: 0 },
+              { kind: "label", x: 34, y: 46, text: "(darkness, shrieks)", style: "stamp" },
+            ],
+          },
+          {
+            time: "00:02:10",
+            items: [
+              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
+              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4, hotspot: "empty-case" },
+              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", shocked: true },
+              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥" },
+              { kind: "art", x: 73, y: 28, w: 13, art: "suspect:circle", shocked: true, hotspot: "back" },
+            ],
+          },
         ],
       },
     },
@@ -318,6 +353,30 @@ export const case004: CaseFile = {
       access: { kind: "inspect", scene: "video-still", hotspot: "chair" },
       title: "The armchair by the fire",
       body: { type: "finding", text: "Otto's armchair by the fire is empty. His cane is gone from the armrest too." },
+    },
+    {
+      id: "detail-seated",
+      role: "photographer",
+      chapter: 2,
+      access: { kind: "inspect", scene: "video-still", hotspot: "seated" },
+      title: "23:59:20",
+      body: { type: "finding", text: "Otto in his armchair by the fire, cane on the armrest, thirty-five seconds to midnight." },
+    },
+    {
+      id: "detail-snowy-slippers",
+      role: "photographer",
+      chapter: 2,
+      access: { kind: "inspect", scene: "video-still", hotspot: "back" },
+      title: "00:02:10",
+      body: { type: "finding", text: "Otto is back in his armchair, out of breath. There's snow melting on his slippers." },
+    },
+    {
+      id: "detail-empty-case",
+      role: "photographer",
+      chapter: 2,
+      access: { kind: "inspect", scene: "video-still", hotspot: "empty-case" },
+      title: "The empty case",
+      body: { type: "finding", text: "The display case is empty. Its little door is open, the lock unbroken." },
     },
     {
       id: "question-greta-card",
@@ -381,8 +440,9 @@ export const case004: CaseFile = {
       title: "The back garden",
       body: {
         type: "scene",
-        caption: "Taken by Greta · 00:20 · from the back door",
+        caption: "Taken by Greta · 00:20 · the back garden, no lights",
         look: "snow",
+        dark: true,
         items: [
           { kind: "box", x: 0, y: 64, w: 100, h: 36, color: "#eef3fb", radius: 1 },
           { kind: "box", x: 8, y: 78, w: 50, h: 4, color: "#b9c7de", radius: 20, hotspot: "prints" },
@@ -508,6 +568,7 @@ export const case004: CaseFile = {
       "bank-letter",
       "question-lily-snowman",
       "insight-stolen-card",
+      "detail-snowy-slippers",
     ],
     explanation:
       "Otto owed the bank £160,000 by 15 January. He took Greta's keycard at 8:30, used it to open the breaker room and cut the power at midnight, unlocked the case with his own key in the dark, and slipped out of the back door to hide the Aurora in the snowman's head. The snow had stopped at 11:30, so his footprints, and his cane, gave him away.",
@@ -520,7 +581,7 @@ export const case004: CaseFile = {
       { time: "23:59:40", text: "Otto opens the breaker room with Greta's stolen card." },
       { time: "Midnight", text: "Otto cuts the power, then unlocks the case with his own key in the dark." },
       { time: "00:00:50", text: "He slips out of the back door and hides the necklace in the snowman's head." },
-      { time: "00:02:05", text: "The lights come back on. Otto is back in his armchair." },
+      { time: "00:02:05", text: "The lights come back on. Otto is back in his armchair, snow melting on his slippers." },
     ],
     confession: [
       { kind: "line", who: "circle", text: "The bank takes Pinecrest in January. One necklace would have kept it." },

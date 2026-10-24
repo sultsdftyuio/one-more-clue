@@ -1,8 +1,9 @@
 import type { CaseFile } from "@/lib/game/types";
+import { case001 } from "./case-001.ts";
 import { practiceTipJar } from "./practice-tip-jar.ts";
 
-/** Every case the engine can run. Case 001 joins this list once it's written. */
-export const cases: CaseFile[] = [practiceTipJar];
+/** Every case the engine can run, in the order the host sees them. */
+export const cases: CaseFile[] = [case001, practiceTipJar];
 
 export function caseById(id: string) {
   return cases.find((c) => c.id === id);

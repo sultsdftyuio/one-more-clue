@@ -11,11 +11,28 @@
 export type CaseSuspect = {
   id: string;
   name: string;
+  /** Who they are in this case, e.g. "Lab director". */
+  role?: string;
   /** One line shown on the suspect card. */
   blurb: string;
   /** Optional art key, e.g. a SuspectId from src/data/suspects.ts. */
   art?: string;
 };
+
+/**
+ * One pop-up moment in a story sequence. Cases tell their story in short
+ * beats (the briefing, each chapter opening, the culprit's confession)
+ * instead of paragraphs. Keep each one to a sentence or two.
+ */
+export type Beat =
+  /** A big stamped title card. */
+  | { kind: "title"; text: string; sub?: string }
+  /** The narrator, in a caption box. */
+  | { kind: "narration"; text: string }
+  /** A text message popping up on a phone. */
+  | { kind: "message"; from: string; time?: string; text: string; edited?: boolean }
+  /** A character speaking. `who` is a suspect id (shown with their portrait) or any name. */
+  | { kind: "line"; who: string; text: string; shocked?: boolean };
 
 /**
  * What a role can do besides reading its own evidence:
@@ -44,6 +61,8 @@ export type CaseRole = {
 export type ChatMessage = { from: string; time: string; text: string; edited?: boolean };
 export type LogRow = { time: string; text: string };
 
+export type SceneLook = "cafe" | "street" | "cctv" | "lab" | "office";
+
 /** Positions and sizes are percentages of the scene frame (4:3). */
 type Place = { x: number; y: number; hotspot?: string };
 export type SceneItem =
@@ -56,7 +75,7 @@ export type EvidenceBody =
   | { type: "chat"; title: string; messages: ChatMessage[] }
   | { type: "log"; source: string; rows: LogRow[] }
   | { type: "document"; text: string }
-  | { type: "scene"; caption: string; look: "cafe" | "street" | "cctv"; items: SceneItem[] }
+  | { type: "scene"; caption: string; look: SceneLook; items: SceneItem[] }
   /** A detail found by inspecting a scene, or a contradiction found by cross-checking. */
   | { type: "finding"; text: string };
 
@@ -86,8 +105,10 @@ export type CaseEvidence = {
 
 export type Chapter = {
   title: string;
-  /** Shown when the chapter opens. */
+  /** One line on what this chapter is about, shown while it's open. */
   intro: string;
+  /** Plays when the chapter opens (after the first, which opens with the case story). */
+  story: Beat[];
   /** Answering it correctly opens the next chapter. The last chapter has none: it ends with the final report. */
   checkpoint?: { question: string; options: { id: string; label: string }[]; answer: string; reveal: string };
   hints: string[];
@@ -101,7 +122,10 @@ export type CaseFile = {
   tagline: string;
   minPlayers: number;
   maxPlayers: number;
+  /** The briefing as one short paragraph, kept on the case file for reference. */
   briefing: string;
+  /** The briefing as it's first told: a few pop-up beats. */
+  story: Beat[];
   suspects: CaseSuspect[];
   /** Core roles first, then extras in the order they join. */
   roles: CaseRole[];
@@ -117,6 +141,8 @@ export type CaseFile = {
     keyEvidence: string[];
     explanation: string;
     timeline: LogRow[];
+    /** The culprit's last words, played at the reveal. */
+    confession: Beat[];
   };
 };
 

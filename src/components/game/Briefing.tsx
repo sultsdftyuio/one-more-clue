@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { PlayerView } from "@/lib/game/engine";
 import { roleNames, type Act } from "./context";
@@ -7,6 +8,7 @@ import { CaseCover } from "./Lobby";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
 import { Panel, PlayerRow } from "./parts";
+import { StoryPlayer } from "./story/StoryPlayer";
 import { Icon, type IconName } from "./ui/Icon";
 
 const POWER: Record<string, { icon: IconName; text: string }> = {
@@ -28,17 +30,42 @@ export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy
   const myRoles = view.case.roles.filter((r) => view.me.roles.includes(r.id));
   const waitingFor = view.players.filter((p) => !p.ready).length;
   const { speaking } = useLiveRoom();
+  // The story plays once per device; the case file keeps it for later.
+  const storyKey = `omc-story-${view.code}`;
+  const [story, setStory] = useState(false);
+  useEffect(() => {
+    try {
+      if (!window.localStorage.getItem(storyKey)) setStory(true);
+    } catch {
+      setStory(true);
+    }
+  }, [storyKey]);
+  const closeStory = () => {
+    setStory(false);
+    try {
+      window.localStorage.setItem(storyKey, "1");
+    } catch {}
+  };
 
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-28">
       <CaseCover view={view} />
       <VoiceControl mode={view.mode} />
 
-      <section className="relative rounded-[2rem] border-[3px] border-ink bg-cream p-5 text-ink shadow-card sm:p-7">
-        <span className="absolute -top-4 right-6 rotate-6 rounded-lg border-[3px] border-coral px-3 py-0.5 font-display text-lg text-coral">CONFIDENTIAL</span>
-        <p className="text-xs font-extrabold tracking-[0.25em] text-ink/50 uppercase">The briefing</p>
-        <p className="paper mt-3 text-lg leading-8 font-semibold">{view.case.briefing}</p>
-      </section>
+      {story && <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={closeStory} finishLabel="Open the case file" />}
+
+      <details className="group relative rounded-[2rem] border-[3px] border-ink bg-cream p-5 text-ink shadow-card sm:p-6">
+        <span className="absolute -top-4 right-6 rotate-6 rounded-lg border-[3px] border-coral bg-cream px-3 py-0.5 font-display text-lg text-coral">CONFIDENTIAL</span>
+        <summary className="flex cursor-pointer list-none items-center gap-3">
+          <Icon name="file" />
+          <span className="flex-1 font-display text-xl">The case file</span>
+          <Icon name="arrow" className="transition-transform group-open:rotate-90" />
+        </summary>
+        <p className="paper mt-4 leading-8 font-semibold">{view.case.briefing}</p>
+        <button type="button" onClick={() => setStory(true)} className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-coral-dk hover:underline">
+          <Icon name="skip" className="size-4" /> Replay the story
+        </button>
+      </details>
 
       <section className="grid gap-3">
         {myRoles.map((role) => (

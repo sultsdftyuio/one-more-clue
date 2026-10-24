@@ -22,13 +22,21 @@ export const practiceTipJar: CaseFile = {
   tagline: "Three weeks of tips, gone in three minutes.",
   minPlayers: 2,
   maxPlayers: 6,
+  story: [
+    { kind: "title", text: "Café Lumen", sub: "Thursday, 8:44 PM" },
+    { kind: "message", from: "Mo (barista)", time: "8:45 PM", text: "JAR IS GONE. Nobody touch anything" },
+    { kind: "narration", text: "Three weeks of tips for the whole staff, gone while Mo's back was turned. Three minutes, tops." },
+    { kind: "line", who: "square", text: "I was home long before any of this. Obviously." },
+    { kind: "line", who: "rectangle", text: "Never set foot in the place. Ask anyone." },
+    { kind: "narration", text: "Four regulars. Each of you has a different job and different evidence. Nobody cracks this alone." },
+  ],
   briefing:
     "Thursday night at Café Lumen. At 8:44 PM, Mo the barista turned around and the tip jar was gone: three weeks of tips for the whole staff. Four regulars were around the café. Each of you has a different job on this case and different evidence. Nobody can crack it alone, so talk.",
   suspects: [
-    { id: "triangle", art: "triangle", name: "Tri", blurb: "Nervous. Same oat latte every night, always on the phone to Mum." },
-    { id: "square", art: "square", name: "Lord Squarington", blurb: "Smug. Sits at table 3 and calls it his." },
-    { id: "circle", art: "circle", name: "Ollie", blurb: "Shifty. Delivers parcels up and down the street." },
-    { id: "rectangle", art: "rectangle", name: "Rex", blurb: "Stern. Long coat, low hat, takes the bus from the stop opposite." },
+    { id: "triangle", art: "triangle", name: "Tri", role: "Regular", blurb: "Nervous. Same oat latte every night, always on the phone to Mum." },
+    { id: "square", art: "square", name: "Lord Squarington", role: "Regular, table 3", blurb: "Smug. Sits at table 3 and calls it his." },
+    { id: "circle", art: "circle", name: "Ollie", role: "Courier", blurb: "Shifty. Delivers parcels up and down the street." },
+    { id: "rectangle", art: "rectangle", name: "Rex", role: "Night-shift driver", blurb: "Stern. Long coat, low hat, takes the bus from the stop opposite." },
   ],
   roles: [
     {
@@ -78,6 +86,7 @@ export const practiceTipJar: CaseFile = {
     {
       title: "The scene",
       intro: "Start with the basics. Pin down exactly when the jar vanished.",
+      story: [],
       checkpoint: {
         question: "When did the tip jar disappear?",
         options: [
@@ -97,6 +106,10 @@ export const practiceTipJar: CaseFile = {
     {
       title: "The stories",
       intro: "Now the suspects talk. Someone lies about when they left. Find out who.",
+      story: [
+        { kind: "narration", text: "Mo snapped a photo of the counter for the police. The staff chat is open. The suspects are ready to talk." },
+        { kind: "line", who: "square", text: "Half past eight. I left at half past eight. Write that down." },
+      ],
       checkpoint: {
         question: "Who lied about when they left the café?",
         options: [
@@ -115,8 +128,11 @@ export const practiceTipJar: CaseFile = {
     },
     {
       title: "The twist",
-      intro:
-        "Lord Squarington cracks. He paid an old tab at 8:42 and left at 8:43, and he swears the jar was still there. If he's telling the truth, someone else was inside. Find them, and find out why.",
+      intro: "If Lord Squarington is telling the truth now, someone else was inside. Find them, and find out why.",
+      story: [
+        { kind: "line", who: "square", text: "Fine! I paid my tab at 8:42 and slipped out at 8:43. But the jar was still there, I swear it.", shocked: true },
+        { kind: "narration", text: "So who was still inside at 8:44? A tourist's photo says it wasn't Rex. Photos can lie." },
+      ],
       hints: [
         "Rex's alibi is a photo. Ask the Photographer to look at it very closely.",
         "Ollie knows about a camera. Tell the Tech what to search for.",
@@ -626,6 +642,11 @@ export const practiceTipJar: CaseFile = {
     ],
     explanation:
       "Rex's alibi photo was taken at 8:31, not 8:41. He slipped into Lumen at 8:41 while Mo's back was turned, waited by the door, and at 8:44 walked out with the jar under his coat, straight past Page & Co.'s camera, dropping his Route 50 ticket on the way. He owed Jim £60 by tonight. Lord Squarington lied too, but only to hide that he'd finally paid his tab.",
+    confession: [
+      { kind: "line", who: "rectangle", text: "Jim wanted his sixty quid by tonight, or he'd tell the boss about the van." },
+      { kind: "line", who: "rectangle", text: "The jar was just sitting there. Nobody looking. I'd have paid it back. Probably." },
+      { kind: "line", who: "square", text: "And to think I was the one being interrogated." },
+    ],
     timeline: [
       { time: "8:20 PM", text: "Lord Squarington arrives and takes table 3." },
       { time: "8:31 PM", text: "Tri arrives. Across the road, a tourist photographs Rex at the bus stop." },

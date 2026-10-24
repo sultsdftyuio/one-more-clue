@@ -6,6 +6,7 @@ import type { SuspectId } from "@/data/suspects";
 import type { EvidenceBody, SceneItem } from "@/lib/game/types";
 import { propArt, suspectArt, type PropName } from "@/lib/art";
 import { cx } from "@/lib/cx";
+import { play } from "../audio/sound";
 
 type Scene = Extract<EvidenceBody, { type: "scene" }>;
 
@@ -61,11 +62,13 @@ export function SceneView({ scene, onInspect, found = [] }: Props) {
     e.stopPropagation();
     if (!onInspect) return;
     if (!hotspot || found.includes(hotspot)) {
+      play("miss");
       ripple(e, hotspot ? "Already noted" : "Nothing unusual");
       return;
     }
     const event = { currentTarget: e.currentTarget, clientX: e.clientX, clientY: e.clientY } as MouseEvent;
     const ok = await onInspect(hotspot);
+    if (!ok) play("miss");
     ripple(event, ok ? "Found something!" : "Nothing unusual");
   };
 

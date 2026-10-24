@@ -11,6 +11,7 @@ import { Investigation } from "./Investigation";
 import { Lobby } from "./Lobby";
 import { Panel } from "./parts";
 import { Reveal } from "./Reveal";
+import { Music, unlock } from "./audio/sound";
 import { LiveProvider, useLive } from "./live/useLive";
 import { useRoom } from "./useRoom";
 
@@ -58,6 +59,40 @@ export function GameRoom({ code }: { code: string }) {
   useEffect(() => {
     setLiveUp(live.connected);
   }, [live.connected]);
+
+  // Browsers only allow sound after a tap or key press.
+  useEffect(() => {
+    document.addEventListener("pointerdown", unlock);
+    document.addEventListener("keydown", unlock);
+    return () => {
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("keydown", unlock);
+      Music.want(null);
+    };
+  }, []);
+
+  // Music follows the case: a lounge swing while people gather, a mysterious intro for the
+  // briefing, noir jazz that builds to the last chapter, then a theme for how it ended.
+  const view = status.kind === "ready" ? status.view : null;
+  const chapter = view?.chapter.number ?? 0;
+  const chapters = view?.case.chapterTitles.length ?? 1;
+  const solved = view?.outcome?.kind === "solved";
+  const voting = view?.proposal?.kind === "final" ? 2 : view?.proposal?.kind === "answer" ? 1 : 0;
+  useEffect(() => {
+    if (phase === "lobby") Music.want("lobby");
+    else if (phase === "briefing") Music.want("briefing");
+    else if (phase === "investigation") Music.want("investigation", chapter === chapters ? 3 : Math.min(2, chapter));
+    else if (phase === "reveal") Music.want(solved ? "solved" : "unsolved");
+    else Music.want(null);
+  }, [phase, chapter, chapters, solved]);
+
+  useEffect(() => {
+    Music.tension(voting);
+  }, [voting]);
+
+  useEffect(() => {
+    Music.duck(live.voice === "on");
+  }, [live.voice]);
 
   // Each phase is a new screen: start it from the top.
   useEffect(() => {

@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ButtonLink } from "@/components/ui/Button";
 import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
+import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { GameProvider, nameOf, type Act } from "./context";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { play } from "./audio/sound";
 import { FeedbackCard } from "./FeedbackCard";
+import { StoryPlayer } from "./story/StoryPlayer";
 import { Panel, SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -45,6 +48,31 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
   const headline = HEADLINES[outcome.kind];
   const game = useMemo(() => ({ view, act, busy, open: () => undefined }), [view, act, busy]);
 
+  // The confession plays once per device, with a sting; then the scores.
+  const confessionKey = `omc-confession-${view.code}`;
+  const [confession, setConfession] = useState(false);
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = Boolean(window.localStorage.getItem(confessionKey));
+    } catch {}
+    if (!seen) {
+      setConfession(true);
+      play(outcome.kind === "solved" ? "solved" : "unsolved");
+    }
+  }, [confessionKey, outcome.kind]);
+  const closeConfession = () => {
+    setConfession(false);
+    try {
+      window.localStorage.setItem(confessionKey, "1");
+    } catch {}
+  };
+  const confessionBeats: Beat[] = [
+    { kind: "title", text: headline.stamp, sub: outcome.kind === "wrong" && accused ? `You accused ${accused.name}.` : headline.text },
+    { kind: "line", who: culprit.id, text: `It was me.`, shocked: true },
+    ...solution.confession,
+  ];
+
   // Count each finished case once per device, however often the page reloads.
   useEffect(() => {
     const key = `omc-finished-${view.code}`;
@@ -77,6 +105,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
 
   return (
     <GameProvider value={game}>
+      {confession && <StoryPlayer beats={confessionBeats} suspects={view.case.suspects} onDone={closeConfession} finishLabel="See how you did" />}
       <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-12">
         <section className="relative overflow-hidden rounded-[2rem] border-[3px] border-ink bg-[radial-gradient(circle_at_50%_0%,#3a3f78,#12152b_70%)] p-6 text-center shadow-card sm:p-8">
           <p className="text-xs font-extrabold tracking-[0.25em] text-mustard uppercase">{view.case.code} · The reveal</p>

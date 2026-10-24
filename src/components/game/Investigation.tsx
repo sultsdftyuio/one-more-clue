@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
+import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
+import { AudioToggles } from "./audio/AudioToggles";
+import { play } from "./audio/sound";
 import { BoardPanel } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel } from "./desk/DeskPanel";
@@ -13,6 +16,8 @@ import { VoiceControl } from "./live/VoiceControl";
 import { Avatar } from "./parts";
 import { ProposalBar } from "./ProposalBar";
 import { SolvePanel } from "./SolvePanel";
+import { Moments, SoundCues } from "./story/Moments";
+import { StoryPlayer } from "./story/StoryPlayer";
 import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
 import { Sheet } from "./ui/Sheet";
@@ -93,6 +98,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
               <p className="mb-2 font-mono text-sm font-bold">
                 <Icon name="clock" className="size-4" /> {clock} on the case
               </p>
+              <AudioToggles className="mb-3" />
               <p className="mb-3 text-sm font-semibold text-ink/70">Leaving passes your roles and evidence to someone else.</p>
               <button type="button" onClick={() => act({ type: "leave" })} className="w-full rounded-xl border-2 border-ink bg-coral py-2 font-extrabold text-cream">
                 Leave the case
@@ -105,37 +111,21 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
   );
 }
 
-/** A moment for each new chapter: what the last answer revealed and what's next. */
-function ChapterCurtain({ view, onClose }: { view: PlayerView; onClose: () => void }) {
+/**
+ * Each new chapter opens as a short story: what the last answer proved, the
+ * chapter's title, then its beats. A fanfare marks the moment.
+ */
+function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
   const last = view.solved.at(-1);
-  return (
-    <div className="fixed inset-0 z-50 grid animate-[fade-in_0.3s_ease-out] place-items-center bg-night/90 p-4 backdrop-blur" role="dialog" aria-modal aria-label={`Chapter ${view.chapter.number}`}>
-      <div className="w-full max-w-lg animate-[curtain_0.5s_ease-out] text-center">
-        {last && (
-          <div className="mb-6 rounded-2xl border-2 border-teal/50 bg-teal/10 p-4 text-left">
-            <p className="flex items-center gap-2 text-sm font-extrabold text-teal">
-              <Icon name="check" className="size-4" /> Correct
-            </p>
-            <p className="mt-1 font-semibold text-cream/85">{last.reveal}</p>
-          </div>
-        )}
-        <p className="inline-block -rotate-3 animate-stamp rounded-xl border-[3px] border-ink bg-mustard px-4 py-1 font-display text-xl text-ink">
-          Chapter {view.chapter.number}
-        </p>
-        <h2 className="mt-4 font-display text-5xl leading-none text-cream text-pop sm:text-6xl">{view.chapter.title}</h2>
-        <p className="mx-auto mt-4 max-w-md text-lg leading-relaxed font-semibold text-cream/85">{view.chapter.intro}</p>
-        <p className="mt-3 text-sm font-bold text-cream/55">New evidence has arrived on everyone&apos;s desk.</p>
-        <button
-          type="button"
-          onClick={onClose}
-          autoFocus
-          className="mt-8 rounded-full border-[3px] border-ink bg-coral px-8 py-3 font-display text-xl text-cream shadow-pop transition-transform hover:-translate-y-0.5"
-        >
-          Open the chapter
-        </button>
-      </div>
-    </div>
-  );
+  const beats: Beat[] = [
+    ...(last ? [{ kind: "narration" as const, text: `Correct. ${last.reveal}` }] : []),
+    { kind: "title", text: `Chapter ${view.chapter.number}`, sub: view.chapter.title },
+    ...view.chapter.story,
+  ];
+  useEffect(() => {
+    play("chapter");
+  }, []);
+  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" />;
 }
 
 /** Brief pop-ups when teammates find, pin or unlock something. */
@@ -276,6 +266,8 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
 
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />
+      <SoundCues view={view} />
+      <Moments />
 
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>
@@ -288,7 +280,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
         </Sheet>
       )}
 
-      {seenChapter !== null && view.chapter.number > seenChapter && <ChapterCurtain view={view} onClose={closeCurtain} />}
+      {seenChapter !== null && view.chapter.number > seenChapter && <ChapterStory view={view} onClose={closeCurtain} />}
     </GameProvider>
   );
 }

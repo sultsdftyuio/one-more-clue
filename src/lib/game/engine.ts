@@ -8,6 +8,7 @@ import type {
   Action,
   Activity,
   ActivityKind,
+  Beat,
   CaseEvidence,
   CaseFile,
   CaseRole,
@@ -516,8 +517,60 @@ export function checkCase(caseFile: CaseFile): string[] {
   if (!solution.motives.some((m) => m.id === solution.motive)) problems.push("the motive is not one of the options");
   if (solution.keyEvidence.length < 2) problems.push("needs at least two pieces of key evidence");
   for (const id of solution.keyEvidence) if (!byId.has(id)) problems.push(`key evidence "${id}" doesn't exist`);
+  problems.push(...checkWriting(caseFile));
   const questions = caseFile.evidence.filter((e) => e.access.kind === "interview").length;
   if (questions && caseFile.questionBudget >= questions) problems.push("the question budget covers every question: no choices left to make");
+  return problems;
+}
+
+/**
+ * The house standard for writing: the story comes in short beats, and no card
+ * turns into a wall of text. Limits are in characters.
+ */
+export const WRITING_LIMITS = {
+  beat: 170,
+  briefing: 420,
+  statement: 280,
+  document: 340,
+  finding: 210,
+  chatMessage: 170,
+  logRow: 95,
+  hint: 160,
+};
+
+function checkWriting(caseFile: CaseFile): string[] {
+  const problems: string[] = [];
+  const L = WRITING_LIMITS;
+  const tooLong = (what: string, text: string, max: number) => {
+    if (text.length > max) problems.push(`${what} is ${text.length} characters (max ${max}): split it up`);
+  };
+  const beats = (where: string, list: Beat[], min: number) => {
+    if (list.length < min) problems.push(`${where} needs at least ${min} story beats`);
+    list.forEach((b, i) => {
+      tooLong(`${where} beat ${i + 1}`, b.text, L.beat);
+      if (b.kind === "line" && !caseFile.suspects.some((s) => s.id === b.who) && !b.who.trim()) problems.push(`${where} beat ${i + 1} has no speaker`);
+    });
+  };
+
+  tooLong("the briefing", caseFile.briefing, L.briefing);
+  beats("the case story", caseFile.story, 3);
+  caseFile.chapters.forEach((c, i) => {
+    if (i > 0) beats(`chapter ${i + 1}'s story`, c.story, 2);
+    c.hints.forEach((h, j) => tooLong(`chapter ${i + 1} hint ${j + 1}`, h, L.hint));
+  });
+  beats("the confession", caseFile.solution.confession, 2);
+  if (!caseFile.solution.confession.some((b) => b.kind === "line" && b.who === caseFile.solution.culprit)) {
+    problems.push("the confession should have the culprit speaking");
+  }
+
+  for (const e of caseFile.evidence) {
+    const b = e.body;
+    if (b.type === "statement") tooLong(`"${e.id}"`, b.text, L.statement);
+    if (b.type === "document") tooLong(`"${e.id}"`, b.text, L.document);
+    if (b.type === "finding") tooLong(`"${e.id}"`, b.text, L.finding);
+    if (b.type === "chat") b.messages.forEach((m, i) => tooLong(`"${e.id}" message ${i + 1}`, m.text, L.chatMessage));
+    if (b.type === "log") b.rows.forEach((r, i) => tooLong(`"${e.id}" row ${i + 1}`, r.text, L.logRow));
+  }
   return problems;
 }
 
@@ -559,6 +612,7 @@ export type PlayerView = {
     title: string;
     tagline: string;
     briefing: string;
+    story: Beat[];
     minPlayers: number;
     maxPlayers: number;
     suspects: CaseSuspect[];
@@ -571,6 +625,7 @@ export type PlayerView = {
     number: number;
     title: string;
     intro: string;
+    story: Beat[];
     checkpoint: { question: string; options: { id: string; label: string }[] } | null;
     hints: string[];
     hintsTotal: number;
@@ -656,6 +711,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       title: caseFile.title,
       tagline: caseFile.tagline,
       briefing: caseFile.briefing,
+      story: caseFile.story,
       minPlayers: caseFile.minPlayers,
       maxPlayers: caseFile.maxPlayers,
       suspects: caseFile.suspects,
@@ -668,6 +724,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       number: state.chapter,
       title: chapter.title,
       intro: chapter.intro,
+      story: chapter.story,
       checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question, options: chapter.checkpoint.options } : null,
       hints: chapter.hints.slice(0, state.hintsOpen[state.chapter] ?? 0),
       hintsTotal: chapter.hints.length,

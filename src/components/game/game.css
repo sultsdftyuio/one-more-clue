@@ -48,6 +48,16 @@
     radial-gradient(circle at 80% 15%, rgb(255 230 167 / 0.35), transparent 30%),
     linear-gradient(#141833, #2a2f5c 74%, #1b1f3b 74%);
 }
+.scene-lab {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgb(220 240 255 / 0.55), transparent 60%),
+    linear-gradient(#cfdbe8, #9fb3c8 66%, #6f7f94 66%);
+}
+.scene-office {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgb(255 236 200 / 0.5), transparent 55%),
+    linear-gradient(#5b4a6b, #7a6a86 64%, #4a3d55 64%);
+}
 .scene-cctv {
   background: linear-gradient(#3a3a3a, #5a5a5a 78%, #2e2e2e 78%);
   filter: grayscale(1) contrast(1.15);

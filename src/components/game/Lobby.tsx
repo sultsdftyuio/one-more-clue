@@ -7,6 +7,7 @@ import type { PlayerView } from "@/lib/game/engine";
 import type { Mode } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import type { Act } from "./context";
+import { AudioToggles } from "./audio/AudioToggles";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
 import { Panel, PlayerRow, SuspectPortrait } from "./parts";
@@ -139,6 +140,11 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
             <p className="flex-1 text-sm font-bold text-cream/55">Test builds only. Bots pin their evidence, use their ability once a chapter and vote like you.</p>
           </div>
         )}
+      </Panel>
+
+      <Panel title="Sound">
+        <AudioToggles />
+        <p className="mt-3 text-sm font-bold text-cream/60">Music builds as the case gets tense. It quiets down while you talk in voice chat.</p>
       </Panel>
 
       <Panel title="Where are you playing?">

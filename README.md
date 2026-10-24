@@ -56,8 +56,8 @@ Auth, payments and the domain setup are adapted from the dataomen (Arcli) projec
 3. Add the three Supabase variables in Vercel.
 
 **Dodo Payments** (when the first paid case exists)
-1. Create a one-time product per paid case and put its id in the matching env var (see `src/data/catalog.ts`).
-2. Webhooks → add `https://<your-site>/api/webhooks/dodo` with the events `payment.succeeded` and `refund.succeeded`, and copy its secret to `DODO_PAYMENTS_WEBHOOK_KEY`.
+1. `npm run setup:payments` and paste the Supabase keys, `DODO_PAYMENTS_ENV=test_mode` and a Dodo API key.
+2. `npm run setup:dodo-products` creates a product per paid case (prices from `src/data/catalog.ts`) and the webhook (`payment.succeeded`, `refund.succeeded`), and saves their ids and secret.
 3. Stay on `DODO_PAYMENTS_ENV=test_mode` until you've done a test purchase end to end.
 
 **Reading signups:** Upstash console → your database → Data Browser → `waitlist:emails` (the set of emails) and `waitlist:entry:<email>` (source and time). Links can carry a source, e.g. `/play?ref=tiktok`.

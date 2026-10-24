@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/billing/access.test.ts",
-    "art:sync": "node scripts/sync-art.mjs"
+    "art:sync": "node scripts/sync-art.mjs",
+    "setup:payments": "node scripts/setup-payments.mjs",
+    "setup:dodo-products": "node scripts/create-dodo-products.mjs",
+    "setup:supabase": "node scripts/setup-supabase.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

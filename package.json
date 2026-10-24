@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts",
+    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/billing/access.test.ts",
     "art:sync": "node scripts/sync-art.mjs"
   },
   "dependencies": {

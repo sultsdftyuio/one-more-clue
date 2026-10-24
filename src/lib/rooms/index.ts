@@ -5,6 +5,7 @@ import { activePlayers, addPlayer, applyAction, cleanName, createRoom, viewFor, 
 import type { Action, CaseFile, Mode, RoomState } from "@/lib/game/types";
 import { redisConfigured } from "@/lib/waitlist/redis-store";
 import { createFileStore } from "./file-store";
+import { caseAccess } from "@/lib/billing/purchases";
 import { saveFeedback } from "./feedback";
 import { liveConfigured, liveToken, notifyRoom } from "./live";
 import { createRedisStore } from "./redis-store";
@@ -131,6 +132,8 @@ async function update(store: RoomStore, code: string, change: (state: RoomState)
 export async function createGame(input: { caseId: string; name: string; mode: Mode }) {
   const caseFile = caseById(input.caseId);
   if (!caseFile) throw new RoomError("Unknown case.", 400);
+  // Only the host needs to own a paid case; everyone who joins plays free.
+  if ((await caseAccess(caseFile.id)) === "locked") throw new RoomError("Buy this case to host it. Your friends play free.", 402);
   const name = cleanName(input.name);
   if (!name) throw new RoomError("Pick a name first.", 400);
   const mode: Mode = input.mode === "remote" ? "remote" : "together";

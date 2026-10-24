@@ -1,4 +1,8 @@
+import { paidCaseById, paidCases, productIdFor } from "@/data/catalog";
+import { getCurrentUser } from "@/lib/auth/session";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { accessFor, unlockedCases, type CaseAccess } from "./access";
+import { paymentsEnabled } from "./env";
 
 type NewPurchase = { userId: string; caseId: string; paymentId: string; amount: number | null; currency: string | null };
 
@@ -32,7 +36,23 @@ export async function listMyPurchases() {
   return data;
 }
 
+/** Every case the signed-in player can host because they bought it, alone or in a bundle. */
+export async function myUnlockedCases() {
+  return unlockedCases(await listMyPurchases(), paidCases);
+}
+
 export async function ownsCase(caseId: string) {
-  const purchases = await listMyPurchases();
-  return purchases.some((p) => p.case_id === caseId && p.status === "paid");
+  return (await myUnlockedCases()).has(caseId);
+}
+
+/**
+ * Whether the signed-in player may host this case right now: free cases and
+ * cases not yet on sale always; paid cases only once owned.
+ */
+export async function caseAccess(caseId: string): Promise<CaseAccess> {
+  const paidCase = paidCaseById(caseId);
+  const purchasable = Boolean(paidCase && paymentsEnabled() && productIdFor(paidCase));
+  if (!paidCase || !purchasable) return accessFor({ paidCase, purchasable, unlocked: new Set() });
+  const user = await getCurrentUser();
+  return accessFor({ paidCase, purchasable, unlocked: user ? await myUnlockedCases() : new Set() });
 }

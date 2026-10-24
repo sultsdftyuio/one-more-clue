@@ -12,6 +12,40 @@ const SESSION_COOKIE = /^sb-.+-auth-token(?:\.\d+)?$/;
 const matches = (pathname: string, routes: string[]) =>
   routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
+const DEV = process.env.NODE_ENV !== "production";
+// Vercel's toolbar and comments on preview deployments.
+const VERCEL_LIVE = process.env.VERCEL_ENV === "preview" ? " https://vercel.live" : "";
+
+/**
+ * Where pages may load things from. Report-only for now: the browser reports
+ * anything that breaks a rule but still loads it, so a missed source can't
+ * break the game. Switch the header name to
+ * Content-Security-Policy once a few weeks pass without reports.
+ * Inline scripts stay allowed because Next.js inlines its own.
+ */
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com${VERCEL_LIVE}`,
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: blob:${VERCEL_LIVE} https://vercel.com`,
+  "font-src 'self' data:",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  // LiveKit voice and instant updates; dev adds the hot-reload socket.
+  `connect-src 'self' https://*.livekit.cloud wss://*.livekit.cloud${DEV ? " ws:" : ""}${VERCEL_LIVE}${VERCEL_LIVE ? " wss://ws-us3.pusher.com" : ""}`,
+  `frame-src 'self'${VERCEL_LIVE}`,
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://*.dodopayments.com",
+  // Each report becomes one "[csp]" line in the server logs.
+  "report-uri /api/csp-report",
+].join("; ");
+
+// Voice chat needs the microphone, on this site only; everything else is off.
+const PERMISSIONS_POLICY =
+  "microphone=(self), camera=(), geolocation=(), payment=(), usb=(), display-capture=(), browsing-topics=()";
+
 function secure(response: NextResponse) {
   if (process.env.NODE_ENV === "production") {
     response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
@@ -19,6 +53,8 @@ function secure(response: NextResponse) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", PERMISSIONS_POLICY);
+  response.headers.set("Content-Security-Policy-Report-Only", CONTENT_SECURITY_POLICY);
   return response;
 }
 

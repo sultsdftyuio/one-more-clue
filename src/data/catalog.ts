@@ -35,5 +35,13 @@ export function productIdFor(paidCase: PaidCase) {
   return process.env[paidCase.productIdEnv]?.trim() || null;
 }
 
-/** The bundles on sale, for the host page. */
+/** The bundles on sale, for the host and account pages. */
 export const bundles = paidCases.filter((c) => c.includes?.length);
+
+/** "$11.99" bundle against three "$4.99" cases → "$2.98", or null when it saves nothing. */
+export function bundleSaving(bundle: PaidCase) {
+  const cents = (price?: string) => Math.round(Number(price?.replace(/[^0-9.]/g, "")) * 100);
+  const separately = (bundle.includes ?? []).reduce((sum, id) => sum + cents(paidCaseById(id)?.price), 0);
+  const diff = separately - cents(bundle.price);
+  return diff > 0 ? `$${(diff / 100).toFixed(2)}` : null;
+}

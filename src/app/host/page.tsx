@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HostForm, type BundleOffer, type CaseOption, type Notice } from "@/components/game/HostForm";
-import { bundles, paidCaseById, productIdFor } from "@/data/catalog";
+import { bundleSaving, bundles, paidCaseById, productIdFor } from "@/data/catalog";
 import { cases } from "@/data/cases";
 import { getCurrentUser } from "@/lib/auth/session";
 import { accessFor } from "@/lib/billing/access";
@@ -16,14 +16,6 @@ export const metadata: Metadata = {
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-
-/** "$11.99" bundle against three "$4.99" cases → "$2.98". */
-function saving(bundlePrice: string, caseIds: string[]) {
-  const cents = (price?: string) => Math.round(Number(price?.replace(/[^0-9.]/g, "")) * 100);
-  const separately = caseIds.reduce((sum, id) => sum + cents(paidCaseById(id)?.price), 0);
-  const diff = separately - cents(bundlePrice);
-  return diff > 0 ? `$${(diff / 100).toFixed(2)}` : null;
-}
 
 export default async function HostPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -51,7 +43,7 @@ export default async function HostPage({ searchParams }: Props) {
       title: b.title,
       price: b.price,
       caseTitles: (b.includes ?? []).map((id) => paidCaseById(id)?.title ?? id),
-      saving: saving(b.price, b.includes ?? []),
+      saving: bundleSaving(b),
       owned: (b.includes ?? []).every((id) => unlocked.has(id)),
     }));
 

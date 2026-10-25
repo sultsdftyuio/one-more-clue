@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { brandArt } from "@/lib/art";
 import { gameOpen, playCta } from "@/lib/game-open";
 import { authEnabled } from "@/lib/supabase/env";
+import { AccountLink } from "./AccountLink";
 
 export function SiteHeader() {
   return (
@@ -14,12 +15,7 @@ export function SiteHeader() {
           <span className="font-display text-2xl text-cream text-pop">One More Clue</span>
         </Link>
         <nav className="flex items-center gap-5">
-          {/* Signed-in visitors are sent from /login to their account by the middleware. */}
-          {authEnabled() && (
-            <Link href="/login" className="font-extrabold text-cream hover:text-mustard">
-              Log in
-            </Link>
-          )}
+          {authEnabled() && <AccountLink />}
           {gameOpen() && (
             <Link href="/host#join" className="font-extrabold whitespace-nowrap text-cream hover:text-mustard">
               <span className="sm:hidden">Join</span>

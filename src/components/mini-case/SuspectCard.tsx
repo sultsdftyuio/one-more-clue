@@ -25,7 +25,7 @@ export function SuspectCard({ suspect, alibi, verdict, locked, justCleared, onAc
   return (
     <article
       className={cx(
-        "relative flex flex-col rounded-3xl border-[3px] border-ink bg-dusk p-5 pt-0 shadow-card",
+        "relative flex flex-col rounded-3xl border-[0.1875rem] border-ink bg-dusk p-5 pt-0 shadow-card",
         verdict === "busted" && "ring-4 ring-coral",
         justCleared && "animate-shake",
       )}
@@ -56,7 +56,7 @@ export function SuspectCard({ suspect, alibi, verdict, locked, justCleared, onAc
         </span>
       </div>
 
-      <blockquote className="mt-3 rounded-2xl rounded-tl-sm border-[3px] border-ink bg-cream px-4 py-3 leading-snug font-semibold text-ink">
+      <blockquote className="mt-3 rounded-2xl rounded-tl-sm border-[0.1875rem] border-ink bg-cream px-4 py-3 leading-snug font-semibold text-ink">
         “{alibi.claim}”
       </blockquote>
 

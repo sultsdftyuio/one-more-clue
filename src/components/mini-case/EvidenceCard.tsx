@@ -24,7 +24,7 @@ export function EvidenceCard({ source, entries, highlight }: Props) {
       />
       <Image src={propArt.pushpin} alt="" sizes="64px" className="absolute -top-8 left-1/2 z-10 w-16 -translate-x-1/2" />
       <Image src={propArt.clock} alt="" sizes="112px" className="absolute -top-12 -right-8 z-10 w-28 rotate-12 animate-float" />
-      <div className={cx("overflow-hidden rounded-2xl border-[3px] border-ink bg-cream text-ink shadow-card", highlight && "ring-4 ring-mustard")}>
+      <div className={cx("overflow-hidden rounded-2xl border-[0.1875rem] border-ink bg-cream text-ink shadow-card", highlight && "ring-4 ring-mustard")}>
         <p className="bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-mustard uppercase">Evidence · {source}</p>
         <ol className="space-y-4 p-5">
           {entries.map((entry, i) => (

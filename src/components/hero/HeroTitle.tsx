@@ -4,10 +4,15 @@ import Image from "next/image";
 import { m, useReducedMotion } from "motion/react";
 import { propArt } from "@/lib/art";
 
-/** Chunky stacked shadow that makes the letters read as 3D blocks. */
+/**
+ * Chunky stacked shadow that makes the letters read as 3D blocks. In em, so
+ * the depth stays in proportion from the phone title to the desktop one.
+ */
 const extrude = {
-  textShadow:
-    "0 1px 0 var(--color-ink), 0 2px 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 4px 0 var(--color-ink), 0 5px 0 var(--color-ink), 0 6px 0 var(--color-ink), 0 7px 0 var(--color-ink), 0 14px 24px rgba(0,0,0,0.45)",
+  textShadow: [0.009, 0.018, 0.027, 0.036, 0.045, 0.054]
+    .map((d) => `0 ${d}em 0 var(--color-ink)`)
+    .concat("0 0.11em 0.2em rgba(0,0,0,0.45)")
+    .join(", "),
 };
 
 function Letters({ text, start, className }: { text: string; start: number; className?: string }) {

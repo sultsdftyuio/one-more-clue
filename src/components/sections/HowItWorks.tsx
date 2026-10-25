@@ -30,7 +30,7 @@ function StepCard({ step, index, active, onActive }: { step: Step; index: number
         transition={{ type: "spring", stiffness: 160, damping: 20 }}
       >
         <Reveal>
-          <div className={cx("relative rounded-3xl border-[3px] border-ink bg-white px-6 pt-24 pb-8 shadow-card", tilts[index])}>
+          <div className={cx("relative rounded-3xl border-[0.1875rem] border-ink bg-white px-6 pt-24 pb-8 shadow-card", tilts[index])}>
             <m.div
               className="absolute -top-20 left-1/2 w-44 -translate-x-1/2"
               animate={active ? { y: [0, -10, 0], rotate: [0, -6, 0] } : { y: 0, rotate: 0 }}
@@ -40,7 +40,7 @@ function StepCard({ step, index, active, onActive }: { step: Step; index: number
             </m.div>
             <span
               className={cx(
-                "absolute top-4 left-4 grid size-10 place-items-center rounded-full border-[3px] border-ink font-display text-xl transition-colors",
+                "absolute top-4 left-4 grid size-10 place-items-center rounded-full border-[0.1875rem] border-ink font-display text-xl transition-colors",
                 active ? "bg-coral text-cream" : "bg-mustard",
               )}
             >
@@ -82,7 +82,7 @@ export function HowItWorks() {
         </SectionHeading>
       </Reveal>
 
-      <div className="mx-auto mt-24 max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-20">
+      <div className="mx-auto mt-24 max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-20">
         <ol className="space-y-28 lg:space-y-0">
           {steps.map((step, i) => (
             <StepCard key={step.title} step={step} index={i} active={active === i} onActive={setActive} />
@@ -100,7 +100,7 @@ export function HowItWorks() {
         {facts.map((fact, i) => (
           <Reveal key={fact.label} delay={i * 0.08}>
             <TiltCard className="rounded-2xl" max={14}>
-              <p className="rounded-2xl border-[3px] border-ink bg-ink px-4 py-4 text-center text-cream shadow-pop">
+              <p className="rounded-2xl border-[0.1875rem] border-ink bg-ink px-4 py-4 text-center text-cream shadow-pop">
                 <CountUp value={fact.value} className="block font-display text-4xl text-mustard" />
                 <span className="text-sm font-bold text-cream/80">{fact.label}</span>
               </p>

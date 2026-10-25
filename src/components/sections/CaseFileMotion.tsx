@@ -14,7 +14,7 @@ export function FolderCover({ code, children }: { code: string; children: ReactN
       {children}
       <m.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -rotate-1 rounded-3xl border-[3px] border-ink bg-[#e3bf7c] shadow-card [backface-visibility:hidden] [transform-origin:left_center]"
+        className="pointer-events-none absolute inset-0 -rotate-1 rounded-3xl border-[0.1875rem] border-ink bg-[#e3bf7c] shadow-card [backface-visibility:hidden] [transform-origin:left_center]"
         variants={{
           closed: { rotateY: 0, opacity: 1 },
           open: { rotateY: -168, opacity: [1, 1, 0], transition: { rotateY: { type: "spring", stiffness: 40, damping: 12, delay: 0.35 }, opacity: { duration: 1.6, times: [0, 0.8, 1], delay: 0.35 } } },
@@ -26,10 +26,10 @@ export function FolderCover({ code, children }: { code: string; children: ReactN
           variants={{ closed: { scaleX: 1, opacity: 1 }, open: { scaleX: 0, opacity: 0, transition: { duration: 0.3 } } }}
           style={{ transformOrigin: "right center" }}
         />
-        <span className="absolute -top-5 left-8 h-8 w-36 rounded-t-xl border-[3px] border-b-0 border-ink bg-[#e3bf7c]" />
+        <span className="absolute -top-5 left-8 h-8 w-36 rounded-t-xl border-[0.1875rem] border-b-0 border-ink bg-[#e3bf7c]" />
         <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center text-ink">
           <span className="font-display text-3xl tracking-widest">{code}</span>
-          <span className="-rotate-12 rounded-lg border-[5px] border-coral px-4 py-1 font-display text-4xl tracking-widest text-coral uppercase opacity-90">
+          <span className="-rotate-12 rounded-lg border-[0.3125rem] border-coral px-4 py-1 font-display text-4xl tracking-widest text-coral uppercase opacity-90">
             Confidential
           </span>
         </div>

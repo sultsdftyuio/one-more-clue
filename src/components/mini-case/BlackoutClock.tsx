@@ -56,7 +56,7 @@ export function BlackoutClock() {
       <div ref={clock} className="relative mx-auto -mt-6 w-fit text-center">
         <div
           className={cx(
-            "flex items-center gap-1 rounded-2xl border-[3px] border-ink px-5 py-2 font-mono text-5xl font-bold tabular-nums shadow-card transition-colors duration-500 sm:text-6xl",
+            "flex items-center gap-1 rounded-2xl border-[0.1875rem] border-ink px-5 py-2 font-mono text-5xl font-bold tabular-nums shadow-card transition-colors duration-500 sm:text-6xl",
             phase === "dark" ? "bg-night text-coral [text-shadow:0_0_18px_rgba(239,91,91,0.8)]" : "bg-night text-mustard [text-shadow:0_0_18px_rgba(242,179,61,0.7)]",
           )}
           aria-live="polite"

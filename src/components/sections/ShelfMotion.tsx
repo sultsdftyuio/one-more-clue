@@ -19,13 +19,13 @@ export function SealedFolder({ item, index, href, cta }: { item: ShelfCase; inde
       whileHover="hover"
       className="relative pt-5"
     >
-      <span className={cx("absolute top-0 left-6 h-7 w-28 rounded-t-xl border-[3px] border-b-0 border-ink", item.tab)} aria-hidden />
+      <span className={cx("absolute top-0 left-6 h-7 w-28 rounded-t-xl border-[0.1875rem] border-b-0 border-ink", item.tab)} aria-hidden />
       <TiltCard className="rounded-3xl" max={12}>
-        <article className="relative flex min-h-80 flex-col overflow-hidden rounded-3xl border-[3px] border-ink bg-[#e8c98d] p-5 text-ink shadow-card">
+        <article className="relative flex min-h-80 flex-col overflow-hidden rounded-3xl border-[0.1875rem] border-ink bg-[#e8c98d] p-5 text-ink shadow-card">
           {/* Police tape across the folder. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute top-[46%] -left-10 w-[150%] -rotate-[14deg] border-y-[3px] border-ink bg-mustard py-1 text-center font-display text-sm tracking-[0.3em] text-ink uppercase opacity-95"
+            className="pointer-events-none absolute top-[53%] -left-10 w-[150%] -rotate-[14deg] border-y-[0.1875rem] border-ink bg-mustard py-1 text-center font-display text-sm tracking-[0.3em] text-ink uppercase opacity-95"
           >
             Sealed · Sealed · Sealed · Sealed
           </span>
@@ -48,7 +48,7 @@ export function SealedFolder({ item, index, href, cta }: { item: ShelfCase; inde
         variants={{ hover: { rotate: [8, -18, 14, -8, 4], transition: { duration: 0.9 } } }}
       >
         <span aria-hidden className="mx-auto block h-6 w-0.5 bg-cream/70" />
-        <span className="block rounded-lg border-[3px] border-ink bg-cream px-3 py-1 font-display text-2xl text-ink shadow-pop-sm">{item.price}</span>
+        <span className="block rounded-lg border-[0.1875rem] border-ink bg-cream px-3 py-1 font-display text-2xl text-ink shadow-pop-sm">{item.price}</span>
       </m.div>
     </m.div>
   );
@@ -60,7 +60,7 @@ const D = 136;
 
 function Face({ className, style, children }: { className?: string; style: React.CSSProperties; children?: React.ReactNode }) {
   return (
-    <div className={cx("absolute border-[3px] border-ink bg-[#c9a265]", className)} style={style}>
+    <div className={cx("absolute border-[0.1875rem] border-ink bg-[#c9a265]", className)} style={style}>
       {children}
     </div>
   );
@@ -99,7 +99,7 @@ export function EvidenceBox() {
         {/* The lid: lifts along its own axis on hover. */}
         <div className="absolute [transform-style:preserve-3d]" style={{ width: W, height: D, top: (H - D) / 2, transform: `rotateX(90deg) translateZ(${H / 2}px)` }}>
           <m.div
-            className="absolute inset-0 border-[3px] border-ink bg-[#d6b175]"
+            className="absolute inset-0 border-[0.1875rem] border-ink bg-[#d6b175]"
             variants={{ open: { z: 46, rotateX: -12, transition: { type: "spring", stiffness: 160, damping: 10 } } }}
           >
             <span aria-hidden className="absolute inset-y-0 left-1/2 w-6 -translate-x-1/2 bg-coral/85" />

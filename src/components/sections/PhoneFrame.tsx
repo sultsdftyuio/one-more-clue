@@ -23,8 +23,8 @@ export function PhoneFrame({ screen, className, rotateX = 0, rotateY = 0 }: Prop
   return (
     <m.div className={cx("[perspective:1400px]", className)}>
       <m.div
-        className="relative rounded-[2.6rem] border-[3px] border-ink bg-ink p-2 [transform-style:preserve-3d]"
-        style={{ rotateX, rotateY, boxShadow: "0 30px 60px -20px rgba(27,31,59,0.55), 10px 14px 0 rgba(27,31,59,0.9)" }}
+        className="relative rounded-[2.6rem] border-[0.1875rem] border-ink bg-ink p-2 [transform-style:preserve-3d]"
+        style={{ rotateX, rotateY, boxShadow: "0 1.9rem 3.75rem -1.25rem rgba(27,31,59,0.55), 0.625rem 0.875rem 0 rgba(27,31,59,0.9)" }}
       >
         {/* Side edge, so the phone has thickness when it turns. */}
         <span aria-hidden className="absolute inset-y-6 -right-[9px] w-[9px] rounded-r-xl bg-[#2a2f5c] [transform:rotateY(90deg)] [transform-origin:left]" />

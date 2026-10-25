@@ -25,7 +25,7 @@ export function SoundToggle() {
       onClick={() => setSoundEnabled(!on)}
       aria-pressed={on}
       aria-label={on ? "Turn sound off" : "Turn sound on"}
-      className="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full border-[3px] border-ink bg-night/85 px-3 py-2 text-sm font-extrabold text-cream shadow-pop-sm backdrop-blur"
+      className="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-full border-[0.1875rem] border-ink bg-night/85 px-3 py-2 text-sm font-extrabold text-cream shadow-pop-sm backdrop-blur"
       initial={{ opacity: 0, scale: 0.6 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 2.4, type: "spring", stiffness: 260, damping: 18 }}

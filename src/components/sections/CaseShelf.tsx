@@ -47,10 +47,10 @@ export function CaseShelf() {
       </div>
 
       {bundle && (
-        <div className="mx-auto mt-20 grid max-w-4xl items-center gap-8 rounded-[2rem] border-[3px] border-ink bg-dusk p-6 shadow-card sm:p-10 md:grid-cols-[18rem_1fr]">
+        <div className="mx-auto mt-20 grid max-w-4xl items-center gap-8 rounded-[2rem] border-[0.1875rem] border-ink bg-dusk p-6 shadow-card sm:p-10 md:grid-cols-[18rem_1fr]">
           <EvidenceBox />
           <Reveal>
-            <p className="inline-block -rotate-2 rounded-full border-[3px] border-ink bg-mustard px-4 py-1 text-sm font-extrabold tracking-widest text-ink uppercase">
+            <p className="inline-block -rotate-2 rounded-full border-[0.1875rem] border-ink bg-mustard px-4 py-1 text-sm font-extrabold tracking-widest text-ink uppercase">
               Best value
             </p>
             <h3 className="mt-4 font-display text-5xl leading-none text-cream">{bundle.title}</h3>

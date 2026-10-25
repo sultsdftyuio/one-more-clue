@@ -40,12 +40,12 @@ export function IncomingMessage({ from, time, text }: Props) {
     >
       {/* The buzz: a quick shake, like a phone on a table. */}
       <m.div
-        className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card"
+        className="rounded-3xl border-[0.1875rem] border-ink bg-dusk p-4 shadow-card"
         animate={{ x: [0, -5, 5, -4, 4, -2, 2, 0], rotate: [0, -1, 1, -1, 1, 0] }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
         <div className="flex items-center gap-3">
-          <span className="relative grid size-10 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-coral font-display text-xl text-cream">
+          <span className="relative grid size-10 shrink-0 place-items-center rounded-full border-[0.1875rem] border-ink bg-coral font-display text-xl text-cream">
             ?
             <m.span
               aria-hidden
@@ -59,7 +59,7 @@ export function IncomingMessage({ from, time, text }: Props) {
           </p>
           <span className="ml-auto size-3 rounded-full bg-mustard shadow-[0_0_0_4px_rgba(242,179,61,0.25)]" />
         </div>
-        <div className="mt-3 min-h-[3.25rem] rounded-2xl rounded-tl-sm border-[3px] border-ink bg-haze px-4 py-2" role="status">
+        <div className="mt-3 min-h-[3.25rem] rounded-2xl rounded-tl-sm border-[0.1875rem] border-ink bg-haze px-4 py-2" role="status">
           <AnimatePresence mode="wait" initial={false}>
             {typing ? (
               <m.div key="dots" exit={{ opacity: 0, scale: 0.8 }}>

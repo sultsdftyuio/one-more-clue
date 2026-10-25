@@ -78,7 +78,7 @@ export function SuspectLineup({ bubble }: { bubble: string }) {
         <AnimatePresence mode="wait">
           <m.p
             key={turn}
-            className="absolute bottom-0 -translate-x-1/2 rounded-2xl border-[3px] border-ink bg-cream px-4 py-2 font-display text-lg whitespace-nowrap text-ink shadow-pop-sm after:absolute after:-bottom-[11px] after:left-6 after:size-4 after:rotate-45 after:border-r-[3px] after:border-b-[3px] after:border-ink after:bg-cream"
+            className="absolute bottom-0 -translate-x-1/2 rounded-2xl border-[0.1875rem] border-ink bg-cream px-4 py-2 font-display text-lg whitespace-nowrap text-ink shadow-pop-sm after:absolute after:-bottom-[11px] after:left-6 after:size-4 after:rotate-45 after:border-r-[0.1875rem] after:border-b-[0.1875rem] after:border-ink after:bg-cream"
             style={{ left: `clamp(25%, ${(speaker + 0.5) * 25}%, 75%)` }}
             initial={{ opacity: 0, y: 12, scale: 0.6, rotate: -8 }}
             animate={{ opacity: 1, y: 0, scale: 1, rotate: -3 }}

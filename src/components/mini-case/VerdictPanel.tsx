@@ -19,7 +19,7 @@ function scoreLine(wrongGuesses: number) {
 /** Shown once the liar is caught: the explanation, then the push to Case 001. */
 export function VerdictPanel({ headline, explanation, nextStep, wrongGuesses, onReset }: Props) {
   return (
-    <div className="relative mx-auto mt-16 max-w-3xl animate-pop-in rounded-3xl border-[3px] border-ink bg-mustard p-6 text-ink shadow-card sm:p-8">
+    <div className="relative mx-auto mt-16 max-w-3xl animate-pop-in rounded-3xl border-[0.1875rem] border-ink bg-mustard p-6 text-ink shadow-card sm:p-8">
       <Image
         src={propArt.sparkle}
         alt=""
@@ -29,7 +29,7 @@ export function VerdictPanel({ headline, explanation, nextStep, wrongGuesses, on
       <p className="text-sm font-extrabold tracking-widest uppercase">{scoreLine(wrongGuesses)}</p>
       <h3 className="mt-2 font-display text-5xl">{headline}</h3>
       <p className="mt-3 text-lg leading-relaxed font-semibold">{explanation}</p>
-      <p className="mt-4 rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-bold">{nextStep}</p>
+      <p className="mt-4 rounded-2xl border-[0.1875rem] border-ink bg-cream px-4 py-3 font-bold">{nextStep}</p>
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <ButtonLink href="/play" variant="coral">
           Play Case 001

@@ -17,7 +17,7 @@ export function SectionHeading({ eyebrow, title, children, surface = "dark", cla
     <div className={cx("mx-auto max-w-2xl text-center", className)}>
       <p
         className={cx(
-          "inline-block -rotate-2 rounded-full border-[3px] border-ink px-4 py-1 text-sm font-extrabold tracking-widest uppercase",
+          "inline-block -rotate-2 rounded-full border-[0.1875rem] border-ink px-4 py-1 text-sm font-extrabold tracking-widest uppercase",
           dark ? "bg-mustard text-ink" : "bg-ink text-cream",
         )}
       >

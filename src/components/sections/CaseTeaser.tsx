@@ -43,7 +43,7 @@ export function CaseTeaser() {
         </FlyIn>
 
         <FolderCover code={case001.code}>
-          <article className="relative -rotate-1 rounded-3xl border-[3px] border-ink bg-cream p-6 text-ink shadow-card sm:p-10">
+          <article className="relative -rotate-1 rounded-3xl border-[0.1875rem] border-ink bg-cream p-6 text-ink shadow-card sm:p-10">
             <span aria-hidden className="absolute -top-4 left-1/2 h-8 w-32 -translate-x-1/2 rotate-2 bg-white/70" />
 
             <p className="font-display text-xl text-coral">{case001.code}</p>

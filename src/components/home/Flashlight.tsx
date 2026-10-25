@@ -62,7 +62,7 @@ export function Flashlight() {
         <m.p
           key="hint"
           role="status"
-          className="fixed top-24 left-1/2 z-50 -translate-x-1/2 rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-center text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm"
+          className="fixed top-24 left-1/2 z-50 -translate-x-1/2 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-center text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm"
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
@@ -76,7 +76,7 @@ export function Flashlight() {
           type="button"
           onClick={() => setOff((v) => !v)}
           aria-label={off ? "Turn the flashlight back on" : "Too dark? Turn the flashlight off"}
-          className="fixed bottom-4 left-4 z-50 rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-sm font-extrabold text-ink shadow-pop-sm"
+          className="fixed bottom-4 left-4 z-50 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-sm font-extrabold text-ink shadow-pop-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}

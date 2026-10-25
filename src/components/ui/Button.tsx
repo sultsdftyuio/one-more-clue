@@ -5,7 +5,7 @@ import { cx } from "@/lib/cx";
 type Variant = "primary" | "secondary" | "coral";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full border-[3px] border-ink px-6 py-3 " +
+  "inline-flex items-center justify-center gap-2 rounded-full border-[0.1875rem] border-ink px-6 py-3 " +
   "font-display text-lg tracking-wide shadow-pop transition-[translate,box-shadow] duration-150 " +
   "hover:-translate-y-0.5 active:translate-y-1 active:shadow-pop-sm disabled:pointer-events-none disabled:opacity-60 " +
   "focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-mustard";

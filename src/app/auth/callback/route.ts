@@ -42,10 +42,13 @@ export async function GET(request: Request) {
     let isRecovery = false;
 
     if (code) {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      // Supabase tags each sign-in with a flow id, so the right verifier is used
+      // even when several sign-ins were started (a double click, a second tab).
+      const flowId = params.get("sb_flow_id");
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined);
       if (error) {
-        console.error("[auth/callback] code exchange failed", { code: error.code, status: error.status });
-        return fail("link_failed");
+        console.error("[auth/callback] code exchange failed", { code: error.code, status: error.status, hasFlowId: Boolean(flowId) });
+        return fail("signin_failed");
       }
       userId = data.user?.id ?? null;
       isRecovery = (data as { redirectType?: string | null }).redirectType === "PASSWORD_RECOVERY";

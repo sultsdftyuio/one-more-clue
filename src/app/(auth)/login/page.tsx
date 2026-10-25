@@ -9,7 +9,9 @@ import { authEnabled } from "@/lib/supabase/env";
 
 export const metadata: Metadata = { title: "Log in" };
 
-type Props = { searchParams: Promise<{ next?: string; reset?: string; error?: string }> };
+const loginErrors: Record<string, string> = { google: authCopy.errors.google, signin_failed: authCopy.errors.signinFailed };
+
+type Props ={ searchParams: Promise<{ next?: string; reset?: string; error?: string }> };
 
 export default async function LoginPage({ searchParams }: Props) {
   if (!authEnabled()) return <AuthDisabled />;
@@ -17,7 +19,7 @@ export default async function LoginPage({ searchParams }: Props) {
   const notice = params.reset === "done"
     ? { tone: "success" as const, text: authCopy.login.resetDone }
     : params.error
-      ? { tone: "error" as const, text: params.error === "google" ? authCopy.errors.google : authCopy.errors.linkFailed }
+      ? { tone: "error" as const, text: loginErrors[params.error] ?? authCopy.errors.linkFailed }
       : undefined;
 
   return (

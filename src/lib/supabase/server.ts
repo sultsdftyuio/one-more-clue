@@ -12,6 +12,10 @@ export async function createClient(cookieStore?: CookieStore) {
   const store = cookieStore ?? (await cookies());
   return createServerClient<Database>(requiredEnv("NEXT_PUBLIC_SUPABASE_URL"), requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"), {
     cookieOptions: getSupabaseCookieOptions(),
+    // Tags each sign-in's return link with its flow id (sb_flow_id), which
+    // /auth/callback hands back, so a second click or tab can't overwrite the
+    // first sign-in's verifier ("bad_code_verifier").
+    auth: { experimental: { appendPkceFlowIdToRedirects: true } },
     cookies: {
       getAll: () => store.getAll(),
       setAll(cookiesToSet) {

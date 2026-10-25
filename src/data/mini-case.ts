@@ -25,6 +25,11 @@ export const miniCase = {
       { time: "9:17 PM", text: "Power cut across the whole block. Every window and every street lamp goes dark." },
       { time: "9:18 PM", text: "Power restored." },
     ] satisfies EvidenceEntry[],
+    /** Invisible ink on the printout, only visible under the UV torch. */
+    uv: {
+      mark: "every street lamp goes dark",
+      notes: ["No lamps. Not one.", "Who needed light at 9:17?"],
+    },
   },
   alibis: [
     {

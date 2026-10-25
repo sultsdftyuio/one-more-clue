@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, m, useAnimate, useInView } from "motion/react";
+import { AnimatePresence, m, useAnimate } from "motion/react";
 import { useEffect, useRef } from "react";
 import { burstConfetti } from "@/components/fx/confetti";
 import { Reveal } from "@/components/fx/Reveal";
@@ -19,12 +19,9 @@ import { VerdictPanel } from "./VerdictPanel";
 
 export function MiniCase() {
   const { verdicts, solved, wrongGuesses, lastWrong, accuse, reset } = useMiniCase(miniCase.liar);
-  const { phase, setInCase, restoreLights } = useBlackout();
+  const { phase, restoreLights } = useBlackout();
   const [scope, animate] = useAnimate<HTMLElement>();
-  const inView = useInView(scope, { amount: 0.12 });
   const solvedOnce = useRef(false);
-
-  useEffect(() => setInCase(inView), [inView, setInCase]);
 
   // Catching the liar: stamp, shake, confetti, and the lights come back on.
   useEffect(() => {
@@ -46,21 +43,33 @@ export function MiniCase() {
 
   const hint = miniCase.hints[Math.min(wrongGuesses, miniCase.hints.length) - 1];
   const status = lastWrong ? `Not ${suspectById(lastWrong).name}. ${hint}` : miniCase.prompt;
-  const dark = phase === "dark";
-
   return (
-    <m.section
-      ref={scope}
-      id="mini-case"
-      className="relative isolate overflow-hidden px-4 py-20 sm:px-6 sm:py-24"
-      animate={{ backgroundColor: dark ? "#0a0c1c" : "#1b1f3b" }}
-      transition={{ duration: 0.8 }}
-    >
+    <section ref={scope} id="mini-case" className="relative isolate overflow-hidden bg-ink px-4 py-20 sm:px-6 sm:py-24">
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 opacity-20 transition-opacity duration-700"
-        style={{ backgroundImage: `url(${brandArt.confetti.src})`, backgroundSize: "600px", opacity: dark ? 0.06 : 0.2 }}
+        className="absolute inset-0 -z-10 opacity-20"
+        style={{ backgroundImage: `url(${brandArt.confetti.src})`, backgroundSize: "600px" }}
       />
+
+      {/* 9:17: the power cuts out for a beat, emergency lights blink red, then it's readable again. */}
+      <AnimatePresence>
+        {phase === "dark" && (
+          <m.div key="cut" aria-hidden className="pointer-events-none absolute inset-0 z-30">
+            <m.div
+              className="absolute inset-0 bg-[#05060f]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.92, 0.25, 0.88, 0.5, 0] }}
+              transition={{ duration: 1, times: [0, 0.12, 0.3, 0.45, 0.7, 1] }}
+            />
+            <m.div
+              className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(239,91,91,0.55),rgba(239,91,91,0)_60%)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0.2, 0.9, 0] }}
+              transition={{ duration: 1.6, delay: 0.75, times: [0, 0.2, 0.45, 0.65, 1] }}
+            />
+          </m.div>
+        )}
+      </AnimatePresence>
 
       <BlackoutClock />
 
@@ -132,6 +141,6 @@ export function MiniCase() {
           </m.div>
         )}
       </AnimatePresence>
-    </m.section>
+    </section>
   );
 }

@@ -92,6 +92,16 @@
   }
 }
 
+/* Landing page: a little magnifier for a cursor on desktop. */
+@media (pointer: fine) {
+  [data-home] {
+    cursor: url("/cursor-magnifier.png") 11 11, auto;
+  }
+  [data-home] :is(a, button, [role="button"]) {
+    cursor: pointer;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

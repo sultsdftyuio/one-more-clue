@@ -2,10 +2,13 @@
 from ..paint import fill, pen
 from ..palette import CORAL, DUSK, INK, MUSTARD
 from ..shapes import poly, rect, rrect
+from .lights import lights_on
 
 
 def silhouette(c, rng, x, y, ww, wh):
     kind = rng.choice(["tri", "circ", "sq"])
+    if not lights_on():
+        return
     mx, by = x + ww / 2, y + wh
     if kind == "tri":
         c.drawPath(poly([(mx, by - 13), (mx + 6, by), (mx - 6, by)]), fill(INK))
@@ -26,9 +29,10 @@ def windows(c, rng, l, t, r, b, lit=0.22, coral=0.04, off=DUSK, outline=True, pe
             y = t + row * (wh + gy)
             roll = rng.random()
             colour = MUSTARD if roll < lit else CORAL if roll < lit + coral else off
-            if colour != off:
-                c.drawPath(rrect(x - 5, y - 5, x + ww + 5, y + wh + 5, 6), fill(colour, 38))
-            c.drawPath(rrect(x, y, x + ww, y + wh, 3), fill(colour))
+            paint = colour if lights_on() else off
+            if paint != off:
+                c.drawPath(rrect(x - 5, y - 5, x + ww + 5, y + wh + 5, 6), fill(paint, 38))
+            c.drawPath(rrect(x, y, x + ww, y + wh, 3), fill(paint))
             if colour == MUSTARD and peekers and rng.random() < 0.18:
                 silhouette(c, rng, x, y, ww, wh)
             if outline:

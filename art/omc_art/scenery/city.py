@@ -5,6 +5,7 @@ from ..paint import fill, pen
 from ..palette import CORAL, DUSK, HAZE, INK
 from ..shapes import poly, rect
 from .buildings import building, streetlamp
+from .lights import lights_off, lights_on
 from .windows import windows
 
 FRONT_STREET = [  # x, width, height, roof
@@ -40,7 +41,8 @@ def far_roof(c, roof, x, bw, top, mid):
         c.drawCircle(mid, top, bw / 2 - 12, fill(HAZE))
     elif roof == "antenna":
         c.drawLine(mid, top, mid, top - 70, pen(HAZE, 5))
-        c.drawCircle(mid, top - 72, 4, fill(CORAL, 170))
+        if lights_on():
+            c.drawCircle(mid, top - 72, 4, fill(CORAL, 170))
     elif roof == "step":
         c.drawRect(rect(x + 22, top - 40, x + bw - 22, top + 1), fill(HAZE))
 
@@ -58,3 +60,14 @@ def city_back(c, w=1600, h=560):
         windows(c, rng, x + 14, top + 22, x + bw - 14, h - 20, lit=0.12, coral=0.0, off="#30366A",
                 outline=False, ww=12, wh=16)
         x += bw - rng.uniform(0, 14)
+
+
+def city_front_dark(c, w=1600, h=460):
+    """The front street during the 9:17 blackout: same buildings, every light out."""
+    with lights_off():
+        city_front(c, w, h)
+
+
+def city_back_dark(c, w=1600, h=560):
+    with lights_off():
+        city_back(c, w, h)

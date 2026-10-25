@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from .brand import app_icon, confetti, logo_mark
 from .post import suspect_post
 from .props import PROPS
-from .scenery.city import city_back, city_front
+from .scenery.city import city_back, city_back_dark, city_front, city_front_dark
 from .scenery.sky import cloud, moon, sky
 from .suspects import MOODS, SUSPECTS
 
@@ -32,6 +32,8 @@ ASSETS += [
     Asset("sky", (1600, 900), 1.5, sky, 2400),
     Asset("city-back", (1600, 560), 1.5, city_back, 2400),
     Asset("city-front", (1600, 460), 1.5, city_front, 2400),
+    Asset("city-back-dark", (1600, 560), 1.5, city_back_dark, 2400),
+    Asset("city-front-dark", (1600, 460), 1.5, city_front_dark, 2400),
     Asset("moon", (400, 400), 2.0, moon, 640),
     Asset("cloud-a", (600, 240), 2.0, partial(cloud, variant="a"), 900),
     Asset("cloud-b", (380, 200), 2.0, partial(cloud, variant="b"), 600),

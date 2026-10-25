@@ -15,7 +15,9 @@ import triangleIdle from "@/assets/art/suspect-triangle-idle.webp";
 import triangleShocked from "@/assets/art/suspect-triangle-shocked.webp";
 
 import cityBack from "@/assets/art/city-back.webp";
+import cityBackDark from "@/assets/art/city-back-dark.webp";
 import cityFront from "@/assets/art/city-front.webp";
+import cityFrontDark from "@/assets/art/city-front-dark.webp";
 import cloudA from "@/assets/art/cloud-a.webp";
 import cloudB from "@/assets/art/cloud-b.webp";
 import moon from "@/assets/art/moon.webp";
@@ -42,7 +44,8 @@ export const suspectArt: Record<SuspectId, { idle: StaticImageData; shocked: Sta
   rectangle: { idle: rectangleIdle, shocked: rectangleShocked },
 };
 
-export const sceneArt = { sky, moon, cloudA, cloudB, cityBack, cityFront };
+/** The *Dark twins are the same streets with every light out, for the 9:17 blackout. */
+export const sceneArt = { sky, moon, cloudA, cloudB, cityBack, cityFront, cityBackDark, cityFrontDark };
 
 export const propArt = {
   clock,

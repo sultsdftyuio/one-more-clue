@@ -5,9 +5,10 @@ import skia
 
 from ..marks import clock_hands, clock_ticks
 from ..paint import col, fill, pen, solid
-from ..palette import (BRICK, BRICK_DK, CORAL, CORAL_DK, CORAL_DKR, CREAM, CREAM_DK, DUSK, INK,
+from ..palette import (BRICK, BRICK_DK, CORAL, CORAL_DK, CORAL_DKR, CREAM, CREAM_DK, DUSK, HAZE, INK,
                        MUSTARD, TEAL_DK, TEAL_DKR)
 from ..shapes import oval, poly, rect, rrect
+from .lights import lights_on
 from .windows import windows
 
 RAIL = "#4A5194"
@@ -119,13 +120,14 @@ def streetlamp(c, x, ground):
         Shader=skia.GradientShader.MakeRadial(skia.Point(x + 30, ground - 120), 96,
                                               [col(MUSTARD, 120), col(MUSTARD, 0)]),
     )
-    c.drawCircle(x + 30, ground - 120, 96, glow)
+    if lights_on():
+        c.drawCircle(x + 30, ground - 120, 96, glow)
     p = skia.Path()
     p.moveTo(x, ground)
     p.lineTo(x, ground - 124)
     p.quadTo(x, ground - 144, x + 20, ground - 144)
     p.lineTo(x + 30, ground - 144)
     c.drawPath(p, pen(INK, 9))
-    c.drawCircle(x + 30, ground - 124, 10, fill(MUSTARD))
+    c.drawCircle(x + 30, ground - 124, 10, fill(MUSTARD if lights_on() else HAZE))
     solid(c, poly([(x + 12, ground - 128), (x + 30, ground - 150), (x + 48, ground - 128)], 4), DUSK, outline=4)
     c.drawPath(rrect(x - 10, ground - 16, x + 10, ground, 4), fill(INK))

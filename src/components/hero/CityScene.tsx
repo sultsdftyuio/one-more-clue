@@ -1,70 +1,76 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, type ReactNode } from "react";
+import { m, useScroll, useTransform, type MotionValue } from "motion/react";
+import type { ReactNode } from "react";
+import { StarField } from "@/components/fx/StarField";
+import { usePointer } from "@/components/fx/pointer";
+import { LitCity } from "@/components/home/LitCity";
 import { sceneArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
 
-/** Wraps a layer that sinks at `depth` x the scroll speed, so far layers lag behind. */
-function Layer({ depth, className, children }: { depth: number; className?: string; children: ReactNode }) {
+/**
+ * A layer at some depth: it slides with the pointer (or phone tilt) by `look`
+ * pixels and sinks behind the scroll by `sink` x the distance scrolled, so
+ * near layers move more than far ones and the street reads as 3D.
+ */
+function Layer({ look, lookY = look / 2, sink, className, children }: { look: number; lookY?: number; sink: number; className?: string; children: ReactNode }) {
+  const { x: px, y: py } = usePointer();
+  const { scrollY } = useScroll();
+  const x = useTransform(px, (v) => v * -look);
+  const y = useTransform([py, scrollY] as MotionValue<number>[], ([v, s]: number[]) => v * -lookY + Math.min(s, 1200) * sink);
   return (
-    <div
-      className={cx("absolute will-change-transform", className)}
-      style={{ transform: `translate3d(0, calc(var(--scroll, 0) * ${depth}px), 0)` }}
-    >
+    <m.div className={cx("absolute will-change-transform", className)} style={{ x, y }}>
       {children}
-    </div>
+    </m.div>
   );
 }
 
-/** Night sky, moon, clouds and two city layers with scroll parallax. */
+/** Night sky, stars, moon, clouds and two streets, with depth, a camera push on scroll, and the odd power glitch. */
 export function CityScene() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      el.style.setProperty("--scroll", String(Math.min(window.scrollY, window.innerHeight)));
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, []);
+  const { scrollY } = useScroll();
+  // The camera pushes into the street as you scroll toward 9:17.
+  const push = useTransform(scrollY, [0, 900], [1, 1.14]);
 
   return (
-    <div ref={ref} aria-hidden className="absolute inset-0 overflow-hidden">
-      <Layer depth={0.5} className="inset-0">
+    <m.div aria-hidden className="absolute inset-0 overflow-hidden" style={{ scale: push, transformOrigin: "50% 100%" }}>
+      <Layer look={6} sink={0.5} className="-inset-8">
         <Image src={sceneArt.sky} alt="" fill priority sizes="100vw" className="object-cover" />
       </Layer>
 
-      <Layer depth={0.42} className="top-[7%] right-[5%] w-[clamp(130px,19vw,300px)]">
-        <Image src={sceneArt.moon} alt="" priority sizes="300px" className="animate-float" />
+      <Layer look={8} sink={0.48} className="inset-0">
+        <StarField />
       </Layer>
 
-      <Layer depth={0.34} className="top-[22%] right-[2%] w-[clamp(170px,27vw,430px)]">
+      <Layer look={14} sink={0.42} className="top-[7%] right-[5%] w-[clamp(130px,19vw,300px)]">
+        {/* Moon halo breathes slowly. */}
+        <m.div
+          className="absolute inset-[-35%] rounded-full bg-[radial-gradient(circle,rgba(255,230,167,0.35),rgba(255,230,167,0)_65%)]"
+          animate={{ opacity: [0.55, 1, 0.55], scale: [0.95, 1.05, 0.95] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <Image src={sceneArt.moon} alt="" priority sizes="300px" className="relative animate-float" />
+      </Layer>
+
+      <Layer look={22} sink={0.34} className="top-[22%] right-[2%] w-[clamp(170px,27vw,430px)]">
         <Image src={sceneArt.cloudA} alt="" sizes="430px" className="animate-drift" />
       </Layer>
 
-      <Layer depth={0.3} className="top-[9%] left-[40%] hidden w-[clamp(120px,17vw,280px)] md:block">
+      <Layer look={18} sink={0.3} className="top-[9%] left-[40%] hidden w-[clamp(120px,17vw,280px)] md:block">
         <Image src={sceneArt.cloudB} alt="" sizes="280px" className="animate-drift [animation-delay:-6s]" />
       </Layer>
 
-      <Layer depth={0.16} className="inset-x-0 bottom-0 aspect-[1600/560] min-h-[300px]">
-        <Image src={sceneArt.cityBack} alt="" fill sizes="100vw" className="object-cover object-bottom" />
+      <Layer look={30} sink={0.16} className="-inset-x-10 bottom-0 aspect-[1600/560] min-h-[300px]">
+        <LitCity lit={sceneArt.cityBack} dark={sceneArt.cityBackDark} mode="glitch" className="h-full w-full" />
       </Layer>
 
-      <div className="absolute inset-x-0 bottom-0 aspect-[1600/460] min-h-[230px]">
-        <Image src={sceneArt.cityFront} alt="" fill priority sizes="100vw" className="object-cover object-bottom" />
-      </div>
-    </div>
+      {/* The suspects stand on this street, so it never moves vertically. */}
+      <Layer look={46} lookY={0} sink={0} className="-inset-x-12 bottom-0 aspect-[1600/460] min-h-[230px]">
+        <LitCity lit={sceneArt.cityFront} dark={sceneArt.cityFrontDark} mode="glitch" priority className="h-full w-full" />
+      </Layer>
+
+      {/* Haze over the street so the copy stays readable as the camera pushes in. */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(18,21,43,0)_55%,rgba(18,21,43,0.35)_100%)]" />
+    </m.div>
   );
 }

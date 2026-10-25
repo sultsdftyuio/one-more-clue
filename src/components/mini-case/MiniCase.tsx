@@ -122,7 +122,7 @@ export function MiniCase() {
             transition={{ duration: 1.6, times: [0, 0.75, 1] }}
           >
             <m.span
-              className="rounded-2xl border-[8px] border-coral bg-night/85 px-8 py-2 font-display text-[clamp(4rem,16vw,10rem)] tracking-widest text-coral uppercase shadow-[0_0_60px_rgba(239,91,91,0.55)]"
+              className="rounded-2xl border-[8px] border-coral bg-night/85 px-8 py-2 font-display text-[clamp(4rem,13.6vw,10rem)] tracking-widest text-coral uppercase shadow-[0_0_60px_rgba(239,91,91,0.55)]"
               initial={{ scale: 3, rotate: -28, opacity: 0 }}
               animate={{ scale: 1, rotate: -12, opacity: 1 }}
               transition={{ type: "spring", stiffness: 420, damping: 18 }}

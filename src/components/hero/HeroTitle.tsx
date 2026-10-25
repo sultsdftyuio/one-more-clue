@@ -39,7 +39,7 @@ export function HeroTitle() {
   const sweepAt = 1.25;
 
   return (
-    <h1 className="mt-6 font-display text-[clamp(3.5rem,11vw,7.5rem)] leading-[0.95] text-cream [perspective:800px]">
+    <h1 className="mt-6 font-display text-[clamp(3.5rem,9.35vw,7.5rem)] leading-[0.95] text-cream [perspective:800px]">
       <span className="sr-only">One More Clue</span>
       <span aria-hidden>
         <Letters text="One More " start={0.15} />

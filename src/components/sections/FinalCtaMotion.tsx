@@ -15,7 +15,7 @@ function Runner({ id, name, index, go }: { id: SuspectId; name: string; index: n
     <m.button
       type="button"
       aria-label={`Make ${name} jump`}
-      className="w-[clamp(64px,13vw,120px)]"
+      className="w-[clamp(54px,11vw,102px)]"
       initial={{ x: fromLeft ? "-60vw" : "60vw", rotate: fromLeft ? -20 : 20 }}
       // Started off-screen, so the row (not each runner) decides when to run in.
       animate={go ? { x: 0, rotate: 0 } : undefined}

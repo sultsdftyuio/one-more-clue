@@ -92,6 +92,13 @@
   }
 }
 
+/* The landing page runs at 85% scale: every rem-based size (type, spacing,
+   cards) shrinks together. Breakpoints are unaffected; media queries use the
+   browser's default size, not this one. */
+:root:has(main[data-home]) {
+  font-size: 85%;
+}
+
 /* Landing page: a little magnifier for a cursor on desktop. */
 @media (pointer: fine) {
   [data-home] {

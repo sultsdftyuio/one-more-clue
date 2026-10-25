@@ -52,7 +52,7 @@ function StepCard({ step, index, active, onActive }: { step: Step; index: number
         </Reveal>
         {/* Phones get their own screen under each step. */}
         <m.div
-          className="mx-auto mt-14 w-[min(15rem,70vw)] lg:hidden"
+          className="mx-auto mt-14 w-[min(15rem,60vw)] lg:hidden"
           initial={{ opacity: 0, rotateX: 35, y: 60 }}
           whileInView={{ opacity: 1, rotateX: 8, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}

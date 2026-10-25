@@ -54,9 +54,9 @@ export function SealedFolder({ item, index, href, cta }: { item: ShelfCase; inde
   );
 }
 
-const W = 220;
-const H = 150;
-const D = 160;
+const W = 187;
+const H = 128;
+const D = 136;
 
 function Face({ className, style, children }: { className?: string; style: React.CSSProperties; children?: React.ReactNode }) {
   return (

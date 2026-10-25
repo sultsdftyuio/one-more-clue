@@ -73,7 +73,7 @@ export function SuspectLineup({ bubble }: { bubble: string }) {
   const speaker = turn % suspects.length;
 
   return (
-    <div className="relative flex items-end justify-center [--w:clamp(76px,10.5vw,170px)]">
+    <div className="relative flex items-end justify-center [--w:clamp(65px,8.9vw,145px)]">
       <div className="pointer-events-none absolute -top-16 right-0 left-0 h-14">
         <AnimatePresence mode="wait">
           <m.p

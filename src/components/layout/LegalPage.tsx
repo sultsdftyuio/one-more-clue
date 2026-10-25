@@ -5,6 +5,13 @@ import { SiteHeader } from "./SiteHeader";
 /** Where people reach the team about their data or the terms. */
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[contact email: set NEXT_PUBLIC_CONTACT_EMAIL]";
 
+/**
+ * Who runs the site: a person's full name, or a company as on its trade licence.
+ * The address defaults to the emirate alone, so an individual's home address is never published.
+ */
+export const OPERATOR_NAME = process.env.NEXT_PUBLIC_OPERATOR_NAME || "[legal name: set NEXT_PUBLIC_OPERATOR_NAME]";
+export const OPERATOR_ADDRESS = process.env.NEXT_PUBLIC_OPERATOR_ADDRESS || "Ras Al Khaimah, United Arab Emirates";
+
 /** Shared layout for the privacy policy and terms: readable prose on cream paper. */
 export function LegalPage({ title, updated, children }: { title: string; updated: string; children: ReactNode }) {
   const reviewed = process.env.LEGAL_REVIEWED === "1";

@@ -37,7 +37,8 @@ const CONTENT_SECURITY_POLICY = [
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self' https://*.dodopayments.com",
+  // Checkout, and Google sign-in through Supabase's auth server.
+  "form-action 'self' https://*.dodopayments.com https://*.supabase.co https://accounts.google.com",
   // Each report becomes one "[csp]" line in the server logs.
   "report-uri /api/csp-report",
 ].join("; ");

@@ -3,6 +3,7 @@ import { AuthDisabled } from "@/components/auth/AuthDisabled";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { authCopy } from "@/data/auth";
+import { googleAuthEnabled } from "@/lib/auth/providers";
 import { resolvePostAuthRedirectPath } from "@/lib/auth/redirects";
 import { authEnabled } from "@/lib/supabase/env";
 
@@ -16,7 +17,7 @@ export default async function RegisterPage({ searchParams }: Props) {
 
   return (
     <AuthShell eyebrow={authCopy.register.eyebrow} title={authCopy.register.title}>
-      <RegisterForm next={resolvePostAuthRedirectPath(next)} />
+      <RegisterForm next={resolvePostAuthRedirectPath(next)} google={await googleAuthEnabled()} />
     </AuthShell>
   );
 }

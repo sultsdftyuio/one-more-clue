@@ -22,6 +22,10 @@ export const authCopy = {
     switchLink: "Log in",
     checkEmail: (email: string) => `We sent a confirmation link to ${email}. Open it to finish creating your account.`,
   },
+  google: {
+    button: "Continue with Google",
+    divider: "or",
+  },
   forgot: {
     eyebrow: "Locked out?",
     title: "Reset your password",
@@ -41,6 +45,7 @@ export const authCopy = {
     badLogin: "Wrong email or password.",
     offline: "We couldn't reach the server. Check your connection and try again.",
     disabled: "Accounts aren't open yet.",
+    google: "Google sign-in didn't go through. Try again, or use your email.",
     linkFailed: "That link has expired or was already used. Try again.",
     recoveryLinkInvalid: "That reset link has expired or was already used. Request a new one below.",
     resetSendFailed: "The reset email could not be sent. Try again in a few minutes.",

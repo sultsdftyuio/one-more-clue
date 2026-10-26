@@ -34,6 +34,12 @@ import pushpin from "@/assets/art/prop-pushpin.webp";
 import question from "@/assets/art/prop-question.webp";
 import sparkle from "@/assets/art/prop-sparkle.webp";
 
+import poster001 from "@/assets/art/poster-case-001.webp";
+import poster002 from "@/assets/art/poster-case-002.webp";
+import poster003 from "@/assets/art/poster-case-003.webp";
+import poster004 from "@/assets/art/poster-case-004.webp";
+import posterSeason1 from "@/assets/art/poster-season-1.webp";
+
 import logo from "@/assets/art/logo-mark.webp";
 import confetti from "@/assets/art/pattern-confetti.webp";
 
@@ -63,3 +69,15 @@ export const propArt = {
 export type PropName = keyof typeof propArt;
 
 export const brandArt = { logo, confetti };
+
+/**
+ * Key art for each case (2:3, no text: the site sets the title over the quiet
+ * sky at the top) and the Season 1 triptych, one panorama across all three.
+ */
+export const posterArt: Record<string, StaticImageData> = {
+  "case-001": poster001,
+  "case-002": poster002,
+  "case-003": poster003,
+  "case-004": poster004,
+};
+export const seasonArt = { season1: posterSeason1 };

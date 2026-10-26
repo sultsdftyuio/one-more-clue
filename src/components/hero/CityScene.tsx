@@ -5,6 +5,7 @@ import { m, useScroll, useTransform, type MotionValue } from "motion/react";
 import type { ReactNode } from "react";
 import { StarField } from "@/components/fx/StarField";
 import { usePointer } from "@/components/fx/pointer";
+import { useBlackout } from "@/components/home/blackout";
 import { LitCity } from "@/components/home/LitCity";
 import { sceneArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
@@ -26,11 +27,14 @@ function Layer({ look, lookY = look / 2, sink, className, children }: { look: nu
   );
 }
 
-/** Night sky, stars, moon, clouds and two streets, with depth, a camera push on scroll, and the odd power glitch. */
+/** Night sky, stars, moon, clouds and two streets, with depth, a camera push on scroll, the odd power glitch and the 9:17 blackout. */
 export function CityScene() {
   const { scrollY } = useScroll();
   // The camera pushes into the street as you scroll toward 9:17.
   const push = useTransform(scrollY, [0, 900], [1, 1.14]);
+  // This street is the one that goes dark at 9:17 and comes back when the liar is caught.
+  const { phase } = useBlackout();
+  const mode = phase === "lit" ? "glitch" : phase === "dark" ? "out" : "on";
 
   return (
     <m.div aria-hidden className="absolute inset-0 overflow-hidden" style={{ scale: push, transformOrigin: "50% 100%" }}>
@@ -61,12 +65,12 @@ export function CityScene() {
       </Layer>
 
       <Layer look={30} sink={0.16} className="-inset-x-10 bottom-0 aspect-[1600/560] min-h-[300px]">
-        <LitCity lit={sceneArt.cityBack} dark={sceneArt.cityBackDark} mode="glitch" className="h-full w-full" />
+        <LitCity lit={sceneArt.cityBack} dark={sceneArt.cityBackDark} mode={mode} className="h-full w-full" />
       </Layer>
 
       {/* The suspects stand on this street, so it never moves vertically. */}
       <Layer look={46} lookY={0} sink={0} className="-inset-x-12 bottom-0 aspect-[1600/460] min-h-[230px]">
-        <LitCity lit={sceneArt.cityFront} dark={sceneArt.cityFrontDark} mode="glitch" priority className="h-full w-full" />
+        <LitCity lit={sceneArt.cityFront} dark={sceneArt.cityFrontDark} mode={mode} priority className="h-full w-full" />
       </Layer>
 
       {/* Haze over the street so the copy stays readable as the camera pushes in. */}

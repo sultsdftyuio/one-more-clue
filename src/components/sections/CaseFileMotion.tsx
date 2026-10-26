@@ -54,16 +54,17 @@ export function FlyIn({ children, from, className, delay = 0 }: { children: Reac
   );
 }
 
-/** Evidence rows dealt onto the table one by one. */
-export function DealIn({ children, index }: { children: ReactNode; index: number }) {
+/** Evidence cards pinned to the file one by one, each at its own slight angle. */
+export function PinIn({ children, index, className }: { children: ReactNode; index: number; className?: string }) {
+  const tilt = [-3, 2, -1.5, 3, -2][index % 5];
   return (
     <m.li
-      className="flex items-center gap-3 rounded-2xl border-2 border-ink/15 bg-white p-2 pr-4 transition-colors hover:border-ink"
-      initial={{ opacity: 0, x: index % 2 ? 40 : -40, rotate: index % 2 ? 4 : -4 }}
-      whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+      className={cx("relative", className)}
+      initial={{ opacity: 0, y: -40, rotate: tilt * 4, scale: 1.1 }}
+      whileInView={{ opacity: 1, y: 0, rotate: tilt, scale: 1 }}
       viewport={{ once: true, amount: 0.5 }}
-      transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.9 + index * 0.08 }}
-      whileHover={{ scale: 1.03, rotate: index % 2 ? 1 : -1 }}
+      transition={{ type: "spring", stiffness: 140, damping: 13, delay: 0.9 + index * 0.1 }}
+      whileHover={{ rotate: 0, y: -6, scale: 1.04 }}
     >
       {children}
     </m.li>

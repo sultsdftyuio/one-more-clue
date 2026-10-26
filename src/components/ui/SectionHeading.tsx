@@ -25,7 +25,7 @@ export function SectionHeading({ eyebrow, title, children, surface = "dark", cla
       </p>
       <h2
         className={cx(
-          "mt-5 font-display text-5xl leading-none sm:text-6xl",
+          "mt-5 font-display text-5xl leading-none text-balance sm:text-6xl",
           dark ? "text-cream text-pop" : "text-ink",
         )}
       >

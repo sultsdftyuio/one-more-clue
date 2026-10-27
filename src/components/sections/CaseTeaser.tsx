@@ -34,7 +34,7 @@ export function CaseTeaser() {
         </FlyIn>
 
         <FolderCover code={case001.code}>
-          <article className="relative grid -rotate-1 gap-8 rounded-3xl border-[0.1875rem] border-ink bg-cream p-6 text-ink shadow-card sm:p-10 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-12">
+          <article className="relative grid gap-8 sm:-rotate-1 rounded-3xl border-[0.1875rem] border-ink bg-cream p-6 text-ink shadow-card sm:p-10 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-12">
             <span aria-hidden className="absolute -top-4 left-1/2 h-8 w-32 -translate-x-1/2 rotate-2 bg-white/70" />
 
             {/* The poster, taped into the file, with a FREE stamp. */}

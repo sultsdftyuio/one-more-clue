@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { AnimatePresence, m, useMotionTemplate, useMotionValue, useTransform, type MotionValue } from "motion/react";
-import type { ReactNode } from "react";
 import { usePointer } from "@/components/fx/pointer";
 import { cx } from "@/lib/cx";
 
@@ -13,157 +12,119 @@ export const phoneScreens = [
   { src: "/screens/room-vote-phone.jpg", alt: "Solving: the group votes on what's wrong with the last message" },
 ];
 
-/** How thick the phone is, in px: the edges, buttons and back sit this far behind the glass. */
-const DEPTH = 16;
+/**
+ * The WebGL phone's canvas is this many times the height of the phone's slot,
+ * leaving room for the turn and its shadow (see PhoneStage and PhoneScene).
+ */
+export const CANVAS_TALL = 1.3;
+
+/** The body is this many thin slices stacked this far apart (px), so its rounded edge is solid from any angle. */
+const SLICES = 14;
+const STEP = 1;
+const DEPTH = SLICES * STEP;
+const RADIUS = "2.6rem";
+
+type Angle = MotionValue<number> | number;
+
+/**
+ * The phone's turn: the angle it's given (fixed or driven by scroll) plus a
+ * small lean toward the cursor, or the tilt of the viewer's own phone.
+ */
+export function usePhoneTurn(rotateX: Angle = 0, rotateY: Angle = 0) {
+  const fixedX = useMotionValue(typeof rotateX === "number" ? rotateX : 0);
+  const fixedY = useMotionValue(typeof rotateY === "number" ? rotateY : 0);
+  const { x: px, y: py } = usePointer();
+  const turnY = useTransform([typeof rotateY === "number" ? fixedY : rotateY, px] as MotionValue<number>[], ([b, p]: number[]) => b + p * 8);
+  const turnX = useTransform([typeof rotateX === "number" ? fixedX : rotateX, py] as MotionValue<number>[], ([b, p]: number[]) => b - p * 5);
+  return { turnX, turnY };
+}
 
 type Props = {
   screen: number;
   className?: string;
-  rotateX?: MotionValue<number> | number;
-  rotateY?: MotionValue<number> | number;
+  rotateX?: Angle;
+  rotateY?: Angle;
 };
 
-/** A piece of UI lifted off the glass, hovering in front of the phone. */
-function Floating({ z, className, delay = 0, children }: { z: number; className: string; delay?: number; children: ReactNode }) {
-  return (
-    <m.div
-      className={cx("pointer-events-none absolute", className)}
-      initial={{ opacity: 0, z: 0, scale: 0.7 }}
-      animate={{ opacity: 1, z, scale: 1 }}
-      exit={{ opacity: 0, z: 0, scale: 0.7 }}
-      transition={{ type: "spring", stiffness: 160, damping: 16, delay }}
-    >
-      {children}
-    </m.div>
-  );
-}
-
-/** What pops out of each screen: the invite, a piece of evidence, the verdict. */
-function Pops({ screen }: { screen: number }) {
-  if (screen === 0)
-    return (
-      <>
-        <Floating key="code" z={90} className="top-[18%] -right-10 sm:-right-14" delay={0.15}>
-          <span className="block rotate-6 rounded-2xl border-[0.1875rem] border-ink bg-mustard px-3 py-2 font-display text-lg leading-none text-ink shadow-pop-sm">
-            Room K7QX
-            <span className="mt-1 block font-sans text-[0.65rem] font-extrabold tracking-widest uppercase">Tap to join</span>
-          </span>
-        </Floating>
-        <Floating key="joined" z={60} className="bottom-[22%] -left-8 sm:-left-12" delay={0.3}>
-          <span className="flex -rotate-3 items-center gap-1.5 rounded-full border-[0.1875rem] border-ink bg-cream py-1 pr-3 pl-1.5 text-xs font-extrabold text-ink shadow-pop-sm">
-            <span className="flex -space-x-1.5">
-              {["bg-coral", "bg-teal", "bg-lilac"].map((c) => (
-                <span key={c} className={cx("size-5 rounded-full border-2 border-ink", c)} />
-              ))}
-            </span>
-            3 joined
-          </span>
-        </Floating>
-      </>
-    );
-  if (screen === 1)
-    return (
-      <>
-        <Floating key="log" z={100} className="top-[30%] -right-12 sm:-right-16" delay={0.15}>
-          <span className="block -rotate-3 rounded-xl border-[0.1875rem] border-ink bg-cream px-3 py-2 font-mono text-[0.7rem] leading-snug font-bold text-ink shadow-pop-sm">
-            <span className="block font-sans text-[0.6rem] font-extrabold tracking-widest text-coral uppercase">Badge log</span>
-            9:12 PM · R. Tran · in
-            <br />
-            <span className="rounded bg-mustard px-1">9:16 PM · ??? · out</span>
-          </span>
-        </Floating>
-        <Floating key="pin" z={70} className="bottom-[16%] -left-10 sm:-left-14" delay={0.3}>
-          <span className="block rotate-6 rounded-lg border-[0.1875rem] border-ink bg-white p-1.5 pb-4 shadow-pop-sm">
-            <span className="block size-14 rounded bg-[linear-gradient(180deg,#12152b,#2a2f5c)]">
-              <span className="mt-6 ml-7 block size-3 rounded-sm bg-mustard" />
-            </span>
-          </span>
-        </Floating>
-      </>
-    );
-  return (
-    <>
-      <Floating key="closed" z={110} className="top-[38%] -right-8 sm:-right-12" delay={0.2}>
-        <span className="block -rotate-12 rounded-xl border-[0.3125rem] border-coral bg-cream/95 px-3 py-1 font-display text-2xl tracking-widest text-coral uppercase shadow-pop-sm">
-          Case closed
-        </span>
-      </Floating>
-      <Floating key="votes" z={60} className="top-[14%] -left-10 sm:-left-14" delay={0.35}>
-        <span className="block rotate-3 rounded-xl border-[0.1875rem] border-ink bg-cream px-3 py-2 text-[0.7rem] font-extrabold text-ink shadow-pop-sm">
-          Votes 4 / 4
-          <span className="mt-1 flex gap-1">
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className="h-2 w-5 rounded-full border border-ink bg-teal" />
-            ))}
-          </span>
-        </span>
-      </Floating>
-    </>
-  );
-}
-
 /**
- * A phone with real thickness, held at an angle and showing a real game
- * screen. It leans a little toward the cursor, glare slides across the glass
- * as it turns, and pieces of each screen float off the glass in 3D.
+ * A phone built in CSS 3D: a metal body of stacked slices with a sheen that
+ * slides as it turns, a black glass front over a slightly recessed screen, a
+ * back with a camera bump, and a shadow on the ground that follows the tilt.
+ * Phones and older devices get this one; bigger screens get the WebGL phone.
  */
 export function PhoneFrame({ screen, className, rotateX = 0, rotateY = 0 }: Props) {
-  const fixedX = useMotionValue(typeof rotateX === "number" ? rotateX : 0);
-  const fixedY = useMotionValue(typeof rotateY === "number" ? rotateY : 0);
-  const baseX = typeof rotateX === "number" ? fixedX : rotateX;
-  const baseY = typeof rotateY === "number" ? fixedY : rotateY;
-  const { x: px, y: py } = usePointer();
-  const turnY = useTransform([baseY, px] as MotionValue<number>[], ([b, p]: number[]) => b + p * 8);
-  const turnX = useTransform([baseX, py] as MotionValue<number>[], ([b, p]: number[]) => b - p * 5);
-  // Light comes from the top left: the glare slides as the phone turns, the shadow falls the other way.
-  const glareAt = useTransform(turnY, [-30, 30], [-10, 70]);
-  const glare = useMotionTemplate`linear-gradient(115deg, rgba(255,255,255,0) ${glareAt}%, rgba(255,255,255,0.22) calc(${glareAt}% + 8%), rgba(255,255,255,0) calc(${glareAt}% + 22%))`;
-  const shadowX = useTransform(turnY, [-30, 30], [28, -28]);
+  const { turnX, turnY } = usePhoneTurn(rotateX, rotateY);
+  // Light from the top left: the sheen slides along the metal, the glass reflection across the screen.
+  const sheen = useTransform(turnY, [-30, 30], [15, 75]);
+  const metal = useMotionTemplate`linear-gradient(100deg, #191d3d 0%, #2a2f5c ${sheen}%, #6a72b8 calc(${sheen}% + 6%), #2a2f5c calc(${sheen}% + 14%), #191d3d 100%)`;
+  const glareAt = useTransform(turnY, [-30, 30], [-20, 60]);
+  const glare = useMotionTemplate`linear-gradient(115deg, rgba(255,255,255,0) ${glareAt}%, rgba(255,255,255,0.16) calc(${glareAt}% + 10%), rgba(255,255,255,0) calc(${glareAt}% + 26%))`;
+  const shadowX = useTransform(turnY, [-30, 30], [24, -24]);
+  const shadowW = useTransform(turnY, (v) => 1 + Math.abs(v) / 90);
 
   return (
     <div className={cx("relative [perspective:1400px]", className)}>
-      <m.div
-        aria-hidden
-        className="absolute -bottom-10 left-1/2 h-10 w-[85%] -translate-x-1/2 rounded-[50%] bg-ink/35 blur-xl"
-        style={{ x: shadowX }}
-      />
+      {/* Contact shadow: stretches and slides away from the light as the phone turns. */}
+      <m.div aria-hidden className="absolute -bottom-9 left-1/2 h-8 w-[78%] -translate-x-1/2 rounded-[50%] bg-ink/40 blur-lg" style={{ x: shadowX, scaleX: shadowW }} />
       <m.div animate={{ y: [0, -8, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="[transform-style:preserve-3d]">
-        <m.div className="relative rounded-[2.6rem] bg-ink p-2 [transform-style:preserve-3d]" style={{ rotateX: turnX, rotateY: turnY }}>
-          {/* The body: back plate and four edges, so it has depth from every angle. */}
-          <span aria-hidden className="absolute inset-0 rounded-[2.6rem] bg-[#22264a]" style={{ transform: `translateZ(-${DEPTH}px)` }} />
-          <span aria-hidden className="absolute inset-y-10 right-0 origin-right rounded-sm bg-[linear-gradient(90deg,#2a2f5c,#3a4080,#2a2f5c)]" style={{ width: DEPTH, transform: "rotateY(-90deg)" }}>
-            <span className="absolute top-[22%] left-1/2 h-14 w-1.5 -translate-x-1/2 rounded-full bg-[#4a5194]" />
+        <m.div className="relative [transform-style:preserve-3d]" style={{ rotateX: turnX, rotateY: turnY }}>
+          {/* Body: slices behind the front form the rounded metal edge. */}
+          {Array.from({ length: SLICES }, (_, i) => (
+            <m.span
+              key={i}
+              aria-hidden
+              className="absolute inset-0"
+              style={{ borderRadius: RADIUS, background: metal, transform: `translateZ(-${(i + 1) * STEP}px)`, filter: `brightness(${0.95 - (i / SLICES) * 0.35})` }}
+            />
+          ))}
+          {/* Side buttons, a few slices deep so they read from the side. */}
+          {[0.3, 0.5].map((z) =>
+            [
+              { side: "-right-[3px]", top: "top-[22%]", h: "h-14" },
+              { side: "-left-[3px]", top: "top-[17%]", h: "h-9" },
+              { side: "-left-[3px]", top: "top-[25%]", h: "h-9" },
+            ].map((b) => (
+              <span
+                key={`${z}${b.side}${b.top}`}
+                aria-hidden
+                className={cx("absolute w-1 rounded-full bg-[#4a5194]", b.side, b.top, b.h)}
+                style={{ transform: `translateZ(-${DEPTH * z}px)` }}
+              />
+            )),
+          )}
+          {/* Back plate with the camera bump (seen when it turns right round). */}
+          <span aria-hidden className="absolute inset-0 bg-[#1f2346]" style={{ borderRadius: RADIUS, transform: `translateZ(-${DEPTH + 0.5}px) rotateY(180deg)` }}>
+            <span className="absolute top-5 left-5 grid size-[38%] grid-cols-2 gap-1.5 rounded-[1.4rem] border border-[#4a5194]/60 bg-[#272c55] p-2.5">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="aspect-square rounded-full border-[3px] border-[#3a4080] bg-[radial-gradient(circle_at_35%_35%,#4a5194,#0b0d1a_60%)]" />
+              ))}
+              <span className="m-auto size-3 rounded-full bg-moon/80" />
+            </span>
           </span>
-          <span aria-hidden className="absolute inset-y-10 left-0 origin-left rounded-sm bg-[linear-gradient(90deg,#2a2f5c,#353a74,#2a2f5c)]" style={{ width: DEPTH, transform: "rotateY(90deg)" }}>
-            <span className="absolute top-[16%] left-1/2 h-8 w-1.5 -translate-x-1/2 rounded-full bg-[#4a5194]" />
-            <span className="absolute top-[24%] left-1/2 h-8 w-1.5 -translate-x-1/2 rounded-full bg-[#4a5194]" />
-          </span>
-          <span aria-hidden className="absolute inset-x-10 top-0 origin-top bg-[#2f3466]" style={{ height: DEPTH, transform: "rotateX(-90deg)" }} />
-          <span aria-hidden className="absolute inset-x-10 bottom-0 origin-bottom bg-[#1f2346]" style={{ height: DEPTH, transform: "rotateX(90deg)" }} />
 
-          {/* The front: bezel outline and the glass. */}
-          <div className="relative rounded-[2.1rem] outline-[0.1875rem] outline-offset-[0.4rem] outline-ink">
-            <div className="relative aspect-[469/1015] overflow-hidden rounded-[2rem] bg-night">
-              <AnimatePresence initial={false}>
-                <m.div
-                  key={screen}
-                  className="absolute inset-0"
-                  initial={{ y: "100%", opacity: 0.4 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: "-25%", opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 140, damping: 22 }}
-                >
-                  <Image src={phoneScreens[screen].src} alt={phoneScreens[screen].alt} fill sizes="320px" className="object-cover object-top" />
-                </m.div>
-              </AnimatePresence>
-              <m.div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: glare }} />
-              <span aria-hidden className="absolute top-2.5 left-1/2 h-5 w-20 -translate-x-1/2 rounded-full bg-ink" />
+          {/* Front: metal rim, black glass bezel, recessed screen. */}
+          <m.div className="relative p-[3px]" style={{ borderRadius: RADIUS, background: metal }}>
+            <div className="rounded-[2.45rem] bg-[#07081a] p-[0.55rem] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+              <div className="relative aspect-[469/1015] overflow-hidden rounded-[1.95rem] bg-night shadow-[inset_0_0_0.6rem_rgba(0,0,0,0.6)]">
+                <AnimatePresence initial={false}>
+                  <m.div
+                    key={screen}
+                    className="absolute inset-0"
+                    initial={{ y: "100%", opacity: 0.4 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: "-25%", opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 140, damping: 22 }}
+                  >
+                    <Image src={phoneScreens[screen].src} alt={phoneScreens[screen].alt} fill sizes="320px" className="object-cover object-top" />
+                  </m.div>
+                </AnimatePresence>
+                <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0.35rem_rgba(0,0,0,0.55)]" />
+                <span aria-hidden className="absolute top-2.5 left-1/2 h-5 w-20 -translate-x-1/2 rounded-full bg-[#07081a]" />
+              </div>
             </div>
-          </div>
-
-          <AnimatePresence>
-            <Pops key={screen} screen={screen} />
-          </AnimatePresence>
+            {/* Reflection on the glass, sliding as the phone turns. */}
+            <m.span aria-hidden className="pointer-events-none absolute inset-0" style={{ borderRadius: RADIUS, background: glare }} />
+          </m.div>
         </m.div>
       </m.div>
     </div>

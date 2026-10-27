@@ -11,6 +11,7 @@ import { facts, steps, type Step } from "@/data/how-it-works";
 import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
 import { PhoneFrame } from "./PhoneFrame";
+import { PhoneStage } from "./PhoneStage";
 
 const tilts = ["-rotate-2", "rotate-1", "-rotate-1"];
 
@@ -75,7 +76,7 @@ function StepCard({ step, index, active, onActive, pin }: { step: Step; index: n
   }, [centred, index, onActive]);
 
   return (
-    <li ref={ref} className="lg:flex lg:min-h-[64vh] lg:items-center">
+    <li ref={ref} className="md:flex md:min-h-[64vh] md:items-center">
       <m.div
         className="w-full"
         animate={{ opacity: active ? 1 : 0.55, scale: active ? 1 : 0.95 }}
@@ -109,7 +110,7 @@ function StepCard({ step, index, active, onActive, pin }: { step: Step; index: n
         </Reveal>
         {/* Phones get their own screen under each step. */}
         <m.div
-          className="mx-auto mt-16 w-[min(15rem,58vw)] lg:hidden"
+          className="mx-auto mt-16 w-[min(15rem,58vw)] md:hidden"
           initial={{ opacity: 0, rotateX: 35, y: 60 }}
           whileInView={{ opacity: 1, rotateX: 8, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -165,7 +166,7 @@ function RedString({ pins, children }: { pins: (HTMLElement | null)[]; children:
   }, [pins]);
 
   return (
-    <ol ref={box} className="relative space-y-32 lg:space-y-0">
+    <ol ref={box} className="relative space-y-32 md:space-y-0">
       {/* Behind the cards: the string disappears under each one and comes out at its pin. */}
       <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
         {d && (
@@ -220,15 +221,15 @@ export function HowItWorks() {
         </SectionHeading>
       </Reveal>
 
-      <div className="mx-auto mt-28 max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-24">
+      <div className="mx-auto mt-28 max-w-6xl md:grid md:grid-cols-[minmax(0,1fr)_15rem] md:gap-14 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-24">
         <RedString pins={pins}>
           {steps.map((step, i) => (
             <StepCard key={step.title} step={step} index={i} active={active === i} onActive={setActive} pin={pinRefs[i]} />
           ))}
         </RedString>
-        <div className="hidden lg:block">
-          <div className="sticky top-[12vh] px-10">
-            <PhoneFrame screen={active} rotateX={rotateX} rotateY={rotateY} />
+        <div className="hidden md:block">
+          <div className="sticky top-[12vh] lg:px-10">
+            <PhoneStage screen={active} rotateX={rotateX} rotateY={rotateY} />
             <p className="mt-14 text-center text-sm font-extrabold text-ink/60">Real screens from a real game</p>
           </div>
         </div>

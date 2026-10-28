@@ -12,7 +12,7 @@ export const BOT_NAMES = ["Bot Watson", "Bot Marple", "Bot Poirot", "Bot Fletche
 /** Votes and getting ready happen quickly; investigating is spaced out. */
 const QUICK_MS = 800;
 const WORK_MS = 3500;
-/** Bots leave this many board slots for the humans. */
+/** Bots between them hold at most this many fewer pins than the board takes, so humans always have room. */
 const SLOTS_FOR_HUMANS = 3;
 
 export type BotMove = { playerId: string; action: Action };
@@ -72,6 +72,9 @@ export function nextBotMove(state: RoomState, caseFile: CaseFile, now: number): 
 
   if (since < WORK_MS) return null;
   const pinned = new Set(state.pins.map((p) => p.evidenceId));
+  // Count only the bots' own pins: humans filling the board mustn't stop a bot showing its desk.
+  const botPins = state.pins.filter((p) => bots.some((b) => b.id === p.by)).length;
+  const room = state.pins.length < PIN_LIMIT && botPins < PIN_LIMIT - SLOTS_FOR_HUMANS;
 
   for (const bot of bots) {
     // Its own desk and finds from this chapter, so humans can see what the bot holds.
@@ -81,7 +84,7 @@ export function nextBotMove(state: RoomState, caseFile: CaseFile, now: number): 
         !pinned.has(e.id) &&
         ((e.access.kind === "desk" && bot.roles.includes(e.role)) || state.found[e.id]?.by === bot.id),
     );
-    if (own && state.pins.length < PIN_LIMIT - SLOTS_FOR_HUMANS) return { playerId: bot.id, action: { type: "pin", evidenceId: own.id } };
+    if (own && room) return { playerId: bot.id, action: { type: "pin", evidenceId: own.id } };
     // Out of bot space: make room by taking down one of its own pins from an earlier chapter.
     if (own) {
       const stale = state.pins.find((p) => p.by === bot.id && (caseFile.evidence.find((e) => e.id === p.evidenceId)?.chapter ?? 0) < state.chapter);

@@ -73,6 +73,17 @@ test("in a new chapter, bots swap old pins for new finds so the team keeps movin
   assert.ok(state.found["insight-squarington"], "so the Archivist bot could catch the lie");
 });
 
+test("humans pinning lots doesn't stop bots showing their desks", () => {
+  let state = soloWithBots("together");
+  const humanPins = Array.from({ length: 5 }, (_, i) => ({ evidenceId: `mine${i}`, by: "me", at: 0 }));
+  state = { ...state, pins: humanPins, botMovedAt: 0 };
+  const move = nextBotMove(state, tipJar, 10_000);
+  assert.equal(move?.action.type, "pin", "a bot still pins with 5 human pins up");
+
+  state = { ...state, pins: [...humanPins, ...humanPins.slice(0, 3).map((p, i) => ({ ...p, evidenceId: `more${i}` }))] };
+  assert.notEqual(nextBotMove(state, tipJar, 10_000)?.action.type, "pin", "but never onto a full board");
+});
+
 test("bots wait between moves", () => {
   const state = createRoom({ code: "B", caseFile: tipJar, host: { id: "me", token: "t", name: "Me" }, mode: "together", now: 0 });
   const withBot = must(addPlayer(state, tipJar, { id: "bot", token: "b", name: "Bot", bot: true }, 0));

@@ -65,4 +65,4 @@ Out of 5 stars: naming the culprit is worth 2, the motive 1, proof that holds up
 
 1. `npm test`: the case check must pass.
 2. Play it alone at `/host` with test bots (they pin their evidence and use their abilities once a chapter, but never answer for you).
-3. Then play it with real people. That's the only test that tells you if it's fun.
+3. Then play it with real people. That's the only test that tells you if it's fun. [`playtest.md`](playtest.md) is the checklist.

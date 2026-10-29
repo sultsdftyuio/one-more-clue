@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
+import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
 import { addPlayer, applyAction, checkCase, createRoom, dealRoles, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
@@ -127,6 +128,62 @@ test("a single wrong checkpoint answer costs the sharp star", () => {
   state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
   assert.equal(scoreReport(state, tipJar, { suspectId: "rectangle", motiveId: "debt", evidenceIds: ["cctv-still", "detail-stop-clock"] }).sharp, false);
 });
+
+/** Case 001 with four people, jumped straight to chapter 3 where Rena's interrogation opens. */
+function interrogationRoom() {
+  let state = createRoom({ code: "INT", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= 4; i++) state = must(addPlayer(state, case001, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  for (let i = 1; i <= 4; i++) state = must(applyAction(state, case001, `p${i}`, { type: "ready" }, 0, newId));
+  return { ...state, chapter: 3 };
+}
+const act001 = (state: RoomState, who: string, action: Action) => applyAction(state, case001, who, action, 1, newId);
+const do001 = (state: RoomState, who: string, action: Action) => must(act001(state, who, action));
+const room001 = (state: RoomState, who: string) => viewFor(state, case001, who, new Set()).interrogation!;
+
+test("interrogation: only the Interviewer hears the claims and presses on", () => {
+  let state = interrogationRoom();
+  assert.equal(room001(state, INTERVIEWER).claim, case001.interrogation!.claims[0].text);
+  assert.equal(room001(state, TECH).claim, null, "the others have to be told");
+  assert.equal(act001(state, TECH, { type: "press", step: 1 }).ok, false);
+  state = do001(state, INTERVIEWER, { type: "press", step: -1 });
+  assert.equal(room001(state, TECH).index, case001.interrogation!.claims.length - 1, "the story loops round");
+  assert.equal(viewFor({ ...state, chapter: 2 }, case001, INTERVIEWER, new Set()).interrogation, null, "closed before chapter 3");
+});
+
+test("interrogation: presenting the right pinned evidence breaks a lie, anything else is a strike", () => {
+  let state = interrogationRoom();
+  state = do001(state, INTERVIEWER, { type: "press", step: 1 }); // "I'm a senior engineer at Northgate Capital."
+  assert.equal(act001(state, ARCHIVIST, { type: "callLie", evidenceId: "northgate-email" }).ok, false, "it has to be on the board");
+  state = do001(state, ARCHIVIST, { type: "pin", evidenceId: "northgate-email" });
+  state = do001(state, TECH, { type: "callLie", evidenceId: "northgate-email" });
+  assert.deepEqual(room001(state, TECH).broken.map((b) => b.id), ["northgate"]);
+  assert.ok(room001(state, TECH).claim, "a broken claim is shown to everyone");
+  assert.equal(act001(state, TECH, { type: "callLie", evidenceId: "northgate-email" }).ok, false, "no catching it twice");
+
+  state = do001(state, INTERVIEWER, { type: "press", step: -1 }); // a true claim
+  for (let i = 1; i <= 3; i++) state = do001(state, TECH, { type: "callLie", evidenceId: "northgate-email" });
+  assert.equal(room001(state, TECH).over, "walkedOut");
+  assert.ok(room001(state, TECH).walkout);
+  assert.equal(act001(state, INTERVIEWER, { type: "press", step: 1 }).ok, false, "she won't talk again");
+});
+
+test("interrogation: catching every lie earns the confession", () => {
+  let state = interrogationRoom();
+  const claims = case001.interrogation!.claims;
+  claims.forEach((claim, i) => {
+    if (i > 0) state = do001(state, INTERVIEWER, { type: "press", step: 1 });
+    if (!claim.lie) return;
+    const proof = claim.lie.breaks[0];
+    state = { ...state, found: { ...state.found, [proof]: { by: PHOTOGRAPHER, at: 0 } }, pins: [{ evidenceId: proof, by: PHOTOGRAPHER, at: 0 }] };
+    state = do001(state, PHOTOGRAPHER, { type: "callLie", evidenceId: proof });
+  });
+  assert.equal(room001(state, TECH).over, "confessed");
+  assert.equal(state.found["rena-confession"]?.by, PHOTOGRAPHER);
+  assert.ok(sees001(state, INTERVIEWER).includes("rena-confession"), "the Interviewer's desk gets it");
+  assert.ok(case001.solution.keyEvidence.includes("rena-confession"));
+});
+const sees001 = (state: RoomState, who: string) => viewFor(state, case001, who, new Set()).evidence.map((e) => e.id);
 
 test("the board holds a limited number of pins", () => {
   let state = roomWith(4);

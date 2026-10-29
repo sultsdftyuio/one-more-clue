@@ -109,7 +109,9 @@ export type Access =
   /** A hidden detail: a hotspot inside a scene. */
   | { kind: "inspect"; scene: string; hotspot: string }
   /** A contradiction between two pieces of evidence. */
-  | { kind: "crosscheck"; pair: [string, string] };
+  | { kind: "crosscheck"; pair: [string, string] }
+  /** What a suspect admits once every lie in their interrogation is broken. */
+  | { kind: "interrogation" };
 
 export type CaseEvidence = {
   id: string;
@@ -133,6 +135,29 @@ export type Chapter = {
   hints: string[];
 };
 
+/** One thing a suspect says under interrogation. A lie names the pinned evidence that breaks it. */
+export type InterrogationClaim = { id: string; text: string; lie?: { breaks: string[]; crack: string } };
+
+/**
+ * A suspect's story, told claim by claim. Only the Interviewer hears the
+ * claims and reads them out; anyone can call a lie by presenting a piece of
+ * pinned evidence. Break every lie and the suspect confesses; make too many
+ * wrong calls and they walk out.
+ */
+export type Interrogation = {
+  /** Suspect id. */
+  suspect: string;
+  /** The chapter it opens in. */
+  chapter: number;
+  /** Wrong calls allowed before the suspect walks out. */
+  strikes: number;
+  claims: InterrogationClaim[];
+  /** The evidence (access "interrogation") found when every lie is broken. */
+  confession: string;
+  /** What the suspect says as they walk out. */
+  walkout: string;
+};
+
 export type CaseFile = {
   id: string;
   /** Shown as the case number, e.g. "Case 001". */
@@ -153,6 +178,8 @@ export type CaseFile = {
   chapters: Chapter[];
   /** Interview questions the whole team can ask over the case. */
   questionBudget: number;
+  /** A suspect the team can interrogate, catching their lies with pinned evidence. */
+  interrogation?: Interrogation;
   evidence: CaseEvidence[];
   solution: {
     culprit: string;
@@ -210,7 +237,7 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -240,6 +267,8 @@ export type RoomState = {
   checked: string[];
   /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
   emptyChecks?: Record<number, number>;
+  /** How the interrogation is going, once it has started. */
+  interrogation?: InterrogationState;
   chat: ChatLine[];
   activity: Activity[];
   hintsUsed: number;
@@ -253,6 +282,15 @@ export type RoomState = {
   botMovedAt?: number;
 };
 
+export type InterrogationState = {
+  /** The claim the suspect is on, as an index into the case's claims. */
+  claim: number;
+  /** Claim ids whose lies have been broken. */
+  broken: string[];
+  strikes: number;
+  over?: "confessed" | "walkedOut";
+};
+
 export type Action =
   | { type: "setMode"; mode: Mode }
   | { type: "start" }
@@ -261,6 +299,10 @@ export type Action =
   | { type: "ask"; evidenceId: string }
   | { type: "inspect"; scene: string; hotspot: string }
   | { type: "crosscheck"; a: string; b: string }
+  /** Interrogation: move the suspect on to their next (or previous) claim. */
+  | { type: "press"; step: 1 | -1 }
+  /** Interrogation: call the current claim a lie, presenting a pinned piece of evidence. */
+  | { type: "callLie"; evidenceId: string }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }

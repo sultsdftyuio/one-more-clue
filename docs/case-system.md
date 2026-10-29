@@ -42,6 +42,7 @@ Each case should look, sound and play differently from the others.
 - **Footage** (`type: "footage"`): camera frames players play or scrub through. Hotspots can sit in any frame, so the clue can be *when* something changes (an empty chair, a plate gone).
 - **Recordings** (`type: "recording"`): a tape with timed captions and synthesised sounds (`speech`, `music`, `jingle`, `static`, `click`, `creak`, `breath`, `beep`, `door`, `silence`). Great for "listen for what's missing".
 - **Dark scenes** (`dark: true` on a scene): pitch black until the Photographer sweeps a flashlight across it.
+- **A signature mechanic.** Each case should have one thing to *do* that no other case has. Case 001's is the **interrogation** (`interrogation` on the case): a suspect tells their story claim by claim, only the Interviewer hears it, and anyone can call a lie by presenting a pinned piece of evidence listed in that claim's `breaks`. Wrong calls are strikes; at `strikes` the suspect walks out. Catching every lie finds the `confession` evidence (`access: { kind: "interrogation" }`). Mix in true claims, give each lie several pieces that break it, and make sure at least one is a desk item or an easy find.
 - **Vary the culprit.** Don't let the nervous one always be innocent, or one shape always be guilty.
 - **Don't name the culprit at the second checkpoint.** Ask *how* or *when* instead of *who*, or point the group at the wrong person first.
 

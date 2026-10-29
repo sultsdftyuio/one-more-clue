@@ -13,7 +13,8 @@ import { useTypewriter } from "./StoryPlayer";
 function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose: () => void }) {
   const { view } = useGame();
   const body = evidence.body;
-  const spoken = evidence.source === "interview" && body.type === "statement" ? body.text : "";
+  const speaks = evidence.source === "interview" || evidence.source === "interrogation";
+  const spoken = speaks && body.type === "statement" ? body.text : "";
   const typed = useTypewriter(spoken, Boolean(spoken));
 
   useEffect(() => {
@@ -22,10 +23,10 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   }, [evidence.source]);
 
   useEffect(() => {
-    if (evidence.source === "interview") return; // reading takes as long as it takes
+    if (speaks) return; // reading takes as long as it takes
     const timer = window.setTimeout(onClose, 7000);
     return () => window.clearTimeout(timer);
-  }, [evidence.source, onClose]);
+  }, [speaks, onClose]);
 
   let content;
   if (evidence.source === "search") {
@@ -36,7 +37,7 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
         <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[#7ee787]/80">{snippet(body)}</p>
       </div>
     );
-  } else if (evidence.source === "interview" && body.type === "statement") {
+  } else if (speaks && body.type === "statement") {
     const suspect = view.case.suspects.find((s) => s.name === body.speaker);
     content = (
       <div className="flex items-end gap-3">
@@ -83,10 +84,10 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
           <PinButton evidence={evidence} />
           <button
             type="button"
-            onClick={() => (evidence.source === "interview" && !typed.complete ? typed.finish() : onClose())}
+            onClick={() => (speaks && !typed.complete ? typed.finish() : onClose())}
             className="rounded-full border-2 border-cream/30 px-4 py-1.5 text-sm font-extrabold text-cream hover:bg-cream/10"
           >
-            {evidence.source === "interview" && !typed.complete ? "Skip" : "Got it"}
+            {speaks && !typed.complete ? "Skip" : "Got it"}
           </button>
         </div>
       </div>

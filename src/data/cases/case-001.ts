@@ -15,6 +15,10 @@ import type { CaseFile } from "@/lib/game/types";
  * a visitor alone, and Ozzy, whose round passes Lab 4 at 9:10. Checkpoint 2
  * catches the professor's lie, so the culprit is only named in the final report.
  *
+ * Signature: the interrogation. In chapter 3 Rena tells her story claim by
+ * claim; the team breaks each lie by presenting pinned evidence, and if they
+ * catch all five she confesses.
+ *
  * Hand-offs: the Archivist's chat shows the edit → the Tech searches the chat
  * history and Priya's laptop; the Photographer's 8:58 photo shows HALO still
  * there; the visitor sheet gives badge V-117 and a number plate for the Tech;
@@ -124,12 +128,13 @@ export const case001: CaseFile = {
     },
     {
       title: "The last clue",
-      intro: "The professor left at 9:02. Someone still in the building took HALO. Prove who, and find out why.",
+      intro: "The professor left at 9:02. Someone still in the building took HALO. Rena has agreed to talk. Catch her lies, prove who took it, and why.",
       story: [
         { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet the next morning.", shocked: true },
         { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
         { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
+        { kind: "narration", text: "She's agreed to one interview. Pin what breaks her story, and listen closely." },
       ],
       hints: [
         "Two people were still around after 9:02. Check where each of them was at 9:12, and where each one went.",
@@ -139,6 +144,51 @@ export const case001: CaseFile = {
     },
   ],
   questionBudget: 6,
+  interrogation: {
+    suspect: "rectangle",
+    chapter: 3,
+    strikes: 3,
+    claims: [
+      { id: "invited", text: "Professor Squires invited me to see HALO before the demo." },
+      {
+        id: "northgate",
+        text: "I'm a senior engineer at Northgate Capital.",
+        lie: {
+          breaks: ["kestrel-staff", "northgate-email", "detail-lanyard", "insight-employer"],
+          crack: "Northgate, Kestrel… investors all look the same in the end, don't they?",
+        },
+      },
+      {
+        id: "together",
+        text: "The professor was with me every single minute.",
+        lie: {
+          breaks: ["badge-log", "insight-sheet", "question-ozzy-round", "insight-together", "question-squires-sheet", "detail-alone"],
+          crack: "Fine. He took a call from the Dean and left me waiting. Is that my fault?",
+        },
+      },
+      { id: "priya", text: "I'd never met Priya Tran. I still haven't." },
+      {
+        id: "touched",
+        text: "I didn't touch a single thing in that lab.",
+        lie: {
+          breaks: ["device-log", "chat-history", "detail-badge-clip", "detail-screen"],
+          crack: "I checked something on a laptop. One laptop. Briefly.",
+        },
+      },
+      {
+        id: "coat",
+        text: "I walked out with nothing but my coat.",
+        lie: { breaks: ["detail-bag", "question-ozzy-bag", "cctv-lobby"], crack: "It's a tote bag. Everyone carries a tote bag." },
+      },
+      {
+        id: "home",
+        text: "And then I drove straight home.",
+        lie: { breaks: ["anpr", "insight-home"], crack: "…I'd like to stop talking now." },
+      },
+    ],
+    confession: "rena-confession",
+    walkout: "This is harassment. I'm leaving, and Northgate's lawyers will be in touch.",
+  },
   evidence: [
     // ----- Chapter 1: the last message ---------------------------------------
     {
@@ -603,6 +653,18 @@ export const case001: CaseFile = {
       title: "Not home",
       body: { type: "finding", text: "Rena says she drove straight home. Her car went to Kestrel's headquarters at 9:48." },
     },
+    {
+      id: "rena-confession",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "interrogation" },
+      title: "Rena's confession",
+      body: {
+        type: "statement",
+        speaker: "Rena Voss",
+        text: "Kestrel sent me. When the professor left, I changed Priya's message on her laptop, opened the cabinet with his spare key and carried HALO out in my bag. It's in Kestrel's lab now.",
+      },
+    },
   ],
   solution: {
     culprit: "rectangle",
@@ -614,6 +676,7 @@ export const case001: CaseFile = {
     ],
     motive: "rival",
     keyEvidence: [
+      "rena-confession",
       "anpr",
       "kestrel-staff",
       "northgate-email",

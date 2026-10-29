@@ -18,6 +18,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   hint: "bulb",
   join: "users",
   leave: "door",
+  lie: "target",
 };
 
 export function ago(at: number, now = Date.now()) {

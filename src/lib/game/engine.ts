@@ -16,6 +16,8 @@ import type {
   ChatLine,
   DecidedProposal,
   FinalReport,
+  Interrogation,
+  InterrogationState,
   Mode,
   Phase,
   Pin,
@@ -158,6 +160,18 @@ export function canSee(state: RoomState, player: Pick<Player, "id" | "roles">, e
   if (evidence.access.kind === "desk") return player.roles.includes(evidence.role);
   const found = state.found[evidence.id];
   return Boolean(found) && (player.roles.includes(evidence.role) || found.by === player.id);
+}
+
+/** The case's interrogation, once its chapter is open. */
+function openInterrogation(state: RoomState, caseFile: CaseFile): Interrogation | undefined {
+  const interrogation = caseFile.interrogation;
+  return interrogation && state.chapter >= interrogation.chapter ? interrogation : undefined;
+}
+
+/** The Interviewer runs the interrogation; when only bots hold that role, anyone can. */
+function leadsInterrogation(state: RoomState, caseFile: CaseFile, player: Pick<Player, "id">) {
+  const leads = activePlayers(state).filter((p) => abilitiesOf(caseFile, p).includes("interview"));
+  return leads.some((p) => p.id === player.id) || leads.every((p) => p.bot);
 }
 
 function log(state: RoomState, newId: () => string, now: number, kind: ActivityKind, text: string, playerId?: string, evidenceId?: string) {
@@ -395,6 +409,48 @@ export function applyAction(
       break;
     }
 
+    case "press": {
+      const interrogation = openInterrogation(state, caseFile);
+      if (!investigating || !interrogation) return fail("There's nobody to interrogate yet.");
+      if (!leadsInterrogation(state, caseFile, self)) return fail("Only the Interviewer can press on.");
+      const room: InterrogationState = next.interrogation ?? { claim: 0, broken: [], strikes: 0 };
+      if (room.over) return fail("The interrogation is over.");
+      const total = interrogation.claims.length;
+      room.claim = (room.claim + (action.step === -1 ? -1 : 1) + total) % total;
+      next.interrogation = room;
+      break;
+    }
+
+    case "callLie": {
+      const interrogation = openInterrogation(state, caseFile);
+      if (!investigating || !interrogation) return fail("There's nobody to interrogate yet.");
+      const room: InterrogationState = next.interrogation ?? { claim: 0, broken: [], strikes: 0 };
+      if (room.over) return fail("The interrogation is over.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !state.pins.some((p) => p.evidenceId === evidence.id)) return fail("Present something from the board, so everyone can see it.");
+      const claim = interrogation.claims[room.claim];
+      if (room.broken.includes(claim.id)) return fail("You've already caught that lie.");
+      const suspect = caseFile.suspects.find((s) => s.id === interrogation.suspect)?.name ?? "The suspect";
+      if (claim.lie?.breaks.includes(evidence.id)) {
+        room.broken.push(claim.id);
+        log(next, newId, now, "lie", `${me.name} caught ${suspect} lying: "${claim.text}"`, me.id, evidence.id);
+        if (interrogation.claims.every((c) => !c.lie || room.broken.includes(c.id))) {
+          room.over = "confessed";
+          next.found[interrogation.confession] = { by: me.id, at: now };
+          log(next, newId, now, "found", `${suspect} cracks and tells the whole story.`, me.id, interrogation.confession);
+        }
+      } else {
+        room.strikes++;
+        log(next, newId, now, "wrong", `${me.name} presented ${evidence.title}. It doesn't break that claim. Strike ${room.strikes} of ${interrogation.strikes}.`, me.id);
+        if (room.strikes >= interrogation.strikes) {
+          room.over = "walkedOut";
+          log(next, newId, now, "wrong", `${suspect} has had enough and walks out.`);
+        }
+      }
+      next.interrogation = room;
+      break;
+    }
+
     case "pin": {
       if (!investigating) return fail("The board opens once the investigation starts.");
       const evidence = evidenceById(action.evidenceId);
@@ -508,7 +564,13 @@ export function checkCase(caseFile: CaseFile): string[] {
   });
   if (byId.size !== caseFile.evidence.length) problems.push("evidence ids are not unique");
 
-  const needs: Record<Exclude<Ability, "none">, string> = { search: "search", interview: "interview", inspect: "inspect", crosscheck: "crosscheck" };
+  const needs: Record<Exclude<CaseEvidence["access"]["kind"], "desk">, Ability> = {
+    search: "search",
+    interview: "interview",
+    inspect: "inspect",
+    crosscheck: "crosscheck",
+    interrogation: "interview",
+  };
   for (const e of caseFile.evidence) {
     if (!roleIds.has(e.role)) problems.push(`"${e.id}" belongs to unknown role "${e.role}"`);
     if (e.chapter < 1 || e.chapter > chapters) problems.push(`"${e.id}" is in a chapter that doesn't exist`);
@@ -524,6 +586,7 @@ export function checkCase(caseFile: CaseFile): string[] {
       else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
     }
     if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
+    if (a.kind === "interrogation" && caseFile.interrogation?.confession !== e.id) problems.push(`"${e.id}" is a confession, but not the interrogation's`);
     if (a.kind !== "desk" && !caseFile.roles.some((r) => r.core && r.ability === needs[a.kind])) {
       problems.push(`"${e.id}" needs the ${a.kind} ability, but no core role has it`);
     }
@@ -533,6 +596,7 @@ export function checkCase(caseFile: CaseFile): string[] {
       problems.push(`core role "${role.id}" starts with nothing on their desk`);
     }
   }
+  problems.push(...checkInterrogation(caseFile, byId));
   const { solution } = caseFile;
   if (!caseFile.suspects.some((s) => s.id === solution.culprit)) problems.push("the culprit is not a suspect");
   if (!solution.motives.some((m) => m.id === solution.motive)) problems.push("the motive is not one of the options");
@@ -541,6 +605,29 @@ export function checkCase(caseFile: CaseFile): string[] {
   problems.push(...checkWriting(caseFile));
   const questions = caseFile.evidence.filter((e) => e.access.kind === "interview").length;
   if (questions && caseFile.questionBudget >= questions) problems.push("the question budget covers every question: no choices left to make");
+  return problems;
+}
+
+function checkInterrogation(caseFile: CaseFile, byId: Map<string, CaseEvidence>): string[] {
+  const i = caseFile.interrogation;
+  if (!i) return [];
+  const problems: string[] = [];
+  if (!caseFile.suspects.some((s) => s.id === i.suspect)) problems.push("the interrogation's suspect isn't a suspect");
+  if (i.chapter < 1 || i.chapter > caseFile.chapters.length) problems.push("the interrogation is in a chapter that doesn't exist");
+  if (i.strikes < 1) problems.push("the interrogation needs at least one strike");
+  if (new Set(i.claims.map((c) => c.id)).size !== i.claims.length) problems.push("interrogation claim ids are not unique");
+  if (!i.claims.some((c) => c.lie)) problems.push("the interrogation needs at least one lie to catch");
+  if (!i.claims.some((c) => !c.lie)) problems.push("the interrogation needs at least one true claim, or every call is a safe bet");
+  for (const c of i.claims) {
+    if (c.lie && !c.lie.breaks.length) problems.push(`claim "${c.id}" is a lie nothing can break`);
+    for (const id of c.lie?.breaks ?? []) {
+      const e = byId.get(id);
+      if (!e) problems.push(`claim "${c.id}" is broken by "${id}", which doesn't exist`);
+      else if (e.chapter > i.chapter) problems.push(`claim "${c.id}" is broken by "${id}", which only exists after the interrogation opens`);
+    }
+  }
+  const confession = byId.get(i.confession);
+  if (!confession || confession.access.kind !== "interrogation") problems.push(`the interrogation's confession must be evidence with access "interrogation"`);
   return problems;
 }
 
@@ -580,6 +667,14 @@ function checkWriting(caseFile: CaseFile): string[] {
     c.hints.forEach((h, j) => tooLong(`chapter ${i + 1} hint ${j + 1}`, h, L.hint));
   });
   beats("the confession", caseFile.solution.confession, 2);
+  if (caseFile.interrogation) {
+    const i = caseFile.interrogation;
+    i.claims.forEach((c) => {
+      tooLong(`claim "${c.id}"`, c.text, L.beat);
+      if (c.lie) tooLong(`claim "${c.id}"'s crack`, c.lie.crack, L.beat);
+    });
+    tooLong("the walkout", i.walkout, L.beat);
+  }
   if (!caseFile.solution.confession.some((b) => b.kind === "line" && b.who === caseFile.solution.culprit)) {
     problems.push("the confession should have the culprit speaking");
   }
@@ -667,6 +762,22 @@ export type PlayerView = {
   checked: string[];
   /** For the Archivist: empty cross-checks still allowed in this chapter. */
   checksLeft: number | null;
+  /** Once its chapter opens. Claims are only spelled out to whoever leads it, or once broken. */
+  interrogation: {
+    suspect: string;
+    total: number;
+    index: number;
+    /** The current claim's words: for the lead, or once it's broken; null otherwise. */
+    claim: string | null;
+    broken: { id: string; text: string; crack: string }[];
+    /** Whether the current claim has been caught already. */
+    currentBroken: boolean;
+    strikes: number;
+    strikesAllowed: number;
+    leads: boolean;
+    over: InterrogationState["over"] | null;
+    walkout: string | null;
+  } | null;
   activity: Activity[];
   chat: ChatLine[];
   hintsUsed: number;
@@ -680,6 +791,28 @@ export type PlayerView = {
   /** Set by the room service: whether the host may add bots here. */
   testBots?: boolean;
 };
+
+function interrogationView(state: RoomState, caseFile: CaseFile, me: Player): PlayerView["interrogation"] {
+  const interrogation = openInterrogation(state, caseFile);
+  if (!interrogation) return null;
+  const room = state.interrogation ?? { claim: 0, broken: [], strikes: 0 };
+  const leads = leadsInterrogation(state, caseFile, me);
+  const current = interrogation.claims[room.claim];
+  const currentBroken = room.broken.includes(current.id);
+  return {
+    suspect: interrogation.suspect,
+    total: interrogation.claims.length,
+    index: room.claim,
+    claim: leads || currentBroken ? current.text : null,
+    broken: interrogation.claims.flatMap((c) => (room.broken.includes(c.id) && c.lie ? [{ id: c.id, text: c.text, crack: c.lie.crack }] : [])),
+    currentBroken,
+    strikes: room.strikes,
+    strikesAllowed: interrogation.strikes,
+    leads,
+    over: room.over ?? null,
+    walkout: room.over === "walkedOut" ? interrogation.walkout : null,
+  };
+}
 
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
   const toPublic = (p: Player): PublicPlayer => ({
@@ -777,6 +910,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     })),
     checked: abilities.includes("crosscheck") ? state.checked : [],
     checksLeft: abilities.includes("crosscheck") ? EMPTY_CHECKS - (state.emptyChecks?.[state.chapter] ?? 0) : null,
+    interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
     chat: state.mode === "remote" ? state.chat : [],
     hintsUsed: state.hintsUsed,

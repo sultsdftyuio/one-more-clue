@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cx } from "@/lib/cx";
 import { evidenceIn, useGame } from "./context";
+import { InterrogationPanel } from "./Interrogation";
 import { SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -184,6 +185,7 @@ export function SolvePanel() {
   const { view } = useGame();
   return (
     <div className="grid gap-5">
+      <InterrogationPanel />
       <section className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card sm:p-5">
         <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">
           Chapter {view.chapter.number} of {view.case.chapterTitles.length} · {view.chapter.title}

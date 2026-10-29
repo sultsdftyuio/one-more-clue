@@ -10,6 +10,7 @@ import { play } from "./audio/sound";
 import { BoardPanel } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel } from "./desk/DeskPanel";
+import { LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
@@ -207,7 +208,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
   const badges: Partial<Record<Tab, string>> = {
     board: `${view.pins.length}/${view.pinLimit}`,
-    solve: view.proposal ? "vote" : undefined,
+    solve: view.proposal ? "vote" : view.interrogation && !view.interrogation.over ? "live" : undefined,
   };
 
   const panels: Record<Tab, React.ReactNode> = {
@@ -255,7 +256,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
               </span>
               {t.label}
               {badges[t.id] && (
-                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" || badges[t.id] === "live" ? "bg-coral text-cream" : "bg-cream text-ink")}>
                   {badges[t.id]}
                 </span>
               )}
@@ -268,6 +269,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <ActivityToasts view={view} />
       <SoundCues view={view} />
       <Moments />
+      <LieMoment />
 
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>

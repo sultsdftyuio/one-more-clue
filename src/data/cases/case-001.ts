@@ -30,6 +30,8 @@ export const case001: CaseFile = {
   title: "The Last Message",
   tagline: "A prototype vanishes. The last message says who took it. The message is lying.",
   theme: "noir",
+  // Rendered by art/omc_cinema/case001_film.py. Hidden clue: the laptop's clock reads 9:12 while the message is rewritten.
+  cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

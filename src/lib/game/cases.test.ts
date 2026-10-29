@@ -2,6 +2,7 @@
 // Each case played along its intended route, every role pulling its weight,
 // to prove the evidence chain is actually reachable and earns five stars.
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { test } from "node:test";
 import { case001 } from "../../data/cases/case-001.ts";
 import { case002 } from "../../data/cases/case-002.ts";
@@ -202,4 +203,12 @@ test("search prefers the most specific match", () => {
   assert.equal(bestSearchHit(case002, 2, "studioadoor")?.id, "door-log");
   assert.equal(bestSearchHit(case002, 2, "blind")?.id, "booth-log");
   assert.equal(bestSearchHit(case004, 3, "otto")?.id, "bank-letter");
+});
+
+test("every opening film a case names is in public/", () => {
+  for (const c of [case001, case002, case003, case004]) {
+    for (const file of [c.cinematic?.video, c.cinematic?.poster]) {
+      if (file) assert.ok(existsSync(new URL(`../../../public${file}`, import.meta.url)), `${c.id}: ${file} is missing`);
+    }
+  }
 });

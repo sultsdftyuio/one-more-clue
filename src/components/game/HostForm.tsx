@@ -4,11 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { startCheckout } from "@/app/checkout/actions";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { trackEvent } from "@/lib/analytics";
 import type { CaseAccess } from "@/lib/billing/access";
-import type { Mode } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
-import { ModePicker } from "./Lobby";
 import { Panel } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -87,14 +84,9 @@ export function HostForm({
   preselect?: string;
 }) {
   const router = useRouter();
-  const [caseId, setCaseId] = useState(cases.some((c) => c.id === preselect) ? preselect! : (cases[0]?.id ?? ""));
-  const [name, setName] = useState("");
-  const [mode, setMode] = useState<Mode>("together");
+  const [caseId, setCaseId] = useState(cases.some((c) => c.id === preselect) ? preselect! : null);
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const selected = cases.find((c) => c.id === caseId);
-  const locked = selected?.access === "locked";
+  const selected = cases.find((c) => c.id === caseId && c.access === "locked");
   const offer = bundles.find((b) => !b.owned);
 
   // The payment webhook can land a few seconds after Dodo sends you back: keep checking until it unlocks.
@@ -109,24 +101,8 @@ export function HostForm({
     return () => window.clearInterval(timer);
   }, [router, waiting]);
 
-  const host = async (e: FormEvent) => {
-    e.preventDefault();
-    setSending(true);
-    setError(null);
-    const res = await fetch("/api/rooms", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ caseId, name, mode }),
-    }).catch(() => null);
-    const body = await res?.json().catch(() => ({}));
-    if (res?.ok) {
-      trackEvent("room_created", { case: caseId, mode });
-      router.push(`/r/${body.code}`);
-      return;
-    }
-    setError(body?.error ?? "Couldn't create the room. Try again.");
-    setSending(false);
-  };
+  // Playable cases open a room straight away; locked ones show how to unlock them.
+  const pick = (c: CaseOption) => (c.access === "locked" ? setCaseId(c.id) : router.push(`/new/${c.id}`));
 
   const joinByCode = (e: FormEvent) => {
     e.preventDefault();
@@ -145,64 +121,39 @@ export function HostForm({
           )}
         >
           {notice.kind === "purchased" &&
-            (waiting ? `Thanks! Unlocking ${notice.itemTitle} now, this takes a few seconds…` : `Thanks! ${notice.itemTitle} is yours. Pick a name and start.`)}
-          {notice.kind === "owned" && `You already own ${notice.itemTitle}. Pick it below and start.`}
+            (waiting ? `Thanks! Unlocking ${notice.itemTitle} now, this takes a few seconds…` : `Thanks! ${notice.itemTitle} is yours. Tap it to play.`)}
+          {notice.kind === "owned" && `You already own ${notice.itemTitle}. Tap it below to play.`}
           {notice.kind === "failed" && "Checkout couldn't start. Nothing was charged. Try again in a moment."}
         </p>
       )}
 
       <Panel>
-        <h1 className="font-display text-4xl text-cream sm:text-5xl">Host a case</h1>
-        <form onSubmit={host} className="mt-5 grid gap-5">
-          <fieldset className="grid min-w-0 gap-2">
-            <legend className="mb-2 font-bold text-cream">Case</legend>
-            {cases.map((c) => (
-              <label
-                key={c.id}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border-[3px] border-ink bg-cream p-3 text-ink has-[:checked]:bg-mustard"
-              >
-                <input type="radio" name="case" value={c.id} checked={caseId === c.id} onChange={() => setCaseId(c.id)} className="sr-only" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-extrabold tracking-widest uppercase opacity-70">{c.code}</span>
-                  <span className="block font-display text-xl leading-tight">{c.title}</span>
-                  <span className="mt-0.5 block text-sm leading-snug font-semibold opacity-75">{c.tagline}</span>
-                </span>
-                <span className="shrink-0 text-right text-sm font-extrabold">
-                  <PriceTag c={c} />
-                  <span className="block text-xs opacity-60">{c.players}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
+        <h1 className="font-display text-4xl text-cream sm:text-5xl">Pick a case</h1>
+        <p className="mt-1 font-bold text-cream/70">Tap one to open a room. You&apos;ll get a link for your friends.</p>
+        <div className="mt-5 grid min-w-0 gap-2">
+          {cases.map((c) => (
+            <button
+              type="button"
+              key={c.id}
+              onClick={() => pick(c)}
+              aria-pressed={c.id === caseId}
+              className="flex w-full items-center gap-3 rounded-2xl border-[3px] border-ink bg-cream p-3 text-left text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5 aria-pressed:bg-mustard"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-extrabold tracking-widest uppercase opacity-70">{c.code}</span>
+                <span className="block font-display text-xl leading-tight">{c.title}</span>
+                <span className="mt-0.5 block text-sm leading-snug font-semibold opacity-75">{c.tagline}</span>
+              </span>
+              <span className="shrink-0 text-right text-sm font-extrabold">
+                <PriceTag c={c} />
+                <span className="block text-xs opacity-60">{c.players}</span>
+              </span>
+              {c.access !== "locked" && <Icon name="arrow" className="size-5 shrink-0" />}
+            </button>
+          ))}
+        </div>
 
-          {!locked && (
-            <>
-              <label className="grid gap-1.5 font-bold text-cream">
-                Your detective name
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={24}
-                  autoComplete="nickname"
-                  placeholder="e.g. Sam"
-                  className={field}
-                />
-              </label>
-
-              <div>
-                <p className="mb-2 font-bold text-cream">Where are you playing?</p>
-                <ModePicker value={mode} onChange={setMode} />
-              </div>
-
-              {error && <p className="font-bold text-coral">{error}</p>}
-              <Button type="submit" disabled={sending || !name.trim() || !caseId}>
-                {sending ? "Opening the room…" : "Create room"}
-              </Button>
-            </>
-          )}
-        </form>
-
-        {locked && selected && (
+        {selected && (
           <div className="mt-5 rounded-2xl border-[3px] border-ink bg-night/60 p-4">
             <p className="flex items-center gap-2 font-display text-xl text-cream">
               <Icon name="lock" /> Unlock {selected.title}

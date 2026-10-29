@@ -82,7 +82,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
         <span className="hidden items-center gap-1 rounded-full bg-cream/10 px-3 py-1 font-mono text-sm font-bold text-cream sm:flex" title="Time on the case">
           <Icon name="clock" className="size-4" /> {clock}
         </span>
-        <VoiceControl mode={view.mode} compact />
+        <VoiceControl compact />
         <div className="hidden -space-x-2 md:flex">
           {view.players.map((p, i) => (
             <span key={p.id} title={p.name}>

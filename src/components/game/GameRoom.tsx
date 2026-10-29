@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { brandArt } from "@/lib/art";
+import { onTapsUntil } from "@/lib/audio-unlock";
 import "./game.css";
 import { Briefing } from "./Briefing";
 import { Investigation } from "./Investigation";
@@ -14,19 +15,39 @@ import { Reveal } from "./Reveal";
 import { themeOf } from "./themes";
 import { Weather } from "./Weather";
 import { cx } from "@/lib/cx";
-import { Music, unlock } from "./audio/sound";
+import { audioRunning, Music, unlock } from "./audio/sound";
 import { LiveProvider, useLive } from "./live/useLive";
+import { myName, randomName, rememberName } from "./names";
 import { useRoom } from "./useRoom";
 
-function JoinForm({ code, onJoin }: { code: string; onJoin: (name: string) => Promise<void> }) {
+/**
+ * Opening a friend's link joins straight away under this device's detective
+ * name. Only if that fails (say, the name is taken) does it ask for one.
+ */
+function JoinForm({ code, onJoin }: { code: string; onJoin: (name: string) => Promise<boolean> }) {
+  const [asking, setAsking] = useState(false);
   const [name, setName] = useState("");
   const [sending, setSending] = useState(false);
+  const tried = useRef(false);
+
+  useEffect(() => {
+    if (tried.current) return;
+    tried.current = true;
+    void onJoin(myName()).then((ok) => {
+      if (ok) return;
+      setName(randomName());
+      setAsking(true);
+    });
+  }, [onJoin]);
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setSending(true);
-    await onJoin(name);
+    if (await onJoin(name)) rememberName(name.trim());
     setSending(false);
   };
+
+  if (!asking) return <p className="text-center font-bold text-cream/70">Joining the case…</p>;
   return (
     <Panel className="mx-auto max-w-md">
       <p className="text-sm font-extrabold tracking-widest text-mustard uppercase">Room {code}</p>
@@ -38,7 +59,6 @@ function JoinForm({ code, onJoin }: { code: string; onJoin: (name: string) => Pr
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={24}
-            autoFocus
             autoComplete="nickname"
             placeholder="e.g. Sam"
             className="rounded-2xl border-[3px] border-ink bg-cream px-4 py-3 font-semibold text-ink outline-none focus:border-mustard"
@@ -65,17 +85,18 @@ export function GameRoom({ code }: { code: string }) {
 
   // Browsers only allow sound after a tap or key press.
   useEffect(() => {
-    document.addEventListener("pointerdown", unlock);
-    document.addEventListener("keydown", unlock);
+    const stop = onTapsUntil(() => {
+      unlock();
+      return audioRunning();
+    });
     return () => {
-      document.removeEventListener("pointerdown", unlock);
-      document.removeEventListener("keydown", unlock);
+      stop();
       Music.want(null);
     };
   }, []);
 
-  // Music follows the case: a lounge swing while people gather, a mysterious intro for the
-  // briefing, noir jazz that builds to the last chapter, then a theme for how it ended.
+  // Music follows the case: a lounge swing while people gather, the briefing's own (see
+  // Briefing), noir jazz that builds to the last chapter, then a theme for how it ended.
   const view = status.kind === "ready" ? status.view : null;
   const chapter = view?.chapter.number ?? 0;
   const chapters = view?.case.chapterTitles.length ?? 1;
@@ -85,7 +106,7 @@ export function GameRoom({ code }: { code: string }) {
   useEffect(() => {
     const set = theme.id;
     if (phase === "lobby") Music.want("lobby", 1, set);
-    else if (phase === "briefing") Music.want("briefing", 1, set);
+    else if (phase === "briefing") return; // the briefing picks its own music around the opening film
     else if (phase === "investigation") Music.want("investigation", chapter === chapters ? 3 : Math.min(2, chapter), set);
     else if (phase === "reveal") Music.want(solved ? "solved" : "unsolved", 1, set);
     else Music.want(null);

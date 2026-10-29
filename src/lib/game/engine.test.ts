@@ -285,6 +285,17 @@ test("majority votes, and a proposal fails once a majority is impossible", () =>
   assert.equal(state.phase, "investigation");
 });
 
+test("renaming: your own name, in the lobby only, never someone else's", () => {
+  let state = createRoom({ code: "T", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Sly Raven" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, tipJar, { id: "p2", token: "t2", name: "Quiet Fox" }, 0));
+  state = doo(state, "p1", { type: "rename", name: "  Ana  " });
+  assert.equal(state.players[0].name, "Ana");
+  assert.equal(act(state, "p2", { type: "rename", name: "ana" }).ok, false, "taken");
+  assert.equal(act(state, "p2", { type: "rename", name: "   " }).ok, false, "empty");
+  state = doo(state, "p1", { type: "start" });
+  assert.equal(act(state, "p2", { type: "rename", name: "Sam" }).ok, false, "too late once the case starts");
+});
+
 test("joining: lobby only, no duplicate names, room limit", () => {
   let state = createRoom({ code: "T", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
   assert.equal(addPlayer(state, tipJar, { id: "p2", token: "t2", name: " ana " }, 0).ok, false);

@@ -310,6 +310,15 @@ export function applyAction(
       break;
     }
 
+    case "rename": {
+      if (state.phase !== "lobby") return fail("Names are set once the case starts.");
+      const name = cleanName(String(action.name ?? ""));
+      if (!name) return fail("Pick a name first.");
+      if (activePlayers(state).some((p) => p.id !== me.id && p.name.toLowerCase() === name.toLowerCase())) return fail("Someone here already has that name.");
+      self.name = name;
+      break;
+    }
+
     case "start": {
       if (!isHost) return fail("Only the host can start the case.");
       if (state.phase !== "lobby") return fail("The case has already started.");
@@ -473,7 +482,6 @@ export function applyAction(
     }
 
     case "chat": {
-      if (state.mode !== "remote") return fail("Chat is only on in remote rooms.");
       const text = String(action.text ?? "").trim().slice(0, MAX_CHAT);
       if (!text) return fail("Say something first.");
       next.chat.push({ id: newId(), playerId: me.id, text, at: now } satisfies ChatLine);
@@ -736,6 +744,7 @@ export type PlayerView = {
     suspects: CaseSuspect[];
     roles: CaseRole[];
     chapterTitles: string[];
+    cinematic: CaseFile["cinematic"] | null;
     questionBudget: number;
     motives: { id: string; label: string }[];
   };
@@ -876,6 +885,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       suspects: caseFile.suspects,
       roles: caseFile.roles,
       chapterTitles: caseFile.chapters.map((c) => c.title),
+      cinematic: caseFile.cinematic ?? null,
       questionBudget: caseFile.questionBudget,
       motives: caseFile.solution.motives,
     },
@@ -912,7 +922,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     checksLeft: abilities.includes("crosscheck") ? EMPTY_CHECKS - (state.emptyChecks?.[state.chapter] ?? 0) : null,
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
-    chat: state.mode === "remote" ? state.chat : [],
+    chat: state.chat,
     hintsUsed: state.hintsUsed,
     wrongAnswers: state.wrongAnswers,
     proposal: state.proposal,

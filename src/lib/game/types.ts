@@ -180,6 +180,8 @@ export type CaseFile = {
   questionBudget: number;
   /** A suspect the team can interrogate, catching their lies with pinned evidence. */
   interrogation?: Interrogation;
+  /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
+  cinematic?: { video: string; poster?: string };
   evidence: CaseEvidence[];
   solution: {
     culprit: string;
@@ -293,6 +295,8 @@ export type InterrogationState = {
 
 export type Action =
   | { type: "setMode"; mode: Mode }
+  /** In the lobby: change your own detective name. */
+  | { type: "rename"; name: string }
   | { type: "start" }
   | { type: "ready" }
   | { type: "search"; query: string }

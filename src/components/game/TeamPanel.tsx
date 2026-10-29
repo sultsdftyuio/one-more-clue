@@ -117,7 +117,7 @@ export function TeamPanel() {
         </ul>
       </section>
 
-      {view.mode === "remote" && <Chat />}
+      <Chat />
 
       <section className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card">
         <h3 className="mb-3 flex items-center gap-2 font-display text-xl text-cream">

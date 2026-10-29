@@ -76,9 +76,7 @@ export function DeskPanel() {
           <Icon name="desk" /> Your evidence <span className="text-cream/50">{mine.length}</span>
         </h2>
         <p className="mb-4 text-sm font-bold text-cream/65">
-          {view.mode === "together"
-            ? "Only you have these. Read out what matters, and pin the best to the board."
-            : "Only you have these. Pin what matters so the others can see it."}
+          Only you have these. Read out what matters, and pin the best to the board.
         </p>
         <div className="grid gap-5">
           {mine.map((e) => (

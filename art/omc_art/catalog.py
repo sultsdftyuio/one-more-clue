@@ -5,6 +5,8 @@ from typing import Callable, Optional
 
 from .brand import app_icon, confetti, logo_mark
 from .post import suspect_post
+from .posters import POSTERS, TRIPTYCH
+from .posters.common import poster_post
 from .props import PROPS
 from .scenery.city import city_back, city_back_dark, city_front, city_front_dark
 from .scenery.sky import cloud, moon, sky
@@ -47,3 +49,8 @@ ASSETS += [
     Asset("app-icon", (400, 400), 2.56, app_icon, 512),
     Asset("pattern-confetti", (600, 600), 2.0, confetti, 1200),
 ]
+ASSETS += [
+    Asset(f"poster-{case}", (600, 900), 2.0, draw, 800, poster_post)
+    for case, draw in POSTERS.items()
+]
+ASSETS.append(Asset("poster-season-1", (1800, 700), 1.5, TRIPTYCH, 2000, poster_post))

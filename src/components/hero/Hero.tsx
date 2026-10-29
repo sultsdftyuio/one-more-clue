@@ -2,8 +2,9 @@ import { Magnetic } from "@/components/fx/Magnetic";
 import { ButtonLink } from "@/components/ui/Button";
 import { hero } from "@/data/hero";
 import { playCta } from "@/lib/game-open";
+import { BlackoutClock } from "./BlackoutClock";
 import { CityScene } from "./CityScene";
-import { PopIn, ScrollAway, ScrollCue } from "./HeroMotion";
+import { PopIn, ScrollAway } from "./HeroMotion";
 import { HeroTitle } from "./HeroTitle";
 import { IncomingMessage } from "./IncomingMessage";
 import { SuspectLineup } from "./SuspectLineup";
@@ -50,13 +51,14 @@ export function Hero() {
         </PopIn>
       </ScrollAway>
 
+      {/* On phones the clock sits between the copy and the lineup; wider, on the street left of the lineup. */}
+      <BlackoutClock className="relative z-10 mx-auto mt-14 md:absolute md:bottom-10 md:left-[max(1.5rem,calc(50%-34rem))] md:mx-0 md:mt-0" />
+
       <div className="relative mt-auto px-4 pt-24 md:absolute md:right-0 md:bottom-0 md:w-1/2 md:pt-0 md:pr-10">
         <SuspectLineup bubble={hero.lineupBubble} />
         {/* height of the street strip at the bottom of city-front */}
         <div className="h-[clamp(10px,1.4vw,22px)]" />
       </div>
-
-      <ScrollCue />
     </section>
   );
 }

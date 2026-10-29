@@ -11,7 +11,6 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { miniCase } from "@/data/mini-case";
 import { suspectById } from "@/data/suspects";
 import { brandArt } from "@/lib/art";
-import { BlackoutClock } from "./BlackoutClock";
 import { EvidenceCard } from "./EvidenceCard";
 import { SuspectCard } from "./SuspectCard";
 import { useMiniCase } from "./useMiniCase";
@@ -19,7 +18,7 @@ import { VerdictPanel } from "./VerdictPanel";
 
 export function MiniCase() {
   const { verdicts, solved, wrongGuesses, lastWrong, accuse, reset } = useMiniCase(miniCase.liar);
-  const { phase, restoreLights } = useBlackout();
+  const { restoreLights } = useBlackout();
   const [scope, animate] = useAnimate<HTMLElement>();
   const solvedOnce = useRef(false);
 
@@ -50,28 +49,6 @@ export function MiniCase() {
         className="absolute inset-0 -z-10 opacity-20"
         style={{ backgroundImage: `url(${brandArt.confetti.src})`, backgroundSize: "600px" }}
       />
-
-      {/* 9:17: the power cuts out for a beat, emergency lights blink red, then it's readable again. */}
-      <AnimatePresence>
-        {phase === "dark" && (
-          <m.div key="cut" aria-hidden className="pointer-events-none absolute inset-0 z-30">
-            <m.div
-              className="absolute inset-0 bg-[#05060f]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.92, 0.25, 0.88, 0.5, 0] }}
-              transition={{ duration: 1, times: [0, 0.12, 0.3, 0.45, 0.7, 1] }}
-            />
-            <m.div
-              className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(239,91,91,0.55),rgba(239,91,91,0)_60%)]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 0.2, 0.9, 0] }}
-              transition={{ duration: 1.6, delay: 0.75, times: [0, 0.2, 0.45, 0.65, 1] }}
-            />
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      <BlackoutClock />
 
       <Reveal>
         <SectionHeading eyebrow={miniCase.code} title={miniCase.title}>

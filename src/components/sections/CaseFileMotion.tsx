@@ -6,15 +6,24 @@ import { cx } from "@/lib/cx";
 
 /**
  * The case file opens like a real folder: a manila cover, taped shut, swings
- * open in 3D the first time it scrolls into view.
+ * open in 3D the first time it scrolls into view. On phones the file is too
+ * tall and narrow for that (the cover would be a screen-high blank sheet
+ * swinging across the page), so there it just slides up into place.
  */
 export function FolderCover({ code, children }: { code: string; children: ReactNode }) {
   return (
-    <m.div className="relative [perspective:1800px]" initial="closed" whileInView="open" viewport={{ once: true, amount: 0.35 }}>
-      {children}
+    <m.div className="relative [perspective:1800px]" initial="closed" whileInView="open" viewport={{ once: true, amount: 0.15 }}>
+      <m.div
+        variants={{
+          closed: { opacity: 0, y: 48 },
+          open: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 90, damping: 16 } },
+        }}
+      >
+        {children}
+      </m.div>
       <m.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -rotate-1 rounded-3xl border-[0.1875rem] border-ink bg-[#e3bf7c] shadow-card [backface-visibility:hidden] [transform-origin:left_center]"
+        className="pointer-events-none absolute inset-0 hidden -rotate-1 rounded-3xl sm:block border-[0.1875rem] border-ink bg-[#e3bf7c] shadow-card [backface-visibility:hidden] [transform-origin:left_center]"
         variants={{
           closed: { rotateY: 0, opacity: 1 },
           open: { rotateY: -168, opacity: [1, 1, 0], transition: { rotateY: { type: "spring", stiffness: 40, damping: 12, delay: 0.35 }, opacity: { duration: 1.6, times: [0, 0.8, 1], delay: 0.35 } } },
@@ -54,16 +63,17 @@ export function FlyIn({ children, from, className, delay = 0 }: { children: Reac
   );
 }
 
-/** Evidence rows dealt onto the table one by one. */
-export function DealIn({ children, index }: { children: ReactNode; index: number }) {
+/** Evidence cards pinned to the file one by one, each at its own slight angle. */
+export function PinIn({ children, index, className }: { children: ReactNode; index: number; className?: string }) {
+  const tilt = [-3, 2, -1.5, 3, -2][index % 5];
   return (
     <m.li
-      className="flex items-center gap-3 rounded-2xl border-2 border-ink/15 bg-white p-2 pr-4 transition-colors hover:border-ink"
-      initial={{ opacity: 0, x: index % 2 ? 40 : -40, rotate: index % 2 ? 4 : -4 }}
-      whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+      className={cx("relative", className)}
+      initial={{ opacity: 0, y: -40, rotate: tilt * 4, scale: 1.1 }}
+      whileInView={{ opacity: 1, y: 0, rotate: tilt, scale: 1 }}
       viewport={{ once: true, amount: 0.5 }}
-      transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.9 + index * 0.08 }}
-      whileHover={{ scale: 1.03, rotate: index % 2 ? 1 : -1 }}
+      transition={{ type: "spring", stiffness: 140, damping: 13, delay: 0.9 + index * 0.1 }}
+      whileHover={{ rotate: 0, y: -6, scale: 1.04 }}
     >
       {children}
     </m.li>

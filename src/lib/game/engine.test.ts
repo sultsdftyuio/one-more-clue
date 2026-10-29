@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, checkCase, createRoom, dealRoles, PIN_LIMIT, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, checkCase, createRoom, dealRoles, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
 
 let ids = 0;
@@ -102,6 +102,30 @@ test("cross-check: the Archivist needs to see both pieces, and misses are rememb
   assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "receipts" }).ok, false, "same pair, any order");
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
   assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
+});
+
+test("cross-check: empty compares are limited per chapter, real contradictions never are", () => {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  for (const [who, id] of [[INTERVIEWER, "question-squarington-left"], [INTERVIEWER, "statement-mo"], [TECH, "door-log"]]) {
+    state = doo(state, who, { type: "pin", evidenceId: id });
+  }
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "staff-chat" });
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "door-log" });
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "statement-mo" });
+  assert.equal(viewFor(state, tipJar, ARCHIVIST, new Set()).checksLeft, 0);
+  assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "door-log" }).ok, false, "out of hunches");
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
+  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"), "a real contradiction still lands");
+  assert.equal(viewFor(state, tipJar, TECH, new Set()).checksLeft, null, "only the Archivist counts hunches");
+});
+
+test("a single wrong checkpoint answer costs the sharp star", () => {
+  let state = roomWith(4);
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "838-841" });
+  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  assert.equal(scoreReport(state, tipJar, { suspectId: "rectangle", motiveId: "debt", evidenceIds: ["cctv-still", "detail-stop-clock"] }).sharp, false);
 });
 
 test("the board holds a limited number of pins", () => {

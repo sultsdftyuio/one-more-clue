@@ -238,6 +238,8 @@ export type RoomState = {
   searches: Search[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
+  /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
+  emptyChecks?: Record<number, number>;
   chat: ChatLine[];
   activity: Activity[];
   hintsUsed: number;

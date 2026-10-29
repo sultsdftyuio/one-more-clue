@@ -21,7 +21,7 @@ export const case002: CaseFile = {
   id: "case-002",
   code: "Case 002",
   title: "Dead Air",
-  tagline: "Nine minutes of silence, one missing jackpot, and a victim who's a little too calm.",
+  tagline: "Nine minutes of dead air, a man in a balaclava, and a £5,000 jackpot gone.",
   theme: "radio",
   minPlayers: 2,
   maxPlayers: 6,
@@ -662,8 +662,8 @@ export const case002: CaseFile = {
     explanation:
       "There was no attacker. Vince owed SpinKings £4,800 by 9 AM and had the £5,000 jackpot in his hand. He planted a balaclava he'd bought at 11:12 in Darla's bag, lowered the blind, pulled his own mic down, locked Studio A with his own code and lay down in the corridor. At 12:31 he put the envelope in his car boot.",
     timeline: [
-      { time: "11:31 PM", text: "Vince enters Studio A. Nobody else enters all night." },
       { time: "11:12 PM", text: "On his way in, Vince buys a black balaclava at a petrol station." },
+      { time: "11:31 PM", text: "Vince enters Studio A. Nobody else enters all night." },
       { time: "11:40 PM", text: "Vince signs the £5,000 jackpot envelope out of the safe." },
       { time: "11:45 PM", text: "Vince 'fancies a biscuit' and stuffs the balaclava into Darla's bag." },
       { time: "11:51 PM", text: "Vince checks his SpinKings account: £4,800 due by morning." },

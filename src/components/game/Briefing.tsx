@@ -22,7 +22,7 @@ const POWER: Record<string, { icon: IconName; text: string }> = {
 const HOW: { icon: IconName; title: string; text: string }[] = [
   { icon: "lock", title: "Your desk is private", text: "Only you see your evidence. Read it out or pin it to the board, which holds just 8 things." },
   { icon: "users", title: "Powers need each other", text: "The Tech can only search what someone tells them to look for. The Photographer can only inspect photos they can see. Talk." },
-  { icon: "flag", title: "Chapters unlock by vote", text: "Each chapter ends with a question. Agree on the answer to open the next one. Wrong answers cost." },
+  { icon: "flag", title: "Chapters unlock by vote", text: "Each chapter ends with a question. Agree on the answer to open the next one. A wrong answer costs a star." },
   { icon: "star", title: "One final report", text: "Who, why, and two pinned pieces of proof. Scored out of 5 stars." },
 ];
 

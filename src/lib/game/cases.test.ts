@@ -92,7 +92,7 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.crosscheck("question-squires-left", "question-ozzy-round", "insight-together");
   g.pin(TECH, "badge-log");
   g.crosscheck("visitor-sheet", "badge-log", "insight-sheet");
-  g.answer("rectangle");
+  g.answer("early");
 
   g.search("KX24 RVS", "anpr");
   g.pin(TECH, "anpr");

@@ -15,7 +15,7 @@ Good checkpoints walk the group up the case: *when* did it happen → *whose sto
 | `search` | types names, numbers, places | `access: { kind: "search", terms: [...] }` |
 | `interview` | spends the team's limited questions | `access: { kind: "interview", suspect, question }` |
 | `inspect` | taps into photos and camera stills | `access: { kind: "inspect", scene, hotspot }` |
-| `crosscheck` | holds two pieces up against each other | `access: { kind: "crosscheck", pair: [a, b] }` |
+| `crosscheck` | holds two pieces up against each other (only 3 empty compares per chapter) | `access: { kind: "crosscheck", pair: [a, b] }` |
 
 Core roles are always dealt (with fewer players some people hold two). Extra roles (`core: false`, usually `ability: "none"`) only join with 5–6 players, so their evidence must be **bonus**, never the only route to the answer.
 
@@ -59,7 +59,7 @@ Each case should look, sound and play differently from the others.
 
 ## Scoring
 
-Out of 5 stars: naming the culprit is worth 2, the motive 1, proof that holds up 1, and 1 for being sharp (at most one hint and one wrong checkpoint answer). Naming the wrong culprit scores 0.
+Out of 5 stars: naming the culprit is worth 2, the motive 1, proof that holds up 1, and 1 for being sharp (no wrong checkpoint answers, at most one hint). Naming the wrong culprit scores 0.
 
 ## Test it
 

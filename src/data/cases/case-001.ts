@@ -10,9 +10,10 @@ import type { CaseFile } from "@/lib/game/types";
  * home", took HALO with the spare key, and walked out at 9:19. Her car reached
  * Kestrel's HQ at 9:48.
  *
- * Red herrings: Priya (the edited message) and Professor Squires, who lies
+ * Red herrings: Priya (the edited message), Professor Squires, who lies
  * about leaving with Rena and backfills the visitor sheet to hide that he left
- * a visitor alone.
+ * a visitor alone, and Ozzy, whose round passes Lab 4 at 9:10. Checkpoint 2
+ * catches the professor's lie, so the culprit is only named in the final report.
  *
  * Hand-offs: the Archivist's chat shows the edit → the Tech searches the chat
  * history and Priya's laptop; the Photographer's 8:58 photo shows HALO still
@@ -99,39 +100,40 @@ export const case001: CaseFile = {
     },
     {
       title: "The visitor",
-      intro: "Someone in Lab 4 edited Priya's message at 9:12. Find out who had the lab to themselves.",
+      intro: "Someone in Lab 4 edited Priya's message at 9:12. Find out whose story about tonight doesn't hold up.",
       story: [
         { kind: "narration", text: "Priya's laptop was edited in the lab at 9:12, long after she'd gone. Who was still inside?" },
         { kind: "line", who: "square", text: "Ms Voss and I left together at nine. I'd stake my reputation on it." },
         { kind: "narration", text: "The security desk has dug out tonight's visitor sheet." },
       ],
       checkpoint: {
-        question: "Who had Lab 4 to themselves when the message was edited?",
+        question: "The professor says he and Rena left together at nine. What's wrong with his story?",
         options: [
-          { id: "triangle", label: "Priya Tran" },
-          { id: "square", label: "Prof. Edmund Squires" },
-          { id: "circle", label: "Ozzy Reyes" },
-          { id: "rectangle", label: "Rena Voss" },
+          { id: "true", label: "Nothing. They walked out together." },
+          { id: "early", label: "He left at 9:02, and filled in her sign-out later" },
+          { id: "stayed", label: "He stayed in Lab 4 until 9:20" },
+          { id: "ozzy", label: "Ozzy escorted her out, not him" },
         ],
-        answer: "rectangle",
-        reveal: "The professor's badge left at 9:02. Ozzy saw Rena alone at the lab door at 9:10, and her visitor badge, V-117, left Lab 4 at 9:14.",
+        answer: "early",
+        reveal: "The professor's badge left at 9:02, but the sheet says he signed his visitor out at 9:20. He filled it in later. So who was still in the building?",
       },
       hints: [
-        "Find out who was still inside after the professor's badge left at 9:02.",
+        "Compare when the professor's badge left with when he 'signed' his visitor out.",
         "The Archivist can hold the visitor sheet up against the badge log.",
       ],
     },
     {
       title: "The last clue",
-      intro: "Rena had the chance. Now prove she took HALO, and find out why an investor would steal what they're about to fund.",
+      intro: "The professor left at 9:02. Someone still in the building took HALO. Prove who, and find out why.",
       story: [
         { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet the next morning.", shocked: true },
-        { kind: "narration", text: "Rena Voss came as Northgate's engineer. Why would an investor steal what they're about to fund?" },
+        { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
+        { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
       ],
       hints: [
-        "Rena's story has two parts: who she works for, and where she went. Check both.",
-        "The visitor sheet has her number plate. The Tech can search it.",
+        "Two people were still around after 9:02. Check where each of them was at 9:12, and where each one went.",
+        "The visitor sheet has a number plate. The Tech can search it.",
         "Look closely at her coat in the lobby camera.",
       ],
     },

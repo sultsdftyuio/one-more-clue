@@ -100,7 +100,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
     { ok: outcome.score.culprit, label: "Named the culprit", worth: 2 },
     { ok: outcome.score.motive, label: "Got the motive", worth: 1 },
     { ok: outcome.score.evidence, label: "Proof that holds up", worth: 1 },
-    { ok: outcome.score.sharp, label: "Sharp: at most 1 hint and 1 wrong answer", worth: 1 },
+    { ok: outcome.score.sharp, label: "Sharp: no wrong answers, at most 1 hint", worth: 1 },
   ];
 
   return (

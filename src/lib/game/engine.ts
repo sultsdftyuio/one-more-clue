@@ -31,6 +31,8 @@ export const MAX_CHAT = 300;
 export const MAX_QUERY = 40;
 /** The board only holds this many pins, so the group has to agree on what matters. */
 export const PIN_LIMIT = 8;
+/** Cross-checks that find nothing are limited per chapter, so the Archivist has to reason, not try every pair. */
+export const EMPTY_CHECKS = 3;
 const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
@@ -98,6 +100,7 @@ export function createRoom(input: {
     questionsUsed: 0,
     searches: [],
     checked: [],
+    emptyChecks: {},
     chat: [],
     activity: [],
     hintsUsed: 0,
@@ -205,7 +208,7 @@ export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalR
   const motive = culprit && report.motiveId === solution.motive;
   const evidence =
     culprit && new Set(report.evidenceIds).size === 2 && report.evidenceIds.every((id) => solution.keyEvidence.includes(id));
-  const sharp = culprit && state.hintsUsed <= 1 && state.wrongAnswers <= 1;
+  const sharp = culprit && state.hintsUsed <= 1 && state.wrongAnswers === 0;
   return { culprit, motive, evidence, sharp, stars: culprit ? 2 + Number(motive) + Number(evidence) + Number(sharp) : 0 };
 }
 
@@ -383,7 +386,10 @@ export function applyAction(
         log(next, newId, now, "found", `${me.name} caught a lie: ${insight.title}`, me.id, insight.id);
       } else {
         if (next.checked.includes(key)) return fail("You've already compared those two.");
+        const empty = next.emptyChecks?.[state.chapter] ?? 0;
+        if (empty >= EMPTY_CHECKS) return fail("Those two agree, and you're out of hunches this chapter. Only a real contradiction counts now.");
         next.checked.push(key);
+        next.emptyChecks = { ...next.emptyChecks, [state.chapter]: empty + 1 };
         log(next, newId, now, "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.`, me.id);
       }
       break;
@@ -659,6 +665,8 @@ export type PlayerView = {
   searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; at: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
+  /** For the Archivist: empty cross-checks still allowed in this chapter. */
+  checksLeft: number | null;
   activity: Activity[];
   chat: ChatLine[];
   hintsUsed: number;
@@ -768,6 +776,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       at: s.at,
     })),
     checked: abilities.includes("crosscheck") ? state.checked : [],
+    checksLeft: abilities.includes("crosscheck") ? EMPTY_CHECKS - (state.emptyChecks?.[state.chapter] ?? 0) : null,
     activity: state.activity.slice(-60),
     chat: state.mode === "remote" ? state.chat : [],
     hintsUsed: state.hintsUsed,

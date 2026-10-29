@@ -22,7 +22,7 @@ export const case003: CaseFile = {
   id: "case-003",
   code: "Case 003",
   title: "The Last Course",
-  tagline: "A food critic collapses after dessert. The dessert wasn't meant for her.",
+  tagline: "The most feared critic in the country collapses after dessert. The kitchen swears it's nut-free.",
   theme: "bistro",
   minPlayers: 2,
   maxPlayers: 6,

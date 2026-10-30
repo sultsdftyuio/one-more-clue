@@ -583,3 +583,123 @@ def scrape(rng):
     t = np.arange(n) / SR
     judder = (np.sin(2 * np.pi * (60 + 36 * t) * t) > 0).astype(float)
     return bandpass(rng.standard_normal(n), 300, 1700) * judder * env(n, 0.01, 0.5, 2.5) * 0.9
+
+
+# ---------------------------------------------------------------------------
+# The lodge (Case 004)
+
+def tine(freq, length=2.6, velocity=1.0):
+    """One tooth of a music box's comb: a bright pluck that leaves a thin ring behind it."""
+    t = np.arange(seconds(length)) / SR
+    tone = np.sin(2 * np.pi * freq * t) * np.exp(-t * 2.4)
+    tone += 0.34 * np.sin(2 * np.pi * freq * 2.0 * t) * np.exp(-t * 4.5)
+    tone += 0.2 * np.sin(2 * np.pi * freq * 5.4 * t) * np.exp(-t * 15)
+    tone += 0.1 * np.sin(2 * np.pi * freq * 11.3 * t) * np.exp(-t * 46)
+    return tone * velocity * env(len(t), 0.0008, 0.05)
+
+
+def crunch(rng, weight=1.0):
+    """One footstep in dry snow at minus fifteen: packed crystals squeaking over a soft thud."""
+    n = seconds(0.24)
+    t = np.arange(n) / SR
+    crackle = (rng.uniform(size=n) > 0.982) * rng.standard_normal(n) * 3.0
+    grains = bandpass(rng.standard_normal(n) * 0.5 + crackle, 600, 5400)
+    shape = np.exp(-(((t - 0.055) / 0.04) ** 2)) + 0.6 * np.exp(-(((t - 0.13) / 0.04) ** 2))
+    thud = lowpass(rng.standard_normal(n), 220) * np.exp(-t * 24) * 1.8
+    return (grains * shape + thud) * weight
+
+
+def cane_tap(rng):
+    """A walking stick's tip on packed snow: small, dry and easy to miss."""
+    t = np.arange(seconds(0.08)) / SR
+    tone = np.sin(2 * np.pi * 1180 * t) * np.exp(-t * 100) + 0.6 * np.sin(2 * np.pi * 2350 * t) * np.exp(-t * 160)
+    return tone + bandpass(rng.standard_normal(len(t)), 900, 3400) * np.exp(-t * 190) * 0.5
+
+
+def wind(duration, rng, strength=1.0):
+    """Air moving across snow, rising and falling slowly."""
+    n = seconds(duration)
+    low = bandpass(rng.standard_normal(n), 130, 800)
+    high = bandpass(rng.standard_normal(n), 900, 3200) * 0.18
+    knots = np.arange(0, duration + 1.2, 0.8)
+    swell = np.interp(np.arange(n) / SR, knots, rng.uniform(0.35, 1.0, len(knots)))
+    return (low + high) * swell * strength * env(n, 0.3, 0.3)
+
+
+def latch(rng, heavy=False):
+    """A door's iron latch lifting or dropping."""
+    n = seconds(0.16)
+    t = np.arange(n) / SR
+    root = 190 if heavy else 340
+    body = np.sin(2 * np.pi * root * t) * np.exp(-t * 34) + 0.5 * np.sin(2 * np.pi * root * 3.1 * t) * np.exp(-t * 70)
+    return body + bandpass(rng.standard_normal(n), 1400, 6200) * np.exp(-t * 130) * 0.7
+
+
+def lock_turn(rng):
+    """A very small key in a very small lock: two clicks, close together."""
+    out = np.zeros(seconds(0.2))
+    for at in (0.0, 0.11):
+        t = np.arange(seconds(0.05)) / SR
+        hit = bandpass(rng.standard_normal(len(t)), 2400, 8000) * np.exp(-t * 240) + 0.4 * np.sin(2 * np.pi * 3100 * t) * np.exp(-t * 180)
+        i = seconds(at)
+        out[i:i + len(hit)] += hit
+    return out
+
+
+def breaker(rng):
+    """A big switch thrown in a room two floors down: a thump that goes through the walls."""
+    n = seconds(0.7)
+    t = np.arange(n) / SR
+    thump = np.sin(2 * np.pi * 62 * t) * np.exp(-t * 11) * 1.4
+    clack = bandpass(rng.standard_normal(n), 500, 3000) * np.exp(-t * 80)
+    return thump + clack
+
+
+def cork(rng):
+    """A champagne cork: the pop falls in pitch as it leaves."""
+    n = seconds(0.14)
+    t = np.arange(n) / SR
+    pitch = 1300 * np.exp(-t * 26) + 240
+    pop = np.sin(2 * np.pi * np.cumsum(pitch) / SR) * np.exp(-t * 34)
+    return pop + bandpass(rng.standard_normal(n), 1200, 7000) * np.exp(-t * 90) * 0.6
+
+
+def fizz(duration, rng):
+    """A sparkler burning: a dry hiss, spitting."""
+    n = seconds(duration)
+    hiss = highpass(rng.standard_normal(n), 3200)
+    knots = np.arange(0, duration + 0.06, 0.03)
+    spit = np.interp(np.arange(n) / SR, knots, rng.uniform(0.25, 1.0, len(knots)) ** 2)
+    return hiss * spit * env(n, 0.02, 0.05)
+
+
+def fireplace(duration, rng):
+    """A log fire: a low flutter and the odd crack."""
+    n = seconds(duration)
+    out = lowpass(rng.standard_normal(n), 260) * 0.8
+    for at in rng.uniform(0, max(duration - 0.05, 0.01), int(duration * 7)):
+        i = seconds(at)
+        c = np.arange(seconds(0.03)) / SR
+        hit = bandpass(rng.standard_normal(len(c)), 1200, 6000) * np.exp(-c * 170) * rng.uniform(0.3, 1.6)
+        out[i:i + len(hit)] += hit[: n - i]
+    return out
+
+
+def chant(takes, rng, spread=0.05, pitch=0.05):
+    """A room saying one word together: every take a moment late, a shade off pitch and somewhere else in the room."""
+    out = np.zeros((seconds(max(len(v) for v in takes) / SR + spread + 0.3), 2))
+    for v in takes:
+        rate = 1 + rng.uniform(-pitch, pitch)
+        w = np.interp(np.arange(0, len(v) - 1, rate), np.arange(len(v)), v)
+        i = seconds(rng.uniform(0, spread))
+        pan = rng.uniform(-0.85, 0.85)
+        left, right = np.cos((pan + 1) * np.pi / 4), np.sin((pan + 1) * np.pi / 4)
+        n = min(len(w), len(out) - i)
+        out[i:i + n, 0] += w[:n] * left
+        out[i:i + n, 1] += w[:n] * right
+    return out / np.sqrt(len(takes))
+
+
+def public_address(voice):
+    """A voice through a party microphone and one small speaker."""
+    return np.tanh(bandpass(voice, 260, 4800) * 2.4) * 0.62

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 from pathlib import Path
 
@@ -16,10 +17,24 @@ SCRIPT = Path(__file__).resolve().parent / "voice_tts.py"
 NARRATOR = "bm_george"
 
 
+def _path(words: str, voice: str, speed: float) -> Path:
+    key = hashlib.sha1(f"{voice}|{speed}|{words}".encode()).hexdigest()[:12]
+    return OUT / "voice" / f"{key}.wav"
+
+
+def record(takes) -> None:
+    """Records many (words, voice, speed) lines in one go. The model loads once, so a crowd takes minutes, not an hour."""
+    missing = [[words, voice, speed, str(_path(words, voice, speed))] for words, voice, speed in takes if not _path(words, voice, speed).exists()]
+    if missing:
+        jobs = OUT / "voice" / "batch.json"
+        jobs.parent.mkdir(parents=True, exist_ok=True)
+        jobs.write_text(json.dumps(missing), encoding="utf-8")
+        subprocess.run([str(VENV_PYTHON), str(SCRIPT), "--batch", str(jobs)], check=True)
+
+
 def line(words: str, voice: str = NARRATOR, speed: float = 0.92) -> np.ndarray:
     """The narrator saying `words`, polished and at 48 kHz."""
-    key = hashlib.sha1(f"{voice}|{speed}|{words}".encode()).hexdigest()[:12]
-    path = OUT / "voice" / f"{key}.wav"
+    path = _path(words, voice, speed)
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([str(VENV_PYTHON), str(SCRIPT), words, voice, str(speed), str(path)], check=True)

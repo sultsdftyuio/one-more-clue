@@ -150,7 +150,7 @@ _faces: dict[str, skia.Typeface] = {}
 
 
 def face(name: str) -> skia.Typeface:
-    files = {"display": "LilitaOne-Regular.ttf", "type": "SpecialElite-Regular.ttf", "body": "Nunito[wght].ttf", "neon": "Monoton-Regular.ttf", "serif": "PlayfairDisplay-Italic[wght].ttf"}
+    files = {"display": "LilitaOne-Regular.ttf", "type": "SpecialElite-Regular.ttf", "body": "Nunito[wght].ttf", "neon": "Monoton-Regular.ttf", "serif": "PlayfairDisplay-Italic[wght].ttf", "frost": "MountainsofChristmas-Bold.ttf"}
     if name not in _faces:
         _faces[name] = skia.Typeface.MakeFromFile(str(FONTS / files[name]))
     return _faces[name]

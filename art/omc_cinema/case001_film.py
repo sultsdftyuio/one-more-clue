@@ -1,7 +1,9 @@
 """Case 001, The Last Message: the 21-second opening film.
 
-    python -m omc_cinema.case001_film            # render the film
-    python -m omc_cinema.case001_film stills     # a contact sheet of key frames, quickly
+    python -m omc_cinema.case001_film stills     # the risky moments, as a contact sheet
+    python -m omc_cinema.case001_film draft      # quick low-res film, to check timing
+    python -m omc_cinema.case001_film            # the game copy (720 x 1280)
+    python -m omc_cinema.case001_film master     # full size, for trailers
 
 Five shots, each moving differently, joined on something you see or hear:
 
@@ -27,13 +29,13 @@ import sys
 import numpy as np
 import skia
 from omc_art.palette import CORAL, CREAM, INK, MUSTARD
-from omc_art.suspects import SUSPECTS
 
 from . import sound
-from .case001 import (FORGED, ORIGINAL, bench, big_screen, bokeh, campus_view, caption, chat_lines, chyron, closeup_camera, dust, glove,
-                      keyboard, rain_streaks, screen_spill, wall)
-from .film import (FPS, OUT, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, render_frame,
+from .case001 import (FORGED, ORIGINAL, bench, big_screen, bokeh, campus_view, chat_lines, chyron, closeup_camera, dust, glove, keyboard,
+                      rain_streaks, screen_spill, wall)
+from .film import (DRAFT, FPS, GAME, MASTER, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, render_frame,
                    render_video, rrect, smooth, span, stroke, text, W, H)
+from .kit import caption, contact_sheet, risky_moments, suspect
 from .look import Look, finish
 from .voice import line
 
@@ -66,35 +68,6 @@ REVEALS = [0.3, 1.2, 2.1, 3.0]  # seconds into shot D
 
 # ---------------------------------------------------------------------------
 # Helpers
-
-def hue_rotate(deg: float) -> skia.ColorFilter:
-    """The same recolouring as the game's CSS hue-rotate(), so the cast matches the case's colours."""
-    a = math.radians(deg)
-    c, s = math.cos(a), math.sin(a)
-    m = [0.213 + c * 0.787 - s * 0.213, 0.715 - c * 0.715 - s * 0.715, 0.072 - c * 0.072 + s * 0.928, 0, 0,
-         0.213 - c * 0.213 + s * 0.143, 0.715 + c * 0.285 + s * 0.140, 0.072 - c * 0.072 - s * 0.283, 0, 0,
-         0.213 - c * 0.213 - s * 0.787, 0.715 - c * 0.715 + s * 0.715, 0.072 + c * 0.928 + s * 0.072, 0, 0,
-         0, 0, 0, 1, 0]
-    return skia.ColorFilters.Matrix(m)
-
-
-SILHOUETTE = skia.ColorFilters.Matrix([0, 0, 0, 0, 0.03, 0, 0, 0, 0, 0.035, 0, 0, 0, 0, 0.07, 0, 0, 0, 1, 0])
-
-
-def suspect(c, art, tint, feet, scale, mood="idle", lit=1.0):
-    """Draws a house suspect standing at `feet` (x, y). `lit` 0 is a silhouette, 1 full colour."""
-    fx, fy = feet
-    for which, alpha in ((SILHOUETTE, 1.0), (hue_rotate(tint), lit)):
-        if which is not SILHOUETTE and lit <= 0:
-            continue
-        paint = skia.Paint(ColorFilter=which)
-        paint.setAlphaf(alpha)
-        c.saveLayer(None, paint)
-        c.translate(fx - 200 * scale, fy - 520 * scale)
-        c.scale(scale, scale)
-        SUSPECTS[art](c, mood)
-        c.restore()
-
 
 def darkness(c, hole, radius, amount=0.94):
     """Everything black except a soft round hole: what a torch shows in a dark room."""
@@ -512,26 +485,18 @@ def score():
 
 # ---------------------------------------------------------------------------
 
-def stills(times=(1.2, 2.7, 3.9, 5.6, 6.6, 8.6, 11.2, 13.0, 14.5, 16.8, 17.5, 19.9)):
-    """A contact sheet of key frames, rendered in parallel: the quick way to check a change."""
-    from concurrent.futures import ProcessPoolExecutor
-
-    from PIL import Image
-
-    with ProcessPoolExecutor(6) as pool:
-        frames = list(pool.map(film_frame, [round(t * FPS) for t in times]))
-    cols = 6
-    sheet = Image.new("RGB", (cols * 310, ((len(frames) + cols - 1) // cols) * 550), "black")
-    for i, frame in enumerate(frames):
-        sheet.paste(Image.fromarray(frame).resize((300, 533), Image.LANCZOS), ((i % cols) * 310, (i // cols) * 550))
-    OUT.mkdir(parents=True, exist_ok=True)
-    sheet.save(OUT / "case001-film-stills.png")
-    print(OUT / "case001-film-stills.png")
+CUTS = (2.95, 3.3, C1, C2, D, E)
 
 
-def main():
-    render_video("case001-film", "omc_cinema.case001_film:film_frame", DURATION, score(), sound.SR)
+def stills():
+    """A contact sheet of the risky moments: the end of every line, and both sides of every cut."""
+    moments = risky_moments([(at, length) for (_, _, _, at, _), length in zip(LINES, LINE_LENGTHS)], CUTS, extra=(1.2, 2.7, 19.9))
+    print(contact_sheet(film_frame, moments, "case001-film-stills.png"))
+
+
+def render(scale):
+    render_video("case001-film", "omc_cinema.case001_film:film_frame", DURATION, score(), sound.SR, scale)
 
 
 if __name__ == "__main__":
-    {"film": main, "stills": stills}[sys.argv[1] if len(sys.argv) > 1 else "film"]()
+    {"film": lambda: render(GAME), "draft": lambda: render(DRAFT), "master": lambda: render(MASTER), "stills": stills}[sys.argv[1] if len(sys.argv) > 1 else "film"]()

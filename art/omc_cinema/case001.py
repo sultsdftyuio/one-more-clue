@@ -21,6 +21,7 @@ from omc_art.palette import CORAL, CREAM, INK, MUSTARD
 from . import sound
 from .film import (FPS, OUT, Camera, Encoder, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, poly,
                    radial, render_frame, rgb, rrect, smooth, span, stroke, text, W, H)
+from .kit import caption
 from .look import Look, finish
 from .voice import line
 
@@ -349,39 +350,6 @@ def chyron(c, t, full="LAB 4  ·  9:12 PM"):
     a = smooth(span(t, 0.25, 0.4)) * (1 - smooth(span(t, 2.75, 3.0)) * 0.6)
     text(c, shown, 72, 150, font("type", 46), fill(CREAM, a), tracking=3)
     c.drawLine(72, 172, 72 + 380 * smooth(span(t, 0.3, 0.9)), 172, stroke(MUSTARD, 4, a))
-
-
-def caption(c, t, words, start, end, speaker=None, until=None):
-    """Burned-in subtitles, word by word, for rooms where the volume is down. Characters get a name tag.
-    `until` clears it early, so it never sits on top of the next line."""
-    gone = min(end + 0.6, until if until is not None else 1e9)
-    if t < start - 0.05 or t > gone:
-        return
-    f = font("body", 54)
-    f.setEmbolden(True)
-    parts = words.split(" ")
-    shown = parts[: max(1, math.ceil(len(parts) * span(t, start, end)))]
-    a = smooth(span(t, start - 0.05, start + 0.15)) * (1 - smooth(span(t, gone - 0.25, gone)))
-    # A soft dark band behind the words, so they read over bright shots too.
-    c.drawRect(skia.Rect.MakeLTRB(0, H - 520, W, H), linear((0, H - 520), (0, H - 120), [(0, "#000000", 0), (1, "#000000", 0.5 * a)]))
-    # Long lines wrap onto two, split where the full line would balance, so words don't jump as they appear.
-    rows = [parts]
-    if f.measureText(words) > W - 140:
-        cut = min(range(1, len(parts)), key=lambda k: abs(f.measureText(" ".join(parts[:k])) - f.measureText(" ".join(parts[k:]))))
-        rows = [parts[:cut], parts[cut:]]
-    shadow = fill("#000000", 0.55 * a)
-    shadow.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 8))
-    top = H - 260 - 66 * (len(rows) - 1)
-    shown_count = len(shown)
-    for i, row in enumerate(rows):
-        visible = row[: max(0, shown_count - sum(len(r) for r in rows[:i]))]
-        if not visible:
-            continue
-        y = top + 66 * i
-        text(c, " ".join(visible), W / 2, y + 3, f, shadow, align="center")
-        text(c, " ".join(visible), W / 2, y, f, fill(CREAM, a), align="center")
-    if speaker:
-        text(c, speaker, W / 2, top - 80, font("type", 34), fill(MUSTARD, a), align="center", tracking=4)
 
 
 # ---------------------------------------------------------------------------

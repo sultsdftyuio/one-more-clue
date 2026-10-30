@@ -88,14 +88,15 @@ def _fringe(img: np.ndarray, px: float) -> np.ndarray:
 def finish(img: np.ndarray, frame: int, look: Look = Look(), exposure: float = 1.0) -> np.ndarray:
     """Turns a clean render into a film frame. `img` is float RGB 0..1."""
     img = img * exposure * (1 + look.flicker * np.sin(frame * 2.9) * np.sin(frame * 0.7))
+    k = img.shape[1] / 1080  # blurs and fringes are set for a 1080-wide frame
 
     lum = img @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
     bright = img * np.clip((lum - look.bloom_threshold) / (1 - look.bloom_threshold), 0, 1)[..., None]
     if look.bloom:
-        glow = _small_blur(bright, 4, 6) * 0.6 + _small_blur(bright, 8, 10) * 0.9
+        glow = _small_blur(bright, 4, 6 * k) * 0.6 + _small_blur(bright, 8, 10 * k) * 0.9
         img = img + glow * look.bloom * np.array([1.0, 0.96, 0.9], dtype=np.float32)
     if look.halation:
-        halo = _small_blur(bright, 4, 3)
+        halo = _small_blur(bright, 4, 3 * k)
         img = img + halo.mean(axis=2, keepdims=True) * look.halation * np.array([1.0, 0.32, 0.12], dtype=np.float32)
 
     # Grade: lift the shadows towards teal, warm the highlights, then a gentle S curve.
@@ -108,11 +109,11 @@ def finish(img: np.ndarray, frame: int, look: Look = Look(), exposure: float = 1
     img = img / (1 + img * 0.18)  # soft shoulder: highlights roll off instead of clipping
     img = 0.5 + (img - 0.5) * look.contrast
 
-    img = _fringe(img, look.fringe)
+    img = _fringe(img, look.fringe * k)
     img = img * _vignette(img.shape, look.vignette)
     if look.grain:
         g = _grain(img.shape, frame)[..., None]
         # Film grain shows most in the mid-tones.
         mid = 1 - np.abs(np.clip(img.mean(axis=2, keepdims=True), 0, 1) - 0.45) * 1.4
-        img = img + g * look.grain * np.clip(mid, 0.25, 1)
+        img = img + g * look.grain * (0.6 + 0.4 * k) * np.clip(mid, 0.25, 1)
     return np.clip(img, 0, 1)

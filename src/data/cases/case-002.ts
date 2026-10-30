@@ -23,6 +23,8 @@ export const case002: CaseFile = {
   title: "Dead Air",
   tagline: "Nine minutes of dead air, a man in a balaclava, and a £5,000 jackpot gone.",
   theme: "radio",
+  // Rendered by art/omc_cinema/case002_film.py. Hidden clue: a quiet chuckle just before the sound dies.
+  cinematic: { video: "/cinematics/case-002.mp4", poster: "/cinematics/case-002.jpg" },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

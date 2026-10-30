@@ -306,3 +306,89 @@ def whoosh(rng, length=0.5):
     x = rng.standard_normal((n, 2))
     shape = np.sin(np.pi * t / length) ** 2
     return bandpass(x, 400, 5000) * shape[:, None] * 0.5
+
+
+# ---------------------------------------------------------------------------
+# The radio station
+
+def funk_bed(duration, rng, bpm=102):
+    """A late-night radio bed: rubbery bass, a soft kick, off-beat hats and a warm chord stab."""
+    n = seconds(duration)
+    out = np.zeros(n)
+    beat = 60 / bpm
+    bass = ("A1", None, "A1", "C2", None, "D2", "E2", None)
+
+    def put(sound_, at, gain):
+        i = seconds(at)
+        if i < n:
+            j = min(n, i + len(sound_))
+            out[i:j] += sound_[: j - i] * gain
+
+    for bar in range(int(duration / (beat * 4)) + 1):
+        start = bar * beat * 4
+        for k, name in enumerate(bass):
+            if name:
+                m = seconds(beat * 0.45)
+                tt = np.arange(m) / SR
+                f = note(name)
+                tone_ = np.tanh(np.sin(2 * np.pi * f * tt) * 2.5 + np.sin(4 * np.pi * f * tt) * 0.4)
+                put(lowpass(tone_, 700) * env(m, 0.004, beat * 0.4, 3), start + k * beat / 2, 0.5)
+        for k in (0, 2):
+            m = seconds(0.2)
+            tt = np.arange(m) / SR
+            put(np.sin(2 * np.pi * (60 + 90 * np.exp(-tt * 40)) * tt) * env(m, 0.001, 0.16, 4), start + k * beat, 0.55)
+        for k in range(8):
+            m = seconds(0.05)
+            put(highpass(rng.standard_normal(m), 7000) * env(m, 0.0005, 0.03, 5), start + (k + 0.5) * beat / 2, 0.1 if k % 2 else 0.05)
+        for name in ("A3", "C4", "E4", "G4"):
+            m = seconds(beat * 0.9)
+            tt = np.arange(m) / SR
+            f = note(name)
+            put(lowpass(2 * ((tt * f) % 1.0) - 1, 1400) * env(m, 0.01, beat * 0.8, 3), start + beat * 1.5, 0.05)
+    return out
+
+
+def jingle(at, rng):
+    """The station ident: three rising synth stabs and a bright tail."""
+    n = seconds(1.8)
+    out = np.zeros(n)
+    for k, (names, when) in enumerate(((("A3", "C#4", "E4"), 0.0), (("B3", "D#4", "F#4"), 0.18), (("C#4", "F4", "G#4", "C#5"), 0.36))):
+        for name in names:
+            m = n - seconds(when)
+            tt = np.arange(m) / SR
+            f = note(name)
+            stab = (2 * ((tt * f) % 1.0) - 1) + (2 * ((tt * f * 1.004) % 1.0) - 1)
+            out[seconds(when):] += lowpass(stab, 3200) * env(m, 0.005, 0.5 if k < 2 else 1.3, 3) * 0.12
+    return out
+
+
+def creak(rng):
+    """A studio chair taking someone's weight."""
+    n = seconds(0.4)
+    t = np.arange(n) / SR
+    tone_ = np.sin(2 * np.pi * np.cumsum(420 + 160 * np.sin(t * 19)) / SR)
+    return bandpass(tone_ * (np.sin(2 * np.pi * 34 * t) > 0), 500, 2600) * env(n, 0.02, 0.35, 2)
+
+
+def room_hum(duration, rng):
+    """A sealed room with the power on: barely there."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    return np.sin(2 * np.pi * 50 * t) * 0.6 + np.sin(2 * np.pi * 100 * t) * 0.25 + lowpass(rng.standard_normal(n), 900) * 0.4
+
+
+def alarm_beep():
+    """The silence alarm: two soft, insistent pips."""
+    n = seconds(0.42)
+    t = np.arange(n) / SR
+    pip = np.sin(2 * np.pi * 1046.5 * t) * ((t < 0.13) | ((t > 0.2) & (t < 0.33))).astype(float)
+    return lowpass(pip, 3000) * 0.5
+
+
+def neon_buzz():
+    """A neon sign catching: a stuttering mains buzz that settles."""
+    n = seconds(1.6)
+    t = np.arange(n) / SR
+    buzz = sum(np.sin(2 * np.pi * 100 * k * t) / k for k in range(1, 9))
+    stutter = np.where(t < 0.7, (np.sin(2 * np.pi * 13 * t) > -0.2).astype(float), 1.0)
+    return buzz * stutter * env(n, 0.005, 1.5, 2.5) * 0.35

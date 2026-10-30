@@ -9,6 +9,7 @@ piped straight into ffmpeg.
 from __future__ import annotations
 
 import math
+import os
 import subprocess
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -17,8 +18,11 @@ from pathlib import Path
 import numpy as np
 import skia
 
+# Sets are designed at W x H; SCALE is what actually gets rendered.
 W, H = 1080, 1920
 FPS = 30
+DRAFT, GAME, MASTER = 1 / 3, 2 / 3, 1.0
+SCALE = float(os.environ.get("OMC_SCALE", GAME))
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = ROOT / "fonts"
 OUT = ROOT / "out" / "film"
@@ -26,6 +30,10 @@ OUT = ROOT / "out" / "film"
 
 # ---------------------------------------------------------------------------
 # Time
+
+def frame_size(scale: float = SCALE) -> tuple[int, int]:
+    return round(W * scale), round(H * scale)
+
 
 def clamp(x, lo=0.0, hi=1.0):
     return max(lo, min(hi, x))
@@ -142,7 +150,7 @@ _faces: dict[str, skia.Typeface] = {}
 
 
 def face(name: str) -> skia.Typeface:
-    files = {"display": "LilitaOne-Regular.ttf", "type": "SpecialElite-Regular.ttf", "body": "Nunito[wght].ttf"}
+    files = {"display": "LilitaOne-Regular.ttf", "type": "SpecialElite-Regular.ttf", "body": "Nunito[wght].ttf", "neon": "Monoton-Regular.ttf"}
     if name not in _faces:
         _faces[name] = skia.Typeface.MakeFromFile(str(FONTS / files[name]))
     return _faces[name]
@@ -205,27 +213,26 @@ def layer(c: skia.Canvas, cam: Camera, depth: float, extra_blur: float = 0.0, op
     blur = abs(depth - cam.focus) * cam.aperture + extra_blur
     if blur >= 2:
         q = 4 if blur > 10 else 2
-        small = skia.Surface(W // q, H // q)
+        sw, sh = frame_size()
+        small = skia.Surface(sw // q, sh // q)
         sc = small.getCanvas()
         sc.clear(skia.ColorTRANSPARENT)
-        sc.scale(1 / q, 1 / q)
+        sc.scale(SCALE / q, SCALE / q)
         _camera(sc, cam, depth)
         try:
             yield sc
         finally:
             # Blur on the small surface (cheap), then stretch it over the frame.
-            blurred = skia.Surface(W // q, H // q)
+            blurred = skia.Surface(sw // q, sh // q)
             bc = blurred.getCanvas()
             bc.clear(skia.ColorTRANSPARENT)
-            bc.drawImage(small.makeImageSnapshot(), 0, 0, skia.SamplingOptions(),
-                         skia.Paint(ImageFilter=skia.ImageFilters.Blur(blur / q, blur / q)))
+            sigma = blur * SCALE / q
+            bc.drawImage(small.makeImageSnapshot(), 0, 0, skia.SamplingOptions(), skia.Paint(ImageFilter=skia.ImageFilters.Blur(sigma, sigma)))
             paint = skia.Paint()
             if opacity < 1:
                 paint.setAlphaf(opacity)
-            c.save()
-            c.resetMatrix()
+            # Through the canvas's own transform, so a whole-frame effect like the TV switch-off moves this layer too.
             c.drawImageRect(blurred.makeImageSnapshot(), skia.Rect.MakeWH(W, H), skia.SamplingOptions(skia.FilterMode.kLinear), paint)
-            c.restore()
         return
     # Its own layer even when sharp, so lights drawn with additive blending add to this layer, not the whole frame.
     c.saveLayerAlpha(None, round(255 * opacity)) if opacity < 1 else c.saveLayer(None, None)
@@ -243,36 +250,39 @@ def layer(c: skia.Canvas, cam: Camera, depth: float, extra_blur: float = 0.0, op
 
 def render_frame(draw, t: float) -> np.ndarray:
     """Draws one frame and returns it as float32 RGB in 0..1."""
-    surface = skia.Surface(W, H)
+    surface = skia.Surface(*frame_size())
     c = surface.getCanvas()
     c.clear(skia.ColorBLACK)
+    c.scale(SCALE, SCALE)
     draw(c, t)
     rgba = surface.makeImageSnapshot().toarray(colorType=skia.kRGBA_8888_ColorType)
     return rgba[..., :3].astype(np.float32) / 255.0
 
 
-def render_video(name: str, frame_ref: str, duration: float, audio: np.ndarray, sr: int, workers: int | None = None) -> Path:
+def render_video(name: str, frame_ref: str, duration: float, audio: np.ndarray, sr: int, scale: float = GAME, workers: int | None = None) -> Path:
     """Renders every frame in parallel and encodes the film.
 
     `frame_ref` is "module:function", where the function takes a frame number
     and returns that finished frame as uint8 RGB; worker processes import it
-    themselves. Writes a master (1080 x 1920, high quality) and a game copy
-    (720 x 1280, small enough to load fast on a phone).
+    themselves. `scale` picks the size: DRAFT to check timing and framing in a
+    couple of minutes, GAME (720 x 1280) for the copy players see, MASTER
+    (1080 x 1920) for trailers.
     """
-    import os
     import time
     from concurrent.futures import ProcessPoolExecutor
 
     from scipy.io import wavfile
 
-    # One maths thread per worker: otherwise every worker's numpy tries to use every core and they trip over each other.
+    # Workers read these when they start. One maths thread each keeps them from fighting over cores.
+    os.environ["OMC_SCALE"] = str(scale)
     for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
         os.environ[var] = "1"
     OUT.mkdir(parents=True, exist_ok=True)
     wav = OUT / f"{name}.wav"
     wavfile.write(wav, sr, audio)
-    master = OUT / f"{name}-master.mp4"
-    enc = Encoder(master, wav)
+    suffix, crf, preset = {DRAFT: ("-draft", 27, "veryfast"), GAME: ("", 25, "slow"), MASTER: ("-master", 17, "slow")}[scale]
+    out = OUT / f"{name}{suffix}.mp4"
+    enc = Encoder(out, wav, frame_size(scale), crf, preset)
     frames = round(duration * FPS)
     started = time.time()
     batch = 48
@@ -284,12 +294,8 @@ def render_video(name: str, frame_ref: str, duration: float, audio: np.ndarray, 
                 enc.proc.stdin.write(data)
             print(f"  {ids[-1] + 1}/{frames} frames  ({time.time() - started:.0f}s)", flush=True)
     enc.close()
-    game = OUT / f"{name}.mp4"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(master), "-vf", "scale=720:1280:flags=lanczos",
-                    "-c:v", "libx264", "-preset", "slow", "-crf", "25", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
-                    "-movflags", "+faststart", str(game)], check=True)
-    print(f"done -> {master.name}, {game.name}")
-    return game
+    print(f"done in {time.time() - started:.0f}s -> {out.name}")
+    return out
 
 
 def _frame_worker(job):
@@ -304,13 +310,14 @@ def _frame_worker(job):
 class Encoder:
     """Pipes frames into ffmpeg; muxes the soundtrack in at the end."""
 
-    def __init__(self, path: Path, audio: Path | None):
+    def __init__(self, path: Path, audio: Path | None, size: tuple[int, int] | None = None, crf: int = 17, preset: str = "slow"):
         path.parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
+        w, h = size or frame_size()
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
                "-r", str(FPS), "-i", "-"]
         if audio:
-            cmd += ["-i", str(audio), "-c:a", "aac", "-b:a", "192k", "-shortest"]
-        cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", "-tune", "film",
+            cmd += ["-i", str(audio), "-c:a", "aac", "-b:a", "160k", "-shortest"]
+        cmd += ["-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-pix_fmt", "yuv420p",
                 "-movflags", "+faststart", str(path)]
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 

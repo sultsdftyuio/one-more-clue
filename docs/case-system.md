@@ -37,6 +37,7 @@ Players should be tapping through moments, not reading paragraphs. `npm test` en
 Each case should look, sound and play differently from the others.
 
 - **Theme** (`theme`): `noir` (rain, typewriter titles, noir jazz), `radio` (neon, radio waves, synth funk), `bistro` (candlelight, steam, a café waltz) or `frost` (falling snow, a music-box waltz). It sets the title font, accent colour, background weather and the whole music set, including the tension under votes. New themes go in `src/components/game/themes.ts`, `game.css` and the music sets in `audio/sound.ts`.
+- **Opening film** (`cinematic`): about 20 seconds, rendered by `art/omc_cinema` and played when the host starts. Give each case's film its own structure, vary the shots inside it, and hide one real clue. Never show a checkpoint's answer or the culprit: the film ends where the case's first question begins. Check `stills` and `draft` before the full render.
 - **Cast colours** (`tint` on a suspect): recolours a house character (a hue rotation in degrees) so each case's cast looks like new people.
 - **Effect beats** (`{ kind: "effect", effect }`): `blackout`, `static`, `flash` or `candles`, a full-screen moment with a sound. Use one or two per case, at the turning points.
 - **Footage** (`type: "footage"`): camera frames players play or scrub through. Hotspots can sit in any frame, so the clue can be *when* something changes (an empty chair, a plate gone).

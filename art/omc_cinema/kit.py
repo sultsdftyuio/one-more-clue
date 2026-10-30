@@ -7,7 +7,7 @@ import skia
 from omc_art.palette import CREAM, MUSTARD
 from omc_art.suspects import SUSPECTS
 
-from .film import FPS, H, OUT, W, fill, font, linear, smooth, span, text
+from .film import FPS, H, OUT, W, fill, font, glow, linear, smooth, span, text
 
 
 def hue_rotate(deg: float) -> skia.ColorFilter:
@@ -74,6 +74,14 @@ def caption(c, t, words, start, end, speaker=None, until=None, y=None):
         text(c, " ".join(visible), W / 2, y, f, fill(CREAM, a), align="center")
     if speaker:
         text(c, speaker, W / 2, top - 80, font("type", 34), fill(MUSTARD, a), align="center", tracking=4)
+
+
+def darkness(c, hole, radius, amount=0.94):
+    """Everything black except a soft round hole: what a torch shows in a dark room."""
+    c.saveLayer(None, None)
+    c.drawRect(skia.Rect.MakeWH(W, H), fill("#020308", amount))
+    glow(c, hole, radius, "#FFFFFF", 1.0, blend=skia.BlendMode.kDstOut, falloff=((0, 1.0), (0.55, 0.85), (1, 0.0)))
+    c.restore()
 
 
 def risky_moments(lines, cuts, extra=()):

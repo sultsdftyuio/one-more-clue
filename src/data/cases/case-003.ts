@@ -24,6 +24,8 @@ export const case003: CaseFile = {
   title: "The Last Course",
   tagline: "The most feared critic in the country collapses after dessert. The kitchen swears it's nut-free.",
   theme: "bistro",
+  // Rendered by art/omc_cinema/case003_film.py. Hidden clue: half a second of two plates on the pass, one with gold leaf.
+  cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

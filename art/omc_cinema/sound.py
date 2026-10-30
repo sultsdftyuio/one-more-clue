@@ -392,3 +392,194 @@ def neon_buzz():
     buzz = sum(np.sin(2 * np.pi * 100 * k * t) / k for k in range(1, 9))
     stutter = np.where(t < 0.7, (np.sin(2 * np.pi * 13 * t) > -0.2).astype(float), 1.0)
     return buzz * stutter * env(n, 0.005, 1.5, 2.5) * 0.35
+
+
+# ---------------------------------------------------------------------------
+# The restaurant
+
+def murmur(duration, rng):
+    """A full dining room: the wash of voices, with the odd clink of cutlery."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    wash = bandpass(rng.standard_normal((n, 2)), 250, 1500)
+    swell = (0.75 + 0.25 * np.sin(t * 1.7))[:, None]
+    out = wash * swell * 0.5
+    for _ in range(int(duration * 4)):
+        i = rng.integers(0, max(1, n - 4000))
+        m = 3000
+        tt = np.arange(m) / SR
+        out[i:i + m, rng.integers(0, 2)] += np.sin(2 * np.pi * rng.uniform(2800, 5200) * tt) * env(m, 0.0005, 0.03, 5) * 0.03
+    return out
+
+
+def _reed(freq, length, gain=1.0):
+    """An accordion reed: two slightly detuned saws, softened."""
+    m = seconds(length)
+    t = np.arange(m) / SR
+    tone_ = (2 * ((t * freq) % 1.0) - 1) + (2 * ((t * freq * 1.006) % 1.0) - 1)
+    return lowpass(tone_, 2400) * env(m, min(0.012, length / 4), length, 3) * gain
+
+
+def waltz_bar(length, chord, rng, lift=0.0):
+    """One bar of waltz: a low note, then two off-beat chords. `lift` (0 to 1) brightens it as the film speeds up."""
+    n = seconds(length) + seconds(0.25)
+    out = np.zeros(n)
+    beat = length / 3
+    low = note(chord[0]) / 2
+    bass = _reed(low, min(0.5, beat * 1.2), 0.42)
+    out[: len(bass)] += bass
+    for k in (1, 2):
+        i = seconds(beat * k)
+        for name in chord:
+            r = _reed(note(name), min(0.32, beat * 0.8), 0.16 + 0.1 * lift)
+            j = min(n, i + len(r))
+            out[i:j] += r[: j - i]
+    if lift > 0.4:  # the tambourine joins as it gets out of hand
+        for k in range(3):
+            m = seconds(0.05)
+            i = seconds(beat * k)
+            j = min(n, i + m)
+            out[i:j] += highpass(rng.standard_normal(m), 6000)[: j - i] * env(m, 0.0005, 0.03, 5)[: j - i] * 0.16 * lift
+    return out
+
+
+def ceramic(rng):
+    """Porcelain set down on stone: a bright tick with a short ring."""
+    n = seconds(0.3)
+    t = np.arange(n) / SR
+    ring = sum(np.sin(2 * np.pi * f * t) * a for f, a in ((2150, 0.5), (3380, 0.35), (5120, 0.18))) * env(n, 0.0005, 0.12, 5)
+    tick = bandpass(rng.standard_normal(n), 1800, 7000) * env(n, 0.0003, 0.01, 5)
+    return ring * 0.55 + tick * 0.5
+
+
+def pour(duration, rng):
+    """Soup leaving a ladle."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    x = bandpass(rng.standard_normal(n), 500, 2400)
+    glug = 0.7 + 0.3 * np.sin(2 * np.pi * 7 * t + 3 * np.sin(2 * np.pi * 1.3 * t))
+    return x * glug * np.clip(t / 0.08, 0, 1) * np.clip((duration - t) / 0.2, 0, 1) * 0.6
+
+
+def printer(duration, rng):
+    """A kitchen ticket printer chattering."""
+    n = seconds(duration)
+    out = np.zeros(n)
+    i = 0
+    while i < n - 900:
+        out[i:i + 900] += bandpass(rng.standard_normal(900), 1500, 6000) * env(900, 0.0004, 0.008, 5)
+        i += int(SR * rng.uniform(0.018, 0.034))
+    return out * 0.6
+
+
+def flame(rng):
+    """A flambe going up: a soft whump into a roar that falls away."""
+    n = seconds(1.5)
+    t = np.arange(n) / SR
+    x = rng.standard_normal((n, 2))
+    roar = bandpass(x, 150, 2600) * (np.clip(t / 0.06, 0, 1) * np.exp(-t * 2.6))[:, None]
+    whump = (np.sin(2 * np.pi * (90 - 40 * np.clip(t, 0, 1)) * t) * env(n, 0.003, 0.3, 4))[:, None]
+    return roar * 0.8 + whump * 0.6
+
+
+def service_bell(rng):
+    n = seconds(1.3)
+    t = np.arange(n) / SR
+    ring = sum(np.sin(2 * np.pi * f * t) * a * np.exp(-t * d) for f, a, d in ((2093, 0.6, 3.2), (4186, 0.25, 5), (5274, 0.15, 7)))
+    return ring * 0.5
+
+
+def pen(duration, rng, soft=False):
+    """A nib on paper: quick scratches, or one long skid."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    x = bandpass(rng.standard_normal(n), 2200, 8000)
+    strokes_ = 0.5 + 0.5 * np.sin(2 * np.pi * (6 if soft else 13) * t + 2 * np.sin(t * 9))
+    return x * strokes_ * np.clip(t / 0.02, 0, 1) * np.clip((duration - t) / 0.03, 0, 1) * (0.14 if soft else 0.34)
+
+
+def sustained(names, duration, rng):
+    """A held string chord, quiet and uneasy."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for name in names:
+        f = note(name)
+        vib = 0.003 * np.sin(2 * np.pi * 4.7 * t + f)
+        out += 2 * ((np.cumsum(f * (1 + vib)) / SR) % 1.0) - 1
+    return lowpass(out, 1100, 2) * np.clip(t / 0.9, 0, 1) * np.clip((duration - t) / 0.5, 0, 1) * 0.12
+
+
+def fork_ring(rng):
+    """A fork hitting a wooden floor, ringing on after everything else has stopped."""
+    n = seconds(2.2)
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for at, a in ((0.0, 1.0), (0.19, 0.5), (0.31, 0.26)):
+        i = seconds(at)
+        tt = t[: n - i]
+        hit = sum(np.sin(2 * np.pi * f * tt) * w * np.exp(-tt * d) for f, w, d in ((1760, 0.5, 1.6), (2637, 0.32, 2.4), (4186, 0.2, 4.0), (6210, 0.12, 7.0)))
+        out[i:] += hit * a
+    return out * 0.34
+
+
+def siren(duration, rng):
+    """An ambulance a few streets away, getting closer, heard through a wall."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    f = 700 + 240 * np.sin(2 * np.pi * 0.75 * t)
+    tone_ = lowpass(np.sin(2 * np.pi * np.cumsum(f) / SR), 1100)
+    return tone_ * np.clip(t / duration, 0.15, 1) * 0.5
+
+
+def candle_out(rng):
+    """A small breath, and a flame gone."""
+    n = seconds(0.45)
+    return lowpass(rng.standard_normal(n), 1400) * env(n, 0.03, 0.3, 3) * 0.4
+
+
+def street(duration, rng):
+    """A quiet street at night: distant traffic and a little wind."""
+    n = seconds(duration)
+    t = np.arange(n) / SR
+    rumble = lowpass(rng.standard_normal((n, 2)), 220) * 0.9
+    air = bandpass(rng.standard_normal((n, 2)), 500, 2600) * 0.08
+    return (rumble + air) * (0.8 + 0.2 * np.sin(t * 0.9))[:, None]
+
+
+def door_chime(rng):
+    """The little brass bell over a restaurant's door."""
+    n = seconds(0.9)
+    t = np.arange(n) / SR
+    out = sum(np.sin(2 * np.pi * f * t) * a * np.exp(-t * d) for f, a, d in ((3135, 0.4, 4.5), (4699, 0.2, 6.5)))
+    late = np.zeros(n)
+    i = seconds(0.09)
+    late[i:] = out[: n - i] * 0.6
+    return out * 0.5 + late * 0.5
+
+
+def kitchen(duration, rng):
+    """A busy kitchen: extractor roar, pans, somebody calling for service."""
+    n = seconds(duration)
+    out = bandpass(rng.standard_normal(n), 120, 900) * 0.3
+    for _ in range(int(duration * 7)):
+        i = rng.integers(0, max(1, n - 5000))
+        m = 5000
+        tt = np.arange(m) / SR
+        out[i:i + m] += np.sin(2 * np.pi * rng.uniform(900, 3200) * tt) * env(m, 0.0005, 0.05, 5) * 0.16
+    return out
+
+
+def gasp(rng):
+    """A whole room breathing in at once."""
+    n = seconds(0.9)
+    t = np.arange(n) / SR
+    return bandpass(rng.standard_normal((n, 2)), 500, 3400) * (np.clip(t / 0.35, 0, 1) * np.clip((0.9 - t) / 0.4, 0, 1))[:, None] * 0.5
+
+
+def scrape(rng):
+    """A chair shoved back on a wooden floor."""
+    n = seconds(0.55)
+    t = np.arange(n) / SR
+    judder = (np.sin(2 * np.pi * (60 + 36 * t) * t) > 0).astype(float)
+    return bandpass(rng.standard_normal(n), 300, 1700) * judder * env(n, 0.01, 0.5, 2.5) * 0.9

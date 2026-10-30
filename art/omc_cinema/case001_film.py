@@ -35,7 +35,7 @@ from .case001 import (FORGED, ORIGINAL, bench, big_screen, bokeh, campus_view, c
                       rain_streaks, screen_spill, wall)
 from .film import (DRAFT, FPS, GAME, MASTER, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, render_frame,
                    render_video, rrect, smooth, span, stroke, text, W, H)
-from .kit import caption, contact_sheet, risky_moments, suspect
+from .kit import caption, contact_sheet, darkness, risky_moments, suspect
 from .look import Look, finish
 from .voice import line
 
@@ -68,14 +68,6 @@ REVEALS = [0.3, 1.2, 2.1, 3.0]  # seconds into shot D
 
 # ---------------------------------------------------------------------------
 # Helpers
-
-def darkness(c, hole, radius, amount=0.94):
-    """Everything black except a soft round hole: what a torch shows in a dark room."""
-    c.saveLayer(None, None)
-    c.drawRect(skia.Rect.MakeWH(W, H), fill("#020308", amount))
-    glow(c, hole, radius, "#FFFFFF", 1.0, blend=skia.BlendMode.kDstOut, falloff=((0, 1.0), (0.55, 0.85), (1, 0.0)))
-    c.restore()
-
 
 def to_screen(cam: Camera, depth: float, x: float, y: float):
     """Where a point of the set at `depth` lands in the frame."""

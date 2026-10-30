@@ -84,6 +84,22 @@ def darkness(c, hole, radius, amount=0.94):
     c.restore()
 
 
+def soft_shadow(c, path, dx, dy, blur, alpha=0.5):
+    """A blurred copy of a shape behind it, so things sit on surfaces instead of floating."""
+    paint = fill("#000000", alpha)
+    paint.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, blur))
+    c.save()
+    c.translate(dx, dy)
+    c.drawPath(path, paint)
+    c.restore()
+
+
+def box(x0, y0, x1, y1):
+    p = skia.Path()
+    p.addRect(skia.Rect.MakeLTRB(x0, y0, x1, y1))
+    return p
+
+
 def risky_moments(lines, cuts, extra=()):
     """Where films go wrong: the last moment of each line (long captions) and both sides of each cut."""
     times = set(extra)

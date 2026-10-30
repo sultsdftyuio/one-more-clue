@@ -30,8 +30,9 @@ from omc_art.palette import CREAM, INK
 from . import sound
 from .film import (DRAFT, FPS, GAME, MASTER, OUT, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, poly,
                    render_frame, render_video, rrect, smooth, span, stroke, text, W, H)
-from .kit import caption, contact_sheet, risky_moments, suspect
+from .kit import box, caption, contact_sheet, risky_moments, soft_shadow, suspect
 from .look import Look, finish
+from .textures import surface, weave
 from .voice import line
 
 PINK = "#FF5CCD"
@@ -98,17 +99,31 @@ def save_level(programme: np.ndarray):
 # Studio A, through the glass
 
 def studio(c, t):
-    """The far side of the glass: foam walls, a neon owl, Vince at the mic."""
+    """The far side of the glass: foam walls, framed records, a neon owl, Vince in his headphones."""
     c.drawRect(skia.Rect.MakeLTRB(-500, 200, 1600, 1500), linear((0, 300), (0, 1300), [(0, "#1C1038", 1), (1, "#0D0A1E", 1)]))
-    # Acoustic foam: rows of dark wedges catching a little pink.
+    # Acoustic foam: rows of wedges, lit from one side.
     for row in range(14):
         for col in range(26):
             x, y = -100 + col * 62 + (row % 2) * 31, 280 + row * 62
-            c.drawPath(poly([(x, y + 50), (x + 30, y), (x + 60, y + 50)]), fill("#2A1950" if (row + col) % 3 else "#241443"))
-    # The Night Owls sign.
+            c.drawPath(poly([(x, y + 56), (x + 30, y), (x + 30, y + 56)]), fill("#35215F"))
+            c.drawPath(poly([(x + 30, y + 56), (x + 30, y), (x + 60, y + 56)]), fill("#1F1239"))
+    # Framed gold records on the wall.
+    for x, y in ((560, 650), (880, 650)):
+        frame = rrect(x - 96, y - 96, x + 96, y + 96, 6)
+        soft_shadow(c, frame, 6, 10, 8, 0.5)
+        c.drawPath(frame, fill("#0F0B20"))
+        c.drawPath(frame, stroke("#C9A24A", 6))
+        c.drawCircle(x, y, 72, fill("#C9A24A"))
+        for r in (60, 46, 34):
+            c.drawCircle(x, y, r, stroke("#8F6F28", 2.5))
+        c.drawCircle(x, y, 18, fill("#7A2A3A"))
+    # The Night Owls sign, real tubes on a backing board.
+    c.drawPath(rrect(140, 610, 470, 830, 12), fill("#120B26"))
     glow(c, (300, 700), 360, PINK, 0.34)
-    c.drawCircle(262, 690, 44, stroke(PINK, 10))
-    c.drawCircle(342, 690, 44, stroke(PINK, 10))
+    c.drawCircle(262, 690, 44, stroke("#FFD9F2", 4))
+    c.drawCircle(342, 690, 44, stroke("#FFD9F2", 4))
+    c.drawCircle(262, 690, 44, stroke(PINK, 10, 0.8))
+    c.drawCircle(342, 690, 44, stroke(PINK, 10, 0.8))
     c.drawCircle(262, 690, 12, fill(TEAL))
     c.drawCircle(342, 690, 12, fill(TEAL))
     c.drawPath(poly([(302, 712), (284, 736), (320, 736)]), fill(PINK))
@@ -116,19 +131,40 @@ def studio(c, t):
     # Vince, leaning into it. He sways with his own voice while it's on air.
     sway = level(t) * 7 * math.sin(t * 5.3)
     suspect(c, "square", VINCE_TINT, (690 + sway, 1260), 1.08)
-    # His desk, in front of him.
-    c.drawPath(rrect(380, 1090, 1040, 1330, 18), linear((0, 1090), (0, 1330), [(0, "#2C2352", 1), (1, "#17122E", 1)]))
-    # The mic on its arm, and the jackpot envelope on the desk, in plain sight.
-    c.drawLine(930, 700, 760, 840, stroke("#6C6A8C", 12))
-    c.drawLine(930, 700, 960, 420, stroke("#6C6A8C", 12))
-    c.drawPath(rrect(690, 800, 790, 930, 44), fill("#1A1A2A"))
-    c.drawPath(rrect(690, 800, 790, 930, 44), stroke("#6C6A8C", 6))
+    band = skia.Path()
+    band.addArc(skia.Rect.MakeLTRB(562 + sway, 800, 818 + sway, 1040), 190, 160)
+    c.drawPath(band, stroke("#14141C", 18))
+    for x in (564, 816):
+        c.drawPath(rrect(x - 30 + sway, 880, x + 30 + sway, 1000, 22), fill("#14141C"))
+        c.drawPath(rrect(x - 30 + sway, 880, x + 30 + sway, 1000, 22), stroke("#4A4A60", 4))
+    # His desk: wood, a script, a mug, and the jackpot envelope on its tray, in plain sight.
+    top = rrect(380, 1090, 1040, 1330, 18)
+    c.drawPath(top, surface("wood", 1.0))
+    c.drawPath(top, fill("#120B26", 0.5))
+    c.save()
+    c.rotate(4, 880, 1180)
+    c.drawRect(skia.Rect.MakeLTRB(800, 1120, 960, 1240), fill("#D9CCB2"))
+    for y in range(1140, 1230, 18):
+        c.drawLine(816, y, 944 - (y % 3) * 12, y, stroke(INK, 3, 0.5))
+    c.restore()
+    c.drawPath(rrect(980, 1100, 1040, 1180, 12), fill("#2A2444"))
     c.save()
     c.rotate(-6, 500, 1110)
+    c.drawPath(rrect(424, 1062, 606, 1150, 8), fill("#3A3058"))
     c.drawPath(rrect(440, 1072, 590, 1140, 8), fill("#C8323F"))
     c.drawLine(440, 1074, 515, 1112, stroke("#8F2230", 4))
     c.drawLine(590, 1074, 515, 1112, stroke("#8F2230", 4))
     c.restore()
+    # The mic on its arm, in a shock mount, with a pop filter in front of him.
+    c.drawLine(1010, 760, 880, 930, stroke("#6C6A8C", 12))
+    c.drawLine(1010, 760, 1040, 420, stroke("#6C6A8C", 12))
+    c.drawCircle(1010, 760, 12, fill("#8D8AA8"))
+    c.drawPath(rrect(830, 910, 930, 1040, 44), linear((830, 0), (930, 0), [(0, "#2A2A3A", 1), (0.4, "#5A5A70", 1), (1, "#14141C", 1)]))
+    c.drawPath(rrect(830, 910, 930, 1040, 44), stroke("#6C6A8C", 6))
+    for y in range(934, 1020, 14):
+        c.drawLine(840, y, 920, y, stroke("#14141C", 2.5, 0.8))
+    c.drawCircle(790, 1000, 58, fill("#0A0812", 0.42))
+    c.drawCircle(790, 1000, 58, stroke("#8D8AA8", 5))
 
 
 def blind(c, t):
@@ -156,10 +192,38 @@ def glass(c, t):
     outer.addRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600))
     hole = skia.Path()
     hole.addRRect(skia.RRect.MakeRectXY(WINDOW, 18, 18))
-    c.drawPath(skia.Op(outer, hole, skia.PathOp.kDifference_PathOp), linear((0, 0), (0, 1500), [(0, "#17122C", 1), (1, "#1F1838", 1)]))
+    wall = skia.Op(outer, hole, skia.PathOp.kDifference_PathOp)
+    c.drawPath(wall, linear((0, 0), (0, 1500), [(0, "#17122C", 1), (1, "#1F1838", 1)]))
+    weave(c, wall, "linen", 2.2)
     c.drawPath(rrect(WINDOW.left(), WINDOW.top(), WINDOW.right(), WINDOW.bottom(), 18), stroke(INK, 18))
+    c.drawPath(rrect(WINDOW.left() + 9, WINDOW.top() + 9, WINDOW.right() - 9, WINDOW.bottom() - 9, 12), stroke("#39305C", 3))
     c.drawPath(poly([(WINDOW.left() + 60, WINDOW.top()), (WINDOW.left() + 300, WINDOW.top()), (WINDOW.left() + 120, WINDOW.bottom()), (WINDOW.left() - 120, WINDOW.bottom())]),
                fill("#FFFFFF", 0.035))
+    # A sticker on the glass, and the talkback speaker on the wall.
+    c.drawPath(rrect(780, 1110, 960, 1160, 6), fill(CREAM, 0.8))
+    text(c, "QUIET PLEASE", 870, 1144, font("display", 24), fill(INK), align="center", tracking=1)
+    c.drawPath(rrect(60, 300, 230, 470, 14), surface("steel", 0.7))
+    c.drawPath(rrect(60, 300, 230, 470, 14), stroke(INK, 7))
+    for y in range(322, 450, 14):
+        for x in range(82, 212, 14):
+            c.drawCircle(x, y, 3.5, fill("#0B0918"))
+    text(c, "TALKBACK", 145, 502, font("type", 24), fill(CREAM, 0.5), align="center")
+    # The alarm beacon: dark until the silence trips it.
+    beacon(c, t)
+
+
+def beacon(c, t):
+    x, y = 930, 380
+    c.drawPath(rrect(x - 50, y + 34, x + 50, y + 62, 6), fill("#2A2A36"))
+    dome_ = skia.Path()
+    dome_.addOval(skia.Rect.MakeLTRB(x - 44, y - 54, x + 44, y + 46))
+    live = t >= ALARM
+    c.drawPath(dome_, fill(RED if live else "#4A1B26"))
+    if live:
+        a = (t - ALARM) * 7
+        strength = 0.5 + 0.5 * math.cos(a)
+        c.drawOval(skia.Rect.MakeLTRB(x - 44 + 34 * math.sin(a), y - 40, x - 8 + 34 * math.sin(a), y + 34), fill("#FFD9E0", 0.8))
+        glow(c, (x, y), 520, RED, 0.55 * strength)
 
 
 def on_air_sign(c, t):
@@ -168,8 +232,16 @@ def on_air_sign(c, t):
     if SILENCE <= t < SILENCE + 0.5:  # a dying flicker
         lit = 0.5 if int(t * 22) % 2 else 0.0
     x0, y0, x1, y1 = 300, 300, 780, 470
-    c.drawPath(rrect(x0, y0, x1, y1, 22), fill("#23060D"))
-    c.drawPath(rrect(x0, y0, x1, y1, 22), stroke(INK, 12))
+    # A steel housing, screwed to the wall, with its cable running off along the ceiling.
+    c.drawLine(780, 340, 1500, 300, stroke("#0B0918", 10))
+    case = rrect(x0 - 16, y0 - 16, x1 + 16, y1 + 16, 26)
+    soft_shadow(c, case, 6, 12, 14, 0.6)
+    c.drawPath(case, surface("steel", 0.8))
+    c.drawPath(case, stroke(INK, 8))
+    for x, y in ((x0 - 2, y0 - 2), (x1 + 2, y0 - 2), (x0 - 2, y1 + 2), (x1 + 2, y1 + 2)):
+        c.drawCircle(x, y, 6, fill("#3A3A48"))
+    c.drawPath(rrect(x0, y0, x1, y1, 18), fill("#23060D"))
+    c.drawPath(rrect(x0, y0, x1, y1, 18), stroke(INK, 8))
     if lit:
         glow(c, ((x0 + x1) / 2, (y0 + y1) / 2), 520, RED, 0.5 * lit)
     tone = fill("#FFDCE0", 1.0) if lit else fill("#4A1B26", 1.0)
@@ -179,8 +251,11 @@ def on_air_sign(c, t):
 def meters(c, t):
     """The desk: two VU meters, and the programme waveform on the big monitor."""
     m = MONITOR
-    c.drawRect(skia.Rect.MakeLTRB(-600, 1240, 1700, 2600), linear((0, 1240), (0, 1900), [(0, "#231C42", 1), (1, "#0F0B20", 1)]))
+    desk = box(-600, 1240, 1700, 2600)
+    c.drawPath(desk, surface("steel", 1.3))
+    c.drawPath(desk, linear((0, 1240), (0, 2000), [(0, "#231C42", 0.72), (1, "#0F0B20", 0.92)]))
     c.drawLine(-600, 1240, 1700, 1240, stroke(PINK, 3, 0.35))
+    console(c, t)
     c.drawPath(rrect(m.left() - 16, m.top() - 16, m.right() + 16, m.bottom() + 16, 20), fill("#0B0918"))
     c.drawPath(rrect(m.left() - 16, m.top() - 16, m.right() + 16, m.bottom() + 16, 20), stroke(INK, 10))
     c.drawRect(m, fill("#07101C"))
@@ -208,7 +283,11 @@ def meters(c, t):
     c.drawPath(path, stroke(colour, 5))
     head = font("display", 30)
     text(c, "PROGRAMME", m.left() + 26, m.top() + 42, head, fill(TEAL, 0.85))
-    text(c, "23:57" if t < 7 else "23:58", m.right() - 26, m.top() + 42, head, fill(CREAM, 0.8), align="right")
+    # The studio clock: it reaches 23:58:02, the moment in the case's log, as the sound dies.
+    now = int(23 * 3600 + 58 * 60 + 2 + (t - SILENCE))
+    stamp = f"{now // 3600:02d}:{now % 3600 // 60:02d}:{now % 60:02d}"
+    c.drawPath(rrect(m.right() - 214, m.top() + 10, m.right() - 14, m.top() + 56, 6), fill("#1A0408"))
+    text(c, stamp, m.right() - 114, m.top() + 44, head, fill("#FF4A5A"), align="center", tracking=2)
     if silent and t >= ALARM - 0.8:
         since = max(0, int(t - SILENCE))
         text(c, f"SILENCE  00:{since:02d}", m.centerX(), m.top() + 92, font("display", 44), fill(RED, 1.0 if alarm else 0.55), align="center", tracking=4)
@@ -221,6 +300,37 @@ def meters(c, t):
         a = math.radians(lerp(-48, 42, v))
         c.drawLine(x, y + 28, x + math.sin(a) * 62, y + 28 - math.cos(a) * 62, stroke(RED, 3.5))
         c.drawCircle(x, y + 28, 7, fill(INK))
+
+
+def console(c, t):
+    """The mixing desk below the monitor. The faders never move: nobody in here touches a thing."""
+    strips = ("LINE A", "LINE B", "TAPE", "PHONE", "JINGLE", "FX", "NEWS", "OB", "AUX 1", "AUX 2", "MON", "CUE")
+    for i, name in enumerate(strips):
+        x = 182 + i * 65
+        c.drawPath(rrect(x - 28, 1740, x + 28, 2120, 6), fill("#0E0B1E", 0.82))
+        c.drawCircle(x, 1768, 15, fill("#2A2444"))
+        c.drawCircle(x, 1768, 15, stroke("#8D8AA8", 3))
+        c.drawLine(x, 1768, x + 8, 1756, stroke(CREAM, 3))
+        text(c, name, x, 1808, font("body", 15), fill(CREAM, 0.6), align="center")
+        c.drawLine(x, 1830, x, 2090, stroke("#000000", 7))
+        cap = 1880 + (i * 83) % 150
+        c.drawPath(rrect(x - 20, cap - 15, x + 20, cap + 15, 4), linear((0, cap - 15), (0, cap + 15), [(0, "#C9C6D8", 1), (1, "#6C6A8C", 1)]))
+        c.drawLine(x - 16, cap, x + 16, cap, stroke(INK, 3))
+    # Callers waiting on the phone lines, blinking, whatever else happens.
+    c.drawPath(rrect(-70, 1740, 120, 1940, 10), fill("#0E0B1E", 0.82))
+    text(c, "CALLS", 25, 1778, font("display", 26), fill(CREAM, 0.7), align="center")
+    for i in range(4):
+        on = math.sin(t * (2.6 + i * 0.7) + i) > 0
+        c.drawCircle(-20 + (i % 2) * 90, 1816 + (i // 2) * 60, 16, fill(TEAL if on else "#16302E"))
+    # The running order on a clipboard.
+    c.save()
+    c.rotate(5, 1040, 1860)
+    c.drawPath(rrect(950, 1740, 1140, 2000, 8), fill("#3A2E20"))
+    sheet = box(964, 1766, 1126, 1990)
+    c.drawPath(sheet, fill("#D9CCB2"))
+    for i, row in enumerate(("23:30 CALLS", "23:55 JACKPOT", "00:00 DARLA")):
+        text(c, row, 972, 1800 + i * 30, font("type", 21), fill(INK, 0.85))
+    c.restore()
 
 
 def alarm_light(c, t):
@@ -238,8 +348,8 @@ def path(t):
     """The camera: a list of (time, x, y, zoom), eased between, with a different move for each beat."""
     keys = [
         (0.0, 540, 385, 2.25),      # macro on the ON AIR sign, drifting
-        (4.2, 565, 400, 2.0),
-        (5.15, 540, 1170, 1.05),    # crane down and back: the sign, the glass, Vince, the monitor
+        (4.45, 565, 400, 2.0),
+        (5.4, 540, 1170, 1.05),     # crane down and back: the sign, the glass, Vince, the monitor
         (7.6, 620, 1170, 1.1),      # slide sideways along the glass as the blind falls
         (9.3, 540, 1440, 1.27),     # push down into the monitor
         (SILENCE, 540, 1450, 1.3),
@@ -285,6 +395,10 @@ def title_card(c, t):
     c.drawRect(skia.Rect.MakeWH(W, H), fill("#05040C", 0.9 * smooth(k)))
     on = 1.0 if t > TITLE + 0.9 else (1.0 if int(t * 26) % 3 else 0.3)
     big = font("neon", 190)
+    for x, y in ((190, 720), (890, 720), (190, 1120), (890, 1120)):
+        c.drawCircle(x, y, 8, fill("#6C6A8C", smooth(k)))
+        c.drawLine(x, y, x + (40 if x < 500 else -40), y + (24 if y < 900 else -24), stroke("#6C6A8C", 4, smooth(k)))
+    c.drawLine(890, 1120, 1120, 1300, stroke("#2A2444", 8, smooth(k)))
     for word, y in (("DEAD", 900), ("AIR", 1110)):
         glow(c, (W / 2, y - 66), 560, PINK, 0.34 * on)
         text(c, word, W / 2, y, big, fill("#FFE3F6", on), align="center", tracking=8)
@@ -299,7 +413,9 @@ def title_card(c, t):
 
 def film_draw(c, t):
     set_frame(c, t)
-    text(c, "KNHT 99.1 FM", 72, 150, font("type", 46), fill(CREAM, smooth(span(t, 0.3, 0.7)) * (1 - span(t, 3.6, 4.2))), tracking=3)
+    a = smooth(span(t, 0.3, 0.7)) * (1 - span(t, 3.6, 4.2))
+    text(c, "KNHT 99.1 FM", 72, 150, font("type", 46), fill(CREAM, a), tracking=3)
+    text(c, "NIGHT OWLS  ·  11:57 PM", 72, 204, font("type", 32), fill(PINK, a), tracking=2)
     for i, (words, _, _, at, tag) in enumerate(LINES):
         until = LINES[i + 1][3] - 0.05 if i + 1 < len(LINES) else None
         # His opening line sits high: during the macro on the sign, the bottom of the frame is his face.

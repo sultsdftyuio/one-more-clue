@@ -13,7 +13,7 @@ a whip along the ticket rail, a flambe, a plate shot across the pass, a pen). Th
 waltz under it gets faster with every cut. Then course seven, the only slow
 shot in the film, her sentence skidding off the page, and a fork falling.
 
-We never see her face, only her hand. What it must not show or say: nuts,
+We never see her at all, only her notebook and pen. What it must not show or say: nuts,
 peanut or allergy (what made her collapse is chapter 1's checkpoint), or anyone
 touching the food. All four staff get the same treatment in the doorway. Hidden
 clue: half a second of two desserts on the pass, one with a gold leaf and one
@@ -31,7 +31,7 @@ from omc_art.palette import CORAL, CREAM, INK
 from . import sound
 from .film import (DRAFT, FPS, GAME, MASTER, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, poly, render_frame,
                    render_video, rrect, smooth, span, stroke, text, W, H)
-from .kit import caption, contact_sheet, darkness, risky_moments, suspect
+from .kit import box, caption, contact_sheet, darkness, risky_moments, soft_shadow, suspect
 from .look import Look, finish
 from .textures import surface, weave
 from .voice import line
@@ -85,21 +85,6 @@ FLAKES = [(x, y, sp, r) for x, y, sp, r in zip(_rng.uniform(40, 1040, 50), _rng.
 
 # ---------------------------------------------------------------------------
 # Shared pieces
-
-def soft_shadow(c, path, dx, dy, blur, alpha=0.5):
-    paint = fill("#000000", alpha)
-    paint.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, blur))
-    c.save()
-    c.translate(dx, dy)
-    c.drawPath(path, paint)
-    c.restore()
-
-
-def box(x0, y0, x1, y1):
-    p = skia.Path()
-    p.addRect(skia.Rect.MakeLTRB(x0, y0, x1, y1))
-    return p
-
 
 def tablecloth(c, x0, y0, x1, y1, colour=LINEN):
     """Linen with a weave and a couple of soft fold lines."""
@@ -245,47 +230,24 @@ def wine_glass(c, x, y, s=1.0):
     c.restore()
 
 
-def writing_hand(c, tipx, tipy, s=1.0, tilt=0.0):
-    """Her hand and fountain pen: the most we ever see of her. The nib sits at (tipx, tipy)."""
+def fountain_pen(c, tipx, tipy, tilt=0.0):
+    """Her fountain pen, the only part of her in the film. The nib sits at (tipx, tipy)."""
     c.save()
     c.translate(tipx, tipy)
     c.rotate(tilt)
-    c.scale(s, s)
-
-    def finger(x0, y0, x1, y1, w, tone=SKIN):
-        c.drawLine(x0, y0, x1, y1, stroke(INK, w + 10))
-        c.drawLine(x0, y0, x1, y1, stroke(tone, w))
-
-    # The sleeve, running off the bottom right, and a cream cuff.
-    sleeve = poly([(250, 30), (350, 130), (980, 760), (700, 980)])
-    c.drawPath(sleeve, linear((250, 30), (900, 800), [(0, "#4A1A28", 1), (1, "#1A0810", 1)]))
-    c.drawPath(sleeve, stroke(INK, 6))
-    c.drawPath(poly([(236, 26), (292, -6), (392, 112), (336, 150)]), fill(CREAM))
-    c.drawPath(poly([(236, 26), (292, -6), (392, 112), (336, 150)]), stroke(INK, 5))
-    # The two fingers curled under the hand.
-    finger(248, 132, 150, 122, 36, SKIN_DK)
-    finger(254, 92, 128, 74, 40, SKIN_DK)
-    # The back of the hand.
-    back = skia.Path()
-    back.moveTo(136, -70)
-    back.cubicTo(200, -110, 300, -70, 318, 20)
-    back.cubicTo(326, 90, 270, 150, 210, 138)
-    back.cubicTo(150, 126, 118, 30, 136, -70)
-    back.close()
-    c.drawPath(back, linear((130, -100), (320, 140), [(0, SKIN, 1), (1, SKIN_DK, 1)]))
-    c.drawPath(back, stroke(INK, 6))
-    finger(214, 30, 74, -18, 42)                # the middle finger, under the pen
-    # The pen: black lacquer, a gold band, a gold nib.
-    c.drawLine(10, -16, 214, -336, stroke("#14141C", 26))
-    c.drawLine(16, -24, 214, -332, stroke("#6A6C80", 5, 0.7))
-    c.drawLine(58, -92, 74, -118, stroke(GOLD, 28))
-    c.drawPath(poly([(0, 0), (-4, -44), (30, -22)]), fill(GOLD_LEAF))
-    finger(214, -34, 62, -62, 44)               # the index finger, on top of it
-    c.drawOval(skia.Rect.MakeLTRB(40, -80, 84, -52), fill("#8E2A3C"))
-    finger(196, -104, 34, -112, 46)             # the thumb
-    c.drawOval(skia.Rect.MakeLTRB(14, -128, 56, -98), fill("#8E2A3C"))
-    # A ring.
-    c.drawLine(150, -48, 158, -18, stroke(GOLD, 9))
+    # Its shadow on the page.
+    shade = stroke("#000000", 26, 0.28)
+    shade.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 9))
+    c.drawLine(34, 6, 290, -350, shade)
+    # The barrel: black lacquer with a long highlight, two gold bands and a gold clip.
+    c.drawLine(12, -20, 270, -420, stroke("#14141C", 30))
+    c.drawLine(18, -30, 270, -416, stroke("#6A6C80", 5, 0.7))
+    c.drawLine(62, -98, 80, -126, stroke(GOLD, 32))
+    c.drawLine(162, -254, 170, -266, stroke(GOLD, 32))
+    c.drawLine(204, -292, 246, -358, stroke(GOLD_LEAF, 6))
+    # The gold nib, with its slit.
+    c.drawPath(poly([(0, 0), (-8, -48), (34, -24)]), fill(GOLD_LEAF))
+    c.drawLine(2, -4, 12, -28, stroke("#7A5A1E", 2.5))
     c.restore()
 
 
@@ -748,7 +710,7 @@ def shot_vi(c, u):
     if k:
         c.drawLine(x0 - 10, fine_y - 16, lerp(x0, x1 + 14, k), fine_y - 22, stroke("#C03A3A", 9))
     tip = (lerp(x0, x1 + 14, k), fine_y - 22)
-    writing_hand(c, tip[0], tip[1], 1.0)
+    fountain_pen(c, tip[0], tip[1])
     c.restore()
     numeral(c, u, 0.02, "VI", None)
 
@@ -846,9 +808,9 @@ def shot_vii(c, u):
         lc.rotate(-2, 540, 1400)
         notebook(lc, 60, BOOK_Y, 1020, 2100, [], BOOK_Y + 110, 92)
         tip = handwriting(lc, u)
-        # Her hand, following the nib, then sliding away with the skid.
+        # The pen, following the words, then rolling away after the skid.
         drop = smooth(span(u, d + 0.2, d + 0.6))
-        writing_hand(lc, tip[0], tip[1] + drop * 160, 1.0, tilt=drop * 18)
+        fountain_pen(lc, tip[0] + drop * 60, tip[1] + drop * 170, tilt=drop * 34)
         lc.restore()
         # The fork comes in for a bite, twice, and leaves.
         for start in (1.2, 2.4):

@@ -35,27 +35,30 @@ from .case001 import (FORGED, ORIGINAL, bench, big_screen, bokeh, campus_view, c
                       rain_streaks, screen_spill, wall)
 from .film import (DRAFT, FPS, GAME, MASTER, Camera, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, render_frame,
                    render_video, rrect, smooth, span, stroke, text, W, H)
-from .kit import caption, contact_sheet, darkness, risky_moments, suspect
+from .textures import surface, weave
+from .kit import box, caption, contact_sheet, darkness, risky_moments, soft_shadow, suspect
 from .look import Look, finish
 from .voice import line
 
-DURATION = 21.3
-A, B, C1, C2, D, E = 0.0, 3.3, 7.9, 10.7, 12.5, 17.9
+DURATION = 23.9
+A, B, C1, C2, D, E = 0.0, 3.3, 10.5, 13.3, 15.1, 20.5
+WHIP = C1 - B - 0.55  # when the torch swings into the lens, in shot B's time
 
-LOOK = Look(bloom=0.34, bloom_threshold=0.78, halation=0.3, contrast=1.16, saturation=1.0, vignette=0.7, grain=0.04)
+LOOK = Look(bloom=0.28, bloom_threshold=0.84, halation=0.3, contrast=1.16, saturation=1.0, vignette=0.7, grain=0.04)
 
 # Who says what, and when (seconds from the start). Voices: Kokoro, cached by voice.py.
 LINES = [
     ("Someone rewrote the last message.", "bm_george", 1.0, 0.2, None),
     ("Nine seventeen.", "bm_george", 0.95, 3.75, None),
     ("Lab four! Cabinet B is wide open. HALO's gone!", "am_puck", 1.08, 5.3, "OZZY · RADIO"),
-    ("The last message says Priya took it.", "bm_george", 1.0, 8.05, None),
-    ("I didn't write that!", "af_heart", 1.0, 10.85, "PRIYA"),
-    ("Four people were in the building.", "bm_george", 0.98, 12.8, None),
-    ("One of them is lying.", "bm_george", 0.9, 15.75, None),
+    ("Three years of work. Gone.", "bm_george", 0.96, 8.0, None),
+    ("The last message says Priya took it.", "bm_george", 1.0, 10.65, None),
+    ("I didn't write that!", "af_heart", 1.0, 13.45, "PRIYA"),
+    ("Four people were in the building.", "bm_george", 0.98, 15.4, None),
+    ("One of them is lying.", "bm_george", 0.9, 18.35, None),
 ]
 # How long each line runs, measured once (voice.py caches the takes).
-LINE_LENGTHS = [2.37, 1.51, 2.50, 2.52, 1.05, 2.12, 1.90]
+LINE_LENGTHS = [2.37, 1.51, 2.50, 2.3, 2.52, 1.05, 2.12, 1.90]
 
 CAST = [  # (suspect art, tint, name, role): the order they're revealed in, same as the case file.
     ("triangle", 30, "PRIYA TRAN", "PhD researcher"),
@@ -136,7 +139,7 @@ def tv_off(c, t, draw, start, end):
 
 def camera_b(u):
     zoom_in = ease_out(span(u, 1.7, 2.05), 4)
-    whip = ease_in_out(span(u, 4.05, 4.6))
+    whip = ease_in_out(span(u, WHIP, WHIP + 0.55))
     return Camera(
         x=lerp(560, 150, zoom_in) + noise1(u * 2.2, 7) * 14 + whip * 520,
         y=lerp(1000, 1290, zoom_in) + noise1(u * 1.9, 8) * 12 - whip * 300,
@@ -169,25 +172,26 @@ def shot_b(c, u):
     on = 0.0 if u < 0.12 else (0.35 if u < 0.2 else (0.0 if u < 0.25 else 1.0))
     tx, ty = to_screen(cam, 0.78, *torch_target(u))
     radius = 440 * cam.zoom ** 0.78
-    whip = span(u, 4.2, 4.6)
+    whip = span(u, WHIP + 0.15, WHIP + 0.55)
     # A little moonlight survives outside the beam, so the room still has a shape.
     darkness(c, (tx + whip * 400, ty - whip * 600), radius * (1 + whip * 3), amount=0.86 if on else 0.97)
     if on:
         glow(c, (tx, ty), radius * 0.95, "#FFE2A0", 0.3)
     if whip:  # the beam swings straight into the lens
-        c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFF6DD", ease_in_out(span(u, 4.3, 4.6))))
+        c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFF6DD", ease_in_out(span(u, WHIP + 0.25, WHIP + 0.55))))
     tag = "9:17 PM"
     shown = tag[: round(len(tag) * span(u, 0.45, 0.8))]
-    a = smooth(span(u, 0.45, 0.6)) * (1 - span(u, 3.9, 4.2))
+    a = smooth(span(u, 0.45, 0.6)) * (1 - span(u, WHIP - 0.2, WHIP + 0.1))
     text(c, shown, 72, 150, font("type", 64), fill(CREAM, a), tracking=4)
-    caption_for(c, u + B, 1)
-    caption_for(c, u + B, 2)
+    for i in (1, 2, 3):
+        caption_for(c, u + B, i)
 
 
 def locked_laptop(c):
     """By 9:17 the laptop has locked itself (at 9:16): a dark screen and a padlock."""
     lid = rrect(318, 1028, 872, 1438, 18)
-    c.drawPath(lid, fill("#1A1D33"))
+    c.drawPath(lid, surface("steel", 0.9))
+    c.drawPath(lid, fill("#14183A", 0.6))
     c.drawPath(lid, stroke(INK, 10))
     c.drawRect(skia.Rect.MakeLTRB(340, 1050, 850, 1420), fill("#0E1430"))
     c.drawPath(rrect(568, 1220, 622, 1268, 6), fill("#3B4A7A"))
@@ -202,52 +206,82 @@ def locked_laptop(c):
 PHONE = skia.Rect.MakeLTRB(250, 330, 830, 1530)
 
 
+NOTES = (  # (arrives at, sender, words, tag)
+    (0.18, "Priya", "Taking HALO home tonight to fix the battery, don't panic", "edited"),
+    (1.15, "Ozzy", "Cabinet B is open and EMPTY. Who has HALO??", ""),
+    (1.75, "Prof. Squires", "Priya?! The demo is in twelve hours.", ""),
+)
+
+
 def shot_c1(c, v):
-    cam = Camera(x=540, y=930, zoom=lerp(1.0, 1.14, ease_in_out(span(v, 0, 2.8))), roll=lerp(-5, 2, ease_in_out(span(v, 0, 2.8))), focus=1.0, aperture=18)
-    with layer(c, cam, 0.4, extra_blur=22) as lc:
-        bokeh(lc, v + 2, with_clock=False)
+    k = ease_in_out(span(v, 0, C2 - C1))
+    cam = Camera(x=540, y=930, zoom=lerp(1.0, 1.1, k), roll=lerp(-5, 2, k), focus=1.0, aperture=18)
+    with layer(c, cam, 0.5, extra_blur=14) as lc:
+        lc.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), surface("wood", 1.5))
+        lc.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), fill("#08091A", 0.62))
+        glow(lc, (250, 380), 560, MUSTARD, 0.22)  # her bedside lamp
     buzz = 0.0
-    for at in (0.25, 0.85):
+    for at, _, _, _ in NOTES:
         if at <= v < at + 0.4:
             buzz = math.sin(v * 190) * 5
     with layer(c, cam, 1.0) as lc:
         lc.translate(buzz, 0)
+        body = rrect(PHONE.left(), PHONE.top(), PHONE.right(), PHONE.bottom(), 70)
+        soft_shadow(lc, body, 14, 24, 30, 0.7)
         phone(lc, v)
-    glow(c, to_screen(cam, 1.0, 540, 900), 900, "#B9A6FF", 0.18)
+    glow(c, to_screen(cam, 1.0, 540, 900), 900, "#B9A6FF", 0.14)
     # The flash from the white-out still fading as the shot opens.
     c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFF6DD", 1 - smooth(span(v, 0, 0.35))))
-    caption_for(c, v + C1, 3)
+    caption_for(c, v + C1, 4)
 
 
 def phone(c, v):
     p = PHONE
     body = rrect(p.left(), p.top(), p.right(), p.bottom(), 70)
-    c.drawPath(body, fill("#0B0C18"))
+    c.drawPath(body, surface("steel", 0.8))
+    c.drawPath(body, fill("#0B0C18", 0.76))
     c.drawPath(body, stroke(INK, 12))
     screen = rrect(p.left() + 22, p.top() + 22, p.right() - 22, p.bottom() - 22, 52)
     c.drawPath(screen, linear((0, p.top()), (0, p.bottom()), [(0, "#3B2D6B", 1), (0.6, "#1D1E46", 1), (1, "#101229", 1)]))
     c.save()
     c.clipPath(screen, doAntiAlias=True)
-    text(c, "9:25", p.centerX(), p.top() + 300, font("display", 190), fill(CREAM, 0.95), align="center")
-    text(c, "Tuesday, 14 November", p.centerX(), p.top() + 368, font("body", 34), fill(CREAM, 0.7), align="center")
-    # The notification drops in with a spring.
-    k = ease_out(span(v, 0.18, 0.5), 3)
-    over = math.sin(span(v, 0.18, 0.7) * math.pi) * 18 * (1 - span(v, 0.5, 0.7))
-    y = lerp(p.top() - 300, p.top() + 470, k) + over
-    card = rrect(p.left() + 44, y, p.right() - 44, y + 300, 36)
-    c.drawPath(card, fill(CREAM, 0.96))
-    c.drawPath(rrect(p.left() + 74, y + 30, p.left() + 134, y + 90, 14), fill(MUSTARD))
-    text(c, "4", p.left() + 104, y + 78, font("display", 46), fill(INK), align="center")
-    text(c, "Lab 4 crew", p.left() + 156, y + 60, font("display", 38), fill(INK))
-    text(c, "8:40 PM", p.right() - 74, y + 60, font("body", 26), fill(INK, 0.5), align="right")
-    bold = font("body", 38)
-    bold.setEmbolden(True)
-    rows = chat_lines("Priya: Taking HALO home tonight to fix the battery, don't panic", bold, p.width() - 160)
-    for i, row in enumerate(rows[:3]):
-        text(c, row, p.left() + 74, y + 140 + i * 46, bold, fill(INK))
-    italic = font("body", 26)
-    italic.setSkewX(-0.2)
-    text(c, "edited", p.right() - 74, y + 278, italic, fill(INK, 0.45), align="right")
+    # Her wallpaper: a pencil sketch of HALO.
+    for x in (p.centerX() - 120, p.centerX() + 120):
+        c.drawCircle(x, p.top() + 880, 96, stroke(CREAM, 5, 0.1))
+    c.drawLine(p.centerX() - 24, p.top() + 870, p.centerX() + 24, p.top() + 870, stroke(CREAM, 5, 0.1))
+    c.drawPath(rrect(p.centerX() - 74, p.top() + 40, p.centerX() + 74, p.top() + 78, 18), fill("#05060E"))
+    text(c, "9:25", p.left() + 66, p.top() + 70, font("body", 28), fill(CREAM, 0.9))
+    c.drawPath(rrect(p.right() - 106, p.top() + 48, p.right() - 62, p.top() + 70, 5), stroke(CREAM, 3, 0.8))
+    c.drawRect(skia.Rect.MakeLTRB(p.right() - 102, p.top() + 52, p.right() - 92, p.top() + 66), fill(CORAL))
+    text(c, "9:25", p.centerX(), p.top() + 262, font("display", 150), fill(CREAM, 0.95), align="center")
+    text(c, "Tuesday, 14 November", p.centerX(), p.top() + 318, font("body", 32), fill(CREAM, 0.7), align="center")
+    # Each message drops in with a spring, pushing the older ones down.
+    y_top = p.top() + 360
+    offset = 0.0
+    for at, sender, words, tag in reversed(NOTES):
+        if v < at:
+            continue
+        k = ease_out(span(v, at, at + 0.3), 3)
+        h = 196 if tag else 150
+        y = lerp(y_top - h - 60, y_top + offset, k)
+        card = rrect(p.left() + 44, y, p.right() - 44, y + h, 30)
+        soft_shadow(c, card, 0, 8, 12, 0.4)
+        c.drawPath(card, fill(CREAM, 0.96))
+        c.drawPath(rrect(p.left() + 66, y + 22, p.left() + 110, y + 66, 11), fill(MUSTARD))
+        text(c, "4", p.left() + 88, y + 58, font("display", 34), fill(INK), align="center")
+        text(c, f"Lab 4 crew · {sender}", p.left() + 124, y + 52, font("display", 28), fill(INK))
+        body_font = font("body", 31)
+        body_font.setEmbolden(True)
+        for i, row in enumerate(chat_lines(words, body_font, p.width() - 140)[:3]):
+            text(c, row, p.left() + 66, y + 100 + i * 38, body_font, fill(INK, 0.9))
+        if tag:
+            italic = font("body", 24)
+            italic.setSkewX(-0.2)
+            text(c, tag, p.right() - 72, y + h - 16, italic, fill("#B23A3A"), align="right")
+        offset += k * (h + 14)
+    for x in (p.left() + 94, p.right() - 94):
+        c.drawCircle(x, p.bottom() - 104, 42, fill("#FFFFFF", 0.14))
+    c.drawPath(rrect(p.centerX() - 96, p.bottom() - 42, p.centerX() + 96, p.bottom() - 34, 4), fill(CREAM, 0.7))
     c.restore()
 
 
@@ -259,13 +293,20 @@ def shot_c2(c, w):
     cam = Camera(x=540 + noise1(w * 6, 3) * 6 * span(w, 0.1, 0.6), y=lerp(1040, 900, snap), zoom=lerp(1.0, 1.22, snap) + w * 0.02,
                  roll=noise1(w, 5) * 0.6, focus=1.0, aperture=18)
     with layer(c, cam, 0.4, extra_blur=24) as lc:
-        lc.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), fill("#0B0A1A"))
-        for i, (x, y, r, col) in enumerate(((150, 380, 120, MUSTARD), (900, 300, 90, CORAL), (760, 700, 70, MUSTARD), (240, 900, 60, "#7FD3CB"))):
-            lc.drawCircle(x, y, r, fill(col, 0.3))
+        lc.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), surface("wood", 1.8))
+        lc.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), fill("#0A0A1E", 0.72))
+        # The window, rain on the glass; a corkboard of HALO sketches; a desk lamp.
+        lc.drawRect(skia.Rect.MakeLTRB(620, 180, 1040, 800), linear((0, 180), (0, 800), [(0, "#121A3E", 1), (1, "#232C5C", 1)]))
+        rain_streaks(lc, w + 8)
+        lc.drawRect(skia.Rect.MakeLTRB(600, 160, 1060, 820), stroke("#2A2F5C", 26))
+        lc.drawRect(skia.Rect.MakeLTRB(40, 220, 500, 720), fill("#6E5236"))
+        for i, (x, y, col) in enumerate(((90, 270, "#E8CF7A"), (250, 250, CREAM), (360, 330, "#F0A8A8"), (120, 460, CREAM), (300, 500, "#E8CF7A"))):
+            lc.drawRect(skia.Rect.MakeXYWH(x, y, 130, 150), fill(col, 0.9))
+        glow(lc, (250, 1000), 560, MUSTARD, 0.3)
     with layer(c, cam, 1.0) as lc:
         suspect(lc, "triangle", 30, (540, 1480), 1.85, mood="shocked")
         glow(lc, (540, 1420), 650, "#9CC7FF", 0.38)  # her phone, lighting her from below
-    caption_for(c, w + C2, 4)
+    caption_for(c, w + C2, 5)
     # The flashgun that opens the lineup, starting to fire.
     c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFFFFF", ease_in_out(span(w, 1.65, 1.8))))
 
@@ -289,13 +330,30 @@ def camera_d(d):
 
 
 def height_chart(c):
-    c.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), linear((0, 0), (0, 1900), [(0, "#0C0F24", 1), (1, "#151935", 1)]))
+    wall = box(-600, -600, 1700, 2600)
+    c.drawPath(wall, linear((0, 0), (0, 1900), [(0, "#20243E", 1), (1, "#2E3350", 1)]))
+    weave(c, wall, "paper", 3.2)
+    weave(c, wall, "linen", 2.2)
     for i, h in enumerate(range(200, 130, -10)):
         y = 650 + i * 125
-        c.drawLine(-600, y, 1700, y, stroke(CREAM, 3, 0.16))
+        c.drawLine(-600, y, 1700, y, stroke(CREAM, 4 if i % 2 == 0 else 2, 0.24))
         for x in (30, 1050):
-            text(c, str(h), x, y - 12, font("type", 30), fill(CREAM, 0.3), align="center")
-    c.drawRect(skia.Rect.MakeLTRB(-600, FEET_Y, 1700, 2600), fill("#090B1C"))
+            text(c, str(h), x, y - 12, font("type", 30), fill(CREAM, 0.42), align="center")
+    # The sign above them, screwed to the concrete.
+    sign = rrect(170, 380, 910, 520, 8)
+    c.drawPath(sign, fill("#E2D8C5"))
+    c.drawPath(sign, stroke(INK, 7))
+    text(c, "HALDEN UNIVERSITY SECURITY", 540, 438, font("display", 44), fill(INK), align="center", tracking=2)
+    text(c, "INCIDENT 21:17  ·  LAB 4", 540, 494, font("type", 36), fill("#B23A3A"), align="center", tracking=2)
+    for x, y in ((190, 400), (890, 400), (190, 500), (890, 500)):
+        c.drawCircle(x, y, 6, fill("#6C6A7A"))
+    floor = box(-600, FEET_Y, 1700, 2600)
+    c.drawPath(floor, surface("tile", 2.0))
+    c.drawPath(floor, fill("#090B1C", 0.82))
+    c.drawLine(-600, FEET_Y, 1700, FEET_Y, stroke("#000000", 10, 0.7))
+    for x in LINEUP_X:  # a tape cross where each of them has to stand
+        c.drawLine(x - 42, FEET_Y + 26, x + 42, FEET_Y + 62, stroke(MUSTARD, 8, 0.7))
+        c.drawLine(x + 42, FEET_Y + 26, x - 42, FEET_Y + 62, stroke(MUSTARD, 8, 0.7))
 
 
 def shot_d(c, d):
@@ -311,6 +369,12 @@ def shot_d(c, d):
             lit = spotlight * (1.0 if current or d >= 3.85 else 0.55)
             if revealed:
                 glow(lc, (LINEUP_X[i], FEET_Y - 280), 420, "#FFF1C9", 0.2 * lit, blend=skia.BlendMode.kSrcOver)
+                # The hard shadow the flash throws on the wall behind them.
+                shade = skia.Paint()
+                shade.setAlphaf(0.45 * lit)
+                lc.saveLayer(None, shade)
+                suspect(lc, art, tint, (LINEUP_X[i] + 44, FEET_Y - 26), 0.84, lit=0)
+                lc.restore()
             suspect(lc, art, tint, (LINEUP_X[i], FEET_Y), 0.8, lit=lit)
             if revealed:
                 plate(lc, LINEUP_X[i], FEET_Y + 40, name, role, smooth(span(d, REVEALS[i] + 0.05, REVEALS[i] + 0.3)))
@@ -321,8 +385,8 @@ def shot_d(c, d):
             c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFFFFF", 0.85 * f))
     # Fading in from the flash that ended the last shot.
     c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFFFFF", 1 - smooth(span(d, 0, 0.2))))
-    caption_for(c, d + D, 5)
     caption_for(c, d + D, 6)
+    caption_for(c, d + D, 7)
     # The lights cut: a stutter, then black.
     if blackout:
         stutter = 0.0 if blackout > 0.75 else (1.0 if int(blackout * 9) % 2 else 0.4)
@@ -330,12 +394,16 @@ def shot_d(c, d):
 
 
 def plate(c, x, y, name, role, a):
+    """An evidence tag on a string."""
     if a <= 0:
         return
     f = font("display", 27)
     w = 236
-    c.drawPath(rrect(x - w / 2, y, x + w / 2, y + 84, 12), fill(CREAM, 0.95 * a))
-    c.drawPath(rrect(x - w / 2, y, x + w / 2, y + 84, 12), stroke(INK, 5, a))
+    tag = rrect(x - w / 2, y, x + w / 2, y + 84, 12)
+    soft_shadow(c, tag, 3, 6, 5, 0.45 * a)
+    c.drawPath(tag, fill("#E2D8C5", 0.97 * a))
+    c.drawPath(tag, stroke(INK, 5, a))
+    c.drawCircle(x - w / 2 + 16, y + 16, 7, fill(INK, a))
     text(c, name, x, y + 36, f, fill(INK, a), align="center")
     text(c, role, x, y + 70, font("body", 23), fill(INK, 0.65 * a), align="center")
 
@@ -347,30 +415,55 @@ TITLE_1, TITLE_2 = "THE LAST", "MESSAGE"
 
 
 def shot_e(c, e):
-    c.drawRect(skia.Rect.MakeWH(W, H), fill("#05060D"))
-    cam = Camera(x=540, y=960, zoom=1.0 + e * 0.012, focus=1.0, aperture=10)
-    with layer(c, cam, 0.5, extra_blur=20, opacity=0.55) as lc:
-        rain_streaks(lc, e + 12)
+    lamp = 0.0 if e < 0.12 else (0.5 if e < 0.2 else (0.1 if e < 0.26 else 1.0))
+    c.drawRect(skia.Rect.MakeWH(W, H), surface("wood", 1.6))
+    cam = Camera(x=540, y=960, zoom=1.0 + e * 0.012, roll=-1.5, focus=1.0, aperture=10)
     hit = ease_out(span(e, 1.55, 1.75), 3)
     shake = (1 - span(e, 1.55, 2.0)) * 10 * math.sin(e * 80) if e >= 1.55 else 0.0
-    c.save()
-    c.translate(shake, 0)
-    a = smooth(span(e, 0.05, 0.3))
-    text(c, "CASE 001", W / 2, 700, font("type", 44), fill(MUSTARD, a), align="center", tracking=10)
-    big = font("type", 150)
-    t1 = TITLE_1[: round(len(TITLE_1) * span(e, 0.2, 0.75))]
-    t2 = TITLE_2[: round(len(TITLE_2) * span(e, 0.85, 1.45))]
-    # Flicker like a failing sign as it lands.
-    flick = 1.0 if e < 1.55 or e > 1.9 else (0.55 if int(e * 40) % 3 == 0 else 1.0)
-    text(c, t1, W / 2, 900, big, fill(CREAM, flick), align="center", tracking=6)
-    text(c, t2, W / 2, 1060, big, fill(CREAM, flick), align="center", tracking=6)
-    if hit:
-        c.drawLine(W / 2 - 330 * hit, 1110, W / 2 + 330 * hit, 1110, stroke(CORAL, 12))
-        glow(c, (W / 2, 980), 700, CORAL, 0.18 * (1 - span(e, 1.75, 2.6)))
-    tag = font("body", 46)
-    tag.setSkewX(-0.15)
-    text(c, "The message is lying.", W / 2, 1220, tag, fill(CREAM, 0.85 * smooth(span(e, 2.0, 2.5))), align="center")
-    c.restore()
+    with layer(c, cam, 1.0) as lc:
+        lc.translate(shake, 0)
+        folder = rrect(90, 420, 990, 1520, 14)
+        tab = rrect(90, 340, 430, 470, 18)
+        soft_shadow(lc, folder, 14, 22, 26, 0.7)
+        lc.drawPath(tab, fill("#B8975C"))
+        lc.drawPath(folder, fill("#C9A86A"))
+        weave(lc, folder, "paper", 1.2)
+        weave(lc, tab, "paper", 1.2)
+        lc.drawPath(folder, stroke("#6E5632", 4))
+        text(lc, "CASE 001", 260, 412, font("type", 44), fill(INK, 0.9), align="center", tracking=6)
+        lc.save()
+        lc.rotate(-9, 770, 540)
+        lc.drawPath(rrect(590, 500, 950, 590, 8), stroke("#B23A3A", 7, 0.7))
+        text(lc, "CONFIDENTIAL", 770, 562, font("type", 42), fill("#B23A3A", 0.7), align="center", tracking=3)
+        lc.restore()
+        # A paper-clipped photo of the open cabinet.
+        lc.save()
+        lc.rotate(5, 250, 1300)
+        photo = box(140, 1180, 390, 1440)
+        soft_shadow(lc, photo, 6, 10, 8, 0.5)
+        lc.drawPath(photo, fill(CREAM))
+        lc.drawRect(skia.Rect.MakeLTRB(158, 1198, 372, 1380), fill("#0E1226"))
+        lc.drawRect(skia.Rect.MakeLTRB(190, 1218, 340, 1360), stroke("#6C7798", 7))
+        lc.drawCircle(238, 1290, 22, stroke("#6C7798", 5))
+        lc.drawCircle(292, 1290, 22, stroke("#6C7798", 5))
+        lc.drawPath(rrect(236, 1160, 268, 1236, 14), stroke("#AEB2BE", 6))
+        lc.restore()
+        big = font("type", 142)
+        t1 = TITLE_1[: round(len(TITLE_1) * span(e, 0.3, 0.8))]
+        t2 = TITLE_2[: round(len(TITLE_2) * span(e, 0.88, 1.45))]
+        lc.drawLine(170, 700, 910, 700, stroke(INK, 4, 0.35))
+        text(lc, t1, W / 2, 840, big, fill("#1B1A22", 0.94), align="center", tracking=6)
+        text(lc, t2, W / 2, 1000, big, fill("#1B1A22", 0.94), align="center", tracking=6)
+        if hit:
+            lc.drawLine(W / 2 - 330 * hit, 1046, W / 2 + 330 * hit, 1046, stroke("#B23A3A", 11))
+        tag = font("type", 42)
+        text(lc, "The message is lying.", 660, 1320, tag, fill("#1B1A22", 0.85 * smooth(span(e, 2.0, 2.5))), align="center")
+    # The desk lamp, and the rain running down the window's shadow.
+    darkness(c, (560, 860), 1100, amount=lerp(0.98, 0.5, lamp))
+    for i in range(16):
+        x = (i * 151) % W
+        y = (i * 233 + e * 240) % 2200 - 200
+        c.drawLine(x, y, x + 3, y + 150, stroke("#000000", 6, 0.05 * lamp))
 
 
 # ---------------------------------------------------------------------------
@@ -409,7 +502,7 @@ def score():
     mix = sound.Mix(DURATION, seed=7)
     rng = mix.rng
     rain = sound.rain(DURATION, rng, 0.9)
-    rain_level = np.interp(np.arange(len(rain)) / sound.SR, [0, 3.2, 3.4, 7.8, 8.0, 17.8, 18.2, 21.3], [0.55, 0.55, 0.85, 0.85, 0.45, 0.45, 0.3, 0.0])
+    rain_level = np.interp(np.arange(len(rain)) / sound.SR, [0, 3.2, 3.4, C1 - 0.1, C1 + 0.1, E - 0.1, E + 0.3, DURATION], [0.55, 0.55, 0.85, 0.85, 0.45, 0.45, 0.3, 0.0])
     mix.add(rain * rain_level[:, None], 0)
     mix.add(sound.drone(DURATION, 55, rng), 0, gain=0.85, reverb=0.25)
 
@@ -428,21 +521,21 @@ def score():
     mix.add(sound.clock_tick(rng), 3.28, gain=0.75, reverb=0.7)
     mix.add(sound.torch_click(rng), 3.42, gain=0.8, pan=0.3, reverb=0.3)
     mix.add(sound.torch_click(rng), 3.55, gain=0.6, pan=0.3, reverb=0.3)
-    for s in range(4, 8):
+    for s in range(4, 10):
         mix.add(sound.clock_tick(rng, tock=s % 2 == 1), s + 0.28, gain=0.28, pan=0.6, reverb=0.4)
     mix.add(sound.whoosh(rng, 0.35), 4.95, gain=0.8)
     mix.add(sound.impact(rng, root=36.7), 5.05, gain=0.55, reverb=0.4)
     mix.add(sound.squelch(rng), 5.18, gain=0.9, pan=0.25)
     mix.add(sound.squelch(rng, 0.12), 7.85, gain=0.7, pan=0.25)
-    mix.add(sound.whoosh(rng, 0.6), 7.35, gain=1.0)
+    mix.add(sound.whoosh(rng, 0.6), C1 - 0.55, gain=1.0)
 
     # C: the phone and Priya.
-    mix.add(sound.chime(), 8.1, gain=0.6, reverb=0.2)
-    mix.add(sound.phone_buzz(rng), 8.15, gain=0.8)
-    mix.add(sound.phone_buzz(rng), 8.75, gain=0.7)
-    mix.add(sound.whoosh(rng, 0.3), 10.55, gain=0.9)
-    mix.add(sound.impact(rng, root=49.0), 10.7, gain=0.5, reverb=0.4)
-    mix.add(sound.stinger_tone(1.8, 1244.5), 10.75, gain=0.12, reverb=0.5)
+    for at, _, _, _ in NOTES:
+        mix.add(sound.chime(), C1 + at, gain=0.5, reverb=0.2)
+        mix.add(sound.phone_buzz(rng), C1 + at + 0.05, gain=0.75)
+    mix.add(sound.whoosh(rng, 0.3), C2 - 0.15, gain=0.9)
+    mix.add(sound.impact(rng, root=49.0), C2, gain=0.5, reverb=0.4)
+    mix.add(sound.stinger_tone(1.8, 1244.5), C2 + 0.05, gain=0.12, reverb=0.5)
 
     # D: four flashes over a heartbeat, then the power dies.
     for k, at in enumerate([D - 0.02] + [D + r for r in REVEALS]):
@@ -453,7 +546,8 @@ def score():
         beat += 60 / (72 + (beat - D) * 6)
     mix.add(sound.power_down(rng), D + 4.95, gain=0.9, reverb=0.3)
 
-    # E: the title on a typewriter, then the last hit.
+    # E: a desk lamp, the title on a typewriter, then the last hit.
+    mix.add(sound.torch_click(rng), E + 0.1, gain=0.7, reverb=0.3)
     for i in range(len(TITLE_1)):
         if TITLE_1[i] != " ":
             mix.add(sound.type_key(rng), E + 0.2 + 0.55 * i / len(TITLE_1), gain=0.75, reverb=0.25)
@@ -462,7 +556,7 @@ def score():
     mix.add(sound.impact(rng, root=36.7), E + 1.55, gain=1.1, reverb=0.7)
 
     # The piano: one lonely motif, a note on each shot, resolving to an uneasy chord on the title.
-    for name, at, vel in (("A3", 0.15, 0.8), ("C4", 3.4, 0.7), ("E4", 7.95, 0.7), ("D#4", 10.75, 0.8), ("A2", 12.5, 0.9), ("E3", 12.5, 0.6)):
+    for name, at, vel in (("A3", 0.15, 0.8), ("C4", 3.4, 0.7), ("E4", C1 + 0.05, 0.7), ("D#4", C2 + 0.05, 0.8), ("A2", D, 0.9), ("E3", D, 0.6)):
         mix.add(sound.piano(sound.note(name), 3.0, vel), at, gain=0.55, reverb=0.6)
     for name in ("A2", "E3", "A3", "C4", "D#4"):
         mix.add(sound.piano(sound.note(name), 3.5, 0.9), E + 1.55, gain=0.45, reverb=0.7)
@@ -482,7 +576,7 @@ CUTS = (2.95, 3.3, C1, C2, D, E)
 
 def stills():
     """A contact sheet of the risky moments: the end of every line, and both sides of every cut."""
-    moments = risky_moments([(at, length) for (_, _, _, at, _), length in zip(LINES, LINE_LENGTHS)], CUTS, extra=(1.2, 2.7, 19.9))
+    moments = risky_moments([(at, length) for (_, _, _, at, _), length in zip(LINES, LINE_LENGTHS)], CUTS, extra=(1.2, 2.7, 5.6, 8.6, 11.0, 12.4, 16.2, 17.2, 18.9, 22.6))
     print(contact_sheet(film_frame, moments, "case001-film-stills.png"))
 
 

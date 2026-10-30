@@ -21,8 +21,9 @@ from omc_art.palette import CORAL, CREAM, INK, MUSTARD
 from . import sound
 from .film import (FPS, OUT, Camera, Encoder, ease_in_out, ease_out, fill, font, glow, layer, lerp, linear, noise1, poly,
                    radial, render_frame, rgb, rrect, smooth, span, stroke, text, W, H)
-from .kit import caption
+from .kit import box, caption, soft_shadow
 from .look import Look, finish
+from .textures import surface, weave
 from .voice import line
 
 SCREEN = "#E8F0FF"
@@ -82,7 +83,9 @@ def wall(c, t, clock_time=(12, 41), cabinet_open=False):
     outer.addRect(skia.Rect.MakeLTRB(-500, -500, 1600, 2500))
     hole = skia.Path()
     hole.addRect(WINDOW)
-    c.drawPath(skia.Op(outer, hole, skia.PathOp.kDifference_PathOp), linear((0, 0), (0, 1700), [(0, WALL_TOP, 1), (1, WALL_BOTTOM, 1)]))
+    shape = skia.Op(outer, hole, skia.PathOp.kDifference_PathOp)
+    c.drawPath(shape, linear((0, 0), (0, 1700), [(0, WALL_TOP, 1), (1, WALL_BOTTOM, 1)]))
+    weave(c, shape, "paper", 2.2)
 
     # Drops on the glass, slowly sliding.
     c.save()
@@ -109,7 +112,23 @@ def wall(c, t, clock_time=(12, 41), cabinet_open=False):
 
     clock(c, t, 850, 420, 118, *clock_time)
     plaque(c, 850, 620)
+    demo_poster(c)
     cabinet(c, t, cabinet_open)
+
+
+def demo_poster(c):
+    """Pinned up for tomorrow: what everyone in the building is working towards."""
+    sheet = box(740, 720, 1010, 1010)
+    soft_shadow(c, sheet, 6, 10, 8, 0.5)
+    c.drawPath(sheet, fill("#D9CDB6"))
+    weave(c, sheet, "paper", 1.1)
+    text(c, "HALO", 875, 800, font("display", 62), fill(INK), align="center", tracking=4)
+    for x in (830, 920):
+        c.drawCircle(x, 860, 36, stroke(INK, 7))
+    c.drawLine(866, 856, 884, 856, stroke(INK, 7))
+    text(c, "INVESTOR DEMO", 875, 940, font("type", 26), fill(INK, 0.85), align="center")
+    text(c, "TOMORROW 9 AM", 875, 976, font("type", 26), fill("#B23A3A"), align="center")
+    c.drawCircle(875, 734, 7, fill(CORAL))
 
 
 def clock(c, t, x, y, r, minute=12, second0=41):
@@ -157,38 +176,71 @@ def cabinet(c, t, open_=False):
 
 
 def open_cabinet(c, t):
-    c.drawPath(rrect(40, 1040, 400, 1620, 14), fill("#2A3349"))
-    c.drawPath(rrect(64, 1064, 376, 1596, 8), fill("#0A0C1A"))
+    body = rrect(40, 1040, 400, 1620, 14)
+    c.drawPath(body, surface("steel", 1.0))
+    c.drawPath(body, fill("#10162E", 0.4))
+    interior = rrect(64, 1064, 376, 1596, 8)
+    c.drawPath(interior, fill("#0A0C1A"))
     # The shelf, and the foam cradle HALO sat in: a glasses-shaped hollow.
-    c.drawRect(skia.Rect.MakeLTRB(64, 1330, 376, 1350), fill("#4D5B76"))
-    c.drawPath(rrect(96, 1250, 344, 1332, 18), fill("#2A2F4A"))
+    c.drawRect(skia.Rect.MakeLTRB(64, 1330, 376, 1350), surface("steel", 0.7))
+    cradle = rrect(96, 1240, 344, 1332, 18)
+    c.drawPath(cradle, fill("#2F3450"))
+    weave(c, cradle, "linen", 0.8)
+    c.drawPath(cradle, stroke(INK, 5))
     for x in (168, 272):
-        c.drawCircle(x, 1290, 34, fill("#0F1224"))
-    c.drawRect(skia.Rect.MakeLTRB(196, 1284, 244, 1294), fill("#0F1224"))
+        c.drawCircle(x, 1286, 38, fill("#0F1224"))
+        c.drawCircle(x, 1286, 38, stroke("#474D70", 4))
+    c.drawRect(skia.Rect.MakeLTRB(204, 1280, 236, 1292), fill("#0F1224"))
+    c.drawLine(96, 1270, 132, 1276, stroke("#0F1224", 10))
+    c.drawLine(344, 1270, 308, 1276, stroke("#0F1224", 10))
     c.drawPath(rrect(160, 1352, 280, 1386, 6), fill(CREAM, 0.9))
     text(c, "HALO", 220, 1378, font("display", 28), fill(INK), align="center", tracking=3)
-    # The door, swung open towards us, still carrying its "B".
+    # Below the shelf: a coil of charging cable and a spare case, as Priya left them.
+    arc = skia.Path()
+    arc.addOval(skia.Rect.MakeLTRB(120, 1460, 230, 1520))
+    c.drawPath(arc, stroke("#3A4066", 7))
+    c.drawPath(rrect(250, 1440, 350, 1530, 12), fill("#1E2240"))
+    # The door, swung open towards us, still carrying its "B" and the professor's note.
     door = poly([(40, 1040), (-170, 1000), (-170, 1660), (40, 1620)])
-    c.drawPath(door, linear((-170, 0), (40, 0), [(0, "#5A688A", 1), (1, "#3C4860", 1)]))
+    c.drawPath(door, surface("steel", 1.2))
+    c.drawPath(door, fill("#14183A", 0.55))
+    c.drawPath(door, linear((-170, 0), (40, 0), [(0, "#FFFFFF", 0.06), (1, "#000000", 0.4)]))
     c.drawPath(door, stroke(INK, OUTLINE))
     c.drawPath(rrect(-120, 1080, -40, 1146, 8), fill(CREAM, 0.85))
     text(c, "B", -80, 1132, font("display", 50), fill(INK), align="center")
+    note_ = poly([(-150, 1200), (-20, 1216), (-22, 1380), (-150, 1370)])
+    c.drawPath(note_, fill("#E8CF7A"))
+    text(c, "NOBODY", -86, 1262, font("type", 28), fill(INK), align="center")
+    text(c, "TOUCHES", -86, 1296, font("type", 28), fill(INK), align="center")
+    text(c, "HALO", -86, 1330, font("type", 28), fill(INK), align="center")
     # The spare key, left in the lock.
     c.drawCircle(400, 1330, 16, fill("#8D9AB8"))
     c.drawPath(rrect(392, 1300, 446, 1316, 6), fill(MUSTARD))
     c.drawCircle(452, 1308, 18, stroke(MUSTARD, 8))
-    c.drawPath(rrect(40, 1040, 400, 1620, 14), stroke(INK, OUTLINE))
+    c.drawPath(body, stroke(INK, OUTLINE))
 
 
 def bench(c, t):
-    """The bench and everything on it, at the focus plane."""
+    """A lab bench: scratched steel, an oscilloscope still running, a soldering iron."""
     c.drawRect(skia.Rect.MakeLTRB(-400, 1530, 1500, 2600), fill("#11142C"))
-    c.drawPath(poly([(-400, 1490), (1500, 1490), (1500, 1540), (-400, 1540)]), linear((0, 1490), (0, 1540), [(0, "#353C70", 1), (1, "#22274D", 1)]))
+    top = poly([(-400, 1490), (1500, 1490), (1500, 1540), (-400, 1540)])
+    c.drawPath(top, surface("steel", 0.9))
+    c.drawPath(top, fill("#14183A", 0.5))
     c.drawLine(-400, 1490, 1500, 1490, stroke("#5A63A8", 4, 0.8))
-    # A mug and a stack of papers, clear of Cabinet B's shelf.
-    c.drawPath(rrect(930, 1400, 1010, 1495, 14), fill("#2E3566"))
-    c.drawPath(rrect(930, 1400, 1010, 1495, 14), stroke(INK, 7))
-    c.drawPath(poly([(880, 1470), (1060, 1455), (1075, 1490), (890, 1500)]), fill("#C9C2B0", 0.5))
+    scope = rrect(884, 1340, 1076, 1492, 10)
+    c.drawPath(scope, fill("#262B4A"))
+    c.drawPath(scope, stroke(INK, 7))
+    c.drawRect(skia.Rect.MakeLTRB(900, 1356, 1012, 1440), fill("#06201E"))
+    trace = skia.Path()
+    for i in range(24):
+        x, y = 902 + i * 4.7, 1398 + math.sin(i * 0.9 + t * 3) * 26 * math.sin(i * 0.13)
+        trace.moveTo(x, y) if i == 0 else trace.lineTo(x, y)
+    c.drawPath(trace, stroke("#5CE0C8", 3))
+    for k in range(3):
+        c.drawCircle(1044, 1372 + k * 34, 12, fill("#8D9AB8"))
+    c.drawPath(rrect(420, 1472, 700, 1492, 6), fill("#2C3358"))
+    c.drawLine(900, 1484, 760, 1466, stroke("#14141C", 7))
+    c.drawPath(poly([(1088, 1470), (1200, 1458), (1200, 1490), (1088, 1490)]), fill("#C9C2B0", 0.4))
 
 
 def chat_lines(message: str, f: skia.Font, width: float) -> list[str]:
@@ -424,6 +476,17 @@ DECK_TOP, DECK_BOTTOM = 1236, 2050
 def bokeh(c, t, with_clock=True):
     """The lab behind the laptop, far out of focus: campus lights through the rain, the clock, a red standby LED."""
     c.drawRect(skia.Rect.MakeLTRB(-600, -600, 1700, 2600), linear((0, -200), (0, 1500), [(0, "#07091A", 1), (0.6, "#10142E", 1), (1, "#0A0C1E", 1)]))
+    for y in (130, 370):  # shelves of equipment
+        c.drawRect(skia.Rect.MakeLTRB(-300, y, 1400, y + 16), fill("#2C3358"))
+        for i in range(12):
+            x, h = -200 + i * 150, 60 + (i * 37) % 70
+            c.drawRect(skia.Rect.MakeLTRB(x, y - h, x + 110, y), fill("#232A4C" if i % 2 else "#323A66"))
+    for x, y, col in ((230, 470, "#3FB8AF"), (640, 440, "#7FD3CB")):  # scope screens left running
+        c.drawRect(skia.Rect.MakeLTRB(x - 100, y - 62, x + 100, y + 62), fill(col, 0.32))
+    for i in range(30):  # standby lights
+        x, y = (i * 173) % 1200 - 60, 90 + (i * 97) % 430
+        if math.sin(t * (1 + i % 4) + i) > -0.4:
+            c.drawCircle(x, y, 10, fill("#5CE0A0" if i % 3 else CORAL, 0.8, blend=skia.BlendMode.kPlus))
     lights = ((140, 210, 95, MUSTARD, 0.55), (330, 120, 60, "#7FD3CB", 0.4), (560, 250, 120, MUSTARD, 0.35), (880, 150, 80, CORAL, 0.35),
               (990, 330, 55, MUSTARD, 0.5), (40, 520, 70, "#7FD3CB", 0.3), (760, 60, 45, "#FFE2A0", 0.6), (420, 470, 40, CORAL, 0.25))
     for i, (x, y, r, colour, a) in enumerate(lights):
@@ -437,27 +500,38 @@ def bokeh(c, t, with_clock=True):
     rain_streaks(c, t)
 
 
+KEY_ROWS = ("1234567890-=+", "QWERTYUIOP[]\\", "ASDFGHJKL;'  ", "ZXCVBNM,./   ", "             ")
+
+
 def keyboard(c, t):
-    """The laptop's keyboard in perspective, lit from above by the screen."""
+    """The laptop's keyboard in perspective, lit from above by the screen, with a real legend on every key."""
     def at(u, v):
         top_w, bottom_w = 980, 1700
         wv = lerp(top_w, bottom_w, v)
         return W / 2 + (u - 0.5) * wv, lerp(DECK_TOP, DECK_BOTTOM, v ** 1.15 if v > 0 else v)
 
     deck = poly([at(0, -0.06), at(1, -0.06), at(1, 1), at(0, 1)])
-    c.drawPath(deck, linear((0, DECK_TOP), (0, DECK_BOTTOM), [(0, "#2A2F52", 1), (1, "#14172C", 1)]))
+    c.drawPath(deck, surface("steel", 1.2))
+    c.drawPath(deck, linear((0, DECK_TOP), (0, DECK_BOTTOM), [(0, "#20244A", 0.55), (1, "#0A0C1C", 0.86)]))
     rows, cols = 5, 13
     pressed = pressed_key(t)
     for r_ in range(rows):
+        size = lerp(19, 34, r_ / rows)
         for k in range(cols):
             u0, u1 = (k + 0.08) / cols, (k + 0.92) / cols
             v0, v1 = (r_ + 0.12) / rows * 0.82 + 0.04, (r_ + 0.88) / rows * 0.82 + 0.04
             key = poly([at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)])
             down = pressed == (r_, k)
-            c.drawPath(key, fill("#0C0E1D" if not down else "#20264A"))
+            c.drawPath(key, linear(at(0.5, v0), at(0.5, v1), [(0, "#20264A" if down else "#14172E", 1), (1, "#2C3360" if down else "#0A0C1C", 1)]))
             # The top edge of every key catches the screen's light.
-            light = 0.55 * (1 - r_ / rows) + 0.15
-            c.drawLine(*at(u0, v0), *at(u1, v0), stroke(SCREEN_LIGHT, 2.5, light))
+            c.drawLine(*at(u0, v0), *at(u1, v0), stroke(SCREEN_LIGHT, 2.5, 0.55 * (1 - r_ / rows) + 0.15))
+            ch = KEY_ROWS[r_][k]
+            if ch != " ":
+                x, y = at((u0 + u1) / 2, (v0 + v1) / 2)
+                text(c, ch, x, y + size * 0.36, font("body", size), fill("#AEB8E0", 0.6), align="center")
+    pad = poly([at(0.36, 0.885), at(0.64, 0.885), at(0.65, 0.99), at(0.35, 0.99)])
+    c.drawPath(pad, fill("#1A1F3C", 0.8))
+    c.drawPath(pad, stroke("#5A63A8", 2.5, 0.5))
     c.drawLine(*at(0, -0.06), *at(1, -0.06), stroke("#5A63A8", 5, 0.9))
 
 
@@ -476,8 +550,11 @@ def big_screen(c, t):
     """The lab chat, filling the frame: big enough to read on a phone."""
     s = SCREEN_UP
     lid = rrect(s.left() - 34, s.top() - 34, s.right() + 34, s.bottom() + 70, 30)
-    c.drawPath(lid, fill("#191C33"))
+    c.drawPath(lid, surface("steel", 0.9))
+    c.drawPath(lid, fill("#14183A", 0.62))
     c.drawPath(lid, stroke(INK, 12))
+    c.drawCircle(s.centerX(), s.top() - 17, 6, fill("#05060E"))
+    c.drawCircle(s.centerX(), s.top() - 17, 2, fill("#3FB8AF"))
     c.drawRect(s, linear((0, s.top()), (0, s.bottom()), [(0, "#D6E1F8", 1), (1, "#C3D0EE", 1)]))
     c.save()
     c.clipRect(s)
@@ -486,6 +563,12 @@ def big_screen(c, t):
     text(c, "Lab 4 crew", s.left() + 80, s.top() + 66, font("display", 46), fill(CREAM))
     # The status-bar clock: the one detail sharp players can carry into the case.
     text(c, "9:12", s.right() - 40, s.top() + 64, font("body", 30), fill(CREAM, 0.7), align="right")
+    c.drawPath(rrect(s.right() - 164, s.top() + 42, s.right() - 110, s.top() + 66, 5), stroke(CREAM, 3, 0.65))
+    c.drawRect(skia.Rect.MakeLTRB(s.right() - 160, s.top() + 46, s.right() - 146, s.top() + 62), fill(CORAL, 0.9))
+    for k in range(3):
+        wifi = skia.Path()
+        wifi.addArc(skia.Rect.MakeLTRB(s.right() - 214 - k * 9, s.top() + 42 - k * 7, s.right() - 188 + k * 9, s.top() + 68 + k * 7), 225, 90)
+        c.drawPath(wifi, stroke(CREAM, 3, 0.65))
 
     y = s.top() + 136
     c.drawPath(rrect(s.left() + 30, y, s.right() - 170, y + 112, 26), fill("#AEBBDD"))
@@ -526,12 +609,26 @@ def big_screen(c, t):
         italic = font("body", 42)
         italic.setSkewX(-0.2)
         text(c, f"Priya is typing{dots}", s.left() + 44, s.bottom() - 140, italic, fill(INK, 0.8))
+    # Whoever's at the keyboard, barely there in the glass.
+    c.drawCircle(s.right() - 250, s.top() + 480, 118, fill("#000000", 0.028))
+    c.drawPath(rrect(s.right() - 470, s.top() + 590, s.right() - 30, s.bottom() + 60, 120), fill("#000000", 0.028))
+    for y in range(int(s.top()), int(s.bottom()), 7):  # the screen's fine lines
+        c.drawLine(s.left(), y, s.right(), y, stroke("#000000", 1, 0.018))
     # A faint reflection across the glass.
     c.drawPath(poly([(s.left(), s.top()), (s.left() + 380, s.top()), (s.left() + 80, s.bottom()), (s.left() - 300, s.bottom())]),
                fill("#FFFFFF", 0.05))
     flash = max(0.0, 1 - abs(t - 2.48) * 7)
     if flash:
         c.drawRect(s, fill("#FFFFFF", 0.35 * flash))
+    c.restore()
+    # Priya's sticky note on the bezel.
+    c.save()
+    c.rotate(-6, s.left() + 90, s.bottom())
+    sticky = box(s.left() - 18, s.bottom() - 110, s.left() + 190, s.bottom() + 40)
+    soft_shadow(c, sticky, 5, 8, 6, 0.5)
+    c.drawPath(sticky, fill("#E8CF7A"))
+    text(c, "DEMO 9AM!", s.left() + 86, s.bottom() - 52, font("type", 30), fill(INK), align="center")
+    text(c, "battery??", s.left() + 86, s.bottom() - 10, font("type", 30), fill("#B23A3A"), align="center")
     c.restore()
 
 
@@ -547,7 +644,8 @@ def glove(c, t, mirror=False, phase=0.0):
     sleeve.lineTo(330, 760)
     sleeve.cubicTo(280, 520, 200, 330, 130, 190)
     sleeve.close()
-    c.drawPath(sleeve, linear((0, 190), (0, 700), [(0, "#151833", 1), (1, "#07080F", 1)]))
+    c.drawPath(sleeve, linear((0, 190), (0, 700), [(0, "#1C2040", 1), (1, "#07080F", 1)]))
+    weave(c, sleeve, "linen", 1.1)
     c.drawPath(rrect(-135, 170, 145, 250, 36), fill("#1A1E3C"))
     c.drawLine(-120, 178, 130, 178, stroke(SCREEN_LIGHT, 4, 0.35))
     # Back of the hand: a leather dome, catching the screen's light near the knuckles.
@@ -560,6 +658,18 @@ def glove(c, t, mirror=False, phase=0.0):
     back.close()
     c.drawPath(back, fill(SHADOW))
     c.drawPath(back, radial((0, -10), 220, [(0, "#3B4A7A", 0.55), (1, "#3B4A7A", 0)]))
+    seam = skia.Path()
+    seam.moveTo(-124, 22)
+    seam.cubicTo(-90, 100, -70, 130, -60, 190)
+    seam.moveTo(124, 22)
+    seam.cubicTo(96, 100, 80, 130, 66, 190)
+    stitches = stroke(SCREEN_LIGHT, 3, 0.4)
+    stitches.setPathEffect(skia.DashPathEffect.Make([11, 9], 0))
+    c.drawPath(seam, stitches)
+    for x in (-58, 0, 58):
+        c.drawLine(x, 64, x * 0.8, 150, stroke("#000000", 5, 0.5))
+    c.drawPath(rrect(-122, 150, 128, 186, 10), fill("#0B0D1A"))
+    c.drawPath(rrect(-20, 154, 26, 182, 5), stroke("#8D9AB8", 4, 0.8))
     # Thumb, tucked along the left side.
     thumb = rrect(-215, 40, -130, 175, 42)
     c.save()

@@ -248,7 +248,7 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -302,7 +302,14 @@ export type InterrogationState = {
   broken: string[];
   strikes: number;
   over?: "confessed" | "walkedOut";
+  /** A lie called but not settled yet: the rest of the team can still object. */
+  call?: LieCall;
 };
+
+export type LieCall = { id: string; by: string; evidenceId: string; at: number };
+
+/** One find in the chain shown at the reveal, and who made it. */
+export type ChainStep = { id: string; title: string; by: string; source: Access["kind"] };
 
 export type Action =
   | { type: "setMode"; mode: Mode }
@@ -318,6 +325,10 @@ export type Action =
   | { type: "press"; step: 1 | -1 }
   /** Interrogation: call the current claim a lie, presenting a pinned piece of evidence. */
   | { type: "callLie"; evidenceId: string }
+  /** Interrogation: stop a called lie before it lands, or take back your own. */
+  | { type: "object"; callId: string }
+  /** Interrogation: nobody objected in time, so the call lands. */
+  | { type: "settleLie"; callId: string }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }

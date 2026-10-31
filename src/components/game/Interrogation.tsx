@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { PlayerView } from "@/lib/game/engine";
+import { OBJECTION_MS, type PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { play } from "./audio/sound";
 import { evidenceIn, nameOf, useGame } from "./context";
@@ -45,7 +45,7 @@ function Claim({ room }: { room: Room }) {
         <div className="mt-3 flex gap-2">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || Boolean(room.call)}
             onClick={() => act({ type: "press", step: -1 }, { quiet: true })}
             className="grid size-11 place-items-center rounded-2xl border-[3px] border-ink bg-cream text-ink shadow-pop-sm disabled:opacity-50"
             aria-label="Back to the last claim"
@@ -54,7 +54,7 @@ function Claim({ room }: { room: Room }) {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || Boolean(room.call)}
             onClick={() => act({ type: "press", step: 1 }, { quiet: true })}
             className="flex-1 rounded-2xl border-[3px] border-ink bg-lilac py-2 font-display text-lg text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
           >
@@ -62,6 +62,57 @@ function Claim({ room }: { room: Room }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A called lie hangs in the air for a few seconds so the team can stop it. It sits
+ * over every tab, because anyone might be on the board. Each phone counts down and
+ * asks the room to land it; the room checks the time and the first ask wins.
+ */
+export function LieCallBar() {
+  const { view, act } = useGame();
+  const call = view.interrogation?.call;
+  const callId = call?.id;
+
+  useEffect(() => {
+    if (!callId) return;
+    play("vote");
+    const land = () => act({ type: "settleLie", callId }, { quiet: true });
+    let retry = 0;
+    const first = window.setTimeout(() => {
+      land();
+      retry = window.setInterval(land, 2000);
+    }, OBJECTION_MS);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(retry);
+    };
+  }, [act, callId]);
+
+  if (!call) return null;
+  const mine = call.by === view.me.id;
+  return (
+    <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-40 p-3 lg:bottom-0 lg:p-5" role="alert">
+      <div className="mx-auto max-w-2xl animate-[sheet-up_0.25s_ease-out] overflow-hidden rounded-3xl border-[3px] border-ink bg-coral text-cream shadow-card">
+        <div className="p-4">
+          <p className="font-display text-xl leading-tight">
+            {nameOf(view, call.by)} {mine ? "are" : "is"} calling it a lie
+          </p>
+          <p className="mt-0.5 font-bold">Presenting: {call.title}</p>
+          <button
+            type="button"
+            onClick={() => act({ type: "object", callId: call.id }, { quiet: true })}
+            className="mt-3 w-full rounded-2xl border-[3px] border-ink bg-cream py-2.5 font-display text-xl text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none"
+          >
+            {mine ? "Take it back" : "Objection!"}
+          </button>
+        </div>
+        <div className="h-2.5 bg-ink/40" aria-hidden>
+          <div key={call.id} className="h-full origin-left bg-mustard" style={{ animation: `drain ${OBJECTION_MS}ms linear both` }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -102,7 +153,7 @@ function CallLie({ room, name }: { room: Room; name: string }) {
       )}
       <button
         type="button"
-        disabled={!picked || busy}
+        disabled={!picked || busy || Boolean(room.call)}
         onClick={async () => {
           if (picked && (await act({ type: "callLie", evidenceId: picked }))) setPicked(null);
         }}
@@ -111,7 +162,7 @@ function CallLie({ room, name }: { room: Room; name: string }) {
         That&apos;s a lie!
       </button>
       <p className="mt-2 text-center text-xs font-bold text-cream/55">
-        Talk first. A wrong call is a strike, and after {room.strikesAllowed} {name} walks out.
+        Your team gets 5 seconds to object. A wrong call is a strike, and after {room.strikesAllowed} strikes {name} walks out.
       </p>
     </div>
   );

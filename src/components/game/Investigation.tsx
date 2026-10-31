@@ -10,7 +10,7 @@ import { play } from "./audio/sound";
 import { BoardPanel } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel } from "./desk/DeskPanel";
-import { LieMoment } from "./Interrogation";
+import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
@@ -322,6 +322,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <SoundCues view={view} />
       <Moments />
       <LieMoment />
+      <LieCallBar />
 
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>

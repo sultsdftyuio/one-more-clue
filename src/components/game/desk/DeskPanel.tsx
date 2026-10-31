@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cx } from "@/lib/cx";
+import type { CaseRole } from "@/lib/game/types";
 import { nameOf, useGame } from "../context";
 import { EvidenceCard } from "../evidence/EvidenceCard";
 import { Icon } from "../ui/Icon";
@@ -12,6 +13,26 @@ import { PhotographerTool } from "./roles/Photographer";
 import { TechTool } from "./roles/Tech";
 
 const ABILITY_LABEL = { search: "Search", interview: "Interview", inspect: "Inspect", crosscheck: "Cross-check", none: "Evidence" };
+
+/** Your role, folded down to its name: everyone read it when it was dealt, and the tools matter more now. Tap to read it again. */
+function RoleCard({ role }: { role: CaseRole }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen((o) => !o)}
+      aria-expanded={open}
+      className={cx("w-full rounded-2xl border-[3px] border-ink px-4 py-2 text-left shadow-pop-sm", ROLE_CARD[role.ability])}
+    >
+      <span className="flex items-center gap-2">
+        <span className="font-display text-xl leading-tight">{role.name}</span>
+        <span className="rounded-full border-2 border-ink bg-cream px-2 py-px text-xs font-extrabold text-ink">{ABILITY_LABEL[role.ability]}</span>
+        <Icon name="arrow" className={cx("ml-auto size-4 transition-transform", open && "rotate-90")} />
+      </span>
+      {open && <span className="mt-1 block text-sm leading-snug font-semibold">{role.blurb}</span>}
+    </button>
+  );
+}
 
 /** A private scratchpad, kept on this device only. */
 function Notebook({ code }: { code: string }) {
@@ -76,18 +97,11 @@ export function DeskPanel() {
 
   return (
     <div className="grid gap-5">
-      {myRoles.map((role) => (
-        <section key={role.id} className={cx("rounded-3xl border-[3px] border-ink p-4 shadow-pop sm:p-5", ROLE_CARD[role.ability])}>
-          <p className="text-xs font-extrabold tracking-widest uppercase opacity-75">You are the</p>
-          <p className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl leading-tight">
-            {role.name}
-            <span className="rounded-full border-2 border-ink bg-cream px-2.5 py-0.5 font-sans text-xs font-extrabold tracking-wide text-ink uppercase">
-              {ABILITY_LABEL[role.ability]}
-            </span>
-          </p>
-          <p className="mt-1 text-sm leading-snug font-semibold">{role.blurb}</p>
-        </section>
-      ))}
+      <div className="grid gap-2">
+        {myRoles.map((role) => (
+          <RoleCard key={role.id} role={role} />
+        ))}
+      </div>
 
       <Leads />
 

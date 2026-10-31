@@ -13,6 +13,7 @@ import type {
   CaseFile,
   CaseRole,
   CaseSuspect,
+  ChainStep,
   ChatLine,
   DecidedProposal,
   FinalReport,
@@ -35,6 +36,8 @@ export const MAX_QUERY = 40;
 export const PIN_LIMIT = 8;
 /** Cross-checks that find nothing are limited per chapter, so the Archivist has to reason, not try every pair. */
 export const EMPTY_CHECKS = 3;
+/** How long the team has to object before a called lie lands. */
+export const OBJECTION_MS = 5000;
 const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
@@ -246,6 +249,59 @@ const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: fal
 function closeCase(state: RoomState, caseFile: CaseFile, report: FinalReport, kind: "solved" | "wrong" | "walkedOut", now: number) {
   state.outcome = { kind, report, score: scoreReport(state, caseFile, report), at: now };
   state.phase = "reveal";
+}
+
+/** A called lie lands: the claim breaks, or the team takes a strike. Either can end the case. */
+function landLie(state: RoomState, caseFile: CaseFile, interrogation: Interrogation, room: InterrogationState, caller: Player, evidence: CaseEvidence, now: number, newId: () => string) {
+  const claim = interrogation.claims[room.claim];
+  const suspect = caseFile.suspects.find((s) => s.id === interrogation.suspect)?.name ?? "The suspect";
+  if (claim.lie?.breaks.includes(evidence.id)) {
+    room.broken.push(claim.id);
+    log(state, newId, now, "lie", `${caller.name} caught ${suspect} lying: "${claim.text}"`, caller.id, evidence.id);
+    if (interrogation.claims.every((c) => !c.lie || room.broken.includes(c.id))) room.over = "confessed";
+  } else {
+    room.strikes++;
+    log(state, newId, now, "wrong", `${caller.name} presented ${evidence.title}. It doesn't break that claim. Strike ${room.strikes} of ${interrogation.strikes}.`, caller.id);
+    if (room.strikes >= interrogation.strikes) {
+      room.over = "walkedOut";
+      log(state, newId, now, "wrong", `${suspect} has had enough and walks out.`);
+    }
+  }
+  if (room.over) closeCase(state, caseFile, state.accusation!, room.over === "confessed" ? "solved" : "walkedOut", now);
+}
+
+/**
+ * The chain of finds that best shows the team working together: each step opened
+ * the next, and the more people in it the better. Empty if no find led to another.
+ */
+export function bestChain(state: RoomState, caseFile: CaseFile): ChainStep[] {
+  const memo = new Map<string, CaseEvidence[]>();
+  const people = (chain: CaseEvidence[]) => new Set(chain.map((e) => state.found[e.id].by)).size;
+  const better = (a: CaseEvidence[], b: CaseEvidence[]) => people(a) > people(b) || (people(a) === people(b) && a.length > b.length);
+  const longest = (e: CaseEvidence): CaseEvidence[] => {
+    const known = memo.get(e.id);
+    if (known) return known;
+    memo.set(e.id, [e]); // stops a loop in badly written data
+    const parents = [...(e.after ?? []), ...(e.access.kind === "crosscheck" ? e.access.pair : [])];
+    let best: CaseEvidence[] = [];
+    for (const id of parents) {
+      const parent = caseFile.evidence.find((p) => p.id === id);
+      if (!parent || !state.found[id]) continue;
+      const chain = longest(parent);
+      if (better(chain, best)) best = chain;
+    }
+    const chain = [...best, e];
+    memo.set(e.id, chain);
+    return chain;
+  };
+  let best: CaseEvidence[] = [];
+  for (const e of caseFile.evidence) {
+    if (!state.found[e.id]) continue;
+    const chain = longest(e);
+    if (!best.length || better(chain, best)) best = chain;
+  }
+  if (best.length < 2) return [];
+  return best.map((e) => ({ id: e.id, title: e.title, by: state.found[e.id].by, source: e.access.kind }));
 }
 
 /** One fixed order per room. Without it, the right answer sits in the same place case after case and players learn the place. */
@@ -470,6 +526,7 @@ export function applyAction(
       if (!leadsInterrogation(state, caseFile, self)) return fail("Only the Interviewer can press on.");
       const room: InterrogationState = next.interrogation ?? { claim: 0, broken: [], strikes: 0 };
       if (room.over) return fail("The interrogation is over.");
+      if (room.call) return fail("Wait for the call to land first.");
       const total = interrogation.claims.length;
       room.claim = (room.claim + (action.step === -1 ? -1 : 1) + total) % total;
       next.interrogation = room;
@@ -483,23 +540,31 @@ export function applyAction(
       if (room.over) return fail("The interrogation is over.");
       const evidence = evidenceById(action.evidenceId);
       if (!evidence || !state.pins.some((p) => p.evidenceId === evidence.id)) return fail("Present something from the board, so everyone can see it.");
-      const claim = interrogation.claims[room.claim];
-      if (room.broken.includes(claim.id)) return fail("You've already caught that lie.");
-      const suspect = caseFile.suspects.find((s) => s.id === interrogation.suspect)?.name ?? "The suspect";
-      if (claim.lie?.breaks.includes(evidence.id)) {
-        room.broken.push(claim.id);
-        log(next, newId, now, "lie", `${me.name} caught ${suspect} lying: "${claim.text}"`, me.id, evidence.id);
-        if (interrogation.claims.every((c) => !c.lie || room.broken.includes(c.id))) room.over = "confessed";
-      } else {
-        room.strikes++;
-        log(next, newId, now, "wrong", `${me.name} presented ${evidence.title}. It doesn't break that claim. Strike ${room.strikes} of ${interrogation.strikes}.`, me.id);
-        if (room.strikes >= interrogation.strikes) {
-          room.over = "walkedOut";
-          log(next, newId, now, "wrong", `${suspect} has had enough and walks out.`);
-        }
-      }
+      if (room.call) return fail("Someone's already calling a lie.");
+      if (room.broken.includes(interrogation.claims[room.claim].id)) return fail("You've already caught that lie.");
       next.interrogation = room;
-      if (room.over) closeCase(next, caseFile, next.accusation!, room.over === "confessed" ? "solved" : "walkedOut", now);
+      // On your own there's nobody to object.
+      if (activePlayers(state).length > 1) room.call = { id: newId(), by: me.id, evidenceId: evidence.id, at: now };
+      else landLie(next, caseFile, interrogation, room, me, evidence, now, newId);
+      break;
+    }
+
+    case "object": {
+      const room = next.interrogation;
+      if (!investigating || !room?.call || room.call.id !== action.callId) return fail("That call has already landed.");
+      log(next, newId, now, "objection", room.call.by === me.id ? `${me.name} took the call back.` : `${me.name} objected. Talk it over.`, me.id);
+      delete room.call;
+      break;
+    }
+
+    case "settleLie": {
+      const interrogation = openInterrogation(state, caseFile);
+      const room = next.interrogation;
+      if (!investigating || !interrogation || !room?.call || room.call.id !== action.callId) return fail("That call has already landed.");
+      if (now - room.call.at < OBJECTION_MS) return fail("There's still time to object.");
+      const { by, evidenceId } = room.call;
+      delete room.call;
+      landLie(next, caseFile, interrogation, room, next.players.find((p) => p.id === by)!, evidenceById(evidenceId)!, now, newId);
       break;
     }
 
@@ -519,6 +584,7 @@ export function applyAction(
       const pin = next.pins.find((p) => p.evidenceId === action.evidenceId);
       if (!pin) return fail("That isn't on the board.");
       if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId) || next.proposal?.evidenceId === pin.evidenceId) return fail("That's part of the vote in progress.");
+      if (next.interrogation?.call?.evidenceId === pin.evidenceId) return fail("That's being presented right now.");
       next.pins = next.pins.filter((p) => p !== pin);
       log(next, newId, now, "unpin", `${me.name} unpinned ${evidenceById(pin.evidenceId)?.title}`, me.id, pin.evidenceId);
       break;
@@ -871,6 +937,8 @@ export type PlayerView = {
     leads: boolean;
     over: InterrogationState["over"] | null;
     walkout: string | null;
+    /** A lie called and waiting out its objection window. */
+    call: { id: string; by: string; title: string } | null;
   } | null;
   activity: Activity[];
   chat: ChatLine[];
@@ -882,6 +950,8 @@ export type PlayerView = {
   outcome: RoomState["outcome"];
   /** Only after the reveal. */
   solution: CaseFile["solution"] | null;
+  /** At the reveal: how the team's best run of finds fitted together. */
+  chain: ChainStep[];
   /** Set by the room service: whether the host may add bots here. */
   testBots?: boolean;
 };
@@ -906,6 +976,7 @@ function interrogationView(state: RoomState, caseFile: CaseFile, me: Player): Pl
     leads,
     over: room.over ?? null,
     walkout: room.over === "walkedOut" ? interrogation.walkout : null,
+    call: room.call ? { id: room.call.id, by: room.call.by, title: caseFile.evidence.find((e) => e.id === room.call!.evidenceId)?.title ?? "" } : null,
   };
 }
 
@@ -1036,5 +1107,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     decided: state.decided.slice(-5),
     outcome: state.outcome,
     solution: revealed ? caseFile.solution : null,
+    chain: revealed ? bestChain(state, caseFile) : [],
   };
 }

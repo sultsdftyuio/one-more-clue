@@ -8,7 +8,7 @@ import { case001 } from "../../data/cases/case-001.ts";
 import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
-import { addPlayer, applyAction, bestSearchHit, createRoom, PIN_LIMIT, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -91,6 +91,10 @@ function play(caseFile: CaseFile) {
         assert.ok(proof, `nothing the team found breaks "${claim.id}"`);
         this.pin(canSee(proof)!, proof);
         run(canSee(proof)!, { type: "callLie", evidenceId: proof });
+        const callId = state.interrogation!.call!.id;
+        const landed = applyAction(state, caseFile, INTERVIEWER, { type: "settleLie", callId }, 1 + OBJECTION_MS, newId);
+        if (!landed.ok) throw new Error(landed.error);
+        state = landed.state;
       });
     },
     report(report: FinalReport) {
@@ -268,6 +272,14 @@ test("every checkpoint can be proved, and proof that misses costs time", () => {
   g.inspect("photo-linkedin", "halo");
   g.answer("detail-halo");
   assert.equal(g.state.chapter, 2);
+});
+
+test("the reveal credits the team's best chain of finds, across players", () => {
+  const g = play(case004);
+  g.ask("question-otto-power");
+  g.search("power company", "grid-report");
+  assert.deepEqual(bestChain(g.state, case004).map((s) => [s.id, s.by]), [["question-otto-power", INTERVIEWER], ["grid-report", TECH]]);
+  assert.deepEqual(g.view(TECH).chain, [], "only shown once the case is over");
 });
 
 test("every case has chains that cross roles, in both directions", () => {

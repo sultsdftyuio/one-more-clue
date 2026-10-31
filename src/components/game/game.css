@@ -270,6 +270,12 @@
   padding: 1.25rem;
 }
 
+/* The objection window running out. */
+@keyframes drain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 /* Find moments */
 @keyframes print-feed {
   from { clip-path: inset(0 0 100% 0); transform: translateY(-1.5rem); }

@@ -341,6 +341,7 @@ export function applyAction(
   switch (action.type) {
     case "setMode": {
       if (!isHost) return fail("Only the host can change this.");
+      if (state.phase !== "lobby") return fail("The case has already started.");
       if (action.mode !== "together" && action.mode !== "remote") return fail("Unknown mode.");
       next.mode = action.mode;
       break;

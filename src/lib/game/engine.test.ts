@@ -74,6 +74,15 @@ function agree(state: RoomState, proposer: string, action: Action) {
   return state;
 }
 
+test("where you're playing: the host sets it, in the lobby only", () => {
+  let state = createRoom({ code: "MODE", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, tipJar, { id: "p2", token: "t2", name: "Bo" }, 0));
+  assert.equal(act(state, "p2", { type: "setMode", mode: "remote" }).ok, false);
+  state = doo(state, "p1", { type: "setMode", mode: "remote" });
+  assert.equal(viewFor(state, tipJar, "p2", new Set()).mode, "remote");
+  assert.equal(act(roomWith(2), "p1", { type: "setMode", mode: "together" }).ok, false, "not once the case has started");
+});
+
 test("every case file is valid", () => {
   for (const c of cases) assert.deepEqual(checkCase(c), [], c.id);
 });

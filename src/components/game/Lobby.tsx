@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { trackEvent } from "@/lib/analytics";
+import { cx } from "@/lib/cx";
 import type { PlayerView } from "@/lib/game/engine";
 import type { Act } from "./context";
 import { AudioToggles } from "./audio/AudioToggles";
@@ -44,6 +45,43 @@ function MyName({ view, act }: { view: PlayerView; act: Act }) {
         Save
       </button>
     </form>
+  );
+}
+
+const WHERE = [
+  { mode: "together", label: "Same room", note: "Film and music play on the host's phone only, so they don't echo." },
+  { mode: "remote", label: "Apart", note: "Film and music play on every phone." },
+] as const;
+
+/** Where the team is playing, which decides whose phone carries the sound. The host chooses; everyone sees it. */
+function PlayingWhere({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
+  const current = WHERE.find((w) => w.mode === view.mode)!;
+  return (
+    <div className="mb-4">
+      <p className="mb-2 text-sm font-bold text-cream/70">Where are you playing?</p>
+      {view.me.isHost ? (
+        <div className="grid grid-cols-2 gap-2">
+          {WHERE.map((w) => (
+            <button
+              key={w.mode}
+              type="button"
+              disabled={busy}
+              onClick={() => w.mode !== view.mode && act({ type: "setMode", mode: w.mode })}
+              aria-pressed={view.mode === w.mode}
+              className={cx(
+                "rounded-2xl border-[3px] py-2 font-display text-lg transition-colors disabled:opacity-60",
+                view.mode === w.mode ? "border-ink bg-mustard text-ink shadow-pop-sm" : "border-cream/20 bg-night/40 text-cream hover:border-cream/60",
+              )}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="font-display text-lg text-cream">{current.label}</p>
+      )}
+      <p className="mt-2 text-sm font-bold text-cream/60">{current.note}</p>
+    </div>
   );
 }
 
@@ -145,6 +183,7 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
       </Panel>
 
       <Panel>
+        <PlayingWhere view={view} act={act} busy={busy} />
         <AudioToggles />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-bold text-cream/60">Playing apart? Talk in voice chat, or use the team chat once the case starts.</p>

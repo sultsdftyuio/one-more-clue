@@ -19,7 +19,7 @@ Good checkpoints walk the group up the case: *when* did it happen → *whose sto
 
 Core roles are always dealt (with fewer players some people hold two). Extra roles (`core: false`, usually `ability: "none"`) only join with 5–6 players, and cases are capped at 4 for now because those roles have almost nothing to do, so their evidence must be **bonus**, never the only route to the answer.
 
-**Evidence.** Each piece has a `role` (whose desk it belongs to), a `chapter` (when it starts to exist) and an `access` (how it reaches players). `desk` evidence is handed out when its chapter opens; everything else has to be found. Only the role's holder (and whoever found it) can see a piece until someone pins it to the board, which holds 8 things.
+**Evidence.** Each piece is shown as the object it really is, so pick the `body` type that fits: `statement` (signed witness form), `chat` (a phone), `log` (a printout), `document` (a typed sheet), `finding` (a notebook page, or a discrepancy slip for a cross-check), `scene` (a print), `footage` (a CCTV monitor), `recording` (a cassette). Each piece has a `role` (whose desk it belongs to), a `chapter` (when it starts to exist) and an `access` (how it reaches players). `desk` evidence is handed out when its chapter opens; everything else has to be found. Only the role's holder (and whoever found it) can see a piece until someone pins it to the board, which holds 8 things.
 
 ## The house standard: show, don't lecture
 

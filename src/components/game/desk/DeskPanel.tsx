@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cx } from "@/lib/cx";
 import { nameOf, useGame } from "../context";
 import { EvidenceCard } from "../evidence/EvidenceCard";
 import { Icon } from "../ui/Icon";
-import { CrosscheckTool, InspectTool, InterviewTool, SearchTool } from "./Abilities";
+import { ArchivistTool } from "./roles/Archivist";
+import { InterviewerTool } from "./roles/Interviewer";
+import { ROLE_CARD } from "./roles/look";
+import { PhotographerTool } from "./roles/Photographer";
+import { TechTool } from "./roles/Tech";
 
 const ABILITY_LABEL = { search: "Search", interview: "Interview", inspect: "Inspect", crosscheck: "Cross-check", none: "Evidence" };
 
@@ -71,27 +76,25 @@ export function DeskPanel() {
 
   return (
     <div className="grid gap-5">
-      <section className="rounded-3xl border-[3px] border-ink bg-mustard p-4 text-ink shadow-pop sm:p-5">
-        <p className="text-xs font-extrabold tracking-widest uppercase opacity-70">Your {myRoles.length > 1 ? "roles" : "role"}</p>
-        {myRoles.map((role) => (
-          <div key={role.id} className="mt-2">
-            <p className="flex flex-wrap items-center gap-2 font-display text-2xl leading-tight">
-              {role.name}
-              <span className="rounded-full border-2 border-ink bg-cream px-2.5 py-0.5 font-sans text-xs font-extrabold tracking-wide uppercase">
-                {ABILITY_LABEL[role.ability]}
-              </span>
-            </p>
-            <p className="mt-1 text-sm leading-snug font-semibold">{role.blurb}</p>
-          </div>
-        ))}
-      </section>
+      {myRoles.map((role) => (
+        <section key={role.id} className={cx("rounded-3xl border-[3px] border-ink p-4 shadow-pop sm:p-5", ROLE_CARD[role.ability])}>
+          <p className="text-xs font-extrabold tracking-widest uppercase opacity-75">You are the</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl leading-tight">
+            {role.name}
+            <span className="rounded-full border-2 border-ink bg-cream px-2.5 py-0.5 font-sans text-xs font-extrabold tracking-wide text-ink uppercase">
+              {ABILITY_LABEL[role.ability]}
+            </span>
+          </p>
+          <p className="mt-1 text-sm leading-snug font-semibold">{role.blurb}</p>
+        </section>
+      ))}
 
       <Leads />
 
-      {view.me.abilities.includes("search") && <SearchTool />}
-      {view.me.abilities.includes("interview") && <InterviewTool />}
-      {view.me.abilities.includes("inspect") && <InspectTool />}
-      {view.me.abilities.includes("crosscheck") && <CrosscheckTool />}
+      {view.me.abilities.includes("search") && <TechTool />}
+      {view.me.abilities.includes("interview") && <InterviewerTool />}
+      {view.me.abilities.includes("inspect") && <PhotographerTool />}
+      {view.me.abilities.includes("crosscheck") && <ArchivistTool />}
 
       <section>
         <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-cream">

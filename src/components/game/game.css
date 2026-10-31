@@ -136,6 +136,209 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Evidence objects: each kind of evidence is the thing it would really be. */
+
+.font-typed { font-family: var(--font-typed), ui-monospace, monospace; }
+.font-hand { font-family: var(--font-hand), var(--font-sans); }
+.font-printer { font-family: var(--font-printer), ui-monospace, monospace; }
+
+/* The desk everything lies on: a stitched blotter. */
+.evidence-mat { background: #1f2348; }
+.evidence-mat::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 2px dashed rgb(255 244 224 / 0.1);
+  border-radius: 1.2rem;
+  pointer-events: none;
+}
+
+/* A luggage-style tag with a punched hole, its corners cut like the real thing. */
+.obj-tag {
+  border: 3px solid var(--color-ink);
+  padding: 0.4rem 0.75rem 0.45rem 2.1rem;
+  clip-path: polygon(1rem 0, 100% 0, 100% 100%, 1rem 100%, 0 calc(100% - 1rem), 0 1rem);
+}
+.obj-tag::before {
+  content: "";
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 3px solid var(--color-ink);
+  border-radius: 50%;
+  background: #1f2348;
+  transform: translateY(-50%);
+}
+
+.obj-form { background: #fbf6ea; }
+.obj-ruled {
+  background-image: repeating-linear-gradient(transparent 0 1.72rem, rgb(38 64 139 / 0.2) 1.72rem 1.75rem);
+  line-height: 1.75rem;
+}
+
+/* Paper clip, drawn from two rounded outlines. */
+.obj-clip {
+  width: 0.8rem;
+  height: 2rem;
+  border: 2.5px solid #5d6b86;
+  border-radius: 0.5rem;
+}
+.obj-clip::after {
+  content: "";
+  position: absolute;
+  inset: 0.2rem 0.1rem 0.65rem;
+  border: 2.5px solid #5d6b86;
+  border-bottom: 0;
+  border-radius: 0.4rem 0.4rem 0 0;
+}
+
+.obj-tape {
+  width: 4.5rem;
+  height: 1.1rem;
+  background: rgb(242 179 61 / 0.75);
+  box-shadow: 0 1px 0 rgb(27 31 59 / 0.25);
+}
+
+.obj-sheet {
+  background: linear-gradient(225deg, #cfc6b0 0 0.9rem, transparent 0.92rem), #fdfaf2;
+}
+.obj-punch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: #1f2348;
+  box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.5);
+}
+
+/* Fan-fold printer paper: sprocket holes down both sides, torn along the top. */
+.obj-printout {
+  --hole: radial-gradient(circle at 50% 50%, #1f2348 0 0.2rem, transparent 0.23rem);
+  border: 2px solid var(--color-ink);
+  padding: 0.6rem 1.2rem;
+  background: var(--hole) left 0.15rem top / 0.9rem 1.1rem repeat-y, var(--hole) right 0.15rem top / 0.9rem 1.1rem repeat-y, #f7f9f0;
+}
+.obj-printout-sheet {
+  border-inline: 1px dashed rgb(39 48 79 / 0.3);
+}
+.tile-log {
+  background: repeating-linear-gradient(#d9eeda 0 1.1rem, #f7f9f0 1.1rem 2.2rem);
+}
+
+.obj-notebook {
+  background:
+    radial-gradient(circle at 0.6rem 0.65rem, #1f2348 0 0.3rem, transparent 0.32rem) 0 0 / 1.6rem 1.4rem repeat-x,
+    repeating-linear-gradient(transparent 0 calc(2rem - 1px), rgb(38 64 139 / 0.25) calc(2rem - 1px) 2rem) 0 1.75rem,
+    #ffe98f;
+}
+
+.obj-slip {
+  background: repeating-linear-gradient(135deg, rgb(162 59 59 / 0.05) 0 8px, transparent 8px 16px), #f8cfc8;
+}
+
+.obj-cassette { background: linear-gradient(#3d3a4a, #2f2c3a); }
+.obj-cassette-label {
+  background: linear-gradient(transparent 0 72%, var(--color-coral) 72% 84%, var(--color-mustard) 84%), #fff4e0;
+}
+.obj-reel {
+  background:
+    radial-gradient(circle, #d9d4c6 0 0.3rem, transparent 0.32rem),
+    conic-gradient(#fff 0 12%, #8f8a7c 12% 33%, #fff 33% 45%, #8f8a7c 45% 66%, #fff 66% 78%, #8f8a7c 78%);
+}
+
+.obj-monitor { background: linear-gradient(#3a3a40, #26262b); }
+.obj-monitor-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 60%, rgb(0 0 0 / 0.5));
+}
+
+/* Cork, flecked in two browns, in a wooden frame. */
+.corkboard {
+  background:
+    radial-gradient(circle at 20% 30%, rgb(109 66 30 / 0.35) 0 1px, transparent 1.5px) 0 0 / 11px 13px,
+    radial-gradient(circle at 70% 60%, rgb(255 225 170 / 0.35) 0 1px, transparent 1.5px) 0 0 / 17px 15px,
+    #c98f55;
+  outline: 6px solid #6d4524;
+  outline-offset: -9px;
+  padding: 1.25rem;
+}
+
+/* Find moments */
+@keyframes print-feed {
+  from { clip-path: inset(0 0 100% 0); transform: translateY(-1.5rem); }
+  to { clip-path: inset(0 0 0 0); transform: translateY(0); }
+}
+.moment-print { animation: print-feed 1.5s steps(14) both; }
+
+@keyframes develop {
+  0% { filter: brightness(0.15) sepia(1) hue-rotate(-30deg) contrast(1.6); }
+  70% { filter: brightness(0.8) sepia(0.5); }
+  100% { filter: none; }
+}
+.moment-develop { animation: develop 1.8s ease-out both; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(-60%) rotate(-8deg); }
+  to { opacity: 1; transform: rotate(-2deg); }
+}
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(60%) rotate(8deg); }
+  to { opacity: 1; transform: rotate(2deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   Role tools: each role works somewhere of its own. */
+
+/* Tech: a records terminal, glowing faintly behind scanlines. */
+.tool-terminal {
+  background:
+    repeating-linear-gradient(0deg, rgb(63 184 175 / 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 0%, rgb(63 184 175 / 0.16), transparent 70%),
+    #06130f;
+}
+
+/* Interviewer: a dim recording room; the reels are drawn with one conic gradient. */
+.tool-tape {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(155 135 245 / 0.32), transparent 60%),
+    #1e1742;
+}
+.tape-reel {
+  background: conic-gradient(currentColor 0 12%, transparent 12% 33%, currentColor 33% 45%, transparent 45% 66%, currentColor 66% 78%, transparent 78%);
+}
+
+/* Photographer: a darkroom under the red safelight, with pictures on a film strip. */
+.tool-darkroom {
+  background:
+    radial-gradient(ellipse at 50% -10%, rgb(239 91 91 / 0.4), transparent 65%),
+    #190709;
+}
+.film-strip {
+  background:
+    repeating-linear-gradient(90deg, #e9dcc4 0 7px, transparent 7px 16px) 0 3px / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, #e9dcc4 0 7px, transparent 7px 16px) 0 calc(100% - 3px) / 100% 5px no-repeat,
+    #0b0304;
+}
+
+/* Archivist: a kraft case folder. */
+.tool-folder {
+  background:
+    radial-gradient(ellipse at 90% 100%, rgb(139 90 43 / 0.2), transparent 60%),
+    #e3c48d;
+}
+
+/* ---------------------------------------------------------------------------
    Case themes: background, accent colour and title font for each case. */
 
 .font-case {

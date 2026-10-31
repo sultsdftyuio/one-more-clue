@@ -792,6 +792,8 @@ export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
   source: CaseEvidence["access"]["kind"];
   /** For a found detail: where in which scene it was spotted. */
   spot?: { scene: string; hotspot: string };
+  /** For a contradiction: the titles of the two pieces that clash. */
+  compared?: [string, string];
   pinned: boolean;
   /** Who found it, for evidence that had to be found. */
   foundBy?: string;
@@ -922,6 +924,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
   const revealed = state.phase === "reveal";
   const chapter = caseFile.chapters[state.chapter - 1];
   const pinned = new Set(state.pins.map((p) => p.evidenceId));
+  const titleOf = (id: string) => caseFile.evidence.find((e) => e.id === id)?.title ?? "";
 
   const evidence: VisibleEvidence[] = caseFile.evidence
     .filter((e) => canSee(state, me, e))
@@ -933,6 +936,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
         ...e,
         source: access.kind,
         spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
+        compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
         pinned: pinned.has(e.id),
         foundBy: found?.by,
         foundAt: found?.at,

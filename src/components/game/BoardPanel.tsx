@@ -22,17 +22,14 @@ export function BoardPanel() {
         </span>
       </h2>
       <p className="mb-4 text-sm font-bold text-cream/65">Everyone sees what&apos;s pinned here. Space is tight, so agree on what matters.</p>
-      <ul className="grid grid-cols-2 gap-3">
-        {pins.map((e) => (
+      <ul className="corkboard grid grid-cols-2 items-start gap-x-3 gap-y-4 rounded-2xl border-[3px] border-ink p-3.5 shadow-pop">
+        {pins.map((e, i) => (
           <li key={e.id}>
-            <EvidenceTile evidence={e} onOpen={() => open(e.id)} />
+            <EvidenceTile evidence={e} index={i} onOpen={() => open(e.id)} />
           </li>
         ))}
         {Array.from({ length: empty }, (_, i) => (
-          <li
-            key={`empty-${i}`}
-            className="grid min-h-32 place-items-center rounded-2xl border-[3px] border-dashed border-cream/20 text-cream/25"
-          >
+          <li key={`empty-${i}`} className="grid min-h-28 place-items-center rounded-lg border-2 border-dashed border-ink/25 text-ink/30">
             <Icon name="pin" />
           </li>
         ))}

@@ -72,10 +72,14 @@ function play(caseFile: CaseFile) {
       run("p1", action);
       ["p2", "p3", "p4"].forEach((p) => state.proposal && run(p, { type: "vote", proposalId: state.proposal.id, vote: "yes" }));
     },
-    answer(optionId: string) {
+    /** Pins the proof if it isn't up yet, then presents it to the checkpoint. */
+    answer(evidenceId: string) {
       const chapter = state.chapter;
-      this.agree({ type: "propose", kind: "answer", optionId });
-      assert.equal(state.chapter, chapter + 1, `"${optionId}" should open chapter ${chapter + 1}`);
+      const holder = ["p1", "p2", "p3", "p4"].find((p) => viewFor(state, caseFile, p, new Set()).evidence.some((e) => e.id === evidenceId));
+      assert.ok(holder, `nobody can see "${evidenceId}"`);
+      this.pin(holder, evidenceId);
+      this.agree({ type: "propose", kind: "answer", evidenceId });
+      assert.equal(state.chapter, chapter + 1, `"${evidenceId}" should open chapter ${chapter + 1}`);
     },
     /** Walks the accused's story, breaking every lie with something the team can actually see. */
     confront() {
@@ -103,7 +107,7 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.inspect("photo-linkedin", "halo");
   g.pin(PHOTOGRAPHER, "detail-halo");
   g.crosscheck("lab-chat", "detail-halo", "insight-message");
-  g.answer("after");
+  g.answer("detail-halo");
 
   g.ask("question-squires-left");
   g.search("Ozzy's patrol", "guard-tour");
@@ -116,7 +120,7 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.crosscheck("question-squires-left", "question-ozzy-round", "insight-together");
   g.pin(TECH, "badge-log");
   g.crosscheck("visitor-sheet", "badge-log", "insight-sheet");
-  g.answer("early");
+  g.answer("insight-sheet");
 
   g.search("KX24 RVS", "anpr");
   g.pin(TECH, "anpr");
@@ -138,7 +142,7 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.pin(PHOTOGRAPHER, "detail-rack");
   g.pin(INTERVIEWER, "statement-vince");
   g.crosscheck("statement-vince", "detail-rack", "insight-cables");
-  g.answer("fader");
+  g.answer("insight-cables");
 
   g.inspect("photo-corridor", "keypad");
   g.search("Studio A door", "door-log");
@@ -149,7 +153,7 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.search("Darla", "darla-phone");
   g.search("fire door", "fire-door");
   g.inspect("photo-greenroom", "bag");
-  g.answer("nobody");
+  g.answer("insight-nobody");
 
   // The planted balaclava: bought with Vince's own card.
   g.search("balaclava", "balaclava-receipt");
@@ -173,7 +177,7 @@ test("Case 003: The Last Course is solvable for five stars", () => {
   g.inspect("photo-table1", "card");
   g.pin(PHOTOGRAPHER, "detail-menu");
   g.crosscheck("detail-menu", "paramedic-note", "insight-nutfree");
-  g.answer("peanut");
+  g.answer("insight-nutfree");
 
   g.inspect("photo-table1", "plate");
   g.pin(PHOTOGRAPHER, "detail-plate-gold");
@@ -183,12 +187,12 @@ test("Case 003: The Last Course is solvable for five stars", () => {
   g.ask("question-jo-plate");
   g.inspect("pass-camera", "gone");
   g.ask("question-olu-swap");
-  g.answer("owner");
+  g.answer("insight-gold");
 
   g.inspect("photo-table9", "bracelet");
   g.pin(PHOTOGRAPHER, "detail-bracelet");
   g.crosscheck("insight-gold", "detail-bracelet", "insight-target");
-  g.answer("square");
+  g.answer("insight-target");
 
   g.inspect("photo-pastry", "bottle");
   g.search("peanut oil", "storeroom-log");
@@ -211,7 +215,7 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.search("power company", "grid-report");
   g.pin(TECH, "grid-report");
   g.crosscheck("question-otto-power", "grid-report", "insight-storm");
-  g.answer("breaker");
+  g.answer("insight-storm");
 
   g.search("breaker room", "door-log");
   g.pin(TECH, "door-log");
@@ -219,7 +223,7 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.inspect("video-still", "chair");
   g.ask("question-lily-missing");
   g.inspect("video-still", "back"); // the last frame: snow on his slippers
-  g.answer("rectangle");
+  g.answer("insight-stolen-card");
 
   g.ask("question-lily-snowman");
   g.inspect("photo-garden", "holes");
@@ -252,6 +256,18 @@ test("a clue chain opens a step at a time, says who to ask, and doesn't charge f
   assert.equal(g.view(INTERVIEWER).questions!.find((q) => q.id === "question-reginald-key")?.lead, true);
   g.ask("question-reginald-key");
   assert.equal(g.state.questionsUsed, used, "following a lead is free");
+});
+
+test("every checkpoint can be proved, and proof that misses costs time", () => {
+  const g = play(case001);
+  assert.equal(g.attempt(TECH, { type: "propose", kind: "answer", evidenceId: "badge-log" }), false, "it has to be on the board");
+  g.pin(TECH, "badge-log");
+  g.agree({ type: "propose", kind: "answer", evidenceId: "badge-log" });
+  assert.equal(g.state.chapter, 1, "true, but it doesn't break the message");
+  assert.equal(g.state.wrongAnswers, 1);
+  g.inspect("photo-linkedin", "halo");
+  g.answer("detail-halo");
+  assert.equal(g.state.chapter, 2);
 });
 
 test("every case has chains that cross roles, in both directions", () => {

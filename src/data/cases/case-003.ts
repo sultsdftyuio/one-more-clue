@@ -64,14 +64,8 @@ export const case003: CaseFile = {
       intro: "The kitchen swears it's nut-free. Find out what actually made Celeste collapse.",
       story: [],
       checkpoint: {
-        question: "What made Celeste collapse?",
-        options: [
-          { id: "wine", label: "A bad bottle of wine" },
-          { id: "peanut", label: "Peanut, in the chocolate course" },
-          { id: "fish", label: "Undercooked fish from course four" },
-          { id: "panic", label: "A panic attack" },
-        ],
-        answer: "peanut",
+        question: "The kitchen swears the chocolate course was nut-free. What proves something got through?",
+        proves: ["paramedic-note", "insight-nutfree"],
         reveal: "The paramedics found peanut, within minutes of course seven. The wine was barely touched. The 'nut-free' kitchen wasn't.",
       },
       hints: [
@@ -87,14 +81,8 @@ export const case003: CaseFile = {
         { kind: "line", who: "circle", text: "I keep that pass immaculate. Im-mac-u-late. Check the camera if you like." },
       ],
       checkpoint: {
-        question: "Whose plate did Celeste actually eat?",
-        options: [
-          { id: "own", label: "Her own plate, from Table 1's ticket" },
-          { id: "owner", label: "The owner's gold-leaf plate" },
-          { id: "staff", label: "A staff tasting plate" },
-          { id: "table3", label: "Table 3's dessert" },
-        ],
-        answer: "owner",
+        question: "Whose plate did Celeste actually eat? Show what proves it.",
+        proves: ["detail-gone", "question-jo-plate", "question-olu-swap", "insight-gold"],
         reveal: "Olu sent the clean gold-leaf plate, the owner's, to Table 1, and wiped the smudged one for Bertrand. Celeste ate the owner's dessert.",
       },
       hints: [
@@ -110,14 +98,8 @@ export const case003: CaseFile = {
         { kind: "line", who: "square", text: "I don't see why I'm being kept here. I have a restaurant to run. And a buyer to meet." },
       ],
       checkpoint: {
-        question: "Who was the peanut really meant for?",
-        options: [
-          { id: "triangle", label: "Amélie Duret" },
-          { id: "square", label: "Bertrand Carré" },
-          { id: "circle", label: "Olu Bello" },
-          { id: "critic", label: "Celeste Hart, all along" },
-        ],
-        answer: "square",
+        question: "Who was the peanut really meant for? Show what proves it.",
+        proves: ["detail-bracelet", "staff-medical", "question-bertrand-allergy", "insight-target"],
         reveal: "The poisoned plate was the owner's gold-leaf plate, and Bertrand is deadly allergic to peanuts. Celeste was an accident.",
       },
       hints: [

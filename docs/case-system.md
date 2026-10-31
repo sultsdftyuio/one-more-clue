@@ -4,9 +4,9 @@ A case is one data file in `src/data/cases/`, typed by `CaseFile` in `src/lib/ga
 
 ## The shape of a case
 
-**Chapters.** 2–4 of them. Each one except the last ends with a **checkpoint**: a multiple-choice question the group answers by majority vote. Right opens the next chapter and its evidence; wrong counts against the score and they try again. The last chapter ends with the **final report** instead: who did it, why (pick a motive), and two pinned pieces of proof.
+**Chapters.** 2–4 of them. Each one except the last ends with a **checkpoint**: a question the group answers by presenting one piece from the board, by majority vote. `proves` lists every piece that really proves it. Real proof opens the next chapter and its evidence; anything else costs time and they try again. It's the same move as the confrontation, so the team has practised it before the climax. The last chapter ends with naming who did it and why, then the confrontation.
 
-Good checkpoints walk the group up the case: *when* did it happen → *whose story breaks* → (final) *who really did it and why*. Each answer should be something the group has to work out together, not something one card says outright.
+Good checkpoints walk the group up the case: *when* did it happen → *whose story breaks* → (final) *who really did it and why*. Word the question so it doesn't state the answer, and try to make it need a find rather than something already on a desk. List every piece that is honestly true proof, even an easy one: refusing real proof feels unfair.
 
 **Roles and abilities.** Every role has one ability, and abilities are what make people talk:
 
@@ -59,14 +59,15 @@ Each case should look, sound and play differently from the others.
 - **Scenes**: 4:3 frames built from the house art (`suspect:<id>`, `prop:<name>`), coloured boxes and labels, positioned in percentages. Looks: `cafe`, `street`, `lab`, `office`, `cctv` (greyscale with scanlines). Put a `hotspot` on things worth a closer look, and keep hotspot items clear of decorations. Make sure a detail is *visible* in the picture (the clock reading 8:31) so sharp players can spot it before tapping.
 - **Cross-checks**: name the exact pair that contradicts. Make sure both halves can end up visible to the Archivist (usually one is theirs, the other is pinned by someone else).
 - **A red herring with a reason.** Someone should look guilty and lie, for a reason that has nothing to do with the crime. The practice case's Lord Squarington lies about when he left because he was secretly paying an old tab.
-- **Key evidence** (`solution.keyEvidence`): list every piece that genuinely proves the culprit. A final report earns its proof star when both picks are on that list.
+- **Key evidence** (`solution.keyEvidence`): list every piece that genuinely proves the culprit.
+- **Keep the clock honest**: nothing a team reads may be timed after the moment the story clock can show, and nobody may mention a morning that hasn't happened yet.
 - **Hints**: 2–3 per chapter, from gentle to blunt. The first hint of the whole case is free; after that they cost the "sharp" star.
 
 ## Scoring
 
 Out of 5 stars: naming the culprit is worth 2, the motive 1, breaking their story 1 (catching every lie before they walk out), and 1 for being sharp (no wrong checkpoint answers, at most one hint, no walkout). Naming the wrong culprit scores 0.
 
-Never rely on where an answer sits in the list: checkpoint options and motives are shuffled per room. Don't let a tagline or film answer a checkpoint.
+Never rely on where an answer sits in the list: motives are shuffled per room. Don't let a tagline or film answer a checkpoint.
 
 ## Test it
 

@@ -54,19 +54,20 @@ test("bots say hello in the chat of a remote room", () => {
 
 test("bots follow the human's vote, both ways", () => {
   let state = soloWithBots("together");
-  state = act(state, { type: "propose", kind: "answer", optionId: "838-841" });
+  state = act(state, { type: "pin", evidenceId: "door-log" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "door-log" });
   state = act(state, { type: "vote", proposalId: state.proposal!.id, vote: "no" });
   state = letBotsPlay(state);
   assert.equal(state.wrongAnswers, 0, "human said no, bots followed");
 
-  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
   state = letBotsPlay(state);
   assert.equal(state.chapter, 2);
 });
 
 test("in a new chapter, bots swap old pins for new finds so the team keeps moving", () => {
   let state = soloWithBots("together");
-  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
   state = letBotsPlay(state);
   assert.equal(state.chapter, 2);
   assert.ok(state.pins.some((p) => p.evidenceId === "question-squarington-left"), "the Interviewer bot's answer reached the board");

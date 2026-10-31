@@ -62,14 +62,8 @@ export const case002: CaseFile = {
       intro: "Vince says the attacker ripped the cables out. Find out what really stopped the sound.",
       story: [],
       checkpoint: {
-        question: "How was the show cut off at 11:58?",
-        options: [
-          { id: "rack", label: "Cables ripped out of the rack" },
-          { id: "fader", label: "The mic fader pulled down at the desk, inside the booth" },
-          { id: "transmitter", label: "The transmitter failed" },
-          { id: "power", label: "A power cut" },
-        ],
-        answer: "fader",
+        question: "Vince says the attacker ripped the cables out. What shows that's not what stopped the show?",
+        proves: ["detail-rack", "detail-fader", "transmitter-log", "booth-log", "safety-tape", "question-gus-cables", "insight-cables"],
         reveal: "Every cable was still plugged in and the transmitter was fine. Someone inside the booth pulled MIC 1 down at 11:58:02.",
       },
       hints: [
@@ -87,14 +81,8 @@ export const case002: CaseFile = {
         { kind: "line", who: "square", text: "A balaclava! In HER bag! I told you she wanted my show!", shocked: true },
       ],
       checkpoint: {
-        question: "How did the masked attacker get into Studio A?",
-        options: [
-          { id: "code", label: "With Vince's door code, 0451" },
-          { id: "window", label: "Through the control room window" },
-          { id: "nobody", label: "He didn't. Nobody entered the studio after Vince" },
-          { id: "firedoor", label: "Gus let him in through the fire door" },
-        ],
-        answer: "nobody",
+        question: "How did the masked attacker get into Studio A? Show what settles it.",
+        proves: ["door-log", "safety-tape", "insight-nobody"],
         reveal: "The door log shows no entry after Vince at 11:31, and the safety recorder caught no struggle. There was no attacker in Studio A.",
       },
       hints: [
@@ -597,7 +585,7 @@ export const case002: CaseFile = {
       body: {
         type: "chat",
         title: "Inbox · Night Owls",
-        messages: [{ from: "Mrs Patel (winner)", time: "8:12 AM", text: "Vince read my name out at 11:55! When do I get my £5,000?" }],
+        messages: [{ from: "Mrs Patel (winner)", time: "12:14 AM", text: "Vince read my name out at 11:55! When do I get my £5,000?" }],
       },
     },
     {

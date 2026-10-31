@@ -15,15 +15,14 @@ function must(result: ReturnType<typeof applyAction>): RoomState {
   return result.state;
 }
 
-test("answers come in a different order in each room, so the place can't be learned", () => {
+test("motives come in a different order in each room, so the place can't be learned", () => {
   const order = (code: string) => {
     const state = createRoom({ code, caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
     const view = viewFor(state, case001, "p1", new Set(["p1"]));
-    return { options: view.chapter.checkpoint!.options.map((o) => o.id), motives: view.case.motives.map((m) => m.id) };
+    return view.case.motives.map((m) => m.id);
   };
   assert.deepEqual(order("ROOM"), order("ROOM"));
-  assert.deepEqual([...order("ROOM").options].sort(), [...case001.chapters[0].checkpoint!.options.map((o) => o.id)].sort());
-  const firstMotives = new Set(["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH"].map((code) => order(code).motives[0]));
+  const firstMotives = new Set(["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH"].map((code) => order(code)[0]));
   assert.ok(firstMotives.size > 1);
 });
 
@@ -33,10 +32,9 @@ test("three wrong answers run the clock out and lose the case", () => {
   state = must(addPlayer(state, caseFile, { id: "p2", token: "t2", name: "Bo" }, 0));
   state = must(applyAction(state, caseFile, "p1", { type: "start" }, 0, newId));
   for (const id of ["p1", "p2"]) state = must(applyAction(state, caseFile, id, { type: "ready" }, 0, newId));
-  const checkpoint = caseFile.chapters[0].checkpoint!;
-  const wrong = checkpoint.options.find((o) => o.id !== checkpoint.answer)!.id;
+  state = must(applyAction(state, caseFile, "p1", { type: "pin", evidenceId: "door-log" }, 0, newId));
   for (const time of ["11:00", "1:00", null]) {
-    state = must(applyAction(state, caseFile, "p1", { type: "propose", kind: "answer", optionId: wrong }, 0, newId));
+    state = must(applyAction(state, caseFile, "p1", { type: "propose", kind: "answer", evidenceId: "door-log" }, 0, newId));
     state = must(applyAction(state, caseFile, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
     if (time) assert.equal(viewFor(state, caseFile, "p1", new Set()).deadline!.time, time);
   }
@@ -65,6 +63,9 @@ function roomWith(count: number) {
 const act = (state: RoomState, who: string, action: Action) => applyAction(state, tipJar, who, action, 1, newId);
 const doo = (state: RoomState, who: string, action: Action) => must(act(state, who, action));
 const sees = (state: RoomState, who: string) => viewFor(state, tipJar, who, new Set()).evidence.map((e) => e.id);
+
+/** Pins a right answer to chapter 1 and has the whole team present it. */
+const proveChapter1 = (state: RoomState) => agree(doo(state, INTERVIEWER, { type: "pin", evidenceId: "statement-mo" }), TECH, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
 
 /** Everyone in a 4-player room agrees to a proposal. */
 function agree(state: RoomState, proposer: string, action: Action) {
@@ -124,8 +125,7 @@ test("inspect: only the Photographer, only on photos they can see", () => {
 });
 
 test("cross-check: the Archivist needs to see both pieces, and misses are remembered", () => {
-  let state = roomWith(4);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  let state = proveChapter1(roomWith(4));
   assert.equal(state.chapter, 2);
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
   assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" }).ok, false, "can't see the answer yet");
@@ -139,9 +139,9 @@ test("cross-check: the Archivist needs to see both pieces, and misses are rememb
 
 test("cross-check: empty compares are limited per chapter, real contradictions never are", () => {
   let state = roomWith(4);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = proveChapter1(state);
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
-  for (const [who, id] of [[INTERVIEWER, "question-squarington-left"], [INTERVIEWER, "statement-mo"], [TECH, "door-log"]]) {
+  for (const [who, id] of [[INTERVIEWER, "question-squarington-left"], [TECH, "door-log"]]) {
     state = doo(state, who, { type: "pin", evidenceId: id });
   }
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "staff-chat" });
@@ -155,9 +155,9 @@ test("cross-check: empty compares are limited per chapter, real contradictions n
 });
 
 test("a single wrong checkpoint answer costs the sharp star", () => {
-  let state = roomWith(4);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "838-841" });
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  let state = doo(roomWith(4), TECH, { type: "pin", evidenceId: "door-log" });
+  state = agree(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" });
+  state = proveChapter1(state);
   assert.equal(scoreReport(state, tipJar, { suspectId: "rectangle", motiveId: "debt", evidenceIds: ["cctv-still", "detail-stop-clock"] }).sharp, false);
 });
 
@@ -245,12 +245,20 @@ test("the board holds a limited number of pins", () => {
   assert.equal(act(state, ARCHIVIST, { type: "pin", evidenceId: "receipts" }).ok, false, "board full");
 });
 
-test("checkpoints: a wrong answer costs, a right one opens the next chapter", () => {
+test("checkpoints: proof has to be pinned and stays pinned through the vote", () => {
   let state = roomWith(4);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "838-841" });
+  assert.equal(act(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" }).ok, false, "not on the board");
+  state = doo(state, TECH, { type: "pin", evidenceId: "door-log" });
+  state = doo(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" });
+  assert.equal(act(state, INTERVIEWER, { type: "unpin", evidenceId: "door-log" }).ok, false);
+});
+
+test("checkpoints: weak proof costs, real proof opens the next chapter", () => {
+  let state = doo(roomWith(4), TECH, { type: "pin", evidenceId: "door-log" });
+  state = agree(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" });
   assert.equal(state.chapter, 1);
   assert.equal(state.wrongAnswers, 1);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = proveChapter1(state);
   assert.equal(state.chapter, 2);
   assert.ok(sees(state, ARCHIVIST).includes("staff-chat"), "chapter 2 desk arrives");
   assert.equal(act(state, TECH, { type: "propose", kind: "final", report: { suspectId: "rectangle", motiveId: "debt", evidenceIds: [] } }).ok, false, "no final report before the last chapter");
@@ -268,11 +276,12 @@ test("hints open one at a time per chapter", () => {
 /** The intended route through the case, every role pulling its weight. */
 function solveToChapter3() {
   let state = roomWith(4);
-  state = agree(state, TECH, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = proveChapter1(state);
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
   state = doo(state, INTERVIEWER, { type: "pin", evidenceId: "question-squarington-left" });
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" });
-  state = agree(state, ARCHIVIST, { type: "propose", kind: "answer", optionId: "square" });
+  state = doo(state, ARCHIVIST, { type: "pin", evidenceId: "insight-squarington" });
+  state = agree(state, ARCHIVIST, { type: "propose", kind: "answer", evidenceId: "insight-squarington" });
   assert.equal(state.chapter, 3);
 
   // Ollie tips off the camera; the Tech pulls it; the Photographer reads it once it's pinned.

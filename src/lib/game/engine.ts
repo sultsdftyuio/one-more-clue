@@ -269,7 +269,7 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
   const decided: DecidedProposal = {
     id: proposal.id,
     kind: proposal.kind,
-    optionId: proposal.optionId,
+    evidenceId: proposal.evidenceId,
     report: proposal.report,
     by: proposal.by,
     at: proposal.at,
@@ -281,16 +281,16 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
   if (passed) {
     const chapter = caseFile.chapters[state.chapter - 1];
     if (proposal.kind === "answer" && chapter.checkpoint) {
-      decided.correct = proposal.optionId === chapter.checkpoint.answer;
+      decided.correct = chapter.checkpoint.proves.includes(proposal.evidenceId ?? "");
       if (decided.correct) {
         state.chapter++;
         const opened = caseFile.chapters[state.chapter - 1];
         log(state, newId, now, "chapter", `Chapter ${state.chapter} unlocked: ${opened.title}`);
       } else {
         state.wrongAnswers++;
-        const label = chapter.checkpoint.options.find((o) => o.id === proposal.optionId)?.label;
+        const title = caseFile.evidence.find((e) => e.id === proposal.evidenceId)?.title;
         const time = caseFile.deadline?.times[state.wrongAnswers];
-        log(state, newId, now, "wrong", `"${label}" is wrong. ${time ? `The hours slip away. It's ${time}.` : "Look again."}`);
+        log(state, newId, now, "wrong", `"${title}" doesn't prove it. ${time ? `The hours slip away. It's ${time}.` : "Look again."}`);
         if (caseFile.deadline && !time) {
           state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
           state.phase = "reveal";
@@ -517,7 +517,7 @@ export function applyAction(
       if (!investigating) return fail("The board is closed.");
       const pin = next.pins.find((p) => p.evidenceId === action.evidenceId);
       if (!pin) return fail("That isn't on the board.");
-      if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId)) return fail("That's part of the report being voted on.");
+      if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId) || next.proposal?.evidenceId === pin.evidenceId) return fail("That's part of the vote in progress.");
       next.pins = next.pins.filter((p) => p !== pin);
       log(next, newId, now, "unpin", `${me.name} unpinned ${evidenceById(pin.evidenceId)?.title}`, me.id, pin.evidenceId);
       break;
@@ -539,8 +539,8 @@ export function applyAction(
 
       if (action.kind === "answer") {
         if (!chapter.checkpoint) return fail("This chapter ends with the final report.");
-        if (!chapter.checkpoint.options.some((o) => o.id === action.optionId)) return fail("Pick an answer.");
-        proposal.optionId = action.optionId;
+        if (!state.pins.some((p) => p.evidenceId === action.evidenceId)) return fail("Present something from the board, so everyone can see it.");
+        proposal.evidenceId = action.evidenceId;
       } else if (action.kind === "final") {
         if (chapter.checkpoint) return fail("Solve this chapter's question first.");
         if (state.interrogation) return fail("You've already named them. Now break their story.");
@@ -613,7 +613,12 @@ export function checkCase(caseFile: CaseFile): string[] {
     const last = i === chapters - 1;
     if (last && c.checkpoint) problems.push(`the last chapter must end with the final report, not a checkpoint`);
     if (!last && !c.checkpoint) problems.push(`chapter ${i + 1} needs a checkpoint to open the next one`);
-    if (c.checkpoint && !c.checkpoint.options.some((o) => o.id === c.checkpoint!.answer)) problems.push(`chapter ${i + 1}'s answer isn't an option`);
+    if (c.checkpoint && !c.checkpoint.proves.length) problems.push(`chapter ${i + 1}'s checkpoint has nothing that proves it`);
+    for (const id of c.checkpoint?.proves ?? []) {
+      const proof = byId.get(id);
+      if (!proof) problems.push(`chapter ${i + 1}'s proof "${id}" doesn't exist`);
+      else if (proof.chapter > i + 1) problems.push(`chapter ${i + 1}'s proof "${id}" doesn't open until chapter ${proof.chapter}`);
+    }
   });
   if (byId.size !== caseFile.evidence.length) problems.push("evidence ids are not unique");
 
@@ -825,7 +830,7 @@ export type PlayerView = {
     title: string;
     intro: string;
     story: Beat[];
-    checkpoint: { question: string; options: { id: string; label: string }[] } | null;
+    checkpoint: { question: string } | null;
     hints: string[];
     hintsTotal: number;
   };
@@ -981,7 +986,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       title: chapter.title,
       intro: chapter.intro,
       story: chapter.story,
-      checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question, options: shuffledFor(state.code, chapter.checkpoint.options) } : null,
+      checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question } : null,
       hints: chapter.hints.slice(0, state.hintsOpen[state.chapter] ?? 0),
       hintsTotal: chapter.hints.length,
     },

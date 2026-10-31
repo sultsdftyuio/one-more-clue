@@ -64,14 +64,8 @@ export const case004: CaseFile = {
       intro: "Otto blames the storm. Find out what really caused the blackout.",
       story: [],
       checkpoint: {
-        question: "What caused the blackout at midnight?",
-        options: [
-          { id: "storm", label: "The storm brought the power lines down" },
-          { id: "breaker", label: "Someone switched the main breaker off, inside the lodge" },
-          { id: "generator", label: "The generator ran out of fuel" },
-          { id: "fuse", label: "The party lights blew a fuse" },
-        ],
-        answer: "breaker",
+        question: "What caused the blackout at midnight? Show what settles it.",
+        proves: ["power-log", "grid-report", "insight-storm"],
         reveal: "The power company had no outages tonight. The lodge's main breaker was switched off by hand at 23:59:58, and on again two minutes later.",
       },
       hints: [
@@ -87,14 +81,8 @@ export const case004: CaseFile = {
         { kind: "line", who: "circle", text: "The breaker room? Only staff cards open that door. Greta has one…" },
       ],
       checkpoint: {
-        question: "Whose keycard opened the breaker room at 23:59:40?",
-        options: [
-          { id: "circle", label: "Otto's" },
-          { id: "rectangle", label: "Greta's" },
-          { id: "square", label: "Sir Reginald's" },
-          { id: "triangle", label: "Lily's" },
-        ],
-        answer: "rectangle",
+        question: "Whose keycard opened the breaker room at 23:59:40? Show what proves it.",
+        proves: ["door-log", "insight-stolen-card"],
         reveal: "Greta's card opened the breaker room. But she reported it stolen at 8:30, and at 23:59:55 she was on the microphone upstairs.",
       },
       hints: [

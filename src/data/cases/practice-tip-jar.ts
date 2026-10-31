@@ -88,14 +88,8 @@ export const practiceTipJar: CaseFile = {
       intro: "Start with the basics. Pin down exactly when the jar vanished.",
       story: [],
       checkpoint: {
-        question: "When did the tip jar disappear?",
-        options: [
-          { id: "before-838", label: "Before 8:38" },
-          { id: "838-841", label: "Between 8:38 and 8:41" },
-          { id: "841-844", label: "Between 8:41 and 8:44" },
-          { id: "after-845", label: "After 8:45" },
-        ],
-        answer: "841-844",
+        question: "When did the tip jar disappear? Show what pins it down.",
+        proves: ["statement-mo"],
         reveal: "Mo saw the jar at 8:41 when she turned to the machine, and it was gone when she turned back at 8:44. Three minutes.",
       },
       hints: [
@@ -111,14 +105,8 @@ export const practiceTipJar: CaseFile = {
         { kind: "line", who: "square", text: "Half past eight. I left at half past eight. Write that down." },
       ],
       checkpoint: {
-        question: "Who lied about when they left the café?",
-        options: [
-          { id: "triangle", label: "Tri" },
-          { id: "square", label: "Lord Squarington" },
-          { id: "circle", label: "Ollie" },
-          { id: "rectangle", label: "Rex" },
-        ],
-        answer: "square",
+        question: "Someone lied about when they left the café. What gives them away?",
+        proves: ["receipts", "card-history", "detail-screen", "insight-squarington"],
         reveal: "Lord Squarington swore he left at 8:30, but his card was tapped on the counter reader at 8:42, right beside the jar.",
       },
       hints: [

@@ -16,33 +16,57 @@ const choice = (on: boolean) =>
 const voteButton =
   "mt-4 w-full rounded-2xl border-[3px] border-ink bg-coral py-3 font-display text-xl text-cream shadow-pop transition-transform hover:-translate-y-0.5 active:translate-y-1 active:shadow-pop-sm disabled:opacity-50";
 
+/** A checkpoint is the confrontation in miniature: the team proves its answer with something on the board. */
 function Checkpoint() {
-  const { view, act, busy } = useGame();
+  const { view, act, busy, open } = useGame();
   const [picked, setPicked] = useState<string | null>(null);
   const checkpoint = view.chapter.checkpoint!;
+  const pinned = view.pins.flatMap((p) => {
+    const e = evidenceIn(view, p.evidenceId);
+    return e ? [e] : [];
+  });
+  const proof = pinned.some((e) => e.id === picked) ? picked : null;
   return (
     <div>
-      <p className="mb-3 font-display text-2xl leading-tight text-cream">{checkpoint.question}</p>
-      <div className="grid gap-2">
-        {checkpoint.options.map((o) => (
-          <button key={o.id} type="button" onClick={() => setPicked(o.id)} className={choice(picked === o.id)} aria-pressed={picked === o.id}>
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <p className="mb-1 font-display text-2xl leading-tight text-cream">{checkpoint.question}</p>
+      <p className="mb-3 text-sm font-bold text-cream/65">Agree on one piece from the board that proves it, then present it.</p>
+      {pinned.length ? (
+        <ul className="grid gap-2">
+          {pinned.map((e) => (
+            <li key={e.id} className="flex items-stretch gap-2">
+              <button type="button" onClick={() => setPicked(e.id)} className={choice(proof === e.id)} aria-pressed={proof === e.id}>
+                <span className="flex items-center gap-2">
+                  <Icon name={proof === e.id ? "check" : "pin"} className="size-4" />
+                  {e.title}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => open(e.id)}
+                aria-label={`Read ${e.title}`}
+                className="grid w-12 shrink-0 place-items-center rounded-2xl border-[3px] border-cream/20 bg-night/40 text-cream hover:border-cream/60"
+              >
+                <Icon name="eye" className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-2xl border-2 border-dashed border-cream/25 p-3 font-bold text-cream/70">The board is empty. Pin what you&apos;ve found first.</p>
+      )}
       <button
         type="button"
-        disabled={!picked || busy || Boolean(view.proposal)}
+        disabled={!proof || busy || Boolean(view.proposal)}
         onClick={async () => {
-          if (picked && (await act({ type: "propose", kind: "answer", optionId: picked }))) setPicked(null);
+          if (proof && (await act({ type: "propose", kind: "answer", evidenceId: proof }))) setPicked(null);
         }}
         className={voteButton}
       >
-        Put it to a vote
+        Present it to a vote
       </button>
       <p className="mt-2 text-center text-xs font-bold text-cream/55">
         The majority decides.{" "}
-        {!view.deadline ? "A wrong answer counts against your stars." : view.deadline.left === 1 ? "One more wrong answer and the night is over." : "A wrong answer costs you hours."}
+        {!view.deadline ? "Weak proof counts against your stars." : view.deadline.left === 1 ? "One more failed proof and the night is over." : "Weak proof costs you hours."}
       </p>
     </div>
   );

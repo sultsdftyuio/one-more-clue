@@ -130,8 +130,8 @@ export type Chapter = {
   intro: string;
   /** Plays when the chapter opens (after the first, which opens with the case story). */
   story: Beat[];
-  /** Answering it correctly opens the next chapter. The last chapter has none: it ends with the final report. */
-  checkpoint?: { question: string; options: { id: string; label: string }[]; answer: string; reveal: string };
+  /** Presenting pinned proof of it opens the next chapter. `proves` lists every piece that really does. The last chapter has none: it ends with the final report. */
+  checkpoint?: { question: string; proves: string[]; reveal: string };
   hints: string[];
 };
 
@@ -232,8 +232,8 @@ export type ProposalKind = "answer" | "final" | "hint" | "giveUp";
 export type Proposal = {
   id: string;
   kind: ProposalKind;
-  /** The checkpoint option, for "answer". */
-  optionId?: string;
+  /** The pinned proof presented, for "answer". */
+  evidenceId?: string;
   /** For "final". */
   report?: FinalReport;
   by: string;
@@ -321,7 +321,7 @@ export type Action =
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }
-  | { type: "propose"; kind: ProposalKind; optionId?: string; report?: FinalReport }
+  | { type: "propose"; kind: ProposalKind; evidenceId?: string; report?: FinalReport }
   | { type: "vote"; proposalId: string; vote: "yes" | "no" }
   | { type: "withdraw"; proposalId: string }
   | { type: "leave" }

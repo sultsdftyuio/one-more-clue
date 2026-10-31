@@ -91,17 +91,11 @@ export const case001: CaseFile = {
   chapters: [
     {
       title: "The last message",
-      intro: "Priya's message says she took HALO home. Test it against the evidence.",
+      intro: "Test the last message in the lab chat against the evidence.",
       story: [],
       checkpoint: {
-        question: "Priya's message says she took HALO home. What's wrong with that?",
-        options: [
-          { id: "nothing", label: "Nothing. She took it." },
-          { id: "after", label: "She left at 8:45, but HALO was still in the lab after that" },
-          { id: "never", label: "She was never in the lab tonight" },
-          { id: "phone", label: "It was sent from her phone at home" },
-        ],
-        answer: "after",
+        question: "Priya's message says she took HALO home. What proves it isn't true?",
+        proves: ["detail-halo", "photo-linkedin", "device-log", "insight-message"],
         reveal: "Priya badged out at 8:45, but HALO was still in Cabinet B at 8:58. And the message was edited on her laptop, in the lab, at 9:12.",
       },
       hints: [
@@ -118,14 +112,8 @@ export const case001: CaseFile = {
         { kind: "narration", text: "The security desk has dug out tonight's visitor sheet." },
       ],
       checkpoint: {
-        question: "The professor says he and Rena left together at nine. What's wrong with his story?",
-        options: [
-          { id: "true", label: "Nothing. They walked out together." },
-          { id: "early", label: "He left at 9:02, and filled in her sign-out later" },
-          { id: "stayed", label: "He stayed in Lab 4 until 9:20" },
-          { id: "ozzy", label: "Ozzy escorted her out, not him" },
-        ],
-        answer: "early",
+        question: "The professor says he and Rena left together at nine. What breaks that?",
+        proves: ["badge-log", "question-ozzy-round", "insight-sheet", "insight-together"],
         reveal: "The professor's badge left at 9:02, but the sheet says he signed his visitor out at 9:20. He filled it in later. So who was still in the building?",
       },
       hints: [
@@ -137,7 +125,7 @@ export const case001: CaseFile = {
       title: "The last clue",
       intro: "The professor left at 9:02. Someone still in the building took HALO. Decide who, and why. Then get ready to face them.",
       story: [
-        { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet the next morning.", shocked: true },
+        { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet when I came back.", shocked: true },
         { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
         { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
@@ -230,6 +218,7 @@ export const case001: CaseFile = {
           { time: "9:02 PM", text: "E. Squires · out · main door" },
           { time: "9:14 PM", text: "V-117 · out · Lab 4 door" },
           { time: "9:19 PM", text: "V-117 · out · main door" },
+          { time: "9:41 PM", text: "E. Squires · in · main door" },
         ],
       },
     },
@@ -617,7 +606,7 @@ export const case001: CaseFile = {
         messages: [
           {
             from: "Northgate Capital",
-            time: "8:10 AM",
+            time: "10:52 PM",
             text: "Professor, we don't have an engineer called Rena Voss. Our technical visit is next Tuesday. Is everything all right?",
           },
         ],
@@ -641,7 +630,7 @@ export const case001: CaseFile = {
       body: {
         type: "statement",
         speaker: "Prof. Edmund Squires",
-        text: "I filled it in the next morning. The Dean called about our funding and I... left her alone. Against the rules, I know.",
+        text: "I filled it in when I came back at 9:41. The Dean called about our funding and I... left her alone. Against the rules, I know.",
       },
     },
     {
@@ -706,6 +695,7 @@ export const case001: CaseFile = {
       { time: "9:12 PM", text: "Rena edits Priya's message on Priya's laptop, then opens Cabinet B with the spare key." },
       { time: "9:17 PM", text: "Ozzy finds Cabinet B empty and raises the alarm." },
       { time: "9:19 PM", text: "Rena walks out through the lobby with a heavy tote bag." },
+      { time: "9:41 PM", text: "Squires badges back in and fills in the visitor sheet as if he'd stayed." },
       { time: "9:48 PM", text: "Rena's car pulls into Kestrel Dynamics' car park." },
     ],
     confession: [

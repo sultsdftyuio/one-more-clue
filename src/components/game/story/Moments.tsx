@@ -174,6 +174,7 @@ export function SoundCues({ view }: { view: PlayerView }) {
       const mine = a.playerId === view.me.id;
       if (a.kind === "wrong") play("wrong");
       else if (a.kind === "lead") play("found");
+      else if (a.kind === "objection") play("vote");
       else if (a.kind === "miss" && mine) play("miss");
       else if (a.kind === "pin") play("pin");
       else if (a.kind === "found" && !mine) play("tap");

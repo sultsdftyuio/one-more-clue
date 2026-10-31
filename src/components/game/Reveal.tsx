@@ -12,7 +12,7 @@ import { play } from "./audio/sound";
 import { FeedbackCard } from "./FeedbackCard";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { Panel, SuspectPortrait } from "./parts";
-import { Icon } from "./ui/Icon";
+import { Icon, type IconName } from "./ui/Icon";
 
 const HEADLINES = {
   solved: { stamp: "Case closed", text: "You caught the culprit." },
@@ -38,6 +38,39 @@ function duration(view: PlayerView) {
   if (!view.startedAt || !view.outcome) return null;
   const minutes = Math.max(1, Math.round((view.outcome.at - view.startedAt) / 60000));
   return `${minutes} min`;
+}
+
+const FIND: Record<PlayerView["chain"][number]["source"], { icon: IconName; verb: string }> = {
+  desk: { icon: "file", verb: "had" },
+  search: { icon: "search", verb: "pulled up" },
+  interview: { icon: "mic", verb: "got the answer" },
+  inspect: { icon: "eye", verb: "spotted" },
+  crosscheck: { icon: "scale", verb: "caught" },
+};
+
+/** The team's best run of finds, step by step: credit for the hand-offs, not for who tapped the most. */
+function TeamChain({ view }: { view: PlayerView }) {
+  if (!view.chain.length) return null;
+  return (
+    <Panel title={view.outcome?.kind === "solved" ? "How you cracked it" : "Your best lead"}>
+      <ol className="grid gap-2">
+        {view.chain.map((step, i) => (
+          <li key={step.id} className="flex items-center gap-3">
+            <span className="relative grid size-10 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-mustard text-ink">
+              <Icon name={FIND[step.source].icon} className="size-5" />
+              {i > 0 && <span aria-hidden className="absolute -top-[0.85rem] h-3 w-[3px] bg-mustard/60" />}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-cream/70">
+                {nameOf(view, step.by)} {FIND[step.source].verb}
+              </span>
+              <span className="block font-display text-lg leading-tight text-cream">{step.title}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
 }
 
 export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
@@ -100,11 +133,6 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
       mode: view.mode,
     });
   }, [outcome, view.case.id, view.code, view.hintsUsed, view.mode, view.players.length, view.startedAt]);
-
-  const finds = view.activity.filter((a) => a.kind === "found" && a.playerId);
-  const topFinder = Object.entries(
-    finds.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.playerId!]: (acc[a.playerId!] ?? 0) + 1 }), {}),
-  ).sort((a, b) => b[1] - a[1])[0];
 
   const breakdown = [
     { ok: outcome.score.culprit, label: "Named the culprit", worth: 2 },
@@ -169,13 +197,10 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
                 </div>
               ))}
             </dl>
-            {topFinder && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-center font-bold text-cream/80">
-                <Icon name="sparkle" className="text-mustard" /> Sharpest eyes: {nameOf(view, topFinder[0])} with {topFinder[1]} finds
-              </p>
-            )}
           </Panel>
         )}
+
+        <TeamChain view={view} />
 
         <FeedbackCard code={view.code} />
 

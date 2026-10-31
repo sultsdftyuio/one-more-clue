@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, checkCase, createRoom, dealRoles, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
 
 let ids = 0;
@@ -185,6 +185,11 @@ function lastChapter() {
 const act001 = (state: RoomState, who: string, action: Action) => applyAction(state, case001, who, action, 1, newId);
 const do001 = (state: RoomState, who: string, action: Action) => must(act001(state, who, action));
 const room001 = (state: RoomState, who: string) => viewFor(state, case001, who, new Set()).interrogation!;
+/** Calls a lie and lets the objection window run out. */
+function callAndLand(state: RoomState, who: string, evidenceId: string) {
+  state = do001(state, who, { type: "callLie", evidenceId });
+  return must(applyAction(state, case001, who, { type: "settleLie", callId: state.interrogation!.call!.id }, 1 + OBJECTION_MS, newId));
+}
 
 test("interrogation: only the Interviewer hears the claims and presses on", () => {
   let state = interrogationRoom();
@@ -216,18 +221,36 @@ test("interrogation: presenting the right pinned evidence breaks a lie, anything
   state = do001(state, INTERVIEWER, { type: "press", step: 1 }); // "I'm a senior engineer at Northgate Capital."
   assert.equal(act001(state, ARCHIVIST, { type: "callLie", evidenceId: "northgate-email" }).ok, false, "it has to be on the board");
   state = do001(state, ARCHIVIST, { type: "pin", evidenceId: "northgate-email" });
-  state = do001(state, TECH, { type: "callLie", evidenceId: "northgate-email" });
+  state = callAndLand(state, TECH, "northgate-email");
   assert.deepEqual(room001(state, TECH).broken.map((b) => b.id), ["northgate"]);
   assert.ok(room001(state, TECH).claim, "a broken claim is shown to everyone");
   assert.equal(act001(state, TECH, { type: "callLie", evidenceId: "northgate-email" }).ok, false, "no catching it twice");
 
   state = do001(state, INTERVIEWER, { type: "press", step: -1 }); // a true claim
-  for (let i = 1; i <= 3; i++) state = do001(state, TECH, { type: "callLie", evidenceId: "northgate-email" });
+  for (let i = 1; i <= 3; i++) state = callAndLand(state, TECH, "northgate-email");
   assert.equal(room001(state, TECH).over, "walkedOut");
   assert.ok(room001(state, TECH).walkout);
   assert.equal(state.phase, "reveal", "a walkout ends the case");
   assert.equal(state.outcome!.kind, "walkedOut");
   assert.deepEqual(state.outcome!.score, { stars: 3, culprit: true, motive: true, evidence: false, sharp: false });
+});
+
+test("interrogation: a call waits out the objection window, and the team can stop it", () => {
+  let state = do001(interrogationRoom(), INTERVIEWER, { type: "press", step: 1 });
+  state = do001(state, ARCHIVIST, { type: "pin", evidenceId: "northgate-email" });
+  state = do001(state, TECH, { type: "callLie", evidenceId: "northgate-email" });
+  const callId = state.interrogation!.call!.id;
+  assert.equal(room001(state, ARCHIVIST).call?.title, "Email from Northgate Capital");
+  assert.deepEqual(room001(state, TECH).broken, [], "nothing lands yet");
+  assert.equal(act001(state, TECH, { type: "settleLie", callId }).ok, false, "a phone can't cut the window short");
+  assert.equal(act001(state, ARCHIVIST, { type: "callLie", evidenceId: "northgate-email" }).ok, false, "one call at a time");
+  assert.equal(act001(state, INTERVIEWER, { type: "press", step: 1 }).ok, false, "the story waits");
+  assert.equal(act001(state, ARCHIVIST, { type: "unpin", evidenceId: "northgate-email" }).ok, false, "the proof stays up");
+
+  state = do001(state, ARCHIVIST, { type: "object", callId });
+  assert.equal(room001(state, TECH).call, null);
+  assert.equal(room001(state, TECH).strikes, 0, "an objection costs nothing");
+  assert.equal(act001(state, TECH, { type: "settleLie", callId }).ok, false, "a stopped call can't land");
 });
 
 test("interrogation: catching every lie solves the case", () => {
@@ -238,7 +261,7 @@ test("interrogation: catching every lie solves the case", () => {
     if (!claim.lie) return;
     const proof = claim.lie.breaks[0];
     state = { ...state, found: { ...state.found, [proof]: { by: PHOTOGRAPHER, at: 0 } }, pins: [{ evidenceId: proof, by: PHOTOGRAPHER, at: 0 }] };
-    state = do001(state, PHOTOGRAPHER, { type: "callLie", evidenceId: proof });
+    state = callAndLand(state, PHOTOGRAPHER, proof);
   });
   assert.equal(room001(state, TECH).over, "confessed");
   assert.equal(state.outcome!.kind, "solved");

@@ -20,6 +20,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   join: "users",
   leave: "door",
   lie: "target",
+  objection: "flag",
 };
 
 export function ago(at: number, now = Date.now()) {

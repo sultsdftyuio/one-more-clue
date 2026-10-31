@@ -46,12 +46,12 @@ LOOK = Look(bloom=0.5, bloom_threshold=0.7, halation=0.22, shadow_tint=(0.05, 0.
 
 # (words, voice, speed, starts at, caption tag; None keeps it off the captions)
 LINES = [
-    ("You're up late with Vince Valentine, and tonight, someone wins five grand.", "bm_lewis", 1.12, 0.4, "VINCE · ON AIR"),
-    ("And the Night Owl jackpot winner is... right after this!", "bm_lewis", 1.0, 4.7, "VINCE · ON AIR"),
-    ("Vince? You're off air! Why's the blind down?", "bf_emma", 1.08, 13.5, "TESS · TALKBACK"),
-    ("Help! A man in a balaclava! He took the jackpot!", "bm_lewis", 1.08, 15.7, "VINCE · FROM THE CORRIDOR"),
+    ("You're up late with Vince Valentine, and tonight, someone wins five grand.", "chatterbox:vince", 1.0, 0.4, "VINCE · ON AIR"),
+    ("And the Night Owl jackpot winner is... right after this!", "chatterbox:vince", 1.0, 4.7, "VINCE · ON AIR"),
+    ("Vince? You're off air! Why's the blind down?", "chatterbox:tess", 1.3, 13.5, "TESS · TALKBACK"),
+    ("Help! A man in a balaclava! He took the jackpot!", "chatterbox:vince", 1.1, 15.95, "VINCE · FROM THE CORRIDOR"),
 ]
-LINE_LENGTHS = [4.18, 3.36, 1.92, 3.10]  # measured by `voices`
+LINE_LENGTHS = [3.98, 3.29, 2.43, 3.13]  # measured by `voices`
 JINGLE = ("K N H T.", "bf_alice", 1.05)
 CHUCKLE = ("Heh heh.", "bm_lewis", 0.95)
 

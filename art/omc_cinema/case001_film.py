@@ -40,8 +40,8 @@ from .kit import box, caption, contact_sheet, darkness, risky_moments, soft_shad
 from .look import Look, finish
 from .voice import line
 
-DURATION = 23.9
-A, B, C1, C2, D, E = 0.0, 3.3, 10.5, 13.3, 15.1, 20.5
+DURATION = 24.8
+A, B, C1, C2, D, E = 0.0, 3.3, 11.4, 14.2, 16.0, 21.4
 WHIP = C1 - B - 0.55  # when the torch swings into the lens, in shot B's time
 
 LOOK = Look(bloom=0.28, bloom_threshold=0.84, halation=0.3, contrast=1.16, saturation=1.0, vignette=0.7, grain=0.04)
@@ -50,15 +50,15 @@ LOOK = Look(bloom=0.28, bloom_threshold=0.84, halation=0.3, contrast=1.16, satur
 LINES = [
     ("Someone rewrote the last message.", "bm_george", 1.0, 0.2, None),
     ("Nine seventeen.", "bm_george", 0.95, 3.75, None),
-    ("Lab four! Cabinet B is wide open. HALO's gone!", "am_puck", 1.08, 5.3, "OZZY · RADIO"),
-    ("Three years of work. Gone.", "bm_george", 0.96, 8.0, None),
-    ("The last message says Priya took it.", "bm_george", 1.0, 10.65, None),
-    ("I didn't write that!", "af_heart", 1.0, 13.45, "PRIYA"),
-    ("Four people were in the building.", "bm_george", 0.98, 15.4, None),
-    ("One of them is lying.", "bm_george", 0.9, 18.35, None),
+    ("Lab four! Cabinet B is wide open. HALO's gone!", "qwen:ozzy", 1.3, 5.3, "OZZY · RADIO"),
+    ("Three years of work. Gone.", "bm_george", 0.96, 8.95, None),
+    ("The last message says Priya took it.", "bm_george", 1.0, 11.55, None),
+    ("I didn't write that!", "chatterbox:priya", 1.0, 14.35, "PRIYA"),
+    ("Four people were in the building.", "bm_george", 0.98, 16.3, None),
+    ("One of them is lying.", "bm_george", 0.9, 19.25, None),
 ]
 # How long each line runs, measured once (voice.py caches the takes).
-LINE_LENGTHS = [2.37, 1.51, 2.50, 2.3, 2.52, 1.05, 2.12, 1.90]
+LINE_LENGTHS = [2.37, 1.51, 3.64, 2.15, 2.52, 1.31, 2.12, 1.9]
 
 CAST = [  # (suspect art, tint, name, role): the order they're revealed in, same as the case file.
     ("triangle", 30, "PRIYA TRAN", "PhD researcher"),
@@ -521,12 +521,12 @@ def score():
     mix.add(sound.clock_tick(rng), 3.28, gain=0.75, reverb=0.7)
     mix.add(sound.torch_click(rng), 3.42, gain=0.8, pan=0.3, reverb=0.3)
     mix.add(sound.torch_click(rng), 3.55, gain=0.6, pan=0.3, reverb=0.3)
-    for s in range(4, 10):
+    for s in range(4, 11):
         mix.add(sound.clock_tick(rng, tock=s % 2 == 1), s + 0.28, gain=0.28, pan=0.6, reverb=0.4)
     mix.add(sound.whoosh(rng, 0.35), 4.95, gain=0.8)
     mix.add(sound.impact(rng, root=36.7), 5.05, gain=0.55, reverb=0.4)
     mix.add(sound.squelch(rng), 5.18, gain=0.9, pan=0.25)
-    mix.add(sound.squelch(rng, 0.12), 7.85, gain=0.7, pan=0.25)
+    mix.add(sound.squelch(rng, 0.12), 8.8, gain=0.7, pan=0.25)
     mix.add(sound.whoosh(rng, 0.6), C1 - 0.55, gain=1.0)
 
     # C: the phone and Priya.

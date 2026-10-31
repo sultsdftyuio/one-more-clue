@@ -51,24 +51,24 @@ LOOK = Look(bloom=0.24, bloom_threshold=0.86, halation=0.26, shadow_tint=(0.07, 
             contrast=1.14, saturation=1.04, vignette=0.75, grain=0.035)
 
 # Shot boundaries: every shot is shorter than the last, until course seven stops the clock.
-EST, I, II, III, IV, V, VI, CLUE, VII, FORK, AFTER, TITLE = 0.0, 2.0, 4.4, 6.5, 8.1, 9.55, 10.6, 11.3, 11.8, 17.2, 18.5, 22.2
-DURATION = 24.8
-LAST_WORD_AT = 16.75  # she's cut off mid-word, and the pen skids
+EST, I, II, III, IV, V, VI, CLUE, VII, FORK, AFTER, TITLE = 0.0, 2.3, 4.7, 6.9, 8.75, 10.5, 12.0, 12.7, 13.2, 19.4, 20.7, 24.8
+DURATION = 27.4
+LAST_WORD_AT = 18.92  # she's cut off just after "live" begins (measured from the take), and the pen skids
 
 # (words, voice, speed, starts at, caption tag)
-HER = "bf_isabella"
+HER = "chatterbox:celeste"
 LINES = [
-    ("Maison Lune. Seven courses.", HER, 1.0, 0.12, "CELESTE HART · FOOD CRITIC"),
-    ("Course one. Oysters. Competent.", HER, 1.0, 2.2, None),
-    ("Two. A soup with ambitions.", HER, 1.03, 4.55, None),
-    ("Three. I have had worse.", HER, 1.06, 6.6, None),
-    ("Four. The fish is brave.", HER, 1.22, 8.17, None),
-    ("Five. Fine.", HER, 1.15, 9.6, None),
-    ("Six.", HER, 1.35, 10.72, None),
-    ("Course seven. Chocolate, salt and smoke. Finally, a reason to live.", HER, 0.98, 13.0, None),
-    ("Not in my kitchen! Not tonight!", "bf_lily", 1.05, 19.75, "AMELIE DURET · HEAD CHEF"),
+    ("Maison Lune. Seven courses.", HER, 1.05, 0.12, "CELESTE HART · FOOD CRITIC"),
+    ("Course one. Oysters. Competent.", HER, 1.1, 2.5, None),
+    ("Two. A soup with ambitions.", HER, 1.15, 4.85, None),
+    ("Three. I have had worse.", HER, 1.2, 7.0, None),
+    ("Four. The fish is brave.", HER, 1.25, 8.82, None),
+    ("Course five. Fine.", HER, 1.25, 10.55, None),
+    ("Six.", HER, 1.0, 12.12, None),
+    ("Course seven. Chocolate, salt and smoke. Finally, a reason to live.", HER, 1.06, 14.4, None),
+    ("Not in my kitchen! Not tonight!", "qwen:amelie", 1.0, 21.95, "AMELIE DURET · HEAD CHEF"),
 ]
-LINE_LENGTHS = [2.04, 2.21, 1.74, 1.32, 1.37, 1.0, 0.58, 4.02, 2.03]  # measured by `voices`
+LINE_LENGTHS = [2.07, 2.05, 1.92, 1.64, 1.57, 1.34, 0.5, 4.85, 2.52]  # measured by `voices`
 
 STAFF = [  # all four in the doorway, the same size and the same light
     ("triangle", 330, "AMELIE DURET", "Head chef"),
@@ -329,11 +329,11 @@ def shot_est(c, u):
     with layer(c, cam, 1.0) as lc:
         shopfront(lc, u)
     # Through the glass: the warmth of the room takes over the frame.
-    c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFD79A", smooth(span(u, 1.62, 2.0))))
-    a = smooth(span(u, 0.55, 0.9)) * (1 - smooth(span(u, 1.5, 1.75)))
+    c.drawRect(skia.Rect.MakeWH(W, H), fill("#FFD79A", smooth(span(u, I - 0.38, I))))
+    a = smooth(span(u, 0.55, 0.9)) * (1 - smooth(span(u, I - 0.5, I - 0.25)))
     card = font("serif", 44)
     text(c, "The most feared critic in the country.", W / 2, H - 170, card, fill(CREAM, 0.85 * a), align="center")
-    text(c, "8:00 PM", 72, 150, font("type", 46), fill(CREAM, smooth(span(u, 0.3, 0.6)) * (1 - smooth(span(u, 1.4, 1.7)))), tracking=3)
+    text(c, "8:00 PM", 72, 150, font("type", 46), fill(CREAM, smooth(span(u, 0.3, 0.6)) * (1 - smooth(span(u, I - 0.6, I - 0.3)))), tracking=3)
 
 
 # ---------------------------------------------------------------------------
@@ -608,7 +608,7 @@ def shot_iv(c, u):
     c.drawPath(pan, stroke(INK, 9))
     c.drawLine(960, 1460, 1500, 1570, stroke("#3A3A42", 40))
     c.drawLine(960, 1450, 1500, 1560, stroke("#8D9099", 7, 0.7))
-    fish(c, 1250 - math.sin(span(u, 0, 1.4) * math.pi) * 520, u * 340)
+    fish(c, 1250 - math.sin(span(u, 0, 1.7) * math.pi) * 520, u * 340)
     c.restore()
     numeral(c, u, 0.3, "IV", None)
 

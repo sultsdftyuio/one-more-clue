@@ -64,21 +64,20 @@ NUMBER = [COUNT + i * BEAT for i in range(10)]
 YEAR = COUNT + 10 * BEAT
 DARK = YEAR + 0.7  # the picture dies just after "Year" begins (measured from the takes)
 LIGHTS = DARK + 4.4
-TITLE = LIGHTS + 3.2
+TITLE = LIGHTS + 4.1
 DURATION = TITLE + 3.4
 
 NARRATOR = "bm_george"
 GRETA = "bf_emma"
-AGATHA = "bf_isabella"
 # (words, voice, speed, starts at, caption tag)
 LINES = [
     ("The road closed at six. Nobody in. Nobody out.", NARRATOR, 1.12, 0.15, None),
     ("Four people. One diamond necklace.", NARRATOR, 1.05, 3.4, None),
-    ("Nobody move!", "bm_lewis", 1.1, DARK + 0.85, "SIR REGINALD PIKE"),
-    ("Nobody leaves this room. Not that any of you can.", AGATHA, 1.0, LIGHTS + 0.15, "DAME AGATHA ASHFORD"),
+    ("Nobody move!", "qwen:reginald", 1.0, DARK + 0.85, "SIR REGINALD PIKE"),
+    ("Nobody leaves this room. Not that any of you can.", "qwen:agatha", 1.0, LIGHTS + 0.15, "DAME AGATHA ASHFORD"),
     ("It's still in this lodge. So is the person who took it.", NARRATOR, 1.02, TITLE + 0.1, None),
 ]
-LINE_LENGTHS = [3.15, 2.34, 0.95, 3.02, 3.2]  # measured by `voices`
+LINE_LENGTHS = [3.25, 2.44, 0.81, 3.84, 3.29]  # measured by `voices`
 
 NUMBERS = ("Ten!", "Nine!", "Eight!", "Seven!", "Six!", "Five!", "Four!", "Three!", "Two!", "One!")
 HAPPY = "Happy New Year!"
@@ -1478,8 +1477,6 @@ def score():
 
     for i, (words, voice, speed, at, tag) in enumerate(LINES):
         v = line(words, voice=voice, speed=speed)
-        if i == 3:  # older than the voice model: slowed a shade, which also lowers it
-            v = np.interp(np.arange(0, len(v) - 1, 0.94), np.arange(len(v)), v)
         mix.add(v, at, gain=1.25 if tag is None else 1.9 if i == 2 else 1.05, pan=-0.25 if i == 2 else 0.0, reverb=0.08 if tag is None else 0.5)
     out = mix.master(target_rms_db=-18.0, ceiling_db=-1.0)
     # The master's compressor closes the gap between a full room and an empty dark, so open it again here.

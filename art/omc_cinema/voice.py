@@ -14,17 +14,20 @@ from .sound import voice_chain
 
 VENV_PYTHON = ROOT / ".venv-voice" / "Scripts" / "python.exe"
 SCRIPT = Path(__file__).resolve().parent / "voice_tts.py"
+TAKES = ROOT / "takes"  # takes from the voice lab (voice_lab.py), which this PC can't remake
 NARRATOR = "bm_george"
 
 
 def _path(words: str, voice: str, speed: float) -> Path:
     key = hashlib.sha1(f"{voice}|{speed}|{words}".encode()).hexdigest()[:12]
+    if ":" in voice:
+        return TAKES / f"{voice.replace(':', '-')}-{key}.wav"
     return OUT / "voice" / f"{key}.wav"
 
 
 def record(takes) -> None:
     """Records many (words, voice, speed) lines in one go. The model loads once, so a crowd takes minutes, not an hour."""
-    missing = [[words, voice, speed, str(_path(words, voice, speed))] for words, voice, speed in takes if not _path(words, voice, speed).exists()]
+    missing = [[words, voice, speed, str(_path(words, voice, speed))] for words, voice, speed in takes if ":" not in voice and not _path(words, voice, speed).exists()]
     if missing:
         jobs = OUT / "voice" / "batch.json"
         jobs.parent.mkdir(parents=True, exist_ok=True)
@@ -34,11 +37,17 @@ def record(takes) -> None:
 
 def line(words: str, voice: str = NARRATOR, speed: float = 0.92) -> np.ndarray:
     """The narrator saying `words`, polished and at 48 kHz."""
-    path = _path(words, voice, speed)
+    take = ":" in voice
+    path = _path(words, voice, 1.0 if take else speed)
     if not path.exists():
+        if take:
+            raise FileNotFoundError(f"No {voice} take for \"{words}\". Make it with voice_lab.py.")
         path.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([str(VENV_PYTHON), str(SCRIPT), words, voice, str(speed), str(path)], check=True)
     sr, audio = wavfile.read(path)
+    if take and speed != 1.0:  # a take can't be re-spoken faster here, so it's tightened without changing its pitch
+        tightened = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(path), "-af", f"atempo={speed}", "-ac", "1", "-f", "f32le", "-"], capture_output=True, check=True).stdout
+        audio = np.frombuffer(tightened, dtype=np.float32)
     audio = audio.astype(np.float32)
     if np.abs(audio).max() > 1.5:  # integer PCM
         audio /= 32768.0

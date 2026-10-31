@@ -87,7 +87,7 @@ export function InterviewTool() {
 
   return (
     <section className={toolBox}>
-      <ToolHeader icon="mic" title="Interviews" text="The whole team shares a handful of questions. Agree on them before you spend them." />
+      <ToolHeader icon="mic" title="Interviews" text="The whole team shares a handful of questions. Agree on them before you spend them. Following up a lead is free." />
       <div className="mb-4 flex items-center gap-1.5" aria-label={`${left} of ${view.case.questionBudget} questions left`}>
         {Array.from({ length: view.case.questionBudget }, (_, i) => (
           <span key={i} className={cx("h-3 flex-1 rounded-full border-2 border-ink", i < left ? "bg-lilac" : "bg-ink/10")} />
@@ -114,7 +114,7 @@ export function InterviewTool() {
                   ) : (
                     <button
                       type="button"
-                      disabled={busy || left === 0}
+                      disabled={busy || (left === 0 && !q.lead)}
                       onClick={async () => {
                         if (armed !== q.id) return setArmed(q.id);
                         setArmed(null);

@@ -15,8 +15,8 @@ import type { CaseFile } from "@/lib/game/types";
  * a visitor alone, and Ozzy, whose round passes Lab 4 at 9:10. Checkpoint 2
  * catches the professor's lie, so the culprit is only named in the final report.
  *
- * Signature: the interrogation. In chapter 3 Rena tells her story claim by
- * claim; the team breaks each lie by presenting pinned evidence, and if they
+ * Ending: the team names who did it. Name Rena and she tells her story claim
+ * by claim; they break each lie by presenting pinned evidence, and if they
  * catch all five she confesses.
  *
  * Hand-offs: the Archivist's chat shows the edit → the Tech searches the chat
@@ -38,7 +38,7 @@ export const case001: CaseFile = {
     lost: "9:00 AM. The investors walk into an empty lab. HALO is gone for good, and Priya's name goes with it.",
   },
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "title", text: "Halden University", sub: "Innovation Lab 4 · 9:17 PM" },
     { kind: "effect", effect: "flash", text: "9:17 PM. Cabinet B, wide open." },
@@ -135,26 +135,26 @@ export const case001: CaseFile = {
     },
     {
       title: "The last clue",
-      intro: "The professor left at 9:02. Someone still in the building took HALO. Rena has agreed to talk. Catch her lies, prove who took it, and why.",
+      intro: "The professor left at 9:02. Someone still in the building took HALO. Decide who, and why. Then get ready to face them.",
       story: [
         { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet the next morning.", shocked: true },
         { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
         { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
-        { kind: "narration", text: "She's agreed to one interview. Pin what breaks her story, and listen closely." },
+        { kind: "narration", text: "One of them did this. Pin whatever would break their story, because the board is all you'll have when you face them." },
       ],
       hints: [
         "Two people were still around after 9:02. Check where each of them was at 9:12, and where each one went.",
         "The visitor sheet has a number plate. The Tech can search it.",
-        "Look closely at her coat in the lobby camera.",
+        "Look closely at everyone who crosses the lobby camera.",
       ],
     },
   ],
   questionBudget: 6,
   interrogation: {
     suspect: "rectangle",
-    chapter: 3,
     strikes: 3,
+    opening: "Am I being accused of something? How exciting. Go on, ask me anything.",
     claims: [
       { id: "invited", text: "Professor Squires invited me to see HALO before the demo." },
       {
@@ -193,7 +193,6 @@ export const case001: CaseFile = {
         lie: { breaks: ["anpr", "insight-home"], crack: "…I'd like to stop talking now." },
       },
     ],
-    confession: "rena-confession",
     walkout: "This is harassment. I'm leaving, and Northgate's lawyers will be in touch.",
   },
   evidence: [
@@ -314,6 +313,7 @@ export const case001: CaseFile = {
       id: "device-log",
       role: "tech",
       chapter: 1,
+      after: ["question-priya-laptop"],
       access: { kind: "search", terms: ["priya", "tran", "laptop", "priyalaptop"] },
       title: "PRIYA-LAPTOP",
       body: {
@@ -341,6 +341,7 @@ export const case001: CaseFile = {
       id: "question-priya-laptop",
       role: "interviewer",
       chapter: 1,
+      after: ["detail-laptop"],
       access: { kind: "interview", suspect: "Priya Tran", question: "Did you leave your laptop in the lab?" },
       title: "Priya: her laptop",
       body: { type: "statement", speaker: "Priya Tran", text: "Yes, charging on the bench. I always do. I... didn't lock it. I never lock it." },
@@ -439,6 +440,7 @@ export const case001: CaseFile = {
       id: "chat-history",
       role: "tech",
       chapter: 2,
+      after: ["detail-screen"],
       access: { kind: "search", terms: ["edit", "history", "chat", "labchat", "message"] },
       title: "Lab chat: edit history",
       body: {
@@ -479,6 +481,7 @@ export const case001: CaseFile = {
       id: "question-ozzy-round",
       role: "interviewer",
       chapter: 2,
+      after: ["guard-tour"],
       access: { kind: "interview", suspect: "Ozzy Reyes", question: "Who did you see on your 9:10 round?" },
       title: "Ozzy: the 9:10 round",
       body: { type: "statement", speaker: "Ozzy Reyes", text: "The visitor lady, alone at the Lab 4 door. Said she was waiting for the professor." },
@@ -487,6 +490,7 @@ export const case001: CaseFile = {
       id: "question-rena-after",
       role: "interviewer",
       chapter: 2,
+      after: ["detail-badge-clip"],
       access: { kind: "interview", suspect: "Rena Voss", question: "What did you do after the demo prep?" },
       title: "Rena: after the demo prep",
       body: { type: "statement", speaker: "Rena Voss", text: "Professor Squires and I left at nine. I drove straight home." },
@@ -495,6 +499,7 @@ export const case001: CaseFile = {
       id: "question-priya-visitor",
       role: "interviewer",
       chapter: 2,
+      after: ["question-rena-after"],
       access: { kind: "interview", suspect: "Priya Tran", question: "Did you know a visitor was coming?" },
       title: "Priya: the visitor",
       body: { type: "statement", speaker: "Priya Tran", text: "The professor said Northgate's engineer was coming at nine. I'd gone by then. I never met her." },
@@ -576,6 +581,7 @@ export const case001: CaseFile = {
       id: "anpr",
       role: "tech",
       chapter: 3,
+      after: ["question-rena-after"],
       access: { kind: "search", terms: ["kx24rvs", "kx24", "plate", "anpr", "car", "numberplate"] },
       title: "Number plate KX24 RVS",
       body: {
@@ -591,6 +597,7 @@ export const case001: CaseFile = {
       id: "kestrel-staff",
       role: "tech",
       chapter: 3,
+      after: ["detail-lanyard"],
       access: { kind: "search", terms: ["kestrel", "kestreldynamics"] },
       title: "Kestrel Dynamics",
       body: {
@@ -620,6 +627,7 @@ export const case001: CaseFile = {
       id: "question-rena-employer",
       role: "interviewer",
       chapter: 3,
+      after: ["kestrel-staff"],
       access: { kind: "interview", suspect: "Rena Voss", question: "Who do you really work for?" },
       title: "Rena: her employer",
       body: { type: "statement", speaker: "Rena Voss", text: "Northgate Capital. As I've said. Several times." },
@@ -640,6 +648,7 @@ export const case001: CaseFile = {
       id: "question-ozzy-bag",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-bag"],
       access: { kind: "interview", suspect: "Ozzy Reyes", question: "Did the visitor carry anything out?" },
       title: "Ozzy: the bag",
       body: { type: "statement", speaker: "Ozzy Reyes", text: "A big tote bag. Held it like a baby. Didn't think anything of it at the time." },
@@ -660,18 +669,6 @@ export const case001: CaseFile = {
       title: "Not home",
       body: { type: "finding", text: "Rena says she drove straight home. Her car went to Kestrel's headquarters at 9:48." },
     },
-    {
-      id: "rena-confession",
-      role: "interviewer",
-      chapter: 3,
-      access: { kind: "interrogation" },
-      title: "Rena's confession",
-      body: {
-        type: "statement",
-        speaker: "Rena Voss",
-        text: "Kestrel sent me. When the professor left, I changed Priya's message on her laptop, opened the cabinet with his spare key and carried HALO out in my bag. It's in Kestrel's lab now.",
-      },
-    },
   ],
   solution: {
     culprit: "rectangle",
@@ -683,7 +680,6 @@ export const case001: CaseFile = {
     ],
     motive: "rival",
     keyEvidence: [
-      "rena-confession",
       "anpr",
       "kestrel-staff",
       "northgate-email",

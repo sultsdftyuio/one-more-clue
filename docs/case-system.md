@@ -17,7 +17,7 @@ Good checkpoints walk the group up the case: *when* did it happen → *whose sto
 | `inspect` | taps into photos and camera stills | `access: { kind: "inspect", scene, hotspot }` |
 | `crosscheck` | holds two pieces up against each other (only 3 empty compares per chapter) | `access: { kind: "crosscheck", pair: [a, b] }` |
 
-Core roles are always dealt (with fewer players some people hold two). Extra roles (`core: false`, usually `ability: "none"`) only join with 5–6 players, so their evidence must be **bonus**, never the only route to the answer.
+Core roles are always dealt (with fewer players some people hold two). Extra roles (`core: false`, usually `ability: "none"`) only join with 5–6 players, and cases are capped at 4 for now because those roles have almost nothing to do, so their evidence must be **bonus**, never the only route to the answer.
 
 **Evidence.** Each piece has a `role` (whose desk it belongs to), a `chapter` (when it starts to exist) and an `access` (how it reaches players). `desk` evidence is handed out when its chapter opens; everything else has to be found. Only the role's holder (and whoever found it) can see a piece until someone pins it to the board, which holds 8 things.
 
@@ -44,7 +44,9 @@ Each case should look, sound and play differently from the others.
 - **Footage** (`type: "footage"`): camera frames players play or scrub through. Hotspots can sit in any frame, so the clue can be *when* something changes (an empty chair, a plate gone).
 - **Recordings** (`type: "recording"`): a tape with timed captions and synthesised sounds (`speech`, `music`, `jingle`, `static`, `click`, `creak`, `breath`, `beep`, `door`, `silence`). Great for "listen for what's missing".
 - **Dark scenes** (`dark: true` on a scene): pitch black until the Photographer sweeps a flashlight across it.
-- **A signature mechanic.** Each case should have one thing to *do* that no other case has. Case 001's is the **interrogation** (`interrogation` on the case): a suspect tells their story claim by claim, only the Interviewer hears it, and anyone can call a lie by presenting a pinned piece of evidence listed in that claim's `breaks`. Wrong calls are strikes; at `strikes` the suspect walks out. Catching every lie finds the `confession` evidence (`access: { kind: "interrogation" }`). Mix in true claims, give each lie several pieces that break it, and make sure at least one is a desk item or an easy find.
+- **Clue chains** (`after` on a piece of evidence): a clue stays hidden until the evidence it names is found, and whoever holds it is told who to ask, not what to look for. Build chains that cross roles, so the Photographer's find sends the Tech to a record, which gives the Interviewer a question, which gives the Archivist a contradiction. Questions opened by a lead are free, so a team can't spend itself out of a chain. Let the Tech start chains as well as follow them, or they spend chapters waiting: give the Photographer, Interviewer and Tech an opening move in most chapters. The Archivist reacts to what the others find. `checkCase` proves everything is reachable.
+- **The confrontation** (`interrogation` on the case): every case ends here. The team names who did it and why, by majority, with one shot. Name the wrong person and the case is over. Name the right one and they tell their story claim by claim: only the Interviewer hears it, and anyone can call a lie by presenting something from the board. Three wrong calls and they walk out. Catch every lie and they confess. Mix in true claims, because a true claim is a trap: Ruth really didn't mean to hurt the critic. Every lie needs at least one piece of evidence the team can reach, and `cases.test.ts` proves it by playing the whole thing.
+- **A signature mechanic.** Each case should also have one thing to *do* that no other case has, as a mini-game inside a chapter.
 - **Vary the culprit.** Don't let the nervous one always be innocent, or one shape always be guilty.
 - **Don't name the culprit at the second checkpoint.** Ask *how* or *when* instead of *who*, or point the group at the wrong person first.
 
@@ -62,7 +64,7 @@ Each case should look, sound and play differently from the others.
 
 ## Scoring
 
-Out of 5 stars: naming the culprit is worth 2, the motive 1, proof that holds up 1, and 1 for being sharp (no wrong checkpoint answers, at most one hint). Naming the wrong culprit scores 0.
+Out of 5 stars: naming the culprit is worth 2, the motive 1, breaking their story 1 (catching every lie before they walk out), and 1 for being sharp (no wrong checkpoint answers, at most one hint, no walkout). Naming the wrong culprit scores 0.
 
 Never rely on where an answer sits in the list: checkpoint options and motives are shuffled per room. Don't let a tagline or film answer a checkpoint.
 

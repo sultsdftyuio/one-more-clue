@@ -21,7 +21,7 @@ export const practiceTipJar: CaseFile = {
   title: "Last Orders at Café Lumen",
   tagline: "Three weeks of tips, gone in three minutes.",
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "title", text: "Café Lumen", sub: "Thursday, 8:44 PM" },
     { kind: "message", from: "Mo (barista)", time: "8:45 PM", text: "JAR IS GONE. Nobody touch anything" },

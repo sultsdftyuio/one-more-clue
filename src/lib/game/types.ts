@@ -109,11 +109,11 @@ export type Access =
   /** A hidden detail: a hotspot inside a scene. */
   | { kind: "inspect"; scene: string; hotspot: string }
   /** A contradiction between two pieces of evidence. */
-  | { kind: "crosscheck"; pair: [string, string] }
-  /** What a suspect admits once every lie in their interrogation is broken. */
-  | { kind: "interrogation" };
+  | { kind: "crosscheck"; pair: [string, string] };
 
 export type CaseEvidence = {
+  /** Evidence that has to be found first. Until then this stays hidden, so one player's find opens another's next move. */
+  after?: string[];
   id: string;
   /** The role this evidence belongs to: its holder can see it once it's available. */
   role: string;
@@ -145,15 +145,13 @@ export type InterrogationClaim = { id: string; text: string; lie?: { breaks: str
  * wrong calls and they walk out.
  */
 export type Interrogation = {
-  /** Suspect id. */
+  /** Suspect id: always the culprit, because only the right accusation opens it. */
   suspect: string;
-  /** The chapter it opens in. */
-  chapter: number;
   /** Wrong calls allowed before the suspect walks out. */
   strikes: number;
+  /** Their first words when the team confronts them. */
+  opening: string;
   claims: InterrogationClaim[];
-  /** The evidence (access "interrogation") found when every lie is broken. */
-  confession: string;
   /** What the suspect says as they walk out. */
   walkout: string;
 };
@@ -188,7 +186,7 @@ export type CaseFile = {
   chapters: Chapter[];
   /** Interview questions the whole team can ask over the case. */
   questionBudget: number;
-  /** A suspect the team can interrogate, catching their lies with pinned evidence. */
+  /** The ending: name the culprit and they're confronted, their lies broken with pinned evidence. Without one, a report closes the case. */
   interrogation?: Interrogation;
   deadline?: Deadline;
   /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
@@ -250,11 +248,11 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
-export type Outcome = { kind: "solved" | "wrong" | "gaveUp" | "tooLate"; report?: FinalReport; score: Score; at: number };
+export type Outcome = { kind: "solved" | "wrong" | "gaveUp" | "tooLate" | "walkedOut"; report?: FinalReport; score: Score; at: number };
 
 export type RoomState = {
   code: string;
@@ -280,8 +278,10 @@ export type RoomState = {
   checked: string[];
   /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
   emptyChecks?: Record<number, number>;
-  /** How the interrogation is going, once it has started. */
+  /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
+  /** The report that named them, held until the confrontation ends. */
+  accusation?: FinalReport;
   chat: ChatLine[];
   activity: Activity[];
   hintsUsed: number;

@@ -13,7 +13,7 @@ import { useTypewriter } from "./StoryPlayer";
 function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose: () => void }) {
   const { view } = useGame();
   const body = evidence.body;
-  const speaks = evidence.source === "interview" || evidence.source === "interrogation";
+  const speaks = evidence.source === "interview";
   const spoken = speaks && body.type === "statement" ? body.text : "";
   const typed = useTypewriter(spoken, Boolean(spoken));
 
@@ -141,6 +141,7 @@ export function SoundCues({ view }: { view: PlayerView }) {
     for (const a of fresh) {
       const mine = a.playerId === view.me.id;
       if (a.kind === "wrong") play("wrong");
+      else if (a.kind === "lead") play("found");
       else if (a.kind === "miss" && mine) play("miss");
       else if (a.kind === "pin") play("pin");
       else if (a.kind === "found" && !mine) play("tap");

@@ -117,61 +117,36 @@ function CallLie({ room, name }: { room: Room; name: string }) {
   );
 }
 
-/** The case's interrogation: one suspect, their story claim by claim, and the team catching the lies. */
+/** The confrontation: the person the team named, their story claim by claim, and the lies caught one at a time. */
 export function InterrogationPanel() {
   const { view } = useGame();
   const room = view.interrogation;
   if (!room) return null;
   const suspect = view.case.suspects.find((s) => s.id === room.suspect)!;
-  const confession = view.evidence.find((e) => e.source === "interrogation");
   const name = suspect.name.split(" ")[0];
 
   return (
     <section className="overflow-hidden rounded-3xl border-[3px] border-ink bg-[radial-gradient(circle_at_50%_0%,rgba(255,236,170,0.18),transparent_60%)] bg-night p-4 shadow-card sm:p-5">
       <div className="mb-4 flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">Interrogation room</p>
+          <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">The confrontation</p>
           <h3 className="font-case text-2xl leading-tight text-[var(--case-accent)]">{suspect.name}</h3>
         </div>
         <Strikes room={room} />
       </div>
 
-      {!room.over && room.broken.length === 0 && room.strikes === 0 && (
+      {room.broken.length === 0 && room.strikes === 0 && (
         <p className="mb-4 rounded-2xl border-2 border-dashed border-cream/25 p-3 text-sm font-semibold text-cream/80">
-          {name} tells the story one claim at a time, and only the Interviewer hears it. When a claim doesn&apos;t fit, anyone can call the lie by
-          presenting evidence from the board. Catch every lie and {name} confesses.
+          {name} tells the story one claim at a time, and only the Interviewer hears it. Some of it is true. When a claim doesn&apos;t fit, anyone can
+          call the lie with evidence from the board. Catch every lie and {name} confesses.
         </p>
       )}
 
-      {room.over ? (
-        <div className="flex items-end gap-3">
-          <SuspectPortrait suspect={suspect} shocked className="w-24 shrink-0" />
-          <div className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-ink shadow-card">
-            {room.over === "confessed" ? (
-              <>
-                <p className="text-xs font-extrabold tracking-wide text-coral uppercase">{name} cracked</p>
-                <p className="font-bold">
-                  Every lie caught. The confession is with {nameOf(view, confession?.foundBy)}
-                  {confession && !confession.pinned ? ". Pin it to the board." : "."}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg leading-snug font-bold">&ldquo;{room.walkout}&rdquo;</p>
-                <p className="mt-1 text-sm font-bold text-ink/60">{name} won&apos;t talk again. Prove it without the confession.</p>
-              </>
-            )}
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-end gap-3">
-            <SuspectPortrait suspect={suspect} shocked={room.currentBroken} className="w-20 shrink-0 sm:w-24" />
-            <Claim room={room} />
-          </div>
-          <CallLie room={room} name={name} />
-        </>
-      )}
+      <div className="flex items-end gap-3">
+        <SuspectPortrait suspect={suspect} shocked={room.currentBroken} className="w-20 shrink-0 sm:w-24" />
+        <Claim room={room} />
+      </div>
+      <CallLie room={room} name={name} />
 
       {room.broken.length > 0 && (
         <ol className="mt-5 grid gap-2 border-t-2 border-cream/10 pt-4">

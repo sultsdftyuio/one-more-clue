@@ -17,7 +17,7 @@ function headline(view: PlayerView, p: Described) {
   }
   if (p.kind === "final") {
     const suspect = view.case.suspects.find((s) => s.id === p.report?.suspectId)?.name;
-    return `${who} ${verb} the final report: ${suspect} did it.`;
+    return view.case.confrontation ? `${who} ${verb}: ${suspect} did it.` : `${who} ${verb} the final report: ${suspect} did it.`;
   }
   if (p.kind === "hint") return `${who} ${who === "You" ? "want" : "wants"} a hint.`;
   return `${who} ${who === "You" ? "want" : "wants"} to give up and see the answer.`;
@@ -25,7 +25,7 @@ function headline(view: PlayerView, p: Described) {
 
 const CONSEQUENCE: Record<Proposal["kind"], string> = {
   answer: "If the majority agrees, it's locked in. Right opens the next chapter; wrong costs you.",
-  final: "If the majority agrees, the case closes. One shot.",
+  final: "If the majority agrees, it's locked in. One shot: name the wrong person and the case is over.",
   hint: "If the majority agrees, the next hint opens for everyone.",
   giveUp: "If the majority agrees, the case ends and the answer is revealed.",
 };

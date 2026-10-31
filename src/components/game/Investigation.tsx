@@ -148,6 +148,20 @@ function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void
   return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" />;
 }
 
+/** The team has named the right person, and every phone goes into the room with them. */
+function ConfrontationStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
+  const room = view.interrogation!;
+  const suspect = view.case.suspects.find((s) => s.id === room.suspect)!;
+  const beats: Beat[] = [
+    { kind: "title", text: "The confrontation", sub: suspect.name },
+    { kind: "line", who: suspect.id, text: room.opening },
+  ];
+  useEffect(() => {
+    play("chapter");
+  }, []);
+  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Break their story" />;
+}
+
 /** Brief pop-ups when teammates find, pin or unlock something. */
 function ActivityToasts({ view }: { view: PlayerView }) {
   const seen = useRef<string | null>(null);
@@ -223,9 +237,28 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
     setTab("desk");
   };
 
+  const confrontedKey = `omc-confronted-${view.code}`;
+  const [confronted, setConfronted] = useState<boolean | null>(null);
+  useEffect(() => {
+    try {
+      setConfronted(Boolean(window.localStorage.getItem(confrontedKey)));
+    } catch {
+      setConfronted(false);
+    }
+  }, [confrontedKey]);
+
+  const enterConfrontation = () => {
+    setConfronted(true);
+    try {
+      window.localStorage.setItem(confrontedKey, "1");
+    } catch {}
+    setTab("solve");
+  };
+
   const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
   const badges: Partial<Record<Tab, string>> = {
+    desk: view.leads.length ? "lead" : undefined,
     board: `${view.pins.length}/${view.pinLimit}`,
     solve: view.proposal ? "vote" : view.interrogation && !view.interrogation.over ? "live" : undefined,
   };
@@ -275,7 +308,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
               </span>
               {t.label}
               {badges[t.id] && (
-                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" || badges[t.id] === "live" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" || badges[t.id] === "live" || badges[t.id] === "lead" ? "bg-coral text-cream" : "bg-cream text-ink")}>
                   {badges[t.id]}
                 </span>
               )}
@@ -302,6 +335,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       )}
 
       {seenChapter !== null && view.chapter.number > seenChapter && <ChapterStory view={view} onClose={closeCurtain} />}
+      {confronted === false && view.interrogation && <ConfrontationStory view={view} onClose={enterConfrontation} />}
     </GameProvider>
   );
 }

@@ -4,7 +4,7 @@
  * ability once per chapter, say so in remote rooms, and vote the way the
  * first human voter did. They never answer checkpoints: that's the humans' job.
  */
-import { activePlayers, canSee, PIN_LIMIT } from "./engine.ts";
+import { activePlayers, canSee, PIN_LIMIT, opened } from "./engine.ts";
 import type { Action, CaseFile, Player, RoomState } from "./types";
 
 export const BOT_NAMES = ["Bot Watson", "Bot Marple", "Bot Poirot", "Bot Fletcher", "Bot Columbo", "Bot Lestrade"];
@@ -23,15 +23,15 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
   const usedThisChapter = Object.entries(state.found).some(
     ([id, f]) => f.by === bot.id && caseFile.evidence.find((e) => e.id === id)?.chapter === state.chapter,
   );
-  if (usedThisChapter) return null;
   const roles = caseFile.roles.filter((r) => bot.roles.includes(r.id));
 
   for (const role of roles) {
     for (const e of caseFile.evidence) {
-      if (state.found[e.id] || !current(e)) continue;
+      // Bots follow up leads whenever they open, so a human tester can walk a chain with them.
+      if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after)) continue;
       const a = e.access;
       if (role.ability === "search" && a.kind === "search") return { type: "search", query: a.terms[0] };
-      if (role.ability === "interview" && a.kind === "interview" && caseFile.questionBudget - state.questionsUsed > 1) {
+      if (role.ability === "interview" && a.kind === "interview" && (e.after || caseFile.questionBudget - state.questionsUsed > 1)) {
         return { type: "ask", evidenceId: e.id };
       }
       if (role.ability === "inspect" && a.kind === "inspect") {

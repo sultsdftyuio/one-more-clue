@@ -8,7 +8,7 @@ import { case001 } from "../../data/cases/case-001.ts";
 import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
-import { addPlayer, applyAction, bestSearchHit, createRoom, PIN_LIMIT } from "./engine.ts";
+import { addPlayer, applyAction, bestSearchHit, createRoom, PIN_LIMIT, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -41,6 +41,14 @@ function play(caseFile: CaseFile) {
     get state() {
       return state;
     },
+    /** What a player sees right now. */
+    view: (who: string) => viewFor(state, caseFile, who, new Set()),
+    /** Attempts something without insisting it works. */
+    attempt(who: string, action: Action) {
+      const result = applyAction(state, caseFile, who, action, 1, newId);
+      if (result.ok) state = result.state;
+      return result.ok;
+    },
     search(query: string, expect: string) {
       run(TECH, { type: "search", query });
       found(expect);
@@ -69,8 +77,21 @@ function play(caseFile: CaseFile) {
       this.agree({ type: "propose", kind: "answer", optionId });
       assert.equal(state.chapter, chapter + 1, `"${optionId}" should open chapter ${chapter + 1}`);
     },
+    /** Walks the accused's story, breaking every lie with something the team can actually see. */
+    confront() {
+      const canSee = (id: string) => ["p1", "p2", "p3", "p4"].find((p) => viewFor(state, caseFile, p, new Set()).evidence.some((e) => e.id === id));
+      caseFile.interrogation!.claims.forEach((claim, i) => {
+        if (i > 0) run(INTERVIEWER, { type: "press", step: 1 });
+        if (!claim.lie) return;
+        const proof = claim.lie.breaks.find(canSee);
+        assert.ok(proof, `nothing the team found breaks "${claim.id}"`);
+        this.pin(canSee(proof)!, proof);
+        run(canSee(proof)!, { type: "callLie", evidenceId: proof });
+      });
+    },
     report(report: FinalReport) {
       this.agree({ type: "propose", kind: "final", report });
+      if (caseFile.interrogation) this.confront();
       assert.equal(state.phase, "reveal");
       assert.deepEqual(state.outcome?.score, { stars: 5, culprit: true, motive: true, evidence: true, sharp: true });
     },
@@ -85,7 +106,9 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.answer("after");
 
   g.ask("question-squires-left");
+  g.search("Ozzy's patrol", "guard-tour");
   g.ask("question-ozzy-round");
+  g.inspect("photo-incident", "clip");
   g.ask("question-rena-after");
   g.pin(INTERVIEWER, "question-squires-left");
   g.pin(INTERVIEWER, "question-ozzy-round");
@@ -98,12 +121,12 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.search("KX24 RVS", "anpr");
   g.pin(TECH, "anpr");
   g.crosscheck("question-rena-after", "anpr", "insight-home");
+  g.inspect("cctv-lobby", "lanyard");
   g.search("Kestrel", "kestrel-staff");
   g.pin(TECH, "kestrel-staff");
   g.ask("question-rena-employer");
   g.pin(INTERVIEWER, "question-rena-employer");
   g.crosscheck("question-rena-employer", "kestrel-staff", "insight-employer");
-  g.inspect("cctv-lobby", "lanyard");
   g.pin(ARCHIVIST, "insight-home");
   g.pin(ARCHIVIST, "insight-employer");
   g.report({ suspectId: "rectangle", motiveId: "rival", evidenceIds: ["insight-home", "insight-employer"] });
@@ -117,9 +140,12 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.crosscheck("statement-vince", "detail-rack", "insight-cables");
   g.answer("fader");
 
+  g.inspect("photo-corridor", "keypad");
   g.search("Studio A door", "door-log");
   g.pin(TECH, "door-log");
   g.crosscheck("statement-vince", "door-log", "insight-nobody");
+  g.inspect("photo-greenroom", "phone");
+  g.ask("question-darla-where");
   g.search("Darla", "darla-phone");
   g.search("fire door", "fire-door");
   g.inspect("photo-greenroom", "bag");
@@ -144,27 +170,34 @@ test("Case 002: Dead Air is solvable for five stars", () => {
 
 test("Case 003: The Last Course is solvable for five stars", () => {
   const g = play(case003);
-  g.pin(INTERVIEWER, "statement-amelie");
-  g.crosscheck("statement-amelie", "paramedic-note", "insight-nutfree");
+  g.inspect("photo-table1", "card");
+  g.pin(PHOTOGRAPHER, "detail-menu");
+  g.crosscheck("detail-menu", "paramedic-note", "insight-nutfree");
   g.answer("peanut");
 
   g.inspect("photo-table1", "plate");
   g.pin(PHOTOGRAPHER, "detail-plate-gold");
   g.crosscheck("detail-plate-gold", "house-rules", "insight-gold");
   g.inspect("pass-camera", "olu"); // a later frame of the footage
+  g.search("runner", "pass-log");
+  g.ask("question-jo-plate");
   g.inspect("pass-camera", "gone");
   g.ask("question-olu-swap");
   g.answer("owner");
 
-  g.crosscheck("insight-gold", "staff-medical", "insight-target");
+  g.inspect("photo-table9", "bracelet");
+  g.pin(PHOTOGRAPHER, "detail-bracelet");
+  g.crosscheck("insight-gold", "detail-bracelet", "insight-target");
   g.answer("square");
 
-  g.ask("question-olu-storeroom");
+  g.inspect("photo-pastry", "bottle");
   g.search("peanut oil", "storeroom-log");
+  g.ask("question-olu-storeroom");
   g.pin(TECH, "storeroom-log");
   g.ask("question-ruth-nuts");
   g.pin(INTERVIEWER, "question-ruth-nuts");
   g.crosscheck("question-ruth-nuts", "storeroom-log", "insight-oil");
+  g.inspect("photo-pastry", "note");
   g.search("Gastro Group", "sale-email");
   g.pin(TECH, "sale-email");
   g.pin(ARCHIVIST, "insight-oil");
@@ -184,6 +217,7 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.pin(TECH, "door-log");
   g.crosscheck("door-log", "front-desk", "insight-stolen-card");
   g.inspect("video-still", "chair");
+  g.ask("question-lily-missing");
   g.inspect("video-still", "back"); // the last frame: snow on his slippers
   g.answer("rectangle");
 
@@ -197,6 +231,38 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.pin(TECH, "bank-letter");
   g.pin(ARCHIVIST, "insight-cane");
   g.report({ suspectId: "circle", motiveId: "bank", evidenceIds: ["insight-cane", "bank-letter"] });
+});
+
+test("a clue chain opens a step at a time, says who to ask, and doesn't charge for following it", () => {
+  const g = play(case004);
+  assert.ok(g.attempt(TECH, { type: "search", query: "storm" }));
+  assert.equal(g.state.found["grid-report"], undefined, "no record yet: nobody has blamed the storm");
+  assert.deepEqual(g.view(TECH).leads, []);
+
+  g.ask("question-otto-power");
+  assert.deepEqual(g.view(TECH).leads.map((l) => [l.title, l.by]), [["Otto: the power", INTERVIEWER]], "it says who to ask, not what to search");
+  assert.deepEqual(g.view(PHOTOGRAPHER).leads, [], "only the role it opens for");
+  assert.ok(g.state.activity.some((a) => a.kind === "lead" && a.text.includes("the Tech")), "the whole team hears about it");
+  g.search("storm", "grid-report");
+  assert.deepEqual(g.view(TECH).leads, [], "a lead followed is a lead gone");
+
+  assert.ok(!g.view(INTERVIEWER).questions!.some((q) => q.id === "question-reginald-key"), "locked questions don't show");
+  const used = g.state.questionsUsed;
+  g.inspect("photo-countdown", "case");
+  assert.equal(g.view(INTERVIEWER).questions!.find((q) => q.id === "question-reginald-key")?.lead, true);
+  g.ask("question-reginald-key");
+  assert.equal(g.state.questionsUsed, used, "following a lead is free");
+});
+
+test("every case has chains that cross roles, in both directions", () => {
+  for (const c of [case001, case002, case003, case004]) {
+    const roleOf = (id: string) => c.evidence.find((e) => e.id === id)!.role;
+    const crossing = c.evidence.filter((e) => e.after?.some((id) => roleOf(id) !== e.role));
+    assert.ok(crossing.length >= 8, `${c.id} has only ${crossing.length} cross-role links`);
+    const tech = c.roles.find((r) => r.ability === "search")!.id;
+    assert.ok(crossing.some((e) => e.role === tech), `${c.id}: the Tech never follows a lead`);
+    assert.ok(crossing.some((e) => e.after!.some((id) => roleOf(id) === tech)), `${c.id}: the Tech never starts one`);
+  }
 });
 
 test("search prefers the most specific match", () => {

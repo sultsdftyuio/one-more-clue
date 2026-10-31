@@ -9,6 +9,7 @@ import { Avatar } from "./parts";
 import { Icon, type IconName } from "./ui/Icon";
 
 const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
+  lead: "bulb",
   found: "sparkle",
   miss: "x",
   pin: "pin",

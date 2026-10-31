@@ -25,6 +25,11 @@ export const case002: CaseFile = {
   theme: "radio",
   // Rendered by art/omc_cinema/case002_film.py. Hidden clue: a quiet chuckle just before the sound dies.
   cinematic: { video: "/cinematics/case-002.mp4", poster: "/cinematics/case-002.jpg" },
+  deadline: {
+    what: "The breakfast show goes on air at 6:00 AM",
+    times: ["12:30 AM", "2:30 AM", "4:30 AM"],
+    lost: "6:00 AM. The breakfast show reads out the story, the trail goes cold, and the £5,000 is never seen again.",
+  },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

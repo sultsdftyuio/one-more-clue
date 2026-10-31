@@ -18,6 +18,7 @@ const HEADLINES = {
   solved: { stamp: "Case closed", text: "You caught the culprit." },
   wrong: { stamp: "Wrong suspect", text: "The real culprit walks free tonight." },
   gaveUp: { stamp: "Case abandoned", text: "Here's what really happened." },
+  tooLate: { stamp: "Out of time", text: "Three wrong answers, and the night ran out." },
 };
 
 function Stars({ count }: { count: number }) {
@@ -68,9 +69,9 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
     } catch {}
   };
   const confessionBeats: Beat[] = [
-    { kind: "title", text: headline.stamp, sub: outcome.kind === "wrong" && accused ? `You accused ${accused.name}.` : headline.text },
-    { kind: "line", who: culprit.id, text: `It was me.`, shocked: true },
-    ...solution.confession,
+    { kind: "title", text: headline.stamp, sub: outcome.kind === "wrong" && accused ? `You accused ${accused.name}.` : (view.deadline?.lost ?? headline.text) },
+    // Nobody confesses to a team that ran out of time: they got away with it.
+    ...(outcome.kind === "tooLate" ? [] : [{ kind: "line" as const, who: culprit.id, text: `It was me.`, shocked: true }, ...solution.confession]),
   ];
 
   // Count each finished case once per device, however often the page reloads.
@@ -119,7 +120,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
           </p>
           <p className="mt-4 text-lg font-bold text-cream/80">
             {outcome.kind === "wrong" && accused ? `You accused ${accused.name}. ` : ""}
-            {headline.text}
+            {view.deadline?.lost ?? headline.text}
           </p>
           <div className="mt-5">
             <Stars count={outcome.score.stars} />
@@ -130,7 +131,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
           <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed font-semibold text-cream/90">{solution.explanation}</p>
         </section>
 
-        {outcome.kind !== "gaveUp" && (
+        {outcome.kind !== "gaveUp" && outcome.kind !== "tooLate" && (
           <Panel title="Your score">
             <ul className="grid gap-2">
               {breakdown.map((b) => (

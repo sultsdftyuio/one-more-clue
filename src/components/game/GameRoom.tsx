@@ -16,6 +16,7 @@ import { themeOf } from "./themes";
 import { Weather } from "./Weather";
 import { cx } from "@/lib/cx";
 import { audioRunning, Music, unlock } from "./audio/sound";
+import { carriesSound } from "./context";
 import { LiveProvider, useLive } from "./live/useLive";
 import { myName, randomName, rememberName } from "./names";
 import { useRoom } from "./useRoom";
@@ -103,14 +104,16 @@ export function GameRoom({ code }: { code: string }) {
   const solved = view?.outcome?.kind === "solved";
   const voting = view?.proposal?.kind === "final" ? 2 : view?.proposal?.kind === "answer" ? 1 : 0;
   const theme = themeOf(view?.case.theme);
+  const loud = view ? carriesSound(view) : true;
   useEffect(() => {
     const set = theme.id;
-    if (phase === "lobby") Music.want("lobby", 1, set);
+    if (!loud) Music.want(null);
+    else if (phase === "lobby") Music.want("lobby", 1, set);
     else if (phase === "briefing") return; // the briefing picks its own music around the opening film
     else if (phase === "investigation") Music.want("investigation", chapter === chapters ? 3 : Math.min(2, chapter), set);
     else if (phase === "reveal") Music.want(solved ? "solved" : "unsolved", 1, set);
     else Music.want(null);
-  }, [phase, chapter, chapters, solved, theme.id]);
+  }, [loud, phase, chapter, chapters, solved, theme.id]);
 
   useEffect(() => {
     Music.tension(voting);

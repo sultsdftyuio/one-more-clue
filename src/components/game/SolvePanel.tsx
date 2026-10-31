@@ -40,7 +40,10 @@ function Checkpoint() {
       >
         Put it to a vote
       </button>
-      <p className="mt-2 text-center text-xs font-bold text-cream/55">The majority decides. A wrong answer counts against your stars.</p>
+      <p className="mt-2 text-center text-xs font-bold text-cream/55">
+        The majority decides.{" "}
+        {!view.deadline ? "A wrong answer counts against your stars." : view.deadline.left === 1 ? "One more wrong answer and the night is over." : "A wrong answer costs you hours."}
+      </p>
     </div>
   );
 }

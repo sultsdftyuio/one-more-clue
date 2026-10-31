@@ -158,6 +158,16 @@ export type Interrogation = {
   walkout: string;
 };
 
+/** The story's clock. Every wrong answer loses time, and when it runs out the case is lost. */
+export type Deadline = {
+  /** What's coming, e.g. "The investors arrive at 9:00 AM". */
+  what: string;
+  /** The time at the start, then after each wrong answer. One wrong answer past the last ends the case. */
+  times: string[];
+  /** How it ends when time runs out. */
+  lost: string;
+};
+
 export type CaseFile = {
   id: string;
   /** Shown as the case number, e.g. "Case 001". */
@@ -180,6 +190,7 @@ export type CaseFile = {
   questionBudget: number;
   /** A suspect the team can interrogate, catching their lies with pinned evidence. */
   interrogation?: Interrogation;
+  deadline?: Deadline;
   /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
   cinematic?: { video: string; poster?: string };
   evidence: CaseEvidence[];
@@ -243,7 +254,7 @@ export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wro
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
-export type Outcome = { kind: "solved" | "wrong" | "gaveUp"; report?: FinalReport; score: Score; at: number };
+export type Outcome = { kind: "solved" | "wrong" | "gaveUp" | "tooLate"; report?: FinalReport; score: Score; at: number };
 
 export type RoomState = {
   code: string;

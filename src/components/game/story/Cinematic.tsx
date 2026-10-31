@@ -6,15 +6,17 @@ import { Icon } from "../ui/Icon";
 /**
  * A case's opening film, full screen. It starts on its own when the browser
  * allows sound; otherwise (iPhones, mostly) one big tap starts it. Skip is
- * always there, and the film ending moves on by itself.
+ * always there, and the film ending moves on by itself. Around one table only
+ * the host's phone has sound: the rest are `muted`, or the narrator echoes.
  */
-export function Cinematic({ video, poster, onDone }: { video: string; poster?: string; onDone: () => void }) {
+export function Cinematic({ video, poster, muted = false, onDone }: { video: string; poster?: string; muted?: boolean; onDone: () => void }) {
   const film = useRef<HTMLVideoElement>(null);
   const [needsTap, setNeedsTap] = useState(false);
 
   useEffect(() => {
+    if (film.current) film.current.muted = muted;
     film.current?.play().catch(() => setNeedsTap(true));
-  }, []);
+  }, [muted]);
 
   const start = () => {
     setNeedsTap(false);
@@ -29,6 +31,11 @@ export function Cinematic({ video, poster, onDone }: { video: string; poster?: s
         <img src={poster} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
       )}
       <video ref={film} src={video} poster={poster} playsInline preload="auto" onEnded={onDone} className="absolute inset-0 h-full w-full object-contain" />
+      {muted && (
+        <p className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-bold whitespace-nowrap text-cream/80">
+          Sound is on the host&apos;s phone
+        </p>
+      )}
       {needsTap && (
         <button
           type="button"

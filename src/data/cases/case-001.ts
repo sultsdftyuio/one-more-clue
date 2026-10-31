@@ -32,6 +32,11 @@ export const case001: CaseFile = {
   theme: "noir",
   // Rendered by art/omc_cinema/case001_film.py. Hidden clue: the laptop's clock reads 9:12 while the message is rewritten.
   cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
+  deadline: {
+    what: "The investors arrive at 9:00 AM",
+    times: ["Midnight", "3:00 AM", "6:30 AM"],
+    lost: "9:00 AM. The investors walk into an empty lab. HALO is gone for good, and Priya's name goes with it.",
+  },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

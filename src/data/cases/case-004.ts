@@ -26,6 +26,11 @@ export const case004: CaseFile = {
   theme: "frost",
   // Rendered by art/omc_cinema/case004_film.py. Hidden clue: a faint tap beside every other footstep in the dark.
   cinematic: { video: "/cinematics/case-004.mp4", poster: "/cinematics/case-004.jpg" },
+  deadline: {
+    what: "The plough clears the road at 9:00 AM",
+    times: ["12:30 AM", "3:30 AM", "6:30 AM"],
+    lost: "9:00 AM. The plough clears the road and everyone goes home. Whoever took the Aurora only has to wait for the thaw.",
+  },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

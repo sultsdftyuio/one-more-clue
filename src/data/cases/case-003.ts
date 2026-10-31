@@ -22,10 +22,15 @@ export const case003: CaseFile = {
   id: "case-003",
   code: "Case 003",
   title: "The Last Course",
-  tagline: "The most feared critic in the country collapses after dessert. The kitchen swears it's nut-free.",
+  tagline: "The most feared critic in the country collapses after dessert. Four people touched that dinner.",
   theme: "bistro",
   // Rendered by art/omc_cinema/case003_film.py. Hidden clue: half a second of two plates on the pass, one with gold leaf.
   cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
+  deadline: {
+    what: "The kitchen is scrubbed clean at midnight",
+    times: ["10:15 PM", "10:50 PM", "11:25 PM"],
+    lost: "Midnight. The kitchen is scrubbed and the pass is spotless. Whatever was on that plate is gone, and so is your case.",
+  },
   minPlayers: 2,
   maxPlayers: 6,
   story: [

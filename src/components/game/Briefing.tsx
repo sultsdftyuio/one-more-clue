@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { PlayerView } from "@/lib/game/engine";
 import { Music } from "./audio/sound";
-import { roleNames, type Act } from "./context";
+import { carriesSound, roleNames, type Act } from "./context";
 import { useLiveRoom } from "./live/useLive";
 import { Avatar } from "./parts";
 import { Cinematic } from "./story/Cinematic";
@@ -25,7 +25,7 @@ const HOW_TO_WIN = ["Use your power, and say what you find out loud.", "Pin what
 /** The opening: the case's film if it has one, its story beats if not. Plays once per device. */
 function Opening({ view, onDone }: { view: PlayerView; onDone: () => void }) {
   const film = view.case.cinematic;
-  if (film) return <Cinematic video={film.video} poster={film.poster} onDone={onDone} />;
+  if (film) return <Cinematic video={film.video} poster={film.poster} muted={!carriesSound(view)} onDone={onDone} />;
   return <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={onDone} finishLabel="See your role" />;
 }
 
@@ -116,10 +116,11 @@ export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy
 
   // The film brings its own soundtrack; the briefing music waits for it to finish.
   const theme = view.case.theme;
+  const loud = carriesSound(view);
   useEffect(() => {
-    if (opening === false || (opening && !view.case.cinematic)) Music.want("briefing", 1, theme);
-    else if (opening) Music.want(null);
-  }, [opening, theme, view.case.cinematic]);
+    if (loud && (opening === false || (opening && !view.case.cinematic))) Music.want("briefing", 1, theme);
+    else if (opening || !loud) Music.want(null);
+  }, [loud, opening, theme, view.case.cinematic]);
 
   const closeOpening = () => {
     setOpening(false);

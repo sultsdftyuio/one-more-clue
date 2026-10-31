@@ -228,6 +228,12 @@ export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalR
 
 const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: false, sharp: false };
 
+/** One fixed order per room. Without it, the right answer sits in the same place case after case and players learn the place. */
+function shuffledFor<T extends { id: string }>(code: string, items: T[]) {
+  const rank = (id: string) => [...`${code}:${id}`].reduce((hash, ch) => Math.imul(hash ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0;
+  return [...items].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
 /** Settles the open proposal once a majority is for it, or once it can no longer get one. */
 function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newId: () => string) {
   const proposal = state.proposal;
@@ -263,7 +269,12 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
       } else {
         state.wrongAnswers++;
         const label = chapter.checkpoint.options.find((o) => o.id === proposal.optionId)?.label;
-        log(state, newId, now, "wrong", `"${label}" is wrong. Look again.`);
+        const time = caseFile.deadline?.times[state.wrongAnswers];
+        log(state, newId, now, "wrong", `"${label}" is wrong. ${time ? `The hours slip away. It's ${time}.` : "Look again."}`);
+        if (caseFile.deadline && !time) {
+          state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
+          state.phase = "reveal";
+        }
       }
     }
     if (proposal.kind === "hint") {
@@ -757,6 +768,8 @@ export type PlayerView = {
     hints: string[];
     hintsTotal: number;
   };
+  /** The story's clock: what's coming, the time now, how many wrong answers are left, and how it ended if it ran out. */
+  deadline: { what: string; time: string; left: number; lost: string | null } | null;
   /** Checkpoints already answered, with what they revealed. */
   solved: { number: number; title: string; question: string; reveal: string }[];
   players: PublicPlayer[];
@@ -887,17 +900,25 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       chapterTitles: caseFile.chapters.map((c) => c.title),
       cinematic: caseFile.cinematic ?? null,
       questionBudget: caseFile.questionBudget,
-      motives: caseFile.solution.motives,
+      motives: shuffledFor(state.code, caseFile.solution.motives),
     },
     chapter: {
       number: state.chapter,
       title: chapter.title,
       intro: chapter.intro,
       story: chapter.story,
-      checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question, options: chapter.checkpoint.options } : null,
+      checkpoint: chapter.checkpoint ? { question: chapter.checkpoint.question, options: shuffledFor(state.code, chapter.checkpoint.options) } : null,
       hints: chapter.hints.slice(0, state.hintsOpen[state.chapter] ?? 0),
       hintsTotal: chapter.hints.length,
     },
+    deadline: caseFile.deadline
+      ? {
+          what: caseFile.deadline.what,
+          time: caseFile.deadline.times[Math.min(state.wrongAnswers, caseFile.deadline.times.length - 1)],
+          left: Math.max(0, caseFile.deadline.times.length - state.wrongAnswers),
+          lost: state.outcome?.kind === "tooLate" ? caseFile.deadline.lost : null,
+        }
+      : null,
     solved: caseFile.chapters.slice(0, state.chapter - 1).map((c, i) => ({
       number: i + 1,
       title: c.title,

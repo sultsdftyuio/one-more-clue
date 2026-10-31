@@ -15,6 +15,38 @@ function must(result: ReturnType<typeof applyAction>): RoomState {
   return result.state;
 }
 
+test("answers come in a different order in each room, so the place can't be learned", () => {
+  const order = (code: string) => {
+    const state = createRoom({ code, caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+    const view = viewFor(state, case001, "p1", new Set(["p1"]));
+    return { options: view.chapter.checkpoint!.options.map((o) => o.id), motives: view.case.motives.map((m) => m.id) };
+  };
+  assert.deepEqual(order("ROOM"), order("ROOM"));
+  assert.deepEqual([...order("ROOM").options].sort(), [...case001.chapters[0].checkpoint!.options.map((o) => o.id)].sort());
+  const firstMotives = new Set(["AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH"].map((code) => order(code).motives[0]));
+  assert.ok(firstMotives.size > 1);
+});
+
+test("three wrong answers run the clock out and lose the case", () => {
+  const caseFile = { ...tipJar, deadline: { what: "Closing time at 2:00", times: ["10:00", "11:00", "1:00"], lost: "The bar closes." } };
+  let state = createRoom({ code: "LATE", caseFile, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, caseFile, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, caseFile, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, caseFile, id, { type: "ready" }, 0, newId));
+  const checkpoint = caseFile.chapters[0].checkpoint!;
+  const wrong = checkpoint.options.find((o) => o.id !== checkpoint.answer)!.id;
+  for (const time of ["11:00", "1:00", null]) {
+    state = must(applyAction(state, caseFile, "p1", { type: "propose", kind: "answer", optionId: wrong }, 0, newId));
+    state = must(applyAction(state, caseFile, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
+    if (time) assert.equal(viewFor(state, caseFile, "p1", new Set()).deadline!.time, time);
+  }
+  assert.equal(state.phase, "reveal");
+  assert.equal(state.outcome!.kind, "tooLate");
+  const view = viewFor(state, caseFile, "p1", new Set());
+  assert.equal(view.deadline!.lost, "The bar closes.");
+  assert.equal(view.deadline!.left, 0);
+});
+
 // With four players the core roles go round in order:
 const TECH = "p1";
 const INTERVIEWER = "p2";

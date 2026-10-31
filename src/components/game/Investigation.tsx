@@ -65,6 +65,24 @@ function ChapterSteps({ view }: { view: PlayerView }) {
   );
 }
 
+/** The night running out. It only moves when the team answers wrongly. */
+function StoryClock({ view }: { view: PlayerView }) {
+  const deadline = view.deadline;
+  if (!deadline) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
+      <Icon name="clock" className="size-3.5 shrink-0 text-mustard" />
+      <span className="shrink-0 font-mono text-mustard">{deadline.time}</span>
+      <span className="truncate">{deadline.what}</span>
+      <span className="flex shrink-0 gap-1" aria-label={`${deadline.left} wrong answers left`}>
+        {Array.from({ length: deadline.left }, (_, i) => (
+          <span key={i} className="size-1.5 rounded-full bg-coral" />
+        ))}
+      </span>
+    </div>
+  );
+}
+
 function TopBar({ view, act }: { view: PlayerView; act: Act }) {
   const clock = useClock(view.startedAt);
   const [menu, setMenu] = useState(false);
@@ -108,6 +126,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
           )}
         </div>
       </div>
+      <StoryClock view={view} />
     </header>
   );
 }

@@ -31,6 +31,9 @@ export const roleNames = (view: PlayerView, roleIds: string[]) =>
 
 export const evidenceIn = (view: PlayerView, id: string): VisibleEvidence | undefined => view.evidence.find((e) => e.id === id);
 
+/** Around one table, phones a beat apart turn a film or a tune into an echo, so only the host's plays them. */
+export const carriesSound = (view: Pick<PlayerView, "mode" | "me">) => view.mode !== "together" || view.me.isHost;
+
 /** Hotspots of a scene whose details this player can see. */
 export const foundHotspots = (view: PlayerView, sceneId: string) =>
   view.evidence.flatMap((e) => (e.spot?.scene === sceneId ? [e.spot.hotspot] : []));

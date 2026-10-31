@@ -1,20 +1,29 @@
 "use client";
 
+import Image from "next/image";
 import type { ReactNode } from "react";
 import type { VisibleEvidence } from "@/lib/game/engine";
 import type { EvidenceBody } from "@/lib/game/types";
+import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
 import { foundHotspots, nameOf, useGame } from "../context";
 import { Icon, type IconName } from "../ui/Icon";
+import { ChatPhone } from "./objects/ChatPhone";
+import { ContradictionSlip, NotebookPage } from "./objects/FindingNote";
+import { LogPrintout } from "./objects/LogPrintout";
+import { StatementForm } from "./objects/StatementForm";
+import { TypedSheet } from "./objects/TypedSheet";
+import { PinButton } from "./PinButton";
+import { ReadOutButton } from "./ReadOut";
 import { RecordingPlayer } from "./RecordingPlayer";
-import { FootageView, SceneView, type Tints } from "./SceneView";
+import { FootageView, SceneThumb, SceneView, type Tints } from "./SceneView";
 
 const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string; tone: string }> = {
   desk: { icon: "file", label: "Case file", tone: "bg-cream-dk" },
-  search: { icon: "search", label: "Records search", tone: "bg-teal/40" },
-  interview: { icon: "mic", label: "Interview", tone: "bg-lilac/40" },
-  inspect: { icon: "eye", label: "Spotted in a photo", tone: "bg-mustard/60" },
-  crosscheck: { icon: "scale", label: "Contradiction", tone: "bg-coral/40" },
+  search: { icon: "search", label: "Records search", tone: "bg-teal" },
+  interview: { icon: "mic", label: "Interview", tone: "bg-lilac" },
+  inspect: { icon: "eye", label: "Spotted in a photo", tone: "bg-mustard" },
+  crosscheck: { icon: "scale", label: "Contradiction", tone: "bg-coral" },
 };
 
 /** One line of what a piece of evidence says, for compact cards. */
@@ -40,65 +49,21 @@ export function snippet(body: EvidenceBody) {
 export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
   Object.fromEntries(suspects.flatMap((s) => (s.art && s.tint ? [[s.art, s.tint]] : [])));
 
-function Body({ evidence }: { evidence: VisibleEvidence }) {
+/** The piece of evidence itself, as the object it really is. */
+export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
   const { view, act } = useGame();
   const body = evidence.body;
   switch (body.type) {
     case "statement":
-      return (
-        <blockquote className="paper rounded-2xl border-2 border-ink/10 p-4 leading-7">
-          <p className="text-[1.05rem] font-semibold">&ldquo;{body.text}&rdquo;</p>
-          <footer className="mt-2 text-sm font-extrabold text-ink/55">— {body.speaker}</footer>
-        </blockquote>
-      );
+      return <StatementForm id={evidence.id} body={body} />;
     case "chat":
-      return (
-        <div className="rounded-2xl bg-ink p-3">
-          <p className="mb-3 text-center text-xs font-extrabold tracking-wide text-cream/60">{body.title}</p>
-          <ul className="space-y-2">
-            {body.messages.map((m, i) => (
-              <li key={i} className="max-w-[88%] rounded-2xl rounded-tl-md bg-dusk px-3 py-2 text-cream">
-                <p className="text-[0.7rem] font-extrabold text-mustard">
-                  {m.from} <span className="font-semibold text-cream/50">· {m.time}</span>
-                  {m.edited && <span className="text-cream/50"> · edited</span>}
-                </p>
-                <p className="leading-snug font-semibold">{m.text}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
+      return <ChatPhone body={body} />;
     case "log":
-      return (
-        <div className="receipt rounded-b-xl px-4 pt-5 pb-3 font-mono text-sm text-ink">
-          <p className="mb-2 border-b-2 border-dashed border-ink/20 pb-2 text-center text-xs font-bold tracking-wide text-ink/60 uppercase">
-            {body.source}
-          </p>
-          <table className="w-full">
-            <tbody>
-              {body.rows.map((row, i) => (
-                <tr key={i} className="align-top">
-                  <td className="py-1 pr-3 font-bold whitespace-nowrap text-coral-dk">{row.time}</td>
-                  <td className="py-1 font-semibold">{row.text}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
+      return <LogPrintout body={body} />;
     case "document":
-      return <p className="paper rounded-2xl border-2 border-ink/10 p-4 leading-7 font-semibold whitespace-pre-line">{body.text}</p>;
+      return <TypedSheet id={evidence.id} body={body} />;
     case "finding":
-      return (
-        <p
-          className={cx(
-            "rounded-2xl border-[3px] border-dashed p-4 text-[1.05rem] leading-relaxed font-bold",
-            evidence.source === "crosscheck" ? "border-coral bg-coral/10" : "border-mustard bg-mustard/15",
-          )}
-        >
-          {body.text}
-        </p>
-      );
+      return evidence.source === "crosscheck" ? <ContradictionSlip evidence={evidence} body={body} /> : <NotebookPage evidence={evidence} body={body} />;
     case "recording":
       return <RecordingPlayer recording={body} />;
     case "scene":
@@ -112,7 +77,7 @@ function Body({ evidence }: { evidence: VisibleEvidence }) {
       return (
         <div>
           {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
-          <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-ink/55">
+          <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-cream/70">
             <Icon name="eye" className="size-4" />
             {canInspect ? "You're the Photographer: tap anything to look closer." : "Only the Photographer can inspect photos. Pin it for them."}
           </p>
@@ -122,105 +87,103 @@ function Body({ evidence }: { evidence: VisibleEvidence }) {
   }
 }
 
-function Meta({ evidence }: { evidence: VisibleEvidence }) {
+/** The evidence tag tied to each piece: what it is, where it came from and who's seen it. */
+function EvidenceTag({ evidence }: { evidence: VisibleEvidence }) {
   const { view } = useGame();
   const source = SOURCE[evidence.source];
   return (
-    <div className={cx("flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-xs font-extrabold text-ink/70", source.tone)}>
-      <Icon name={source.icon} className="size-4" />
-      <span className="tracking-wide uppercase">{source.label}</span>
-      <span className="rounded-full bg-ink/10 px-2 py-0.5">Ch. {evidence.chapter}</span>
-      {evidence.foundBy && <span className="ml-auto">found by {nameOf(view, evidence.foundBy)}</span>}
-    </div>
+    <header className={cx("obj-tag relative mb-3.5 text-ink", source.tone)}>
+      <p className="flex items-center gap-1.5 text-xs font-extrabold">
+        <Icon name={source.icon} className="size-3.5" />
+        {source.label}
+        <span className="opacity-60">chapter {evidence.chapter}</span>
+      </p>
+      <h3 className="font-display text-[1.35rem] leading-tight">{evidence.title}</h3>
+      {evidence.foundBy && <p className="text-xs font-bold opacity-70">Found by {nameOf(view, evidence.foundBy)}</p>}
+    </header>
   );
 }
 
-/** Pin or unpin, with the board's space in mind. */
-export function PinButton({ evidence, className }: { evidence: VisibleEvidence; className?: string }) {
-  const { view, act, busy } = useGame();
-  if (view.phase !== "investigation") return null;
-  const pin = view.pins.find((p) => p.evidenceId === evidence.id);
-  const full = view.pins.length >= view.pinLimit;
-  if (pin) {
-    return (
-      <button
-        type="button"
-        disabled={busy}
-        onClick={(e) => {
-          e.stopPropagation();
-          act({ type: "unpin", evidenceId: evidence.id });
-        }}
-        className={cx("inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-mustard px-3 py-1.5 text-sm font-extrabold text-ink hover:bg-cream", className)}
-      >
-        <Icon name="pin" className="size-4" filled />
-        Pinned{pin.by !== view.me.id && ` by ${nameOf(view, pin.by)}`} · Unpin
-      </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      disabled={busy || full}
-      title={full ? "The board is full. Unpin something first." : undefined}
-      onClick={(e) => {
-        e.stopPropagation();
-        act({ type: "pin", evidenceId: evidence.id });
-      }}
-      className={cx(
-        "inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-coral px-3 py-1.5 text-sm font-extrabold text-cream shadow-pop-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50",
-        className,
-      )}
-    >
-      <Icon name="pin" className="size-4" />
-      {full ? "Board full" : "Pin to board"}
-    </button>
-  );
-}
-
-/** A piece of evidence at full size. */
+/** A piece of evidence at full size, lying on the desk with its tag on. */
 export function EvidenceCard({ evidence, footer, highlight }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean }) {
+  const { view } = useGame();
   return (
-    <article
-      id={`evidence-${evidence.id}`}
-      className={cx("overflow-hidden rounded-3xl border-[3px] border-ink bg-cream text-ink shadow-pop", highlight && "game-glow")}
-    >
-      <Meta evidence={evidence} />
-      <div className="p-4 sm:p-5">
-        <h3 className="mb-3 font-display text-[1.4rem] leading-tight">{evidence.title}</h3>
-        <Body evidence={evidence} />
+    <article id={`evidence-${evidence.id}`} className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
+      <EvidenceTag evidence={evidence} />
+      <EvidenceObject evidence={evidence} />
+      {view.phase === "investigation" && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />
+          <ReadOutButton evidence={evidence} />
+          {!evidence.pinned && evidence.mine && (
+            <span className="flex items-center gap-1 text-xs font-bold text-cream/65">
+              <Icon name="lock" className="size-3.5" /> Only you have this
+            </span>
+          )}
           {footer}
         </div>
-      </div>
+      )}
     </article>
   );
 }
 
-/** A piece of evidence as a small tile; tapping opens it. */
-export function EvidenceTile({ evidence, onOpen, selected }: { evidence: VisibleEvidence; onOpen: () => void; selected?: boolean }) {
+const TILT = ["-rotate-2", "rotate-1", "rotate-2", "-rotate-1"];
+
+/** What a pinned piece looks like from across the room: its own paper, a title and a few words. */
+function TileFace({ evidence }: { evidence: VisibleEvidence }) {
+  const body = evidence.body;
+  const text = snippet(body);
+  if (body.type === "scene" || body.type === "footage") {
+    return (
+      <span className="block border-2 border-ink bg-white p-1 pb-1.5">
+        <SceneThumb scene={body} />
+        <span className="mt-1 block font-hand text-[1.05rem] leading-tight text-ink">{evidence.title}</span>
+      </span>
+    );
+  }
+  if (body.type === "chat") {
+    return (
+      <span className="block rounded-xl border-2 border-ink bg-[#1d2038] p-1.5 text-cream">
+        <span className="block text-sm leading-tight font-extrabold">{evidence.title}</span>
+        <span className="mt-1 block rounded-lg rounded-bl-sm bg-[#e8ecf7] px-1.5 py-1 text-ink">
+          <span className="line-clamp-3 text-xs leading-snug font-semibold">{text}</span>
+        </span>
+      </span>
+    );
+  }
+  if (body.type === "log") {
+    return (
+      <span className="tile-log block border-2 border-ink px-2 py-1.5 font-printer text-[#27304f]">
+        <span className="block text-[1.05rem] leading-tight">{evidence.title}</span>
+        <span className="mt-0.5 line-clamp-3 text-[0.95rem] leading-tight">{text}</span>
+      </span>
+    );
+  }
+  const crosscheck = evidence.source === "crosscheck";
+  const note = body.type === "finding" && !crosscheck;
+  return (
+    <span className={cx("block border-2 border-ink px-2 py-1.5 text-ink", crosscheck ? "bg-[#f8cfc8]" : note ? "bg-[#ffe98f]" : "bg-[#fbf6ea]")}>
+      <span className={cx("block leading-tight", note ? "font-hand text-[1.1rem]" : "font-typed text-[0.95rem]")}>{evidence.title}</span>
+      <span className={cx("mt-1 line-clamp-3 leading-snug", note ? "font-hand text-base" : "text-xs font-semibold text-ink/75")}>{text}</span>
+    </span>
+  );
+}
+
+/** A piece of evidence pinned to the corkboard; tapping opens it. */
+export function EvidenceTile({ evidence, onOpen, selected, index = 0 }: { evidence: VisibleEvidence; onOpen: () => void; selected?: boolean; index?: number }) {
   const { view } = useGame();
-  const source = SOURCE[evidence.source];
   const pin = view.pins.find((p) => p.evidenceId === evidence.id);
   return (
     <button
       type="button"
       onClick={onOpen}
-      className={cx(
-        "group flex h-full w-full flex-col overflow-hidden rounded-2xl border-[3px] border-ink bg-cream text-left text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5",
-        selected && "ring-4 ring-mustard",
-      )}
+      className={cx("relative block w-full pt-2 text-left transition-transform hover:z-10 hover:scale-[1.03]", TILT[index % TILT.length], selected && "ring-4 ring-mustard")}
     >
-      <span className={cx("flex items-center gap-1.5 px-3 py-1.5 text-[0.7rem] font-extrabold tracking-wide text-ink/70 uppercase", source.tone)}>
-        <Icon name={source.icon} className="size-3.5" />
-        {source.label}
-        {pin && <Icon name="pin" filled className="ml-auto size-3.5 text-coral-dk" />}
+      <Image src={propArt.pushpin} alt="" sizes="28px" className="absolute top-[-0.35rem] left-1/2 z-10 w-7 -translate-x-1/2" />
+      <span className="block drop-shadow-[0_4px_0_rgb(27_31_59/0.45)]">
+        <TileFace evidence={evidence} />
       </span>
-      <span className="flex flex-1 flex-col gap-1 p-3">
-        <span className="font-display text-lg leading-tight">{evidence.title}</span>
-        <span className="line-clamp-3 text-sm leading-snug font-semibold text-ink/70">{snippet(evidence.body)}</span>
-      </span>
-      {pin && <span className="px-3 pb-2 text-xs font-bold text-ink/50">pinned by {nameOf(view, pin.by)}</span>}
+      {pin && <span className="mt-0.5 block text-center text-[0.7rem] font-extrabold text-ink/70">{nameOf(view, pin.by)}</span>}
     </button>
   );
 }

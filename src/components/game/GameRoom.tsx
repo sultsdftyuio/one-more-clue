@@ -8,6 +8,7 @@ import { brandArt } from "@/lib/art";
 import { onTapsUntil } from "@/lib/audio-unlock";
 import "./game.css";
 import { Briefing } from "./Briefing";
+import { evidenceFonts } from "./evidence/fonts";
 import { Investigation } from "./Investigation";
 import { Lobby } from "./Lobby";
 import { Panel } from "./parts";
@@ -166,7 +167,7 @@ export function GameRoom({ code }: { code: string }) {
 
   return (
     <LiveProvider value={live}>
-      <div className={cx("relative isolate min-h-[100svh]", theme.font, theme.className, !fullBleed && "px-4 pt-5 pb-16 sm:px-6")}>
+      <div className={cx("relative isolate min-h-[100svh]", theme.font, evidenceFonts, theme.className, !fullBleed && "px-4 pt-5 pb-16 sm:px-6")}>
         <Weather kind={theme.weather} />
         {!fullBleed && (
           <Link href="/" className="mx-auto mb-6 flex max-w-3xl items-center gap-2 font-display text-xl text-cream text-pop">

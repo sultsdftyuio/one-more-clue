@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { cx } from "@/lib/cx";
 import type { PlayerView } from "@/lib/game/engine";
 import { Music } from "./audio/sound";
 import { carriesSound, roleNames, type Act } from "./context";
+import { ROLE_CARD } from "./desk/roles/look";
 import { useLiveRoom } from "./live/useLive";
 import { Avatar } from "./parts";
 import { Cinematic } from "./story/Cinematic";
@@ -45,13 +47,13 @@ function RoleReveal({ view, act, busy, onReplay }: { view: PlayerView; act: Act;
       {myRoles.map((role, i) => (
         <article
           key={role.id}
-          className="animate-[deal_0.7s_cubic-bezier(0.34,1.4,0.64,1)_both] rounded-[2rem] border-[3px] border-ink bg-mustard p-5 text-ink shadow-card"
+          className={cx("animate-[deal_0.7s_cubic-bezier(0.34,1.4,0.64,1)_both] rounded-[2rem] border-[3px] border-ink p-5 shadow-card", ROLE_CARD[role.ability])}
           style={{ animationDelay: `${0.15 + i * 0.35}s` }}
         >
           <p className="text-xs font-extrabold tracking-[0.25em] uppercase opacity-70">You are the</p>
           <p className="font-display text-5xl leading-tight">{role.name}</p>
           <p className="mt-1 font-semibold">{role.blurb}</p>
-          <p className="mt-4 flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 font-bold">
+          <p className="mt-4 flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 font-bold text-ink">
             <Icon name={POWER[role.ability].icon} />
             <span>{POWER[role.ability].text}</span>
           </p>

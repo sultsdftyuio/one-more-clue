@@ -161,16 +161,49 @@ function SceneCanvas({ look, items, dark, onInspect, found = [], tints }: Canvas
 
 type ViewProps = Omit<CanvasProps, "look" | "items" | "dark">;
 
-/** An illustrated photo or camera still. Dark photos are searched with a flashlight. */
+/** An illustrated photo or camera still, as a print taped to the desk. Dark photos are searched with a flashlight. */
 export function SceneView({ scene, ...rest }: ViewProps & { scene: Scene }) {
   return (
-    <figure className="rotate-[-0.6deg] rounded-xl border-[3px] border-ink bg-white p-2 pb-2.5 shadow-pop-sm">
+    <figure className="relative mx-auto max-w-lg rotate-[-0.8deg] border-[3px] border-ink bg-white p-2.5 pb-3 shadow-pop-sm">
+      <span aria-hidden className="obj-tape absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 rotate-2" />
       <SceneCanvas look={scene.look} items={scene.items} dark={scene.dark} {...rest} />
-      <figcaption className="mt-2 px-1 text-center text-xs font-extrabold text-ink/70">
-        {scene.dark && <span className="mr-1">🔦 Pitch dark: drag across it to shine your light.</span>}
+      <figcaption className="mt-2 px-1 text-center font-hand text-lg leading-tight text-ink/80">
+        {scene.dark && <span className="block">Pitch dark: drag across it to shine your light.</span>}
         {scene.caption}
       </figcaption>
     </figure>
+  );
+}
+
+const picture = (scene: Scene | Footage) => ({ look: scene.look, items: scene.type === "scene" ? scene.items : scene.frames[0].items });
+
+/** A small still of a photo or the first frame of footage. Nothing to tap. */
+export function SceneThumb({ scene }: { scene: Scene | Footage }) {
+  return (
+    <span className="pointer-events-none block">
+      <SceneCanvas {...picture(scene)} />
+    </span>
+  );
+}
+
+const ZOOM = 2.6;
+
+/** The part of a picture a detail was spotted in, blown up. Stays inside the frame, so there's never a blank edge. */
+export function ZoomedSpot({ scene, hotspot, className }: { scene: EvidenceBody; hotspot: string; className?: string }) {
+  if (scene.type !== "scene" && scene.type !== "footage") return null;
+  const items = scene.type === "scene" ? scene.items : (scene.frames.find((f) => f.items.some((i) => i.hotspot === hotspot))?.items ?? scene.frames[0].items);
+  const spot = items.find((i) => i.hotspot === hotspot);
+  const width = spot && "w" in spot ? spot.w : 10;
+  const height = spot && "h" in spot ? spot.h : width;
+  const limit = 50 - 50 / ZOOM;
+  const shift = (at: number) => Math.max(-limit, Math.min(limit, 50 - at));
+  const transform = spot ? `scale(${ZOOM}) translate(${shift(spot.x + width / 2)}%, ${shift(spot.y + height / 2)}%)` : undefined;
+  return (
+    <span className={cx("pointer-events-none block aspect-[4/3] overflow-hidden", className)}>
+      <span className="block" style={{ transform }}>
+        <SceneCanvas look={scene.look} items={items} />
+      </span>
+    </span>
   );
 }
 
@@ -197,21 +230,22 @@ export function FootageView({ footage, ...rest }: ViewProps & { footage: Footage
 
   const current = footage.frames[frame];
   return (
-    <figure className="rounded-xl border-[3px] border-ink bg-[#111] p-2 pb-2.5 text-cream shadow-pop-sm">
-      <div className="relative">
+    <figure className="obj-monitor mx-auto max-w-lg rounded-[1.4rem] border-[3px] border-ink p-3 pb-2.5 text-cream shadow-pop-sm">
+      <div className="obj-monitor-screen relative overflow-hidden rounded-xl border-[3px] border-black">
         <SceneCanvas key={frame} look={footage.look} items={current.items} {...rest} />
-        <span className="pointer-events-none absolute top-2 right-2 z-30 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[0.7rem] font-bold text-white">
-          <span className="size-2 animate-pulse rounded-full bg-coral" /> {current.time}
+        <span className="pointer-events-none absolute top-2 left-2 z-30 flex items-center gap-1 font-printer text-lg leading-none text-[#ff5a4f]">
+          <span className="size-2 animate-pulse rounded-full bg-[#ff5a4f]" /> REC
         </span>
+        <span className="pointer-events-none absolute right-2 bottom-1.5 z-30 font-printer text-lg leading-none text-white [text-shadow:0_1px_2px_#000]">{current.time}</span>
       </div>
-      <div className="mt-2 flex items-center gap-2 px-1">
+      <div className="mt-2.5 flex items-center gap-2 px-1">
         <button
           type="button"
           onClick={() => {
             if (frame >= last) setFrame(0);
             setPlaying((p) => !p);
           }}
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-cream text-ink"
+          className="grid size-9 shrink-0 place-items-center rounded-lg border-2 border-black bg-[#c9c4b8] text-ink shadow-[0_2px_0_#000]"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? "❚❚" : <Icon name="skip" className="size-4" />}
@@ -228,11 +262,14 @@ export function FootageView({ footage, ...rest }: ViewProps & { footage: Footage
           aria-label="Scrub through the footage"
           className="min-w-0 flex-1 accent-coral"
         />
-        <span className="shrink-0 font-mono text-xs font-bold text-cream/70">
+        <span className="shrink-0 font-printer text-lg leading-none text-[#7ee787]">
           {frame + 1}/{footage.frames.length}
         </span>
       </div>
-      <figcaption className="mt-1.5 px-1 text-center text-xs font-extrabold text-cream/60">{footage.caption}</figcaption>
+      <figcaption className="mt-1.5 flex items-center gap-2 px-1 text-xs font-extrabold text-cream/65">
+        <span aria-hidden className="size-2 shrink-0 rounded-full bg-[#7ee787] shadow-[0_0_6px_#7ee787]" />
+        {footage.caption}
+      </figcaption>
     </figure>
   );
 }

@@ -37,6 +37,32 @@ const LEVEL: Record<TapeSound, number> = {
 
 const ICON: Partial<Record<TapeSound, string>> = { music: "♪", jingle: "♫", static: "≋", click: "✕", creak: "~", breath: "…", beep: "•", door: "▮" };
 
+/** A cassette: tape winds from the left reel to the right as it plays. */
+export function Cassette({ caption, playing, progress }: { caption?: string; playing: boolean; progress: number }) {
+  const reel = (share: number) => (
+    <span className="grid size-14 shrink-0 place-items-center">
+      <span className="grid place-items-center rounded-full bg-[#3a2a22] transition-[width,height] duration-700" style={{ width: `${1.9 + share * 1.5}rem`, height: `${1.9 + share * 1.5}rem` }}>
+        <span className={cx("obj-reel size-7 rounded-full", playing && "animate-spin [animation-duration:1.8s]")} />
+      </span>
+    </span>
+  );
+  return (
+    <div aria-hidden className="obj-cassette relative mx-auto max-w-[19rem] rounded-xl border-[3px] border-ink p-2.5">
+      {caption !== undefined && (
+        <p className="obj-cassette-label truncate rounded-sm border-2 border-ink px-2 pt-0.5 pb-3 font-hand text-lg leading-tight text-ink">{caption}</p>
+      )}
+      <div className="mx-auto mt-2 flex w-[80%] items-center justify-between rounded-full border-[3px] border-ink bg-[#d9d4c6] px-2">
+        {reel(1 - progress)}
+        <span className="h-9 flex-1 rounded bg-[#1c1a24]/85" />
+        {reel(progress)}
+      </div>
+      {["top-1.5 left-1.5", "top-1.5 right-1.5", "bottom-1.5 left-1.5", "bottom-1.5 right-1.5"].map((at) => (
+        <span key={at} className={cx("absolute size-1.5 rounded-full bg-black/50", at)} />
+      ))}
+    </div>
+  );
+}
+
 /**
  * A tape recording you play back: a cassette with a waveform, captions that
  * light up in time, and every sound synthesised. You can also just read it.
@@ -64,7 +90,8 @@ export function RecordingPlayer({ recording }: { recording: Recording }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border-[3px] border-ink bg-[#1c1a24] text-cream">
-      <div className="flex items-center gap-3 border-b-2 border-black/40 bg-[#2a2733] px-3 py-2">
+      <div className="bg-[#2a2733] p-3">
+        <Cassette caption={recording.caption} playing={playing} progress={playing ? (current + 1) / recording.segments.length : 0} />
         <button
           type="button"
           onClick={() => {
@@ -73,28 +100,13 @@ export function RecordingPlayer({ recording }: { recording: Recording }) {
             else playFrom(0);
           }}
           className={cx(
-            "grid size-11 shrink-0 place-items-center rounded-full border-[3px] border-ink font-black transition-colors",
+            "mx-auto mt-3 flex items-center gap-2 rounded-lg border-[3px] border-ink px-6 py-1.5 font-display text-lg shadow-pop-sm transition-colors active:translate-y-0.5 active:shadow-none",
             playing ? "bg-coral text-cream" : "bg-mustard text-ink",
           )}
           aria-label={playing ? "Stop the tape" : "Play the tape"}
         >
-          {playing ? "■" : "▶"}
+          {playing ? "■ Stop" : "▶ Play"}
         </button>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-mono text-xs font-bold tracking-widest text-cream/60 uppercase">{recording.caption}</span>
-          {/* Cassette reels, turning while it plays */}
-          <span className="mt-1 flex items-center gap-2" aria-hidden>
-            {[0, 1].map((i) => (
-              <span key={i} className={cx("size-5 rounded-full border-[3px] border-dashed border-cream/50", playing && "animate-spin [animation-duration:1.6s]")} />
-            ))}
-            <span className="h-1 flex-1 rounded-full bg-cream/15">
-              <span
-                className="block h-full rounded-full bg-mustard transition-[width] duration-500"
-                style={{ width: `${playing ? ((current + 1) / recording.segments.length) * 100 : 0}%` }}
-              />
-            </span>
-          </span>
-        </span>
       </div>
 
       <div className="flex h-12 items-end gap-0.5 px-3 pt-2" aria-hidden>

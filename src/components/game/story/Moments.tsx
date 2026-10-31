@@ -3,13 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
 import { play } from "../audio/sound";
-import { useGame } from "../context";
-import { PinButton, snippet } from "../evidence/EvidenceCard";
+import { evidenceIn, useGame } from "../context";
+import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
+import { ContradictionSlip } from "../evidence/objects/FindingNote";
+import { PinButton } from "../evidence/PinButton";
+import { ReadOutButton } from "../evidence/ReadOut";
+import { Cassette } from "../evidence/RecordingPlayer";
+import { ZoomedSpot } from "../evidence/SceneView";
 import { SuspectPortrait } from "../parts";
-import { Icon } from "../ui/Icon";
 import { useTypewriter } from "./StoryPlayer";
 
-/** A pop-up for something this player just found, styled by how they found it. */
+/** Seconds into a contradiction when the stamp lands. */
+const STAMP_AT = 0.6;
+
+/** A pop-up for something this player just found, played out the way their role found it. Stays until they close it. */
 function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose: () => void }) {
   const { view } = useGame();
   const body = evidence.body;
@@ -18,70 +25,95 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   const typed = useTypewriter(spoken, Boolean(spoken));
 
   useEffect(() => {
-    const sound = { search: "match", inspect: "found", crosscheck: "stamp" } as const;
+    // The stamp's sound lands with the stamp, once the two papers have met.
+    if (evidence.source === "crosscheck") {
+      const timer = window.setTimeout(() => play("stamp"), STAMP_AT * 1000);
+      return () => window.clearTimeout(timer);
+    }
+    const sound = { search: "match", inspect: "found" } as const;
     if (evidence.source in sound) play(sound[evidence.source as keyof typeof sound]);
   }, [evidence.source]);
 
-  useEffect(() => {
-    if (speaks) return; // reading takes as long as it takes
-    const timer = window.setTimeout(onClose, 7000);
-    return () => window.clearTimeout(timer);
-  }, [speaks, onClose]);
+  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
 
   let content;
   if (evidence.source === "search") {
+    // The record prints out of the terminal, line by line.
     content = (
-      <div className="rounded-2xl border-[3px] border-ink bg-[#0d1117] p-4 font-mono text-[#7ee787] shadow-card">
-        <p className="text-xs font-bold tracking-[0.3em]">▌ MATCH FOUND</p>
-        <p className="mt-2 text-lg font-bold text-cream">{evidence.title}</p>
-        <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-[#7ee787]/80">{snippet(body)}</p>
+      <div>
+        <div className="tool-terminal relative z-10 flex items-center gap-2 rounded-xl border-[3px] border-ink px-4 py-2.5 shadow-pop-sm">
+          <span className="size-2.5 animate-pulse rounded-full bg-teal" />
+          <span className="font-printer text-2xl leading-none text-teal">Match found</span>
+          <span className="ml-auto h-1.5 w-1/3 rounded-full bg-black" />
+        </div>
+        <div className="moment-print mx-3 max-h-[58svh] overflow-y-auto">
+          <EvidenceObject evidence={evidence} />
+        </div>
       </div>
     );
   } else if (speaks && body.type === "statement") {
     const suspect = view.case.suspects.find((s) => s.name === body.speaker);
     content = (
-      <div className="flex items-end gap-3">
-        {suspect ? (
-          <SuspectPortrait suspect={suspect} className="w-24 shrink-0 animate-pop-in" />
-        ) : (
-          <span className="grid size-16 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-lilac font-display text-2xl text-ink">
-            {body.speaker[0]}
-          </span>
-        )}
-        <div className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-ink shadow-card">
-          <p className="text-xs font-extrabold tracking-wide text-ink/50 uppercase">{body.speaker}</p>
-          <p className="text-lg leading-snug font-bold">&ldquo;{typed.text}&rdquo;</p>
+      <div>
+        <div className="mx-auto mb-3 w-44">
+          <Cassette playing={!typed.complete} progress={typed.complete ? 1 : 0.5} />
+        </div>
+        <div className="flex items-end gap-3">
+          {suspect ? (
+            <SuspectPortrait suspect={suspect} className="w-24 shrink-0 animate-pop-in" />
+          ) : (
+            <span className="grid size-16 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-lilac font-display text-2xl text-ink">
+              {body.speaker[0]}
+            </span>
+          )}
+          <div className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-ink shadow-card">
+            <p className="text-sm font-extrabold text-ink/55">{body.speaker}</p>
+            <p className="text-lg leading-snug font-bold">&ldquo;{typed.text}&rdquo;</p>
+          </div>
         </div>
       </div>
     );
-  } else if (evidence.source === "inspect") {
+  } else if (evidence.source === "inspect" && scene && evidence.spot) {
+    // The marked part of the picture develops in the tray, then the note appears under it.
     content = (
       <div className="text-center">
-        <span className="mx-auto grid size-24 animate-pop-in place-items-center rounded-full border-[6px] border-ink bg-mustard shadow-card">
-          <Icon name="search" className="size-10 text-ink" />
-        </span>
-        <p className="mt-4 text-xs font-extrabold tracking-[0.25em] text-mustard uppercase">You spotted something</p>
-        <p className="mt-1 font-display text-2xl text-cream">{evidence.title}</p>
-        <p className="mx-auto mt-2 max-w-sm rounded-2xl border-[3px] border-dashed border-mustard bg-mustard/15 p-3 font-bold text-cream">{snippet(body)}</p>
+        <figure className="mx-auto w-[min(19rem,88%)] -rotate-2 border-[3px] border-ink bg-white p-2 pb-3 shadow-card">
+          <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} className="moment-develop" />
+          <figcaption className="mt-2 font-hand text-xl leading-tight text-ink">{evidence.title}</figcaption>
+        </figure>
+        <p className="mx-auto mt-4 max-w-sm animate-[rise-in_0.4s_ease-out_1.5s_both] border-2 border-ink bg-[#ffe98f] px-4 py-2 font-hand text-[1.3rem] leading-snug text-ink">{snippet(body)}</p>
+      </div>
+    );
+  } else if (evidence.source === "crosscheck" && body.type === "finding") {
+    // Two papers meet in the middle, and the stamp comes down.
+    const [a, b] = evidence.compared ?? [];
+    content = (
+      <div>
+        <div className="mb-3 flex gap-2 text-center text-sm leading-tight font-extrabold text-ink">
+          <span className="grid flex-1 animate-[slide-left_0.45s_ease-out_both] place-items-center border-2 border-ink bg-[#fbf6ea] p-2">{a}</span>
+          <span className="grid flex-1 animate-[slide-right_0.45s_ease-out_both] place-items-center border-2 border-ink bg-[#fbf6ea] p-2">{b}</span>
+        </div>
+        <div className="animate-[rise-in_0.3s_ease-out_0.3s_both]">
+          <ContradictionSlip evidence={{ ...evidence, compared: undefined }} body={body} stampDelay={STAMP_AT} />
+        </div>
       </div>
     );
   } else {
     content = (
-      <div className="text-center">
-        <p className="inline-block -rotate-6 animate-stamp rounded-2xl border-4 border-coral px-5 py-1 font-display text-4xl text-coral uppercase">Contradiction</p>
-        <p className="mt-5 font-display text-2xl text-cream">{evidence.title}</p>
-        <p className="mx-auto mt-2 max-w-sm rounded-2xl border-[3px] border-dashed border-coral bg-coral/15 p-3 font-bold text-cream">{snippet(body)}</p>
+      <div className="max-h-[70svh] overflow-y-auto">
+        <EvidenceObject evidence={evidence} />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[52] grid animate-[fade-in_0.2s_ease-out] place-items-center bg-night/80 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={evidence.title}>
+    <div className="fixed inset-0 z-[52] grid animate-[fade-in_0.2s_ease-out] grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto bg-night/80 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={evidence.title}>
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0" />
       <div className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
         {content}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <PinButton evidence={evidence} />
+          <ReadOutButton evidence={evidence} />
           <button
             type="button"
             onClick={() => (speaks && !typed.complete ? typed.finish() : onClose())}

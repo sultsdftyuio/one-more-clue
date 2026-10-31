@@ -1,12 +1,17 @@
 "use client";
 
+import { playThroughSilentSwitch } from "@/lib/audio-unlock";
 import type { ThemeId } from "@/lib/game/types";
 
 /**
  * Every sound in the game, synthesised with the Web Audio API: no files to
  * load or license. Sound effects and music each have an on/off setting kept on
- * this device. Browsers only allow audio after a tap, so `unlock()` runs on the
- * first one.
+ * this device. Browsers only allow audio after a tap, so `unlock()` runs on
+ * taps until the engine is running (see lib/audio-unlock.ts).
+ *
+ * The mix: sound effects and music feed a master bus, then a gentle compressor
+ * glues them, makeup gain brings them up to a normal listening level, and a
+ * limiter keeps the loudest moments from clipping on phone speakers.
  */
 
 export type Sfx =
@@ -39,6 +44,8 @@ let loaded = false;
 let ctx: AudioContext | null = null;
 let master: GainNode;
 let sfxBus: GainNode;
+/** The synthesised music is written quietly; this brings it up under the effects. */
+const MUSIC_TRIM = 2.4;
 let musicBus: GainNode;
 let noise: AudioBuffer;
 
@@ -77,16 +84,36 @@ export function unlock() {
   if (!ctx) {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
+    playThroughSilentSwitch();
     ctx = new Ctor();
     master = ctx.createGain();
-    master.gain.value = 0.8;
-    master.connect(ctx.destination);
+    master.gain.value = 1;
+    const glue = ctx.createDynamicsCompressor();
+    glue.threshold.value = -22;
+    glue.knee.value = 10;
+    glue.ratio.value = 3;
+    glue.attack.value = 0.006;
+    glue.release.value = 0.25;
+    const makeup = ctx.createGain();
+    makeup.gain.value = 2.2;
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -1.5;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.12;
+    // The limiter can overshoot on sharp hits, so leave a little headroom after it.
+    const ceiling = ctx.createGain();
+    ceiling.gain.value = 0.8;
+    master.connect(glue).connect(makeup).connect(limiter).connect(ceiling).connect(ctx.destination);
     sfxBus = ctx.createGain();
-    sfxBus.gain.value = 0.55;
+    sfxBus.gain.value = 1;
     sfxBus.connect(master);
     musicBus = ctx.createGain();
     musicBus.gain.value = 0;
-    musicBus.connect(master);
+    const musicTrim = ctx.createGain();
+    musicTrim.gain.value = MUSIC_TRIM;
+    musicBus.connect(musicTrim).connect(master);
     noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
@@ -96,8 +123,13 @@ export function unlock() {
       else ctx.resume();
     });
   }
-  if (ctx.state === "suspended" && !document.hidden) ctx.resume();
+  if (ctx.state !== "running" && !document.hidden) void ctx.resume().then(() => music.apply(), () => undefined);
   music.apply();
+}
+
+/** Whether the audio engine has started and is playing. */
+export function audioRunning() {
+  return ctx?.state === "running";
 }
 
 // ---------------------------------------------------------------------------

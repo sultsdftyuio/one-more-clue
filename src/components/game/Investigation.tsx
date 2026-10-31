@@ -10,6 +10,7 @@ import { play } from "./audio/sound";
 import { BoardPanel } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel } from "./desk/DeskPanel";
+import { LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
@@ -64,6 +65,24 @@ function ChapterSteps({ view }: { view: PlayerView }) {
   );
 }
 
+/** The night running out. It only moves when the team answers wrongly. */
+function StoryClock({ view }: { view: PlayerView }) {
+  const deadline = view.deadline;
+  if (!deadline) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
+      <Icon name="clock" className="size-3.5 shrink-0 text-mustard" />
+      <span className="shrink-0 font-mono text-mustard">{deadline.time}</span>
+      <span className="truncate">{deadline.what}</span>
+      <span className="flex shrink-0 gap-1" aria-label={`${deadline.left} wrong answers left`}>
+        {Array.from({ length: deadline.left }, (_, i) => (
+          <span key={i} className="size-1.5 rounded-full bg-coral" />
+        ))}
+      </span>
+    </div>
+  );
+}
+
 function TopBar({ view, act }: { view: PlayerView; act: Act }) {
   const clock = useClock(view.startedAt);
   const [menu, setMenu] = useState(false);
@@ -81,7 +100,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
         <span className="hidden items-center gap-1 rounded-full bg-cream/10 px-3 py-1 font-mono text-sm font-bold text-cream sm:flex" title="Time on the case">
           <Icon name="clock" className="size-4" /> {clock}
         </span>
-        <VoiceControl mode={view.mode} compact />
+        <VoiceControl compact />
         <div className="hidden -space-x-2 md:flex">
           {view.players.map((p, i) => (
             <span key={p.id} title={p.name}>
@@ -107,6 +126,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
           )}
         </div>
       </div>
+      <StoryClock view={view} />
     </header>
   );
 }
@@ -126,6 +146,20 @@ function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void
     play("chapter");
   }, []);
   return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" />;
+}
+
+/** The team has named the right person, and every phone goes into the room with them. */
+function ConfrontationStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
+  const room = view.interrogation!;
+  const suspect = view.case.suspects.find((s) => s.id === room.suspect)!;
+  const beats: Beat[] = [
+    { kind: "title", text: "The confrontation", sub: suspect.name },
+    { kind: "line", who: suspect.id, text: room.opening },
+  ];
+  useEffect(() => {
+    play("chapter");
+  }, []);
+  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Break their story" />;
 }
 
 /** Brief pop-ups when teammates find, pin or unlock something. */
@@ -203,11 +237,30 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
     setTab("desk");
   };
 
+  const confrontedKey = `omc-confronted-${view.code}`;
+  const [confronted, setConfronted] = useState<boolean | null>(null);
+  useEffect(() => {
+    try {
+      setConfronted(Boolean(window.localStorage.getItem(confrontedKey)));
+    } catch {
+      setConfronted(false);
+    }
+  }, [confrontedKey]);
+
+  const enterConfrontation = () => {
+    setConfronted(true);
+    try {
+      window.localStorage.setItem(confrontedKey, "1");
+    } catch {}
+    setTab("solve");
+  };
+
   const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
   const badges: Partial<Record<Tab, string>> = {
+    desk: view.leads.length ? "lead" : undefined,
     board: `${view.pins.length}/${view.pinLimit}`,
-    solve: view.proposal ? "vote" : undefined,
+    solve: view.proposal ? "vote" : view.interrogation && !view.interrogation.over ? "live" : undefined,
   };
 
   const panels: Record<Tab, React.ReactNode> = {
@@ -255,7 +308,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
               </span>
               {t.label}
               {badges[t.id] && (
-                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" || badges[t.id] === "live" || badges[t.id] === "lead" ? "bg-coral text-cream" : "bg-cream text-ink")}>
                   {badges[t.id]}
                 </span>
               )}
@@ -268,6 +321,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <ActivityToasts view={view} />
       <SoundCues view={view} />
       <Moments />
+      <LieMoment />
 
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>
@@ -281,6 +335,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       )}
 
       {seenChapter !== null && view.chapter.number > seenChapter && <ChapterStory view={view} onClose={closeCurtain} />}
+      {confronted === false && view.interrogation && <ConfrontationStory view={view} onClose={enterConfrontation} />}
     </GameProvider>
   );
 }

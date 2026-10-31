@@ -24,8 +24,15 @@ export const case004: CaseFile = {
   title: "Snowed In",
   tagline: "A blizzard, a blackout at midnight, and a diamond that never left the building.",
   theme: "frost",
+  // Rendered by art/omc_cinema/case004_film.py. Hidden clue: a faint tap beside every other footstep in the dark.
+  cinematic: { video: "/cinematics/case-004.mp4", poster: "/cinematics/case-004.jpg" },
+  deadline: {
+    what: "The plough clears the road at 9:00 AM",
+    times: ["12:30 AM", "3:30 AM", "6:30 AM"],
+    lost: "9:00 AM. The plough clears the road and everyone goes home. Whoever took the Aurora only has to wait for the thaw.",
+  },
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "title", text: "Pinecrest Lodge", sub: "New Year's Eve · midnight" },
     { kind: "narration", text: "The road has been closed since six. Nobody has come in or out. Inside, the countdown to midnight." },
@@ -57,14 +64,8 @@ export const case004: CaseFile = {
       intro: "Otto blames the storm. Find out what really caused the blackout.",
       story: [],
       checkpoint: {
-        question: "What caused the blackout at midnight?",
-        options: [
-          { id: "storm", label: "The storm brought the power lines down" },
-          { id: "breaker", label: "Someone switched the main breaker off, inside the lodge" },
-          { id: "generator", label: "The generator ran out of fuel" },
-          { id: "fuse", label: "The party lights blew a fuse" },
-        ],
-        answer: "breaker",
+        question: "What caused the blackout at midnight? Show what settles it.",
+        proves: ["power-log", "grid-report", "insight-storm"],
         reveal: "The power company had no outages tonight. The lodge's main breaker was switched off by hand at 23:59:58, and on again two minutes later.",
       },
       hints: [
@@ -80,14 +81,8 @@ export const case004: CaseFile = {
         { kind: "line", who: "circle", text: "The breaker room? Only staff cards open that door. Greta has one…" },
       ],
       checkpoint: {
-        question: "Whose keycard opened the breaker room at 23:59:40?",
-        options: [
-          { id: "circle", label: "Otto's" },
-          { id: "rectangle", label: "Greta's" },
-          { id: "square", label: "Sir Reginald's" },
-          { id: "triangle", label: "Lily's" },
-        ],
-        answer: "rectangle",
+        question: "Whose keycard opened the breaker room at 23:59:40? Show what proves it.",
+        proves: ["door-log", "insight-stolen-card"],
         reveal: "Greta's card opened the breaker room. But she reported it stolen at 8:30, and at 23:59:55 she was on the microphone upstairs.",
       },
       hints: [
@@ -111,6 +106,41 @@ export const case004: CaseFile = {
     },
   ],
   questionBudget: 5,
+  interrogation: {
+    suspect: "circle",
+    strikes: 3,
+    opening: "Me? In my own lodge? I've made you all very comfortable, you know. Go on, then. Ask.",
+    claims: [
+      {
+        id: "storm",
+        text: "It was the storm. These old lines can't take the weight of the snow.",
+        lie: { breaks: ["grid-report", "power-log", "insight-storm"], crack: "So the lines held. How lovely for the lines." },
+      },
+      {
+        id: "chair",
+        text: "I was in my armchair by the fire, counting down with everyone else.",
+        lie: { breaks: ["detail-chair", "insight-armchair", "question-lily-missing"], crack: "I popped out to check the boiler. A host's work is never done." },
+      },
+      { id: "key", text: "Yes, I keep a key to the case. So does Sir Reginald." },
+      {
+        id: "card",
+        text: "The log says Greta's card. I'd start with Greta.",
+        lie: { breaks: ["front-desk", "insight-stolen-card", "detail-greta-counting"], crack: "Stolen, was it? There's a lot of that going around." },
+      },
+      { id: "knee", text: "I've walked with a cane since my fall in '19." },
+      {
+        id: "outside",
+        text: "Go outside? At minus fifteen, on this knee? I never left the building.",
+        lie: { breaks: ["detail-holes", "insight-cane", "detail-snowy-slippers"], crack: "Slippers get damp. It's a damp lodge." },
+      },
+      {
+        id: "money",
+        text: "The lodge is doing very nicely, thank you. I've no need of anyone's diamonds.",
+        lie: { breaks: ["bank-letter"], crack: "The bank is being very dramatic about January." },
+      },
+    ],
+    walkout: "I have been a patient host. The road opens at nine. Goodnight.",
+  },
   evidence: [
     // ----- Chapter 1: lights out ----------------------------------------------
     {
@@ -206,6 +236,7 @@ export const case004: CaseFile = {
       id: "grid-report",
       role: "tech",
       chapter: 1,
+      after: ["question-otto-power"],
       access: { kind: "search", terms: ["grid", "alpinepower", "powercompany", "outage", "outages", "storm"] },
       title: "Alpine Power outage map",
       body: {
@@ -229,6 +260,7 @@ export const case004: CaseFile = {
       id: "question-reginald-key",
       role: "interviewer",
       chapter: 1,
+      after: ["detail-case"],
       access: { kind: "interview", suspect: "Sir Reginald Pike", question: "Who has a key to the display case?" },
       title: "Sir Reginald: the case key",
       body: { type: "statement", speaker: "Sir Reginald Pike", text: "Myself, as auctioneer, and Otto, as our host. Both kept on our persons all evening, naturally." },
@@ -342,6 +374,7 @@ export const case004: CaseFile = {
       id: "detail-greta-counting",
       role: "photographer",
       chapter: 2,
+      after: ["door-log"],
       access: { kind: "inspect", scene: "video-still", hotspot: "greta" },
       title: "Greta, counting down",
       body: { type: "finding", text: "23:59:55: Greta is at the mic, counting down from five. The breaker room is two floors below." },
@@ -366,6 +399,7 @@ export const case004: CaseFile = {
       id: "detail-snowy-slippers",
       role: "photographer",
       chapter: 2,
+      after: ["question-lily-missing"],
       access: { kind: "inspect", scene: "video-still", hotspot: "back" },
       title: "00:02:10",
       body: { type: "finding", text: "Otto is back in his armchair, out of breath. There's snow melting on his slippers." },
@@ -382,6 +416,7 @@ export const case004: CaseFile = {
       id: "question-greta-card",
       role: "interviewer",
       chapter: 2,
+      after: ["door-log"],
       access: { kind: "interview", suspect: "Greta Holm", question: "Where was your keycard tonight?" },
       title: "Greta: her keycard",
       body: { type: "statement", speaker: "Greta Holm", text: "Gone from my jacket in the boot room by half eight. I reported it at the desk straight away. Ask the book." },
@@ -390,6 +425,7 @@ export const case004: CaseFile = {
       id: "question-lily-missing",
       role: "interviewer",
       chapter: 2,
+      after: ["detail-chair"],
       access: { kind: "interview", suspect: "Lily Ashford", question: "Was anyone missing from the countdown?" },
       title: "Lily: who was missing",
       body: { type: "statement", speaker: "Lily Ashford", text: "Otto. He said he had to check the boiler. He was back the second the lights came on." },
@@ -458,6 +494,7 @@ export const case004: CaseFile = {
       id: "detail-prints",
       role: "photographer",
       chapter: 3,
+      after: ["weather-station"],
       access: { kind: "inspect", scene: "photo-garden", hotspot: "prints" },
       title: "Fresh footprints",
       body: { type: "finding", text: "One set of footprints from the back door to the snowman, and back. Fresh: no snow inside them." },
@@ -474,6 +511,7 @@ export const case004: CaseFile = {
       id: "detail-snowman",
       role: "photographer",
       chapter: 3,
+      after: ["question-lily-snowman"],
       access: { kind: "inspect", scene: "photo-garden", hotspot: "snowman" },
       title: "The snowman's head",
       body: { type: "finding", text: "The snowman's head sits crooked, freshly patted smooth, with a dark patch of wet snow." },
@@ -497,6 +535,7 @@ export const case004: CaseFile = {
       id: "bank-letter",
       role: "tech",
       chapter: 3,
+      after: ["insight-cane"],
       access: { kind: "search", terms: ["bank", "alpinebank", "loan", "otto", "brennan", "money"] },
       title: "Alpine Bank",
       body: {
@@ -524,6 +563,7 @@ export const case004: CaseFile = {
       id: "question-otto-cane",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-holes"],
       access: { kind: "interview", suspect: "Otto Brennan", question: "Do you always walk with a cane?" },
       title: "Otto: the cane",
       body: { type: "statement", speaker: "Otto Brennan", text: "Since my fall in '19. Left knee. Why on earth do you ask?" },
@@ -532,6 +572,7 @@ export const case004: CaseFile = {
       id: "question-reginald-outside",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-prints"],
       access: { kind: "interview", suspect: "Sir Reginald Pike", question: "Did anyone go outside tonight?" },
       title: "Sir Reginald: outside",
       body: { type: "statement", speaker: "Sir Reginald Pike", text: "Outside? It's minus fifteen and pitch black. Nobody in their right mind." },

@@ -54,23 +54,35 @@ test("bots say hello in the chat of a remote room", () => {
 
 test("bots follow the human's vote, both ways", () => {
   let state = soloWithBots("together");
-  state = act(state, { type: "propose", kind: "answer", optionId: "838-841" });
+  state = act(state, { type: "pin", evidenceId: "door-log" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "door-log" });
   state = act(state, { type: "vote", proposalId: state.proposal!.id, vote: "no" });
   state = letBotsPlay(state);
   assert.equal(state.wrongAnswers, 0, "human said no, bots followed");
 
-  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
   state = letBotsPlay(state);
   assert.equal(state.chapter, 2);
 });
 
 test("in a new chapter, bots swap old pins for new finds so the team keeps moving", () => {
   let state = soloWithBots("together");
-  state = act(state, { type: "propose", kind: "answer", optionId: "841-844" });
+  state = act(state, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
   state = letBotsPlay(state);
   assert.equal(state.chapter, 2);
   assert.ok(state.pins.some((p) => p.evidenceId === "question-squarington-left"), "the Interviewer bot's answer reached the board");
   assert.ok(state.found["insight-squarington"], "so the Archivist bot could catch the lie");
+});
+
+test("humans pinning lots doesn't stop bots showing their desks", () => {
+  let state = soloWithBots("together");
+  const humanPins = Array.from({ length: 5 }, (_, i) => ({ evidenceId: `mine${i}`, by: "me", at: 0 }));
+  state = { ...state, pins: humanPins, botMovedAt: 0 };
+  const move = nextBotMove(state, tipJar, 10_000);
+  assert.equal(move?.action.type, "pin", "a bot still pins with 5 human pins up");
+
+  state = { ...state, pins: [...humanPins, ...humanPins.slice(0, 3).map((p, i) => ({ ...p, evidenceId: `more${i}` }))] };
+  assert.notEqual(nextBotMove(state, tipJar, 10_000)?.action.type, "pin", "but never onto a full board");
 });
 
 test("bots wait between moves", () => {

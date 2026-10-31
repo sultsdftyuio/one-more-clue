@@ -22,10 +22,17 @@ export const case003: CaseFile = {
   id: "case-003",
   code: "Case 003",
   title: "The Last Course",
-  tagline: "A food critic collapses after dessert. The dessert wasn't meant for her.",
+  tagline: "The most feared critic in the country collapses after dessert. Four people touched that dinner.",
   theme: "bistro",
+  // Rendered by art/omc_cinema/case003_film.py. Hidden clue: half a second of two plates on the pass, one with gold leaf.
+  cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
+  deadline: {
+    what: "The kitchen is scrubbed clean at midnight",
+    times: ["10:15 PM", "10:50 PM", "11:25 PM"],
+    lost: "Midnight. The kitchen is scrubbed and the pass is spotless. Whatever was on that plate is gone, and so is your case.",
+  },
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "effect", effect: "candles", text: "Course seven." },
     { kind: "title", text: "Maison Lune", sub: "Course seven · 9:52 PM" },
@@ -57,14 +64,8 @@ export const case003: CaseFile = {
       intro: "The kitchen swears it's nut-free. Find out what actually made Celeste collapse.",
       story: [],
       checkpoint: {
-        question: "What made Celeste collapse?",
-        options: [
-          { id: "wine", label: "A bad bottle of wine" },
-          { id: "peanut", label: "Peanut, in the chocolate course" },
-          { id: "fish", label: "Undercooked fish from course four" },
-          { id: "panic", label: "A panic attack" },
-        ],
-        answer: "peanut",
+        question: "The kitchen swears the chocolate course was nut-free. What proves something got through?",
+        proves: ["paramedic-note", "insight-nutfree"],
         reveal: "The paramedics found peanut, within minutes of course seven. The wine was barely touched. The 'nut-free' kitchen wasn't.",
       },
       hints: [
@@ -80,14 +81,8 @@ export const case003: CaseFile = {
         { kind: "line", who: "circle", text: "I keep that pass immaculate. Im-mac-u-late. Check the camera if you like." },
       ],
       checkpoint: {
-        question: "Whose plate did Celeste actually eat?",
-        options: [
-          { id: "own", label: "Her own plate, from Table 1's ticket" },
-          { id: "owner", label: "The owner's gold-leaf plate" },
-          { id: "staff", label: "A staff tasting plate" },
-          { id: "table3", label: "Table 3's dessert" },
-        ],
-        answer: "owner",
+        question: "Whose plate did Celeste actually eat? Show what proves it.",
+        proves: ["detail-gone", "question-jo-plate", "question-olu-swap", "insight-gold"],
         reveal: "Olu sent the clean gold-leaf plate, the owner's, to Table 1, and wiped the smudged one for Bertrand. Celeste ate the owner's dessert.",
       },
       hints: [
@@ -103,14 +98,8 @@ export const case003: CaseFile = {
         { kind: "line", who: "square", text: "I don't see why I'm being kept here. I have a restaurant to run. And a buyer to meet." },
       ],
       checkpoint: {
-        question: "Who was the peanut really meant for?",
-        options: [
-          { id: "triangle", label: "Amélie Duret" },
-          { id: "square", label: "Bertrand Carré" },
-          { id: "circle", label: "Olu Bello" },
-          { id: "critic", label: "Celeste Hart, all along" },
-        ],
-        answer: "square",
+        question: "Who was the peanut really meant for? Show what proves it.",
+        proves: ["detail-bracelet", "staff-medical", "question-bertrand-allergy", "insight-target"],
         reveal: "The poisoned plate was the owner's gold-leaf plate, and Bertrand is deadly allergic to peanuts. Celeste was an accident.",
       },
       hints: [
@@ -134,6 +123,41 @@ export const case003: CaseFile = {
     },
   ],
   questionBudget: 6,
+  interrogation: {
+    suspect: "rectangle",
+    strikes: 3,
+    opening: "Twelve years in that kitchen, and this is what I get? Fine. Quickly, I have a mousse setting.",
+    claims: [
+      { id: "twelve", text: "I've run the pastry section here for twelve years." },
+      {
+        id: "butter",
+        text: "I went to the storeroom for butter. That's all.",
+        lie: { breaks: ["storeroom-log", "insight-oil"], crack: "Peanut oil, butter. They're both fats." },
+      },
+      {
+        id: "nuts",
+        text: "No nut has ever been near my section. I would never take that risk.",
+        lie: { breaks: ["detail-bottle", "insight-oil"], crack: "Anyone could hide a bottle behind my flour." },
+      },
+      {
+        id: "plate",
+        text: "Anyone in that kitchen could have touched the owner's plate.",
+        lie: { breaks: ["question-amelie-gold", "detail-leaf", "house-rules"], crack: "Yes, the leaf is mine. The plate is mine. That isn't a crime." },
+      },
+      { id: "critic", text: "I never meant any harm to Celeste Hart." },
+      {
+        id: "allergy",
+        text: "I had no idea Bertrand was allergic to anything.",
+        lie: { breaks: ["staff-medical", "question-bertrand-allergy", "detail-bracelet"], crack: "Fine. Everybody knows. It's on his wrist." },
+      },
+      {
+        id: "sale",
+        text: "What sale? I make desserts. I don't read his emails.",
+        lie: { breaks: ["detail-note", "ruth-letter", "sale-email"], crack: "Twelve years, and he told me with a form letter." },
+      },
+    ],
+    walkout: "My mousse is splitting. We're finished here.",
+  },
   evidence: [
     // ----- Chapter 1: course seven --------------------------------------------
     {
@@ -246,6 +270,7 @@ export const case003: CaseFile = {
       id: "question-amelie-who",
       role: "interviewer",
       chapter: 1,
+      after: ["detail-menu"],
       access: { kind: "interview", suspect: "Amélie Duret", question: "Who made course seven?" },
       title: "Amélie: who made it",
       body: { type: "statement", speaker: "Amélie Duret", text: "Pastry. Ruth makes every chocolate course, start to finish. I only check the plates at the pass." },
@@ -254,9 +279,9 @@ export const case003: CaseFile = {
       id: "insight-nutfree",
       role: "archivist",
       chapter: 1,
-      access: { kind: "crosscheck", pair: ["statement-amelie", "paramedic-note"] },
+      access: { kind: "crosscheck", pair: ["detail-menu", "paramedic-note"] },
       title: "Not so nut-free",
-      body: { type: "finding", text: "The chef says nothing with nuts leaves her kitchen. The paramedics say peanut." },
+      body: { type: "finding", text: "The menu swears it's nut-free, as ever. The paramedics say peanut." },
     },
     {
       id: "kitchen-notes",
@@ -342,6 +367,7 @@ export const case003: CaseFile = {
       id: "detail-gone",
       role: "photographer",
       chapter: 2,
+      after: ["pass-log"],
       access: { kind: "inspect", scene: "pass-camera", hotspot: "gone" },
       title: "21:47:05",
       body: { type: "finding", text: "The gold-leaf plate is gone first, to Table 1. The smudged plate is left for Table 9." },
@@ -389,6 +415,7 @@ export const case003: CaseFile = {
       id: "question-jo-plate",
       role: "interviewer",
       chapter: 2,
+      after: ["pass-log"],
       access: { kind: "interview", suspect: "Jo (runner)", question: "Which plate did you take to Table 1?" },
       title: "Jo: which plate",
       body: { type: "statement", speaker: "Jo (runner)", text: "The left one. Olu said so. The one with the little gold leaf." },
@@ -455,6 +482,7 @@ export const case003: CaseFile = {
       id: "detail-clean-plate",
       role: "photographer",
       chapter: 3,
+      after: ["bertrand-calendar"],
       access: { kind: "inspect", scene: "photo-table9", hotspot: "plate" },
       title: "Bertrand's plate",
       body: { type: "finding", text: "Bertrand's plate, scraped clean. He ate the critic's smudged dessert and felt fine." },
@@ -486,6 +514,7 @@ export const case003: CaseFile = {
       id: "question-amelie-gold",
       role: "interviewer",
       chapter: 3,
+      after: ["insight-gold"],
       access: { kind: "interview", suspect: "Amélie Duret", question: "Who places the gold leaf?" },
       title: "Amélie: the gold leaf",
       body: { type: "statement", speaker: "Amélie Duret", text: "Ruth. Only Ruth. She plates the owner's dessert herself, every night." },
@@ -494,7 +523,7 @@ export const case003: CaseFile = {
       id: "insight-target",
       role: "archivist",
       chapter: 3,
-      access: { kind: "crosscheck", pair: ["insight-gold", "staff-medical"] },
+      access: { kind: "crosscheck", pair: ["insight-gold", "detail-bracelet"] },
       title: "Meant for the owner",
       body: { type: "finding", text: "The poisoned plate was the owner's, and the owner is deadly allergic to peanuts." },
     },
@@ -548,6 +577,7 @@ export const case003: CaseFile = {
       id: "storeroom-log",
       role: "tech",
       chapter: 4,
+      after: ["detail-bottle"],
       access: { kind: "search", terms: ["storeroom", "stock", "peanutoil", "oil", "peanut"] },
       title: "Storeroom log",
       body: {
@@ -594,6 +624,7 @@ export const case003: CaseFile = {
       id: "question-ruth-sale",
       role: "interviewer",
       chapter: 4,
+      after: ["sale-email"],
       access: { kind: "interview", suspect: "Ruth Vale", question: "Did you know about the sale?" },
       title: "Ruth: the sale",
       body: { type: "statement", speaker: "Ruth Vale", text: "What sale? I make desserts. I don't read his emails." },
@@ -602,6 +633,7 @@ export const case003: CaseFile = {
       id: "question-olu-storeroom",
       role: "interviewer",
       chapter: 4,
+      after: ["storeroom-log"],
       access: { kind: "interview", suspect: "Olu Bello", question: "Did anyone go to the storeroom tonight?" },
       title: "Olu: the storeroom",
       body: { type: "statement", speaker: "Olu Bello", text: "Ruth, around quarter past nine. Said she was out of butter. Odd, mid-service." },

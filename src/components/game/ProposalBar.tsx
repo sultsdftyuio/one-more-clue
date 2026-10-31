@@ -6,26 +6,26 @@ import { cx } from "@/lib/cx";
 import { evidenceIn, nameOf, type Act } from "./context";
 import { Icon } from "./ui/Icon";
 
-type Described = Pick<Proposal, "kind" | "optionId" | "report" | "by">;
+type Described = Pick<Proposal, "kind" | "evidenceId" | "report" | "by">;
 
 function headline(view: PlayerView, p: Described) {
   const who = nameOf(view, p.by);
   const verb = who === "You" ? "propose" : "proposes";
   if (p.kind === "answer") {
-    const label = view.chapter.checkpoint?.options.find((o) => o.id === p.optionId)?.label ?? "an answer";
-    return `${who} ${verb}: "${label}"`;
+    const title = evidenceIn(view, p.evidenceId ?? "")?.title ?? "a piece of evidence";
+    return `${who} ${who === "You" ? "present" : "presents"}: "${title}"`;
   }
   if (p.kind === "final") {
     const suspect = view.case.suspects.find((s) => s.id === p.report?.suspectId)?.name;
-    return `${who} ${verb} the final report: ${suspect} did it.`;
+    return view.case.confrontation ? `${who} ${verb}: ${suspect} did it.` : `${who} ${verb} the final report: ${suspect} did it.`;
   }
   if (p.kind === "hint") return `${who} ${who === "You" ? "want" : "wants"} a hint.`;
   return `${who} ${who === "You" ? "want" : "wants"} to give up and see the answer.`;
 }
 
 const CONSEQUENCE: Record<Proposal["kind"], string> = {
-  answer: "If the majority agrees, it's locked in. Right opens the next chapter; wrong costs you.",
-  final: "If the majority agrees, the case closes. One shot.",
+  answer: "If the majority agrees, it's presented. Real proof opens the next chapter; anything else costs you.",
+  final: "If the majority agrees, it's locked in. One shot: name the wrong person and the case is over.",
   hint: "If the majority agrees, the next hint opens for everyone.",
   giveUp: "If the majority agrees, the case ends and the answer is revealed.",
 };
@@ -104,7 +104,7 @@ function LastDecision({ view, decision }: { view: PlayerView; decision?: Decided
   if (!decision || Date.now() - decision.decidedAt > 12_000) return null;
   if (decision.passed && decision.kind !== "answer") return null;
   const wrong = decision.passed && decision.correct === false;
-  const text = !decision.passed ? `Vote didn't pass: ${headline(view, decision)}` : wrong ? "Wrong answer. Look at the evidence again." : null;
+  const text = !decision.passed ? `Vote didn't pass: ${headline(view, decision)}` : wrong ? "That doesn't prove it. Look at the evidence again." : null;
   if (!text) return null;
   return (
     <p className="fixed inset-x-0 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-40 mx-auto w-fit max-w-[calc(100%-1.5rem)] animate-pop-in rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-center text-sm font-extrabold text-ink shadow-pop-sm lg:bottom-6">

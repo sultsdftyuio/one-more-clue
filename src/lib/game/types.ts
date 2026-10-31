@@ -112,6 +112,8 @@ export type Access =
   | { kind: "crosscheck"; pair: [string, string] };
 
 export type CaseEvidence = {
+  /** Evidence that has to be found first. Until then this stays hidden, so one player's find opens another's next move. */
+  after?: string[];
   id: string;
   /** The role this evidence belongs to: its holder can see it once it's available. */
   role: string;
@@ -128,9 +130,40 @@ export type Chapter = {
   intro: string;
   /** Plays when the chapter opens (after the first, which opens with the case story). */
   story: Beat[];
-  /** Answering it correctly opens the next chapter. The last chapter has none: it ends with the final report. */
-  checkpoint?: { question: string; options: { id: string; label: string }[]; answer: string; reveal: string };
+  /** Presenting pinned proof of it opens the next chapter. `proves` lists every piece that really does. The last chapter has none: it ends with the final report. */
+  checkpoint?: { question: string; proves: string[]; reveal: string };
   hints: string[];
+};
+
+/** One thing a suspect says under interrogation. A lie names the pinned evidence that breaks it. */
+export type InterrogationClaim = { id: string; text: string; lie?: { breaks: string[]; crack: string } };
+
+/**
+ * A suspect's story, told claim by claim. Only the Interviewer hears the
+ * claims and reads them out; anyone can call a lie by presenting a piece of
+ * pinned evidence. Break every lie and the suspect confesses; make too many
+ * wrong calls and they walk out.
+ */
+export type Interrogation = {
+  /** Suspect id: always the culprit, because only the right accusation opens it. */
+  suspect: string;
+  /** Wrong calls allowed before the suspect walks out. */
+  strikes: number;
+  /** Their first words when the team confronts them. */
+  opening: string;
+  claims: InterrogationClaim[];
+  /** What the suspect says as they walk out. */
+  walkout: string;
+};
+
+/** The story's clock. Every wrong answer loses time, and when it runs out the case is lost. */
+export type Deadline = {
+  /** What's coming, e.g. "The investors arrive at 9:00 AM". */
+  what: string;
+  /** The time at the start, then after each wrong answer. One wrong answer past the last ends the case. */
+  times: string[];
+  /** How it ends when time runs out. */
+  lost: string;
 };
 
 export type CaseFile = {
@@ -153,6 +186,11 @@ export type CaseFile = {
   chapters: Chapter[];
   /** Interview questions the whole team can ask over the case. */
   questionBudget: number;
+  /** The ending: name the culprit and they're confronted, their lies broken with pinned evidence. Without one, a report closes the case. */
+  interrogation?: Interrogation;
+  deadline?: Deadline;
+  /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
+  cinematic?: { video: string; poster?: string };
   evidence: CaseEvidence[];
   solution: {
     culprit: string;
@@ -194,8 +232,8 @@ export type ProposalKind = "answer" | "final" | "hint" | "giveUp";
 export type Proposal = {
   id: string;
   kind: ProposalKind;
-  /** The checkpoint option, for "answer". */
-  optionId?: string;
+  /** The pinned proof presented, for "answer". */
+  evidenceId?: string;
   /** For "final". */
   report?: FinalReport;
   by: string;
@@ -210,11 +248,11 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
-export type Outcome = { kind: "solved" | "wrong" | "gaveUp"; report?: FinalReport; score: Score; at: number };
+export type Outcome = { kind: "solved" | "wrong" | "gaveUp" | "tooLate" | "walkedOut"; report?: FinalReport; score: Score; at: number };
 
 export type RoomState = {
   code: string;
@@ -238,6 +276,12 @@ export type RoomState = {
   searches: Search[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
+  /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
+  emptyChecks?: Record<number, number>;
+  /** The confrontation, once the team has named the right person. */
+  interrogation?: InterrogationState;
+  /** The report that named them, held until the confrontation ends. */
+  accusation?: FinalReport;
   chat: ChatLine[];
   activity: Activity[];
   hintsUsed: number;
@@ -251,18 +295,33 @@ export type RoomState = {
   botMovedAt?: number;
 };
 
+export type InterrogationState = {
+  /** The claim the suspect is on, as an index into the case's claims. */
+  claim: number;
+  /** Claim ids whose lies have been broken. */
+  broken: string[];
+  strikes: number;
+  over?: "confessed" | "walkedOut";
+};
+
 export type Action =
   | { type: "setMode"; mode: Mode }
+  /** In the lobby: change your own detective name. */
+  | { type: "rename"; name: string }
   | { type: "start" }
   | { type: "ready" }
   | { type: "search"; query: string }
   | { type: "ask"; evidenceId: string }
   | { type: "inspect"; scene: string; hotspot: string }
   | { type: "crosscheck"; a: string; b: string }
+  /** Interrogation: move the suspect on to their next (or previous) claim. */
+  | { type: "press"; step: 1 | -1 }
+  /** Interrogation: call the current claim a lie, presenting a pinned piece of evidence. */
+  | { type: "callLie"; evidenceId: string }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }
-  | { type: "propose"; kind: ProposalKind; optionId?: string; report?: FinalReport }
+  | { type: "propose"; kind: ProposalKind; evidenceId?: string; report?: FinalReport }
   | { type: "vote"; proposalId: string; vote: "yes" | "no" }
   | { type: "withdraw"; proposalId: string }
   | { type: "leave" }

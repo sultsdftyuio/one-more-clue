@@ -2,7 +2,8 @@
 
 import { m } from "motion/react";
 import { useEffect, useState } from "react";
-import { onSoundChange, rememberedSound, setSoundEnabled } from "./sound";
+import { onTapsUntil } from "@/lib/audio-unlock";
+import { onSoundChange, rememberedSound, setSoundEnabled, soundRunning } from "./sound";
 
 /**
  * Rain and the blackout's sounds. Off by default; if the visitor turned it on
@@ -14,9 +15,10 @@ export function SoundToggle() {
   useEffect(() => onSoundChange(setOn), []);
   useEffect(() => {
     if (!rememberedSound()) return;
-    const resume = () => setSoundEnabled(true);
-    window.addEventListener("pointerdown", resume, { once: true });
-    return () => window.removeEventListener("pointerdown", resume);
+    return onTapsUntil(() => {
+      setSoundEnabled(true);
+      return soundRunning();
+    });
   }, []);
 
   return (

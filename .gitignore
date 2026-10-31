@@ -46,6 +46,11 @@ next-env.d.ts
 __pycache__/
 *.pyc
 .venv/
+.venv-voice/
+.venv-kaggle/
+# rendered films and narrator takes (the finished film is copied into public/)
+art/out/film/
+art/out/lab/
 
 # local waitlist signups (dev fallback when Redis isn't configured)
 /.data/

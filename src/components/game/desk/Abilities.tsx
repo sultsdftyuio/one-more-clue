@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { VisibleEvidence } from "@/lib/game/engine";
+import { EMPTY_CHECKS, type VisibleEvidence } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { nameOf, useGame } from "../context";
 import { Icon } from "../ui/Icon";
@@ -87,7 +87,7 @@ export function InterviewTool() {
 
   return (
     <section className={toolBox}>
-      <ToolHeader icon="mic" title="Interviews" text="The whole team shares a handful of questions. Agree on them before you spend them." />
+      <ToolHeader icon="mic" title="Interviews" text="The whole team shares a handful of questions. Agree on them before you spend them. Following up a lead is free." />
       <div className="mb-4 flex items-center gap-1.5" aria-label={`${left} of ${view.case.questionBudget} questions left`}>
         {Array.from({ length: view.case.questionBudget }, (_, i) => (
           <span key={i} className={cx("h-3 flex-1 rounded-full border-2 border-ink", i < left ? "bg-lilac" : "bg-ink/10")} />
@@ -114,7 +114,7 @@ export function InterviewTool() {
                   ) : (
                     <button
                       type="button"
-                      disabled={busy || left === 0}
+                      disabled={busy || (left === 0 && !q.lead)}
                       onClick={async () => {
                         if (armed !== q.id) return setArmed(q.id);
                         setArmed(null);
@@ -146,6 +146,7 @@ export function CrosscheckTool() {
   const candidates = view.evidence.filter((e) => e.body.type !== "scene");
   const key = [...picked].sort().join("+");
   const tried = picked.length === 2 && view.checked.includes(key);
+  const hunches = view.checksLeft ?? EMPTY_CHECKS;
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length === 2 ? [p[1], id] : [...p, id]));
@@ -175,6 +176,17 @@ export function CrosscheckTool() {
         title="Cross-check"
         text="Hold two pieces of evidence up against each other. If they can't both be true, you've caught a lie. Ask others to pin what you need."
       />
+      <div className="mb-4 flex items-center gap-1.5" aria-label={`${hunches} of ${EMPTY_CHECKS} hunches left this chapter`}>
+        {Array.from({ length: EMPTY_CHECKS }, (_, i) => (
+          <span key={i} className={cx("h-3 flex-1 rounded-full border-2 border-ink", i < hunches ? "bg-coral" : "bg-ink/10")} />
+        ))}
+        <span className="ml-2 text-sm font-extrabold whitespace-nowrap">
+          {hunches ? `${hunches} ${hunches === 1 ? "hunch" : "hunches"} left` : "No hunches left"}
+        </span>
+      </div>
+      <p className="-mt-2 mb-4 text-sm font-semibold text-ink/60">
+        {hunches ? "A compare that finds nothing uses a hunch. Talk it through first." : "Only a real contradiction will count until the next chapter."}
+      </p>
       <div className="flex items-center gap-2">
         {slot(0)}
         <Icon name="scale" className="text-ink/40" />

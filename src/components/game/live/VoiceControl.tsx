@@ -1,17 +1,16 @@
 "use client";
 
-import type { Mode } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { Icon } from "../ui/Icon";
 import { useLiveRoom } from "./useLive";
 
 /**
- * Voice chat controls for remote rooms. `compact` fits the investigation's top
- * bar; the full card sits in the lobby and briefing so people join early.
+ * Voice chat controls, for anyone playing apart. `compact` fits a toolbar or
+ * the investigation's top bar; the full card is for wider screens.
  */
-export function VoiceControl({ mode, compact }: { mode: Mode; compact?: boolean }) {
+export function VoiceControl({ compact }: { compact?: boolean }) {
   const live = useLiveRoom();
-  if (mode !== "remote" || !live.connected) return null;
+  if (!live.connected) return null;
 
   const soundPrompt = live.soundBlocked && (
     <button

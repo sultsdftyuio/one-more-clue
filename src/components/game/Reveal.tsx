@@ -18,6 +18,8 @@ const HEADLINES = {
   solved: { stamp: "Case closed", text: "You caught the culprit." },
   wrong: { stamp: "Wrong suspect", text: "The real culprit walks free tonight." },
   gaveUp: { stamp: "Case abandoned", text: "Here's what really happened." },
+  tooLate: { stamp: "Out of time", text: "Three wrong answers, and the night ran out." },
+  walkedOut: { stamp: "Walked out", text: "You had the right person, but you couldn't break their story." },
 };
 
 function Stars({ count }: { count: number }) {
@@ -67,10 +69,18 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
       window.localStorage.setItem(confessionKey, "1");
     } catch {}
   };
+  // Nobody confesses to a team that ran out of time, or one they just walked out on.
+  const room = view.interrogation;
+  const crack = room?.broken.at(-1);
+  const lastWords: Beat[] =
+    outcome.kind === "tooLate"
+      ? []
+      : outcome.kind === "walkedOut"
+        ? [{ kind: "line", who: culprit.id, text: room?.walkout ?? "" }]
+        : [...(crack ? [{ kind: "line" as const, who: culprit.id, text: crack.crack, shocked: true }] : []), { kind: "line", who: culprit.id, text: `It was me.`, shocked: true }, ...solution.confession];
   const confessionBeats: Beat[] = [
-    { kind: "title", text: headline.stamp, sub: outcome.kind === "wrong" && accused ? `You accused ${accused.name}.` : headline.text },
-    { kind: "line", who: culprit.id, text: `It was me.`, shocked: true },
-    ...solution.confession,
+    { kind: "title", text: headline.stamp, sub: outcome.kind === "wrong" && accused ? `You accused ${accused.name}.` : (view.deadline?.lost ?? headline.text) },
+    ...lastWords,
   ];
 
   // Count each finished case once per device, however often the page reloads.
@@ -99,8 +109,8 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
   const breakdown = [
     { ok: outcome.score.culprit, label: "Named the culprit", worth: 2 },
     { ok: outcome.score.motive, label: "Got the motive", worth: 1 },
-    { ok: outcome.score.evidence, label: "Proof that holds up", worth: 1 },
-    { ok: outcome.score.sharp, label: "Sharp: at most 1 hint and 1 wrong answer", worth: 1 },
+    { ok: outcome.score.evidence, label: view.case.confrontation ? "Broke their story" : "Proof that holds up", worth: 1 },
+    { ok: outcome.score.sharp, label: view.case.confrontation ? "Sharp: no wrong answers, at most 1 hint, no walkout" : "Sharp: no wrong answers, at most 1 hint", worth: 1 },
   ];
 
   return (
@@ -119,7 +129,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
           </p>
           <p className="mt-4 text-lg font-bold text-cream/80">
             {outcome.kind === "wrong" && accused ? `You accused ${accused.name}. ` : ""}
-            {headline.text}
+            {view.deadline?.lost ?? headline.text}
           </p>
           <div className="mt-5">
             <Stars count={outcome.score.stars} />
@@ -130,7 +140,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
           <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed font-semibold text-cream/90">{solution.explanation}</p>
         </section>
 
-        {outcome.kind !== "gaveUp" && (
+        {outcome.kind !== "gaveUp" && outcome.kind !== "tooLate" && (
           <Panel title="Your score">
             <ul className="grid gap-2">
               {breakdown.map((b) => (

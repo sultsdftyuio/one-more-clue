@@ -9,6 +9,7 @@ import { Avatar } from "./parts";
 import { Icon, type IconName } from "./ui/Icon";
 
 const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
+  lead: "bulb",
   found: "sparkle",
   miss: "x",
   pin: "pin",
@@ -18,6 +19,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   hint: "bulb",
   join: "users",
   leave: "door",
+  lie: "target",
 };
 
 export function ago(at: number, now = Date.now()) {
@@ -116,7 +118,7 @@ export function TeamPanel() {
         </ul>
       </section>
 
-      {view.mode === "remote" && <Chat />}
+      <Chat />
 
       <section className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card">
         <h3 className="mb-3 flex items-center gap-2 font-display text-xl text-cream">

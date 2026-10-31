@@ -4,7 +4,7 @@
  * ability once per chapter, say so in remote rooms, and vote the way the
  * first human voter did. They never answer checkpoints: that's the humans' job.
  */
-import { activePlayers, canSee, PIN_LIMIT } from "./engine.ts";
+import { activePlayers, canSee, PIN_LIMIT, opened } from "./engine.ts";
 import type { Action, CaseFile, Player, RoomState } from "./types";
 
 export const BOT_NAMES = ["Bot Watson", "Bot Marple", "Bot Poirot", "Bot Fletcher", "Bot Columbo", "Bot Lestrade"];
@@ -12,7 +12,7 @@ export const BOT_NAMES = ["Bot Watson", "Bot Marple", "Bot Poirot", "Bot Fletche
 /** Votes and getting ready happen quickly; investigating is spaced out. */
 const QUICK_MS = 800;
 const WORK_MS = 3500;
-/** Bots leave this many board slots for the humans. */
+/** Bots between them hold at most this many fewer pins than the board takes, so humans always have room. */
 const SLOTS_FOR_HUMANS = 3;
 
 export type BotMove = { playerId: string; action: Action };
@@ -23,15 +23,15 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
   const usedThisChapter = Object.entries(state.found).some(
     ([id, f]) => f.by === bot.id && caseFile.evidence.find((e) => e.id === id)?.chapter === state.chapter,
   );
-  if (usedThisChapter) return null;
   const roles = caseFile.roles.filter((r) => bot.roles.includes(r.id));
 
   for (const role of roles) {
     for (const e of caseFile.evidence) {
-      if (state.found[e.id] || !current(e)) continue;
+      // Bots follow up leads whenever they open, so a human tester can walk a chain with them.
+      if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after)) continue;
       const a = e.access;
       if (role.ability === "search" && a.kind === "search") return { type: "search", query: a.terms[0] };
-      if (role.ability === "interview" && a.kind === "interview" && caseFile.questionBudget - state.questionsUsed > 1) {
+      if (role.ability === "interview" && a.kind === "interview" && (e.after || caseFile.questionBudget - state.questionsUsed > 1)) {
         return { type: "ask", evidenceId: e.id };
       }
       if (role.ability === "inspect" && a.kind === "inspect") {
@@ -72,6 +72,9 @@ export function nextBotMove(state: RoomState, caseFile: CaseFile, now: number): 
 
   if (since < WORK_MS) return null;
   const pinned = new Set(state.pins.map((p) => p.evidenceId));
+  // Count only the bots' own pins: humans filling the board mustn't stop a bot showing its desk.
+  const botPins = state.pins.filter((p) => bots.some((b) => b.id === p.by)).length;
+  const room = state.pins.length < PIN_LIMIT && botPins < PIN_LIMIT - SLOTS_FOR_HUMANS;
 
   for (const bot of bots) {
     // Its own desk and finds from this chapter, so humans can see what the bot holds.
@@ -81,7 +84,7 @@ export function nextBotMove(state: RoomState, caseFile: CaseFile, now: number): 
         !pinned.has(e.id) &&
         ((e.access.kind === "desk" && bot.roles.includes(e.role)) || state.found[e.id]?.by === bot.id),
     );
-    if (own && state.pins.length < PIN_LIMIT - SLOTS_FOR_HUMANS) return { playerId: bot.id, action: { type: "pin", evidenceId: own.id } };
+    if (own && room) return { playerId: bot.id, action: { type: "pin", evidenceId: own.id } };
     // Out of bot space: make room by taking down one of its own pins from an earlier chapter.
     if (own) {
       const stale = state.pins.find((p) => p.by === bot.id && (caseFile.evidence.find((e) => e.id === p.evidenceId)?.chapter ?? 0) < state.chapter);

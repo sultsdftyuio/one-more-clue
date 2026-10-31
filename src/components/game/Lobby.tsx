@@ -1,47 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { trackEvent } from "@/lib/analytics";
 import type { PlayerView } from "@/lib/game/engine";
-import type { Mode } from "@/lib/game/types";
-import { cx } from "@/lib/cx";
 import type { Act } from "./context";
 import { AudioToggles } from "./audio/AudioToggles";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
+import { rememberName } from "./names";
 import { Panel, PlayerRow, SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
-const MODES: { mode: Mode; title: string; text: string; icon: "users" | "chat" }[] = [
-  { mode: "together", title: "Same room", text: "You're together. Read evidence out loud and show each other your screens.", icon: "users" },
-  { mode: "remote", title: "Remote", text: "You're apart, on a call or not. Adds a team chat.", icon: "chat" },
-];
-
-export function ModePicker({ value, onChange, disabled }: { value: Mode; onChange?: (mode: Mode) => void; disabled?: boolean }) {
+/** Your own row in the lobby: tap your name to change it. */
+function MyName({ view, act }: { view: PlayerView; act: Act }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(view.me.name);
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (name.trim() === view.me.name || (await act({ type: "rename", name }))) {
+      rememberName(name.trim());
+      setEditing(false);
+    }
+  };
+  if (!editing) {
+    return (
+      <button type="button" onClick={() => setEditing(true)} className="text-sm font-extrabold text-coral-dk hover:underline">
+        Change name
+      </button>
+    );
+  }
   return (
-    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Where are you playing?">
-      {MODES.map((m) => (
-        <button
-          key={m.mode}
-          type="button"
-          role="radio"
-          aria-checked={value === m.mode}
-          disabled={disabled}
-          onClick={() => onChange?.(m.mode)}
-          className={cx(
-            "flex gap-3 rounded-2xl border-[3px] border-ink p-3 text-left text-ink transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-default",
-            value === m.mode ? "bg-mustard shadow-pop-sm" : "bg-cream/60",
-          )}
-        >
-          <Icon name={m.icon} className="mt-0.5" />
-          <span>
-            <span className="font-display text-lg">{m.title}</span>
-            <span className="mt-0.5 block text-sm leading-snug font-semibold text-ink/75">{m.text}</span>
-          </span>
-        </button>
-      ))}
-    </div>
+    <form onSubmit={save} className="flex gap-2">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={24}
+        autoFocus
+        aria-label="Your detective name"
+        className="w-36 rounded-xl border-2 border-ink bg-white px-2 py-1 font-bold text-ink outline-none focus:border-mustard"
+      />
+      <button type="submit" className="rounded-xl border-2 border-ink bg-mustard px-3 font-extrabold text-ink">
+        Save
+      </button>
+    </form>
   );
 }
 
@@ -88,7 +90,6 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
   return (
     <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-28">
       <CaseCover view={view} />
-      <VoiceControl mode={view.mode} />
 
       <Panel>
         <p className="text-sm font-bold text-cream/70">Room code</p>
@@ -115,6 +116,7 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
         <ul className="grid gap-2">
           {view.players.map((p, i) => (
             <PlayerRow key={p.id} player={p} index={i} speaking={speaking.has(p.id)}>
+              {p.id === view.me.id && <MyName view={view} act={act} />}
               {isHost && p.id !== view.me.id && (
                 <button type="button" onClick={() => act({ type: "kick", playerId: p.id })} className="text-sm font-extrabold text-coral-dk hover:underline">
                   Remove
@@ -142,14 +144,12 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
         )}
       </Panel>
 
-      <Panel title="Sound">
+      <Panel>
         <AudioToggles />
-        <p className="mt-3 text-sm font-bold text-cream/60">Music builds as the case gets tense. It quiets down while you talk in voice chat.</p>
-      </Panel>
-
-      <Panel title="Where are you playing?">
-        <ModePicker value={view.mode} disabled={!isHost} onChange={(mode) => act({ type: "setMode", mode })} />
-        {!isHost && <p className="mt-3 text-sm font-bold text-cream/60">The host picks this.</p>}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-bold text-cream/60">Playing apart? Talk in voice chat, or use the team chat once the case starts.</p>
+          <VoiceControl compact />
+        </div>
       </Panel>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-ink bg-night/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">

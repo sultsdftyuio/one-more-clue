@@ -10,9 +10,14 @@ import type { CaseFile } from "@/lib/game/types";
  * home", took HALO with the spare key, and walked out at 9:19. Her car reached
  * Kestrel's HQ at 9:48.
  *
- * Red herrings: Priya (the edited message) and Professor Squires, who lies
+ * Red herrings: Priya (the edited message), Professor Squires, who lies
  * about leaving with Rena and backfills the visitor sheet to hide that he left
- * a visitor alone.
+ * a visitor alone, and Ozzy, whose round passes Lab 4 at 9:10. Checkpoint 2
+ * catches the professor's lie, so the culprit is only named in the final report.
+ *
+ * Ending: the team names who did it. Name Rena and she tells her story claim
+ * by claim; they break each lie by presenting pinned evidence, and if they
+ * catch all five she confesses.
  *
  * Hand-offs: the Archivist's chat shows the edit → the Tech searches the chat
  * history and Priya's laptop; the Photographer's 8:58 photo shows HALO still
@@ -25,8 +30,15 @@ export const case001: CaseFile = {
   title: "The Last Message",
   tagline: "A prototype vanishes. The last message says who took it. The message is lying.",
   theme: "noir",
+  // Rendered by art/omc_cinema/case001_film.py. Hidden clue: the laptop's clock reads 9:12 while the message is rewritten.
+  cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
+  deadline: {
+    what: "The investors arrive at 9:00 AM",
+    times: ["Midnight", "3:00 AM", "6:30 AM"],
+    lost: "9:00 AM. The investors walk into an empty lab. HALO is gone for good, and Priya's name goes with it.",
+  },
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "title", text: "Halden University", sub: "Innovation Lab 4 · 9:17 PM" },
     { kind: "effect", effect: "flash", text: "9:17 PM. Cabinet B, wide open." },
@@ -79,17 +91,11 @@ export const case001: CaseFile = {
   chapters: [
     {
       title: "The last message",
-      intro: "Priya's message says she took HALO home. Test it against the evidence.",
+      intro: "Test the last message in the lab chat against the evidence.",
       story: [],
       checkpoint: {
-        question: "Priya's message says she took HALO home. What's wrong with that?",
-        options: [
-          { id: "nothing", label: "Nothing. She took it." },
-          { id: "after", label: "She left at 8:45, but HALO was still in the lab after that" },
-          { id: "never", label: "She was never in the lab tonight" },
-          { id: "phone", label: "It was sent from her phone at home" },
-        ],
-        answer: "after",
+        question: "Priya's message says she took HALO home. What proves it isn't true?",
+        proves: ["detail-halo", "photo-linkedin", "device-log", "insight-message"],
         reveal: "Priya badged out at 8:45, but HALO was still in Cabinet B at 8:58. And the message was edited on her laptop, in the lab, at 9:12.",
       },
       hints: [
@@ -99,44 +105,84 @@ export const case001: CaseFile = {
     },
     {
       title: "The visitor",
-      intro: "Someone in Lab 4 edited Priya's message at 9:12. Find out who had the lab to themselves.",
+      intro: "Someone in Lab 4 edited Priya's message at 9:12. Find out whose story about tonight doesn't hold up.",
       story: [
         { kind: "narration", text: "Priya's laptop was edited in the lab at 9:12, long after she'd gone. Who was still inside?" },
         { kind: "line", who: "square", text: "Ms Voss and I left together at nine. I'd stake my reputation on it." },
         { kind: "narration", text: "The security desk has dug out tonight's visitor sheet." },
       ],
       checkpoint: {
-        question: "Who had Lab 4 to themselves when the message was edited?",
-        options: [
-          { id: "triangle", label: "Priya Tran" },
-          { id: "square", label: "Prof. Edmund Squires" },
-          { id: "circle", label: "Ozzy Reyes" },
-          { id: "rectangle", label: "Rena Voss" },
-        ],
-        answer: "rectangle",
-        reveal: "The professor's badge left at 9:02. Ozzy saw Rena alone at the lab door at 9:10, and her visitor badge, V-117, left Lab 4 at 9:14.",
+        question: "The professor says he and Rena left together at nine. What breaks that?",
+        proves: ["badge-log", "question-ozzy-round", "insight-sheet", "insight-together"],
+        reveal: "The professor's badge left at 9:02, but the sheet says he signed his visitor out at 9:20. He filled it in later. So who was still in the building?",
       },
       hints: [
-        "Find out who was still inside after the professor's badge left at 9:02.",
+        "Compare when the professor's badge left with when he 'signed' his visitor out.",
         "The Archivist can hold the visitor sheet up against the badge log.",
       ],
     },
     {
       title: "The last clue",
-      intro: "Rena had the chance. Now prove she took HALO, and find out why an investor would steal what they're about to fund.",
+      intro: "The professor left at 9:02. Someone still in the building took HALO. Decide who, and why. Then get ready to face them.",
       story: [
-        { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet the next morning.", shocked: true },
-        { kind: "narration", text: "Rena Voss came as Northgate's engineer. Why would an investor steal what they're about to fund?" },
+        { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet when I came back.", shocked: true },
+        { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
+        { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
+        { kind: "narration", text: "One of them did this. Pin whatever would break their story, because the board is all you'll have when you face them." },
       ],
       hints: [
-        "Rena's story has two parts: who she works for, and where she went. Check both.",
-        "The visitor sheet has her number plate. The Tech can search it.",
-        "Look closely at her coat in the lobby camera.",
+        "Two people were still around after 9:02. Check where each of them was at 9:12, and where each one went.",
+        "The visitor sheet has a number plate. The Tech can search it.",
+        "Look closely at everyone who crosses the lobby camera.",
       ],
     },
   ],
   questionBudget: 6,
+  interrogation: {
+    suspect: "rectangle",
+    strikes: 3,
+    opening: "Am I being accused of something? How exciting. Go on, ask me anything.",
+    claims: [
+      { id: "invited", text: "Professor Squires invited me to see HALO before the demo." },
+      {
+        id: "northgate",
+        text: "I'm a senior engineer at Northgate Capital.",
+        lie: {
+          breaks: ["kestrel-staff", "northgate-email", "detail-lanyard", "insight-employer"],
+          crack: "Northgate, Kestrel… investors all look the same in the end, don't they?",
+        },
+      },
+      {
+        id: "together",
+        text: "The professor was with me every single minute.",
+        lie: {
+          breaks: ["badge-log", "insight-sheet", "question-ozzy-round", "insight-together", "question-squires-sheet", "detail-alone"],
+          crack: "Fine. He took a call from the Dean and left me waiting. Is that my fault?",
+        },
+      },
+      { id: "priya", text: "I'd never met Priya Tran. I still haven't." },
+      {
+        id: "touched",
+        text: "I didn't touch a single thing in that lab.",
+        lie: {
+          breaks: ["device-log", "chat-history", "detail-badge-clip", "detail-screen"],
+          crack: "I checked something on a laptop. One laptop. Briefly.",
+        },
+      },
+      {
+        id: "coat",
+        text: "I walked out with nothing but my coat.",
+        lie: { breaks: ["detail-bag", "question-ozzy-bag", "cctv-lobby"], crack: "It's a tote bag. Everyone carries a tote bag." },
+      },
+      {
+        id: "home",
+        text: "And then I drove straight home.",
+        lie: { breaks: ["anpr", "insight-home"], crack: "…I'd like to stop talking now." },
+      },
+    ],
+    walkout: "This is harassment. I'm leaving, and Northgate's lawyers will be in touch.",
+  },
   evidence: [
     // ----- Chapter 1: the last message ---------------------------------------
     {
@@ -172,6 +218,7 @@ export const case001: CaseFile = {
           { time: "9:02 PM", text: "E. Squires · out · main door" },
           { time: "9:14 PM", text: "V-117 · out · Lab 4 door" },
           { time: "9:19 PM", text: "V-117 · out · main door" },
+          { time: "9:41 PM", text: "E. Squires · in · main door" },
         ],
       },
     },
@@ -255,6 +302,7 @@ export const case001: CaseFile = {
       id: "device-log",
       role: "tech",
       chapter: 1,
+      after: ["question-priya-laptop"],
       access: { kind: "search", terms: ["priya", "tran", "laptop", "priyalaptop"] },
       title: "PRIYA-LAPTOP",
       body: {
@@ -282,6 +330,7 @@ export const case001: CaseFile = {
       id: "question-priya-laptop",
       role: "interviewer",
       chapter: 1,
+      after: ["detail-laptop"],
       access: { kind: "interview", suspect: "Priya Tran", question: "Did you leave your laptop in the lab?" },
       title: "Priya: her laptop",
       body: { type: "statement", speaker: "Priya Tran", text: "Yes, charging on the bench. I always do. I... didn't lock it. I never lock it." },
@@ -380,6 +429,7 @@ export const case001: CaseFile = {
       id: "chat-history",
       role: "tech",
       chapter: 2,
+      after: ["detail-screen"],
       access: { kind: "search", terms: ["edit", "history", "chat", "labchat", "message"] },
       title: "Lab chat: edit history",
       body: {
@@ -420,6 +470,7 @@ export const case001: CaseFile = {
       id: "question-ozzy-round",
       role: "interviewer",
       chapter: 2,
+      after: ["guard-tour"],
       access: { kind: "interview", suspect: "Ozzy Reyes", question: "Who did you see on your 9:10 round?" },
       title: "Ozzy: the 9:10 round",
       body: { type: "statement", speaker: "Ozzy Reyes", text: "The visitor lady, alone at the Lab 4 door. Said she was waiting for the professor." },
@@ -428,6 +479,7 @@ export const case001: CaseFile = {
       id: "question-rena-after",
       role: "interviewer",
       chapter: 2,
+      after: ["detail-badge-clip"],
       access: { kind: "interview", suspect: "Rena Voss", question: "What did you do after the demo prep?" },
       title: "Rena: after the demo prep",
       body: { type: "statement", speaker: "Rena Voss", text: "Professor Squires and I left at nine. I drove straight home." },
@@ -436,6 +488,7 @@ export const case001: CaseFile = {
       id: "question-priya-visitor",
       role: "interviewer",
       chapter: 2,
+      after: ["question-rena-after"],
       access: { kind: "interview", suspect: "Priya Tran", question: "Did you know a visitor was coming?" },
       title: "Priya: the visitor",
       body: { type: "statement", speaker: "Priya Tran", text: "The professor said Northgate's engineer was coming at nine. I'd gone by then. I never met her." },
@@ -517,6 +570,7 @@ export const case001: CaseFile = {
       id: "anpr",
       role: "tech",
       chapter: 3,
+      after: ["question-rena-after"],
       access: { kind: "search", terms: ["kx24rvs", "kx24", "plate", "anpr", "car", "numberplate"] },
       title: "Number plate KX24 RVS",
       body: {
@@ -532,6 +586,7 @@ export const case001: CaseFile = {
       id: "kestrel-staff",
       role: "tech",
       chapter: 3,
+      after: ["detail-lanyard"],
       access: { kind: "search", terms: ["kestrel", "kestreldynamics"] },
       title: "Kestrel Dynamics",
       body: {
@@ -551,7 +606,7 @@ export const case001: CaseFile = {
         messages: [
           {
             from: "Northgate Capital",
-            time: "8:10 AM",
+            time: "10:52 PM",
             text: "Professor, we don't have an engineer called Rena Voss. Our technical visit is next Tuesday. Is everything all right?",
           },
         ],
@@ -561,6 +616,7 @@ export const case001: CaseFile = {
       id: "question-rena-employer",
       role: "interviewer",
       chapter: 3,
+      after: ["kestrel-staff"],
       access: { kind: "interview", suspect: "Rena Voss", question: "Who do you really work for?" },
       title: "Rena: her employer",
       body: { type: "statement", speaker: "Rena Voss", text: "Northgate Capital. As I've said. Several times." },
@@ -574,13 +630,14 @@ export const case001: CaseFile = {
       body: {
         type: "statement",
         speaker: "Prof. Edmund Squires",
-        text: "I filled it in the next morning. The Dean called about our funding and I... left her alone. Against the rules, I know.",
+        text: "I filled it in when I came back at 9:41. The Dean called about our funding and I... left her alone. Against the rules, I know.",
       },
     },
     {
       id: "question-ozzy-bag",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-bag"],
       access: { kind: "interview", suspect: "Ozzy Reyes", question: "Did the visitor carry anything out?" },
       title: "Ozzy: the bag",
       body: { type: "statement", speaker: "Ozzy Reyes", text: "A big tote bag. Held it like a baby. Didn't think anything of it at the time." },
@@ -638,6 +695,7 @@ export const case001: CaseFile = {
       { time: "9:12 PM", text: "Rena edits Priya's message on Priya's laptop, then opens Cabinet B with the spare key." },
       { time: "9:17 PM", text: "Ozzy finds Cabinet B empty and raises the alarm." },
       { time: "9:19 PM", text: "Rena walks out through the lobby with a heavy tote bag." },
+      { time: "9:41 PM", text: "Squires badges back in and fills in the visitor sheet as if he'd stayed." },
       { time: "9:48 PM", text: "Rena's car pulls into Kestrel Dynamics' car park." },
     ],
     confession: [

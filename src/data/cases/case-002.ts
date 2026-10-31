@@ -21,10 +21,17 @@ export const case002: CaseFile = {
   id: "case-002",
   code: "Case 002",
   title: "Dead Air",
-  tagline: "Nine minutes of silence, one missing jackpot, and a victim who's a little too calm.",
+  tagline: "Nine minutes of dead air, a man in a balaclava, and a £5,000 jackpot gone.",
   theme: "radio",
+  // Rendered by art/omc_cinema/case002_film.py. Hidden clue: a quiet chuckle just before the sound dies.
+  cinematic: { video: "/cinematics/case-002.mp4", poster: "/cinematics/case-002.jpg" },
+  deadline: {
+    what: "The breakfast show goes on air at 6:00 AM",
+    times: ["12:30 AM", "2:30 AM", "4:30 AM"],
+    lost: "6:00 AM. The breakfast show reads out the story, the trail goes cold, and the £5,000 is never seen again.",
+  },
   minPlayers: 2,
-  maxPlayers: 6,
+  maxPlayers: 4,
   story: [
     { kind: "title", text: "KNHT 99.1 FM", sub: "Night Owls · 11:58 PM" },
     { kind: "effect", effect: "static", text: "…dead air…" },
@@ -55,14 +62,8 @@ export const case002: CaseFile = {
       intro: "Vince says the attacker ripped the cables out. Find out what really stopped the sound.",
       story: [],
       checkpoint: {
-        question: "How was the show cut off at 11:58?",
-        options: [
-          { id: "rack", label: "Cables ripped out of the rack" },
-          { id: "fader", label: "The mic fader pulled down at the desk, inside the booth" },
-          { id: "transmitter", label: "The transmitter failed" },
-          { id: "power", label: "A power cut" },
-        ],
-        answer: "fader",
+        question: "Vince says the attacker ripped the cables out. What shows that's not what stopped the show?",
+        proves: ["detail-rack", "detail-fader", "transmitter-log", "booth-log", "safety-tape", "question-gus-cables", "insight-cables"],
         reveal: "Every cable was still plugged in and the transmitter was fine. Someone inside the booth pulled MIC 1 down at 11:58:02.",
       },
       hints: [
@@ -80,14 +81,8 @@ export const case002: CaseFile = {
         { kind: "line", who: "square", text: "A balaclava! In HER bag! I told you she wanted my show!", shocked: true },
       ],
       checkpoint: {
-        question: "How did the masked attacker get into Studio A?",
-        options: [
-          { id: "code", label: "With Vince's door code, 0451" },
-          { id: "window", label: "Through the control room window" },
-          { id: "nobody", label: "He didn't. Nobody entered the studio after Vince" },
-          { id: "firedoor", label: "Gus let him in through the fire door" },
-        ],
-        answer: "nobody",
+        question: "How did the masked attacker get into Studio A? Show what settles it.",
+        proves: ["door-log", "safety-tape", "insight-nobody"],
         reveal: "The door log shows no entry after Vince at 11:31, and the safety recorder caught no struggle. There was no attacker in Studio A.",
       },
       hints: [
@@ -111,6 +106,40 @@ export const case002: CaseFile = {
     },
   ],
   questionBudget: 6,
+  interrogation: {
+    suspect: "square",
+    strikes: 3,
+    opening: "Me? I'm the victim here! Look at me, I'm traumatised. Fine. I've done tougher interviews than this.",
+    claims: [
+      {
+        id: "cables",
+        text: "He ripped the cables clean out of the rack.",
+        lie: { breaks: ["detail-rack", "insight-cables"], crack: "Did I say ripped? It was dark. Radio is a very dark medium." },
+      },
+      { id: "code", text: "My door code is 0451. It's my birthday, and it's on the station wiki." },
+      {
+        id: "door",
+        text: "He burst through the studio door and shoved me out into the corridor.",
+        lie: { breaks: ["door-log", "insight-nobody", "detail-keypad"], crack: "Maybe it was more of a stroll. A very firm stroll." },
+      },
+      {
+        id: "darla",
+        text: "If you want a suspect, ask Darla why that balaclava was in her bag.",
+        lie: { breaks: ["balaclava-receipt", "insight-planted"], crack: "I may own a balaclava. It's cold in that car park." },
+      },
+      {
+        id: "envelope",
+        text: "He took the envelope. I haven't seen it since.",
+        lie: { breaks: ["detail-envelope", "detail-boot", "insight-envelope", "question-gus-after"], crack: "That could be any envelope. In anyone's boot." },
+      },
+      {
+        id: "money",
+        text: "Why would I take it? I'm doing fine. Never better.",
+        lie: { breaks: ["spinkings", "question-darla-why"], crack: "It's a phone game. A phone game with a very keen debt department." },
+      },
+    ],
+    walkout: "I've got a show to prep. Talk to my agent. You'll find him very disappointing.",
+  },
   evidence: [
     // ----- Chapter 1: dead air ------------------------------------------------
     {
@@ -239,6 +268,7 @@ export const case002: CaseFile = {
       id: "booth-log",
       role: "tech",
       chapter: 1,
+      after: ["question-tess-glass"],
       access: { kind: "search", terms: ["booth", "blind", "boothcontrols"] },
       title: "Studio A booth controls",
       body: {
@@ -262,6 +292,7 @@ export const case002: CaseFile = {
       id: "question-gus-cables",
       role: "interviewer",
       chapter: 1,
+      after: ["detail-rack"],
       access: { kind: "interview", suspect: "Gus Marley", question: "Did you check the cables?" },
       title: "Gus: the cables",
       body: { type: "statement", speaker: "Gus Marley", text: "First thing I did. All plugged in, all fine. Whatever cut the show, it wasn't the rack." },
@@ -385,6 +416,7 @@ export const case002: CaseFile = {
       id: "door-log",
       role: "tech",
       chapter: 2,
+      after: ["detail-keypad"],
       access: { kind: "search", terms: ["door", "keypad", "lock", "0451"] },
       title: "Studio A door log",
       body: {
@@ -402,6 +434,7 @@ export const case002: CaseFile = {
       id: "darla-phone",
       role: "tech",
       chapter: 2,
+      after: ["question-darla-where"],
       access: { kind: "search", terms: ["darla", "kingsley", "greenroom"] },
       title: "Darla's phone and the green room",
       body: {
@@ -432,6 +465,7 @@ export const case002: CaseFile = {
       id: "question-vince-code",
       role: "interviewer",
       chapter: 2,
+      after: ["door-log"],
       access: { kind: "interview", suspect: "Vince Valentine", question: "Who knows your door code?" },
       title: "Vince: the code",
       body: { type: "statement", speaker: "Vince Valentine", text: "Everyone! It's 0451, my birthday's on the station wiki. The attacker must have used it." },
@@ -440,6 +474,7 @@ export const case002: CaseFile = {
       id: "question-darla-where",
       role: "interviewer",
       chapter: 2,
+      after: ["detail-phone-call"],
       access: { kind: "interview", suspect: "Darla Kingsley", question: "Where were you at 11:58?" },
       title: "Darla: 11:58",
       body: { type: "statement", speaker: "Darla Kingsley", text: "Green room, on the phone to my agent about Vince's slot. Ask him. Ask the vending machine." },
@@ -448,6 +483,7 @@ export const case002: CaseFile = {
       id: "question-gus-where",
       role: "interviewer",
       chapter: 2,
+      after: ["fire-door"],
       access: { kind: "interview", suspect: "Gus Marley", question: "Where were you at midnight?" },
       title: "Gus: midnight",
       body: { type: "statement", speaker: "Gus Marley", text: "Out back having a smoke, like every hour. Came running the second Tess radioed." },
@@ -456,6 +492,7 @@ export const case002: CaseFile = {
       id: "question-darla-balaclava",
       role: "interviewer",
       chapter: 2,
+      after: ["detail-balaclava"],
       access: { kind: "interview", suspect: "Darla Kingsley", question: "Why is there a balaclava in your bag?" },
       title: "Darla: the balaclava",
       body: {
@@ -548,13 +585,14 @@ export const case002: CaseFile = {
       body: {
         type: "chat",
         title: "Inbox · Night Owls",
-        messages: [{ from: "Mrs Patel (winner)", time: "8:12 AM", text: "Vince read my name out at 11:55! When do I get my £5,000?" }],
+        messages: [{ from: "Mrs Patel (winner)", time: "12:14 AM", text: "Vince read my name out at 11:55! When do I get my £5,000?" }],
       },
     },
     {
       id: "spinkings",
       role: "tech",
       chapter: 3,
+      after: ["question-darla-why"],
       access: { kind: "search", terms: ["spinkings", "spinking", "betting", "bet", "gambling"] },
       title: "SpinKings account",
       body: {
@@ -571,6 +609,7 @@ export const case002: CaseFile = {
       id: "balaclava-receipt",
       role: "tech",
       chapter: 3,
+      after: ["detail-balaclava"],
       access: { kind: "search", terms: ["balaclava", "pricetag", "petrolstation", "shell"] },
       title: "Where the balaclava came from",
       body: {
@@ -586,6 +625,7 @@ export const case002: CaseFile = {
       id: "question-gus-greenroom",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-biscuits"],
       access: { kind: "interview", suspect: "Gus Marley", question: "Did anyone go into the green room before midnight?" },
       title: "Gus: the green room",
       body: { type: "statement", speaker: "Gus Marley", text: "Vince, about quarter to. Said he fancied a biscuit. He hates biscuits." },
@@ -602,6 +642,7 @@ export const case002: CaseFile = {
       id: "question-vince-envelope",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-envelope"],
       access: { kind: "interview", suspect: "Vince Valentine", question: "Where is the jackpot envelope?" },
       title: "Vince: the envelope",
       body: { type: "statement", speaker: "Vince Valentine", text: "The attacker took it, obviously! It was on the desk when he burst in." },
@@ -610,6 +651,7 @@ export const case002: CaseFile = {
       id: "question-gus-after",
       role: "interviewer",
       chapter: 3,
+      after: ["detail-alone-car"],
       access: { kind: "interview", suspect: "Gus Marley", question: "Did you see Vince after the 'attack'?" },
       title: "Gus: after",
       body: { type: "statement", speaker: "Gus Marley", text: "He nipped out to his car before the police came. Said he needed his inhaler." },
@@ -662,8 +704,8 @@ export const case002: CaseFile = {
     explanation:
       "There was no attacker. Vince owed SpinKings £4,800 by 9 AM and had the £5,000 jackpot in his hand. He planted a balaclava he'd bought at 11:12 in Darla's bag, lowered the blind, pulled his own mic down, locked Studio A with his own code and lay down in the corridor. At 12:31 he put the envelope in his car boot.",
     timeline: [
-      { time: "11:31 PM", text: "Vince enters Studio A. Nobody else enters all night." },
       { time: "11:12 PM", text: "On his way in, Vince buys a black balaclava at a petrol station." },
+      { time: "11:31 PM", text: "Vince enters Studio A. Nobody else enters all night." },
       { time: "11:40 PM", text: "Vince signs the £5,000 jackpot envelope out of the safe." },
       { time: "11:45 PM", text: "Vince 'fancies a biscuit' and stuffs the balaclava into Darla's bag." },
       { time: "11:51 PM", text: "Vince checks his SpinKings account: £4,800 due by morning." },

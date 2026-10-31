@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cx } from "@/lib/cx";
 import { evidenceIn, useGame } from "./context";
+import { InterrogationPanel } from "./Interrogation";
 import { SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -15,31 +16,58 @@ const choice = (on: boolean) =>
 const voteButton =
   "mt-4 w-full rounded-2xl border-[3px] border-ink bg-coral py-3 font-display text-xl text-cream shadow-pop transition-transform hover:-translate-y-0.5 active:translate-y-1 active:shadow-pop-sm disabled:opacity-50";
 
+/** A checkpoint is the confrontation in miniature: the team proves its answer with something on the board. */
 function Checkpoint() {
-  const { view, act, busy } = useGame();
+  const { view, act, busy, open } = useGame();
   const [picked, setPicked] = useState<string | null>(null);
   const checkpoint = view.chapter.checkpoint!;
+  const pinned = view.pins.flatMap((p) => {
+    const e = evidenceIn(view, p.evidenceId);
+    return e ? [e] : [];
+  });
+  const proof = pinned.some((e) => e.id === picked) ? picked : null;
   return (
     <div>
-      <p className="mb-3 font-display text-2xl leading-tight text-cream">{checkpoint.question}</p>
-      <div className="grid gap-2">
-        {checkpoint.options.map((o) => (
-          <button key={o.id} type="button" onClick={() => setPicked(o.id)} className={choice(picked === o.id)} aria-pressed={picked === o.id}>
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <p className="mb-1 font-display text-2xl leading-tight text-cream">{checkpoint.question}</p>
+      <p className="mb-3 text-sm font-bold text-cream/65">Agree on one piece from the board that proves it, then present it.</p>
+      {pinned.length ? (
+        <ul className="grid gap-2">
+          {pinned.map((e) => (
+            <li key={e.id} className="flex items-stretch gap-2">
+              <button type="button" onClick={() => setPicked(e.id)} className={choice(proof === e.id)} aria-pressed={proof === e.id}>
+                <span className="flex items-center gap-2">
+                  <Icon name={proof === e.id ? "check" : "pin"} className="size-4" />
+                  {e.title}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => open(e.id)}
+                aria-label={`Read ${e.title}`}
+                className="grid w-12 shrink-0 place-items-center rounded-2xl border-[3px] border-cream/20 bg-night/40 text-cream hover:border-cream/60"
+              >
+                <Icon name="eye" className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-2xl border-2 border-dashed border-cream/25 p-3 font-bold text-cream/70">The board is empty. Pin what you&apos;ve found first.</p>
+      )}
       <button
         type="button"
-        disabled={!picked || busy || Boolean(view.proposal)}
+        disabled={!proof || busy || Boolean(view.proposal)}
         onClick={async () => {
-          if (picked && (await act({ type: "propose", kind: "answer", optionId: picked }))) setPicked(null);
+          if (proof && (await act({ type: "propose", kind: "answer", evidenceId: proof }))) setPicked(null);
         }}
         className={voteButton}
       >
-        Put it to a vote
+        Present it to a vote
       </button>
-      <p className="mt-2 text-center text-xs font-bold text-cream/55">The majority decides. A wrong answer counts against your stars.</p>
+      <p className="mt-2 text-center text-xs font-bold text-cream/55">
+        The majority decides.{" "}
+        {!view.deadline ? "Weak proof counts against your stars." : view.deadline.left === 1 ? "One more failed proof and the night is over." : "Weak proof costs you hours."}
+      </p>
     </div>
   );
 }
@@ -54,13 +82,18 @@ function FinalReport() {
     return e ? [e] : [];
   });
   const toggleProof = (id: string) => setProof((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length === 2 ? [p[1], id] : [...p, id]));
-  const ready = suspect && motive && proof.length === 2;
+  const confronts = view.case.confrontation;
+  const ready = suspect && motive && (confronts || proof.length === 2);
 
   return (
     <div className="grid gap-5">
       <div>
-        <p className="font-display text-2xl leading-tight text-cream">The final report</p>
-        <p className="text-sm font-bold text-cream/65">Who did it, why, and two pinned pieces that prove it. One shot, decided by majority.</p>
+        <p className="font-display text-2xl leading-tight text-cream">{confronts ? "Name them" : "The final report"}</p>
+        <p className="text-sm font-bold text-cream/65">
+          {confronts
+            ? "One shot, decided by majority. Name the wrong person and the case is over. Name the right one and you face them, with only what's on your board."
+            : "Who did it, why, and two pinned pieces that prove it. One shot, decided by majority."}
+        </p>
       </div>
 
       <fieldset className="min-w-0">
@@ -95,34 +128,36 @@ function FinalReport() {
         </div>
       </fieldset>
 
-      <fieldset className="min-w-0">
-        <legend className="mb-2 text-xs font-extrabold tracking-widest text-mustard uppercase">3 · Proof ({proof.length}/2 from the board)</legend>
-        {pinned.length ? (
-          <div className="grid gap-2">
-            {pinned.map((e) => (
-              <button key={e.id} type="button" onClick={() => toggleProof(e.id)} className={choice(proof.includes(e.id))} aria-pressed={proof.includes(e.id)}>
-                <span className="flex items-center gap-2">
-                  <Icon name={proof.includes(e.id) ? "check" : "pin"} className="size-4" />
-                  {e.title}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="font-bold text-cream/60">Pin your strongest evidence to the board first.</p>
-        )}
-      </fieldset>
+      {!confronts && (
+        <fieldset className="min-w-0">
+          <legend className="mb-2 text-xs font-extrabold tracking-widest text-mustard uppercase">3 · Proof ({proof.length}/2 from the board)</legend>
+          {pinned.length ? (
+            <div className="grid gap-2">
+              {pinned.map((e) => (
+                <button key={e.id} type="button" onClick={() => toggleProof(e.id)} className={choice(proof.includes(e.id))} aria-pressed={proof.includes(e.id)}>
+                  <span className="flex items-center gap-2">
+                    <Icon name={proof.includes(e.id) ? "check" : "pin"} className="size-4" />
+                    {e.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="font-bold text-cream/60">Pin your strongest evidence to the board first.</p>
+          )}
+        </fieldset>
+      )}
 
       <button
         type="button"
         disabled={!ready || busy || Boolean(view.proposal)}
         onClick={async () => {
-          if (!suspect || !motive || proof.length !== 2) return;
+          if (!ready || !suspect || !motive) return;
           await act({ type: "propose", kind: "final", report: { suspectId: suspect, motiveId: motive, evidenceIds: proof } });
         }}
         className={voteButton}
       >
-        Put the report to a vote
+        {confronts ? "Put your accusation to a vote" : "Put the report to a vote"}
       </button>
     </div>
   );
@@ -184,13 +219,17 @@ export function SolvePanel() {
   const { view } = useGame();
   return (
     <div className="grid gap-5">
-      <section className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card sm:p-5">
-        <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">
-          Chapter {view.chapter.number} of {view.case.chapterTitles.length} · {view.chapter.title}
-        </p>
-        <p className="mt-1 mb-5 font-semibold text-cream/80">{view.chapter.intro}</p>
-        {view.chapter.checkpoint ? <Checkpoint /> : <FinalReport />}
-      </section>
+      {view.interrogation ? (
+        <InterrogationPanel />
+      ) : (
+        <section className="rounded-3xl border-[3px] border-ink bg-dusk p-4 shadow-card sm:p-5">
+          <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">
+            Chapter {view.chapter.number} of {view.case.chapterTitles.length} · {view.chapter.title}
+          </p>
+          <p className="mt-1 mb-5 font-semibold text-cream/80">{view.chapter.intro}</p>
+          {view.chapter.checkpoint ? <Checkpoint /> : <FinalReport />}
+        </section>
+      )}
 
       {view.solved.length > 0 && (
         <section className="grid gap-2">

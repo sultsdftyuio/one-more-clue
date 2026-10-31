@@ -22,7 +22,7 @@ export const steps: Step[] = [
 
 export const facts = [
   { value: "15–25", label: "minutes a case" },
-  { value: "2–6", label: "detectives" },
+  { value: "2–4", label: "detectives" },
   { value: "0", label: "apps to install" },
   { value: "1st", label: "case free" },
 ];

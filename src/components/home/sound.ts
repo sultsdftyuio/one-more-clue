@@ -3,6 +3,8 @@
  * power-down at 9:17, the lights coming back, and a stamp thud. Off until the
  * visitor turns it on; the choice is remembered on this device.
  */
+import { playThroughSilentSwitch } from "@/lib/audio-unlock";
+
 const STORAGE_KEY = "omc-sound";
 
 let ctx: AudioContext | null = null;
@@ -13,6 +15,7 @@ const listeners = new Set<(on: boolean) => void>();
 
 function audio() {
   if (!ctx) {
+    playThroughSilentSwitch();
     ctx = new AudioContext();
     master = ctx.createGain();
     master.gain.value = 0;
@@ -69,6 +72,11 @@ export const sfx = {
 
 export function soundEnabled() {
   return enabled;
+}
+
+/** Whether the audio engine is playing (browsers keep it paused until a tap). */
+export function soundRunning() {
+  return ctx?.state === "running";
 }
 
 export function setSoundEnabled(on: boolean) {

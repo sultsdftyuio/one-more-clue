@@ -6,6 +6,6 @@ export const hero = {
   },
   intro:
     "Mystery cases you crack together in the browser. Dig through chats, access logs and photos, argue it out, then name the culprit.",
-  facts: ["2–6 players", "15–25 min", "No app needed"],
+  facts: ["2–4 players", "15–25 min", "No app needed"],
   lineupBubble: "One of us is lying.",
 };

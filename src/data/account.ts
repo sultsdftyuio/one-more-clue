@@ -7,7 +7,7 @@ export const accountCopy = {
   logout: "Log out",
   shelf: {
     heading: "Your case shelf",
-    sub: "Host any unlocked case for up to six friends. They join with a link, no account needed.",
+    sub: "Host any unlocked case for up to three friends. They join with a link, no account needed.",
   },
   status: {
     free: "Free",

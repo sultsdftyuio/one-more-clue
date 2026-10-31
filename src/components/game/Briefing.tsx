@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { PlayerView } from "@/lib/game/engine";
-import { roleNames, type Act } from "./context";
-import { CaseCover } from "./Lobby";
+import { Music } from "./audio/sound";
+import { carriesSound, roleNames, type Act } from "./context";
 import { useLiveRoom } from "./live/useLive";
-import { VoiceControl } from "./live/VoiceControl";
-import { Panel, PlayerRow } from "./parts";
+import { Avatar } from "./parts";
+import { Cinematic } from "./story/Cinematic";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { Icon, type IconName } from "./ui/Icon";
 
@@ -19,113 +19,117 @@ const POWER: Record<string, { icon: IconName; text: string }> = {
   none: { icon: "file", text: "Your evidence backs up the others." },
 };
 
-const HOW: { icon: IconName; title: string; text: string }[] = [
-  { icon: "lock", title: "Your desk is private", text: "Only you see your evidence. Read it out or pin it to the board, which holds just 8 things." },
-  { icon: "users", title: "Powers need each other", text: "The Tech can only search what someone tells them to look for. The Photographer can only inspect photos they can see. Talk." },
-  { icon: "flag", title: "Chapters unlock by vote", text: "Each chapter ends with a question. Agree on the answer to open the next one. Wrong answers cost." },
-  { icon: "star", title: "One final report", text: "Who, why, and two pinned pieces of proof. Scored out of 5 stars." },
-];
+/** The whole rulebook, short enough to read while the cards land. */
+const HOW_TO_WIN = ["Use your power, and say what you find out loud.", "Pin what matters to the board so everyone sees it.", "Vote on each chapter's question. Then name who did it."];
 
-export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
+/** The opening: the case's film if it has one, its story beats if not. Plays once per device. */
+function Opening({ view, onDone }: { view: PlayerView; onDone: () => void }) {
+  const film = view.case.cinematic;
+  if (film) return <Cinematic video={film.video} poster={film.poster} muted={!carriesSound(view)} onDone={onDone} />;
+  return <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={onDone} finishLabel="See your role" />;
+}
+
+/** Your role, dealt as a card, then one tap into the case. */
+function RoleReveal({ view, act, busy, onReplay }: { view: PlayerView; act: Act; busy: boolean; onReplay: () => void }) {
   const myRoles = view.case.roles.filter((r) => view.me.roles.includes(r.id));
   const waitingFor = view.players.filter((p) => !p.ready).length;
   const { speaking } = useLiveRoom();
-  // The story plays once per device; the case file keeps it for later.
-  const storyKey = `omc-story-${view.code}`;
-  const [story, setStory] = useState(false);
-  useEffect(() => {
-    try {
-      if (!window.localStorage.getItem(storyKey)) setStory(true);
-    } catch {
-      setStory(true);
-    }
-  }, [storyKey]);
-  const closeStory = () => {
-    setStory(false);
-    try {
-      window.localStorage.setItem(storyKey, "1");
-    } catch {}
-  };
 
   return (
-    <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 pb-28">
-      <CaseCover view={view} />
-      <VoiceControl mode={view.mode} />
+    <div className="mx-auto grid max-w-xl grid-cols-1 gap-5 pb-28">
+      <header className="text-center">
+        <p className="text-xs font-extrabold tracking-[0.25em] text-[var(--case-accent)] uppercase">{view.case.code}</p>
+        <h1 className="font-case mt-1 text-4xl leading-tight text-cream text-pop">{view.case.title}</h1>
+      </header>
 
-      {story && <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={closeStory} finishLabel="Open the case file" />}
+      {myRoles.map((role, i) => (
+        <article
+          key={role.id}
+          className="animate-[deal_0.7s_cubic-bezier(0.34,1.4,0.64,1)_both] rounded-[2rem] border-[3px] border-ink bg-mustard p-5 text-ink shadow-card"
+          style={{ animationDelay: `${0.15 + i * 0.35}s` }}
+        >
+          <p className="text-xs font-extrabold tracking-[0.25em] uppercase opacity-70">You are the</p>
+          <p className="font-display text-5xl leading-tight">{role.name}</p>
+          <p className="mt-1 font-semibold">{role.blurb}</p>
+          <p className="mt-4 flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 font-bold">
+            <Icon name={POWER[role.ability].icon} />
+            <span>{POWER[role.ability].text}</span>
+          </p>
+        </article>
+      ))}
 
-      <details className="group relative rounded-[2rem] border-[3px] border-ink bg-cream p-5 text-ink shadow-card sm:p-6">
-        <span className="absolute -top-4 right-6 rotate-6 rounded-lg border-[3px] border-coral bg-cream px-3 py-0.5 font-display text-lg text-coral">CONFIDENTIAL</span>
-        <summary className="flex cursor-pointer list-none items-center gap-3">
-          <Icon name="file" />
-          <span className="flex-1 font-display text-xl">The case file</span>
-          <Icon name="arrow" className="transition-transform group-open:rotate-90" />
-        </summary>
-        <p className="paper mt-4 leading-8 font-semibold">{view.case.briefing}</p>
-        <button type="button" onClick={() => setStory(true)} className="mt-3 flex items-center gap-1.5 text-sm font-extrabold text-coral-dk hover:underline">
-          <Icon name="skip" className="size-4" /> Replay the story
-        </button>
-      </details>
-
-      <section className="grid gap-3">
-        {myRoles.map((role) => (
-          <div key={role.id} className="rounded-[2rem] border-[3px] border-ink bg-mustard p-5 text-ink shadow-card">
-            <p className="text-xs font-extrabold tracking-[0.25em] uppercase opacity-70">You are the</p>
-            <p className="font-display text-4xl leading-tight">{role.name}</p>
-            <p className="mt-1 font-semibold">{role.blurb}</p>
-            <p className="mt-4 flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 font-bold">
-              <Icon name={POWER[role.ability].icon} />
-              <span>
-                <span className="font-extrabold">Your power:</span> {POWER[role.ability].text}
-              </span>
-            </p>
-          </div>
+      <ol className="grid animate-[fade-in_0.5s_ease-out_0.9s_both] gap-2">
+        {HOW_TO_WIN.map((line, i) => (
+          <li key={line} className="flex items-center gap-3 font-bold text-cream">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full border-2 border-ink bg-cream font-display text-ink">{i + 1}</span>
+            {line}
+          </li>
         ))}
-      </section>
+      </ol>
 
-      <Panel title="How a case works">
-        <ol className="grid gap-4 sm:grid-cols-2">
-          {HOW.map((step) => (
-            <li key={step.title} className="flex gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-2xl border-[3px] border-ink bg-cream text-ink">
-                <Icon name={step.icon} />
-              </span>
-              <span>
-                <span className="block font-display text-lg text-cream">{step.title}</span>
-                <span className="block text-sm leading-snug font-semibold text-cream/70">{step.text}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Panel>
+      <ul className="flex animate-[fade-in_0.5s_ease-out_1.1s_both] flex-wrap justify-center gap-3">
+        {view.players.map((p, i) => (
+          <li key={p.id} className="flex items-center gap-2 rounded-full bg-cream/10 py-1 pr-3 pl-1 text-sm font-bold text-cream">
+            <Avatar name={p.name} index={i} online={p.online} speaking={speaking.has(p.id)} size="sm" />
+            <span>
+              {p.id === view.me.id ? "You" : p.name}
+              <span className="block text-xs text-cream/60">{roleNames(view, p.roles).join(" & ")}</span>
+            </span>
+            {p.ready && <Icon name="check" className="size-4 text-teal" />}
+          </li>
+        ))}
+      </ul>
 
-      <Panel title="Who's who">
-        <ul className="grid gap-2">
-          {view.players.map((p, i) => (
-            <PlayerRow key={p.id} player={p} index={i} speaking={speaking.has(p.id)}>
-              <span className="text-right text-xs leading-tight font-extrabold text-ink/60">
-                {roleNames(view, p.roles).join(" & ")}
-                <span className={p.ready ? "block text-teal" : "block text-ink/40"}>{p.ready ? "Ready" : "Reading…"}</span>
-              </span>
-            </PlayerRow>
-          ))}
-        </ul>
-      </Panel>
+      <button type="button" onClick={onReplay} className="mx-auto flex items-center gap-1.5 text-sm font-extrabold text-cream/50 hover:text-cream">
+        <Icon name="skip" className="size-4" /> Watch the opening again
+      </button>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-ink bg-night/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-end gap-3">
+        <div className="mx-auto flex max-w-xl items-center justify-center gap-3">
           {view.me.ready ? (
             <p className="flex items-center gap-2 font-bold text-cream/80">
               <span className="size-2.5 animate-pulse rounded-full bg-mustard" />
               Waiting for {waitingFor} more {waitingFor === 1 ? "detective" : "detectives"}
             </p>
           ) : (
-            <Button onClick={() => act({ type: "ready" })} disabled={busy}>
-              I&apos;m ready <Icon name="arrow" className="size-4" />
+            <Button onClick={() => act({ type: "ready" })} disabled={busy} className="w-full max-w-sm">
+              Let&apos;s go <Icon name="arrow" className="size-4" />
             </Button>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+export function Briefing({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
+  // The opening plays once per device; after that (or on a reload) you land on your role.
+  const seenKey = `omc-story-${view.code}`;
+  const [opening, setOpening] = useState<boolean | null>(null);
+  useEffect(() => {
+    try {
+      setOpening(!window.localStorage.getItem(seenKey));
+    } catch {
+      setOpening(true);
+    }
+  }, [seenKey]);
+
+  // The film brings its own soundtrack; the briefing music waits for it to finish.
+  const theme = view.case.theme;
+  const loud = carriesSound(view);
+  useEffect(() => {
+    if (loud && (opening === false || (opening && !view.case.cinematic))) Music.want("briefing", 1, theme);
+    else if (opening || !loud) Music.want(null);
+  }, [loud, opening, theme, view.case.cinematic]);
+
+  const closeOpening = () => {
+    setOpening(false);
+    try {
+      window.localStorage.setItem(seenKey, "1");
+    } catch {}
+  };
+
+  if (opening === null) return null;
+  if (opening) return <Opening view={view} onDone={closeOpening} />;
+  return <RoleReveal view={view} act={act} busy={busy} onReplay={() => setOpening(true)} />;
 }

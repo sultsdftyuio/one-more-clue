@@ -143,10 +143,11 @@ export function useRoom(code: string, live: boolean) {
       const body = await res?.json().catch(() => ({}));
       if (!res?.ok) {
         setError(body?.error ?? "Couldn't join. Try again.");
-        return;
+        return false;
       }
       lastBeat.current = 0;
       await refresh(true);
+      return true;
     },
     [code, refresh],
   );

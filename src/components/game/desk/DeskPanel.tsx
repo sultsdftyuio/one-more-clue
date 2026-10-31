@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGame } from "../context";
+import { nameOf, useGame } from "../context";
 import { EvidenceCard } from "../evidence/EvidenceCard";
 import { Icon } from "../ui/Icon";
 import { CrosscheckTool, InspectTool, InterviewTool, SearchTool } from "./Abilities";
@@ -40,6 +40,26 @@ function Notebook({ code }: { code: string }) {
   );
 }
 
+/** Someone's find opened a next move for this player. It says who to ask, not what they found. */
+function Leads() {
+  const { view } = useGame();
+  if (!view.leads.length) return null;
+  return (
+    <section className="animate-pop-in rounded-3xl border-[3px] border-ink bg-coral p-4 text-cream shadow-pop sm:p-5">
+      <h3 className="mb-2 flex items-center gap-2 font-display text-xl">
+        <Icon name="bulb" /> {view.leads.length === 1 ? "A new lead" : "New leads"}
+      </h3>
+      <ul className="grid gap-1.5 text-sm leading-snug font-bold">
+        {view.leads.map((lead) => (
+          <li key={lead.id}>
+            {lead.by === view.me.id ? <>You found &ldquo;{lead.title}&rdquo;. It points somewhere new for you.</> : <>{nameOf(view, lead.by)} found &ldquo;{lead.title}&rdquo;. Ask what it says.</>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** Evidence counts as new for a little while after it arrives. */
 const NEW_MS = 45_000;
 
@@ -66,6 +86,8 @@ export function DeskPanel() {
         ))}
       </section>
 
+      <Leads />
+
       {view.me.abilities.includes("search") && <SearchTool />}
       {view.me.abilities.includes("interview") && <InterviewTool />}
       {view.me.abilities.includes("inspect") && <InspectTool />}
@@ -76,9 +98,7 @@ export function DeskPanel() {
           <Icon name="desk" /> Your evidence <span className="text-cream/50">{mine.length}</span>
         </h2>
         <p className="mb-4 text-sm font-bold text-cream/65">
-          {view.mode === "together"
-            ? "Only you have these. Read out what matters, and pin the best to the board."
-            : "Only you have these. Pin what matters so the others can see it."}
+          Only you have these. Read out what matters, and pin the best to the board.
         </p>
         <div className="grid gap-5">
           {mine.map((e) => (

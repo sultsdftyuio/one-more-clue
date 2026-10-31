@@ -4,7 +4,7 @@ import type { PropName } from "@/lib/art";
 export const case001 = {
   code: "Case 001",
   title: "The Last Message",
-  meta: ["Free", "15–20 min", "2–6 players", "Co-op"],
+  meta: ["Free", "15–20 min", "2–4 players", "Co-op"],
   premise:
     "At 9:17 PM, a university innovation lab reports that its prototype has disappeared. Four people were inside the building that evening, and all four have an explanation.",
   redactedNames: 4,

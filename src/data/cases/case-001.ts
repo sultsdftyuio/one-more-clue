@@ -30,7 +30,7 @@ export const case001: CaseFile = {
   title: "The Last Message",
   tagline: "A prototype vanishes. The last message says who took it. The message is lying.",
   theme: "noir",
-  // Rendered by art/omc_cinema/case001_film.py. Hidden clue: the laptop's clock reads 9:12 while the message is rewritten.
+  // Rendered by one-more-clue-videos/omc_cinema/case001_film.py. Hidden clue: the laptop's clock reads 9:12 while the message is rewritten.
   cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
   deadline: {
     what: "The investors arrive at 9:00 AM",
@@ -244,7 +244,7 @@ export const case001: CaseFile = {
         type: "scene",
         caption: "Prof. Squires · posted 9:05 PM · \"Late-night demo prep with our friends at Northgate 🚀\"",
         look: "lab",
-        // Painted by art/omc_cinema/case001_photos.py, which keeps the same tap areas.
+        // Painted by one-more-clue-videos/omc_cinema/case001_photos.py, which keeps the same tap areas.
         image: "/evidence/case001-linkedin.webp",
         items: [
           { kind: "area", x: 9, y: 30, w: 15, h: 12, hotspot: "halo" },
@@ -387,7 +387,7 @@ export const case001: CaseFile = {
         type: "scene",
         caption: "Taken by Ozzy for the incident report · 9:20 PM",
         look: "lab",
-        // Painted by art/omc_cinema/case001_photos.py, which keeps the same tap areas.
+        // Painted by one-more-clue-videos/omc_cinema/case001_photos.py, which keeps the same tap areas.
         image: "/evidence/case001-incident.webp",
         items: [
           { kind: "area", x: 1, y: 9, w: 26, h: 44, hotspot: "cabinet" },
@@ -528,7 +528,7 @@ export const case001: CaseFile = {
         type: "scene",
         caption: "Halden Innovation Building · lobby camera 2",
         look: "cctv",
-        // Painted by art/omc_cinema/case001_photos.py, which keeps the same tap areas.
+        // Painted by one-more-clue-videos/omc_cinema/case001_photos.py, which keeps the same tap areas.
         image: "/evidence/case001-lobby.webp",
         items: [
           { kind: "area", x: 32, y: 36, w: 16, h: 30, hotspot: "rena" },

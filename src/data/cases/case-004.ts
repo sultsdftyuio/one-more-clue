@@ -24,7 +24,7 @@ export const case004: CaseFile = {
   title: "Snowed In",
   tagline: "A blizzard, a blackout at midnight, and a diamond that never left the building.",
   theme: "frost",
-  // Rendered by art/omc_cinema/case004_film.py. Hidden clue: a faint tap beside every other footstep in the dark.
+  // Rendered by one-more-clue-videos/omc_cinema/case004_film.py. Hidden clue: a faint tap beside every other footstep in the dark.
   cinematic: { video: "/cinematics/case-004.mp4", poster: "/cinematics/case-004.jpg" },
   deadline: {
     what: "The plough clears the road at 9:00 AM",

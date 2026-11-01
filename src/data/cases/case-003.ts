@@ -24,7 +24,7 @@ export const case003: CaseFile = {
   title: "The Last Course",
   tagline: "The most feared critic in the country collapses after dessert. Four people touched that dinner.",
   theme: "bistro",
-  // Rendered by art/omc_cinema/case003_film.py. Hidden clue: half a second of two plates on the pass, one with gold leaf.
+  // Rendered by one-more-clue-videos/omc_cinema/case003_film.py. Hidden clue: half a second of two plates on the pass, one with gold leaf.
   cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
   deadline: {
     what: "The kitchen is scrubbed clean at midnight",

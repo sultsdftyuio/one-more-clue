@@ -50,8 +50,8 @@ export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
   Object.fromEntries(suspects.flatMap((s) => (s.art && s.tint ? [[s.art, s.tint]] : [])));
 
 /** The piece of evidence itself, as the object it really is. */
-export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
-  const { view, act } = useGame();
+export function EvidenceObject({ evidence, inHand }: { evidence: VisibleEvidence; inHand?: boolean }) {
+  const { view, act, open } = useGame();
   const body = evidence.body;
   switch (body.type) {
     case "statement":
@@ -69,17 +69,31 @@ export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
     case "scene":
     case "footage": {
       const canInspect = view.phase === "investigation" && view.me.abilities.includes("inspect");
+      // A painted photo is picked up first: the magnifier takes over a finger on the picture, which would trap scrolling on the desk.
+      const painted = body.type === "scene" && Boolean(body.image);
+      const onDesk = painted && canInspect && !inHand;
       const props = {
         found: foundHotspots(view, evidence.id),
         tints: tintsOf(view.case.suspects),
-        onInspect: canInspect ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
+        magnify: painted && canInspect && inHand,
+        onInspect: canInspect && !onDesk ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
       };
+      const hint = !canInspect
+        ? "Only the Photographer can inspect photos. Pin it for them."
+        : onDesk
+          ? "You're the Photographer: pick it up to use your magnifier."
+          : painted
+            ? "Slide the magnifier around. Tap anything that looks off."
+            : "You're the Photographer: tap anything to look closer.";
       return (
         <div>
-          {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
+          <div className="relative">
+            {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
+            {onDesk && <button type="button" onClick={() => open(evidence.id)} aria-label={`Pick up ${evidence.title}`} className="absolute inset-0 z-10 cursor-zoom-in" />}
+          </div>
           <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-cream/70">
             <Icon name="eye" className="size-4" />
-            {canInspect ? "You're the Photographer: tap anything to look closer." : "Only the Photographer can inspect photos. Pin it for them."}
+            {hint}
           </p>
         </div>
       );
@@ -105,12 +119,12 @@ function EvidenceTag({ evidence }: { evidence: VisibleEvidence }) {
 }
 
 /** A piece of evidence at full size, lying on the desk with its tag on. */
-export function EvidenceCard({ evidence, footer, highlight }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean }) {
+export function EvidenceCard({ evidence, footer, highlight, inHand }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean; inHand?: boolean }) {
   const { view } = useGame();
   return (
     <article id={`evidence-${evidence.id}`} className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
       <EvidenceTag evidence={evidence} />
-      <EvidenceObject evidence={evidence} />
+      <EvidenceObject evidence={evidence} inHand={inHand} />
       {view.phase === "investigation" && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />

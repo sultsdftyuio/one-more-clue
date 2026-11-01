@@ -51,6 +51,10 @@ __pycache__/
 # rendered films and narrator takes (the finished film is copied into public/)
 art/out/film/
 art/out/lab/
+art/out/photos/
+
+# videos waiting for, or finished with, social posting
+/social/*/
 
 # local waitlist signups (dev fallback when Redis isn't configured)
 /.data/

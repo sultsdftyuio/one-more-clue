@@ -326,7 +326,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
 
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>
-          <EvidenceCard evidence={openedEvidence} />
+          <EvidenceCard evidence={openedEvidence} inHand />
           {openedEvidence.pinned && (
             <p className="mt-3 text-center text-sm font-bold text-cream/60">
               On the board · pinned by {nameOf(view, view.pins.find((p) => p.evidenceId === openedEvidence.id)?.by)}

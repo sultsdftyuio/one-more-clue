@@ -48,7 +48,74 @@ function ItemBody({ item, tints }: { item: SceneItem; tints?: Tints }) {
       </span>
     );
   }
+  if (item.kind === "area") return null;
   return <span className={cx("block whitespace-nowrap text-[min(3.2vw,1.05rem)] leading-none", `scene-label-${item.style}`)}>{item.text}</span>;
+}
+
+/** The lens is this share of the picture's width, and it magnifies the picture this many times. */
+const LENS = 0.42;
+const LENS_ZOOM = 3;
+
+/** Moves the lens over a point of the 4:3 picture (0 to 1 each way), showing the matching part of the image. */
+function aimLens(lens: HTMLElement, x: number, y: number) {
+  lens.style.left = `${x * 100}%`;
+  lens.style.top = `${y * 100}%`;
+  const across = (x * LENS_ZOOM - LENS / 2) / (LENS_ZOOM - LENS);
+  const down = (y * LENS_ZOOM - (LENS * 2) / 3) / (LENS_ZOOM - (LENS * 4) / 3);
+  lens.style.backgroundPosition = `${across * 100}% ${down * 100}%`;
+}
+
+/** The magnifier follows a mouse. On a touch screen it stays out, and a finger dragged anywhere on the picture slides it along. */
+function useMagnifier(on: boolean) {
+  const lens = useRef<HTMLDivElement>(null);
+  const spot = useRef({ x: 0.5, y: 0.5 });
+  const finger = useRef<{ x: number; y: number; moved: number } | null>(null);
+  const dragged = useRef(false);
+
+  useEffect(() => {
+    if (!on || !lens.current) return;
+    aimLens(lens.current, spot.current.x, spot.current.y);
+    if (window.matchMedia("(hover: none)").matches) lens.current.style.opacity = "1";
+  }, [on]);
+
+  const move = (x: number, y: number) => {
+    spot.current = { x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) };
+    if (lens.current) aimLens(lens.current, spot.current.x, spot.current.y);
+  };
+
+  const handlers = {
+    onPointerDown: (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (e.pointerType === "mouse") return;
+      finger.current = { x: e.clientX, y: e.clientY, moved: 0 };
+      dragged.current = false;
+    },
+    onPointerMove: (e: ReactPointerEvent<HTMLDivElement>) => {
+      const box = e.currentTarget.getBoundingClientRect();
+      if (e.pointerType === "mouse") {
+        if (lens.current) lens.current.style.opacity = "1";
+        move((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height);
+      } else if (finger.current) {
+        const { x, y, moved } = finger.current;
+        const [dx, dy] = [e.clientX - x, e.clientY - y];
+        finger.current = { x: e.clientX, y: e.clientY, moved: moved + Math.abs(dx) + Math.abs(dy) };
+        // A little wobble is still a tap; past that it's a drag, and lifting the finger marks nothing.
+        if (finger.current.moved > 8) dragged.current = true;
+        move(spot.current.x + dx / box.width, spot.current.y + dy / box.height);
+      }
+    },
+    onPointerLeave: (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (e.pointerType === "mouse" && lens.current) lens.current.style.opacity = "0";
+    },
+  };
+
+  /** True once for the click that ends a drag, so sliding the lens never counts as a tap. */
+  const endOfDrag = () => {
+    const was = dragged.current;
+    dragged.current = false;
+    return was;
+  };
+
+  return { lens, handlers: on ? handlers : undefined, endOfDrag };
 }
 
 type CanvasProps = {
@@ -56,6 +123,10 @@ type CanvasProps = {
   items: SceneItem[];
   /** Pitch dark: only what the flashlight touches can be seen. */
   dark?: boolean;
+  /** A painted picture, shown under the items. */
+  image?: string;
+  /** Read a painted picture through the magnifier. */
+  magnify?: boolean;
   /** When set, the viewer can tap things: hotspots call this, anything else says "nothing here". */
   onInspect?: (hotspot: string) => Promise<boolean>;
   /** Hotspots already found, marked with a tick. */
@@ -66,10 +137,12 @@ type CanvasProps = {
 type Ripple = { id: number; x: number; y: number; text: string };
 
 /** The 4:3 picture itself, shared by photos and camera footage. */
-function SceneCanvas({ look, items, dark, onInspect, found = [], tints }: CanvasProps) {
+function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [], tints }: CanvasProps) {
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const light = useRef<HTMLDivElement>(null);
   const inspectable = Boolean(onInspect);
+  const glass = Boolean(image && magnify);
+  const magnifier = useMagnifier(glass);
 
   const ripple = (e: MouseEvent, text: string) => {
     const box = e.currentTarget.closest("[data-scene]")!.getBoundingClientRect();
@@ -80,7 +153,7 @@ function SceneCanvas({ look, items, dark, onInspect, found = [], tints }: Canvas
 
   const tap = async (e: MouseEvent, hotspot?: string) => {
     e.stopPropagation();
-    if (!onInspect) return;
+    if (!onInspect || magnifier.endOfDrag()) return;
     if (!hotspot || found.includes(hotspot)) {
       play("miss");
       ripple(e, hotspot ? "Already noted" : "Nothing unusual");
@@ -105,20 +178,22 @@ function SceneCanvas({ look, items, dark, onInspect, found = [], tints }: Canvas
       onClick={(e) => tap(e)}
       onPointerMove={dark ? (e: ReactPointerEvent<HTMLDivElement>) => aim(e.clientX, e.clientY, e.currentTarget) : undefined}
       onTouchMove={dark ? (e) => aim(e.touches[0].clientX, e.touches[0].clientY, e.currentTarget) : undefined}
+      {...magnifier.handlers}
       className={cx(
         "relative aspect-[4/3] overflow-hidden rounded-md select-none",
-        // In the dark, a finger dragged across the picture moves the light instead of scrolling.
-        dark && "touch-none",
+        // In the dark or under the magnifier, a finger dragged across the picture moves the light or lens instead of scrolling.
+        (dark || glass) && "touch-none",
         `scene-${look}`,
         inspectable && "cursor-zoom-in",
       )}
     >
+      {image && <Image src={image} alt="" fill sizes="(max-width: 640px) 100vw, 672px" className="pointer-events-none object-cover" draggable={false} />}
       {items.map((item, i) => {
         const style = {
           left: `${item.x}%`,
           top: `${item.y}%`,
           width: item.kind === "label" ? undefined : `${item.w}%`,
-          height: item.kind === "box" ? `${item.h}%` : undefined,
+          height: item.kind === "box" || item.kind === "area" ? `${item.h}%` : undefined,
           rotate: "rotate" in item && item.rotate ? `${item.rotate}deg` : undefined,
         };
         const marked = item.hotspot && found.includes(item.hotspot);
@@ -147,6 +222,14 @@ function SceneCanvas({ look, items, dark, onInspect, found = [], tints }: Canvas
         );
       })}
       {dark && <div ref={light} aria-hidden className="flashlight pointer-events-none absolute inset-0 z-20" />}
+      {glass && (
+        <div
+          ref={magnifier.lens}
+          aria-hidden
+          className="scene-lens pointer-events-none absolute z-20"
+          style={{ width: `${LENS * 100}%`, backgroundImage: `url(${image})`, backgroundSize: `${(LENS_ZOOM / LENS) * 100}% auto` }}
+        />
+      )}
       {ripples.map((r) => (
         <span key={r.id} className="pointer-events-none absolute z-30" style={{ left: `${r.x}%`, top: `${r.y}%` }}>
           <span className="absolute size-24 animate-[ripple_0.9s_ease-out_forwards] rounded-full border-4 border-mustard" />
@@ -164,9 +247,9 @@ type ViewProps = Omit<CanvasProps, "look" | "items" | "dark">;
 /** An illustrated photo or camera still, as a print taped to the desk. Dark photos are searched with a flashlight. */
 export function SceneView({ scene, ...rest }: ViewProps & { scene: Scene }) {
   return (
-    <figure className="relative mx-auto max-w-lg rotate-[-0.8deg] border-[3px] border-ink bg-white p-2.5 pb-3 shadow-pop-sm">
+    <figure className={cx("relative mx-auto border-[3px] border-ink bg-white p-2.5 pb-3 shadow-pop-sm", rest.magnify ? "max-w-none" : "max-w-lg rotate-[-0.8deg]")}>
       <span aria-hidden className="obj-tape absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 rotate-2" />
-      <SceneCanvas look={scene.look} items={scene.items} dark={scene.dark} {...rest} />
+      <SceneCanvas look={scene.look} items={scene.items} dark={scene.dark} image={scene.image} {...rest} />
       <figcaption className="mt-2 px-1 text-center font-hand text-lg leading-tight text-ink/80">
         {scene.dark && <span className="block">Pitch dark: drag across it to shine your light.</span>}
         {scene.caption}
@@ -175,7 +258,11 @@ export function SceneView({ scene, ...rest }: ViewProps & { scene: Scene }) {
   );
 }
 
-const picture = (scene: Scene | Footage) => ({ look: scene.look, items: scene.type === "scene" ? scene.items : scene.frames[0].items });
+const picture = (scene: Scene | Footage) => ({
+  look: scene.look,
+  items: scene.type === "scene" ? scene.items : scene.frames[0].items,
+  image: scene.type === "scene" ? scene.image : undefined,
+});
 
 /** A small still of a photo or the first frame of footage. Nothing to tap. */
 export function SceneThumb({ scene }: { scene: Scene | Footage }) {
@@ -201,7 +288,7 @@ export function ZoomedSpot({ scene, hotspot, className }: { scene: EvidenceBody;
   return (
     <span className={cx("pointer-events-none block aspect-[4/3] overflow-hidden", className)}>
       <span className="block" style={{ transform }}>
-        <SceneCanvas look={scene.look} items={items} />
+        <SceneCanvas look={scene.look} items={items} image={scene.type === "scene" ? scene.image : undefined} />
       </span>
     </span>
   );

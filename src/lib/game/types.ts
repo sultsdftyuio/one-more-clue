@@ -75,7 +75,9 @@ type Place = { x: number; y: number; hotspot?: string };
 export type SceneItem =
   | (Place & { kind: "art"; art: string; w: number; rotate?: number; flip?: boolean; shocked?: boolean })
   | (Place & { kind: "box"; w: number; h: number; color: string; radius?: number; text?: string; textColor?: string })
-  | (Place & { kind: "label"; text: string; style: "clock" | "sign" | "note" | "stamp"; rotate?: number });
+  | (Place & { kind: "label"; text: string; style: "clock" | "sign" | "note" | "stamp"; rotate?: number })
+  /** An invisible tap area over a painted scene: the clue itself is in the image. */
+  | (Place & { kind: "area"; w: number; h: number; hotspot: string });
 
 /** What a moment on a recording sounds like; the tape player synthesises each one. */
 export type TapeSound = "speech" | "music" | "jingle" | "static" | "click" | "creak" | "breath" | "beep" | "door" | "silence";
@@ -89,8 +91,8 @@ export type EvidenceBody =
   | { type: "chat"; title: string; messages: ChatMessage[] }
   | { type: "log"; source: string; rows: LogRow[] }
   | { type: "document"; text: string }
-  /** A photo. `dark` scenes can only be searched with a flashlight. */
-  | { type: "scene"; caption: string; look: SceneLook; items: SceneItem[]; dark?: boolean }
+  /** A photo. `dark` scenes can only be searched with a flashlight. `image` is a painted 4:3 picture, read with a magnifier. */
+  | { type: "scene"; caption: string; look: SceneLook; items: SceneItem[]; dark?: boolean; image?: string }
   /** Camera footage: frames you scrub through. Hotspots in any frame can be inspected. */
   | { type: "footage"; caption: string; look: SceneLook; frames: FootageFrame[] }
   /** An audio recording, played back with captions and synthesised sounds. */

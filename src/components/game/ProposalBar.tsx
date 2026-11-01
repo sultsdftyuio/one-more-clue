@@ -40,7 +40,7 @@ export function ProposalBar({ view, act, busy }: { view: PlayerView; act: Act; b
   const motive = view.case.motives.find((m) => m.id === proposal.report?.motiveId)?.label;
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-40 p-3 lg:bottom-0 lg:p-5" role="region" aria-label="Group vote" aria-live="polite">
+    <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-[51] p-3" role="region" aria-label="Group vote" aria-live="polite">
       <div className="mx-auto max-w-2xl animate-[sheet-up_0.35s_ease-out] rounded-3xl border-[3px] border-ink bg-mustard p-4 text-ink shadow-card">
         <p className="flex items-start gap-2 font-display text-xl leading-tight">
           <Icon name="flag" className="mt-0.5" />
@@ -107,7 +107,7 @@ function LastDecision({ view, decision }: { view: PlayerView; decision?: Decided
   const text = !decision.passed ? `Vote didn't pass: ${headline(view, decision)}` : wrong ? "That doesn't prove it. Look at the evidence again." : null;
   if (!text) return null;
   return (
-    <p className="fixed inset-x-0 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-40 mx-auto w-fit max-w-[calc(100%-1.5rem)] animate-pop-in rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-center text-sm font-extrabold text-ink shadow-pop-sm lg:bottom-6">
+    <p className="fixed inset-x-0 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-[51] mx-auto w-fit max-w-[calc(100%-1.5rem)] animate-pop-in rounded-full border-[3px] border-ink bg-cream px-4 py-2 text-center text-sm font-extrabold text-ink shadow-pop-sm">
       {wrong ? "✗ " : ""}
       {text}
     </p>

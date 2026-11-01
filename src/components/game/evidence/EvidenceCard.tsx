@@ -50,8 +50,8 @@ export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
   Object.fromEntries(suspects.flatMap((s) => (s.art && s.tint ? [[s.art, s.tint]] : [])));
 
 /** The piece of evidence itself, as the object it really is. */
-export function EvidenceObject({ evidence, inHand }: { evidence: VisibleEvidence; inHand?: boolean }) {
-  const { view, act, open } = useGame();
+export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
+  const { view, act } = useGame();
   const body = evidence.body;
   switch (body.type) {
     case "statement":
@@ -69,28 +69,21 @@ export function EvidenceObject({ evidence, inHand }: { evidence: VisibleEvidence
     case "scene":
     case "footage": {
       const canInspect = view.phase === "investigation" && view.me.abilities.includes("inspect");
-      // A painted photo is picked up first: the magnifier takes over a finger on the picture, which would trap scrolling on the desk.
       const painted = body.type === "scene" && Boolean(body.image);
-      const onDesk = painted && canInspect && !inHand;
       const props = {
         found: foundHotspots(view, evidence.id),
         tints: tintsOf(view.case.suspects),
-        magnify: painted && canInspect && inHand,
-        onInspect: canInspect && !onDesk ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
+        magnify: painted && canInspect,
+        onInspect: canInspect ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
       };
       const hint = !canInspect
         ? "Only the Photographer can inspect photos. Pin it for them."
-        : onDesk
-          ? "You're the Photographer: pick it up to use your magnifier."
-          : painted
-            ? "Slide the magnifier around. Tap anything that looks off."
-            : "You're the Photographer: tap anything to look closer.";
+        : painted
+          ? "Slide the magnifier around. Tap anything that looks off."
+          : "You're the Photographer: tap anything to look closer.";
       return (
         <div>
-          <div className="relative">
-            {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
-            {onDesk && <button type="button" onClick={() => open(evidence.id)} aria-label={`Pick up ${evidence.title}`} className="absolute inset-0 z-10 cursor-zoom-in" />}
-          </div>
+          {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
           <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-cream/70">
             <Icon name="eye" className="size-4" />
             {hint}
@@ -119,12 +112,12 @@ function EvidenceTag({ evidence }: { evidence: VisibleEvidence }) {
 }
 
 /** A piece of evidence at full size, lying on the desk with its tag on. */
-export function EvidenceCard({ evidence, footer, highlight, inHand }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean; inHand?: boolean }) {
+export function EvidenceCard({ evidence, footer, highlight }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean }) {
   const { view } = useGame();
   return (
     <article id={`evidence-${evidence.id}`} className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
       <EvidenceTag evidence={evidence} />
-      <EvidenceObject evidence={evidence} inHand={inHand} />
+      <EvidenceObject evidence={evidence} />
       {view.phase === "investigation" && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />
@@ -180,6 +173,19 @@ function TileFace({ evidence }: { evidence: VisibleEvidence }) {
       <span className={cx("block leading-tight", note ? "font-hand text-[1.1rem]" : "font-typed text-[0.95rem]")}>{evidence.title}</span>
       <span className={cx("mt-1 line-clamp-3 leading-snug", note ? "font-hand text-base" : "text-xs font-semibold text-ink/75")}>{text}</span>
     </span>
+  );
+}
+
+/** A piece of evidence lying on your desk, small; tapping picks it up. */
+export function EvidenceThumb({ evidence, onOpen, fresh, index = 0 }: { evidence: VisibleEvidence; onOpen: () => void; fresh?: boolean; index?: number }) {
+  return (
+    <button type="button" onClick={onOpen} aria-label={`Pick up ${evidence.title}`} className={cx("relative block w-full text-left transition-transform hover:z-10 hover:scale-[1.04]", TILT[index % TILT.length])}>
+      {evidence.pinned && <Image src={propArt.pushpin} alt="On the board" sizes="24px" className="absolute top-[-0.6rem] left-1/2 z-10 w-6 -translate-x-1/2" />}
+      {fresh && <span className="absolute -top-2 -right-1 z-10 rotate-6 rounded-full border-2 border-ink bg-coral px-2 py-0.5 text-xs font-black text-cream">NEW</span>}
+      <span className="block drop-shadow-[0_3px_0_rgb(0_0_0/0.4)]">
+        <TileFace evidence={evidence} />
+      </span>
+    </button>
   );
 }
 

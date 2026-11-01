@@ -20,7 +20,7 @@ export function PhotographerTool() {
       <p className="mb-4 text-sm leading-snug font-semibold text-cream/70">Pick up a picture and look it over. Tap anything that looks off. Only you can do this, even on pictures others pin.</p>
       {frames.length ? (
         <div className="film-strip rounded-lg px-2.5 py-3.5">
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2">
             {frames.map((frame, i) => {
               const marked = foundHotspots(view, frame.id).length;
               return (

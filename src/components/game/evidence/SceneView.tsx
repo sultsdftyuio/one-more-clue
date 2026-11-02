@@ -52,6 +52,9 @@ function ItemBody({ item, tints }: { item: SceneItem; tints?: Tints }) {
   return <span className={cx("block whitespace-nowrap text-[min(3.2vw,1.05rem)] leading-none", `scene-label-${item.style}`)}>{item.text}</span>;
 }
 
+/** How wide a scene's painted image can appear, so every copy of it shares one download. */
+const IMAGE_SIZES = "(max-width: 640px) 100vw, 672px";
+
 /** The lens is this share of the picture's width, and it magnifies the picture this many times. */
 const LENS = 0.42;
 const LENS_ZOOM = 3;
@@ -187,7 +190,7 @@ function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [],
         inspectable && "cursor-zoom-in",
       )}
     >
-      {image && <Image src={image} alt="" fill sizes="(max-width: 640px) 100vw, 672px" className="pointer-events-none object-cover" draggable={false} />}
+      {image && <Image src={image} alt="" fill sizes={IMAGE_SIZES} className="pointer-events-none object-cover" draggable={false} />}
       {items.map((item, i) => {
         const style = {
           left: `${item.x}%`,
@@ -261,7 +264,7 @@ export function SceneView({ scene, ...rest }: ViewProps & { scene: Scene }) {
 const picture = (scene: Scene | Footage) => ({
   look: scene.look,
   items: scene.type === "scene" ? scene.items : scene.frames[0].items,
-  image: scene.type === "scene" ? scene.image : undefined,
+  image: scene.type === "scene" ? scene.image : scene.frames[0].image,
 });
 
 /** A small still of a photo or the first frame of footage. Nothing to tap. */
@@ -278,7 +281,8 @@ const ZOOM = 2.6;
 /** The part of a picture a detail was spotted in, blown up. Stays inside the frame, so there's never a blank edge. */
 export function ZoomedSpot({ scene, hotspot, className }: { scene: EvidenceBody; hotspot: string; className?: string }) {
   if (scene.type !== "scene" && scene.type !== "footage") return null;
-  const items = scene.type === "scene" ? scene.items : (scene.frames.find((f) => f.items.some((i) => i.hotspot === hotspot))?.items ?? scene.frames[0].items);
+  const shot = scene.type === "scene" ? scene : (scene.frames.find((f) => f.items.some((i) => i.hotspot === hotspot)) ?? scene.frames[0]);
+  const items = shot.items;
   const spot = items.find((i) => i.hotspot === hotspot);
   const width = spot && "w" in spot ? spot.w : 10;
   const height = spot && "h" in spot ? spot.h : width;
@@ -288,7 +292,7 @@ export function ZoomedSpot({ scene, hotspot, className }: { scene: EvidenceBody;
   return (
     <span className={cx("pointer-events-none block aspect-[4/3] overflow-hidden", className)}>
       <span className="block" style={{ transform }}>
-        <SceneCanvas look={scene.look} items={items} image={scene.type === "scene" ? scene.image : undefined} />
+        <SceneCanvas look={scene.look} items={items} image={shot.image} />
       </span>
     </span>
   );
@@ -317,9 +321,11 @@ export function FootageView({ footage, ...rest }: ViewProps & { footage: Footage
 
   const current = footage.frames[frame];
   return (
-    <figure className="obj-monitor mx-auto max-w-lg rounded-[1.4rem] border-[3px] border-ink p-3 pb-2.5 text-cream shadow-pop-sm">
+    <figure className={cx("obj-monitor mx-auto rounded-[1.4rem] border-[3px] border-ink p-3 pb-2.5 text-cream shadow-pop-sm", rest.magnify ? "max-w-none" : "max-w-lg")}>
       <div className="obj-monitor-screen relative overflow-hidden rounded-xl border-[3px] border-black">
-        <SceneCanvas key={frame} look={footage.look} items={current.items} {...rest} />
+        {/* Every painted frame loads up front, so scrubbing never lands on a blank one. */}
+        {footage.frames.map((f) => f.image && <Image key={f.time} src={f.image} alt="" fill sizes={IMAGE_SIZES} loading="eager" className="pointer-events-none opacity-0" />)}
+        <SceneCanvas key={frame} look={footage.look} items={current.items} image={current.image} {...rest} />
         <span className="pointer-events-none absolute top-2 left-2 z-30 flex items-center gap-1 font-printer text-lg leading-none text-[#ff5a4f]">
           <span className="size-2 animate-pulse rounded-full bg-[#ff5a4f]" /> REC
         </span>

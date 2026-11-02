@@ -209,13 +209,12 @@ export const case003: CaseFile = {
         type: "scene",
         caption: "Taken by the paramedics · 10:05 PM · Table 1",
         look: "cafe",
+        // Painted by one-more-clue-videos/omc_cinema/case003_photos.py, which keeps the same tap areas.
+        image: "/evidence/case003-table1.webp",
         items: [
-          { kind: "box", x: 0, y: 58, w: 100, h: 42, color: "#e9dcc7", radius: 1 },
-          { kind: "box", x: 26, y: 54, w: 26, h: 16, color: "#fffaf0", radius: 50, hotspot: "plate" },
-          { kind: "box", x: 34, y: 57, w: 10, h: 8, color: "#3b2416", radius: 50 },
-          { kind: "box", x: 39, y: 56, w: 3, h: 2, color: "#f2b33d", radius: 10 },
-          { kind: "box", x: 62, y: 30, w: 7, h: 26, color: "rgba(214,236,255,0.6)", radius: 20, hotspot: "wine" },
-          { kind: "box", x: 76, y: 48, w: 14, h: 18, color: "#fff4e0", radius: 3, text: "VII", textColor: "#1b1f3b", hotspot: "card" },
+          { kind: "area", x: 10, y: 48, w: 42, h: 28, hotspot: "plate" },
+          { kind: "area", x: 57, y: 40, w: 13, h: 30, hotspot: "wine" },
+          { kind: "area", x: 73, y: 48, w: 19, h: 26, hotspot: "card" },
         ],
       },
     },
@@ -306,35 +305,25 @@ export const case003: CaseFile = {
         type: "footage",
         caption: "Kitchen pass · camera 1 · scrub through it",
         look: "cctv",
+        // Painted by one-more-clue-videos/omc_cinema/case003_photos.py, which keeps the same tap areas.
         frames: [
           {
             time: "21:46:20",
+            image: "/evidence/case003-pass-1.webp",
             items: [
-              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
-              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "gold" },
-              { kind: "box", x: 23, y: 52, w: 4, h: 3, color: "#ffffff", radius: 10 },
-              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50, hotspot: "smudge" },
-              { kind: "box", x: 72, y: 58, w: 5, h: 3, color: "#555", radius: 20 },
+              { kind: "area", x: 13, y: 27, w: 24, h: 44, hotspot: "gold" },
+              { kind: "area", x: 53, y: 27, w: 24, h: 44, hotspot: "smudge" },
             ],
           },
           {
             time: "21:46:48",
-            items: [
-              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
-              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
-              { kind: "box", x: 23, y: 52, w: 4, h: 3, color: "#ffffff", radius: 10 },
-              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
-              { kind: "art", x: 74, y: 14, w: 15, art: "suspect:circle", hotspot: "olu" },
-            ],
+            image: "/evidence/case003-pass-2.webp",
+            items: [{ kind: "area", x: 34, y: 26, w: 56, h: 28, hotspot: "olu" }],
           },
           {
             time: "21:47:05",
-            items: [
-              { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#8a8a8a", radius: 1 },
-              { kind: "box", x: 14, y: 50, w: 22, h: 14, color: "#6a6a6a", radius: 50, hotspot: "gone" },
-              { kind: "box", x: 56, y: 50, w: 22, h: 14, color: "#e0e0e0", radius: 50 },
-              { kind: "box", x: 72, y: 58, w: 5, h: 3, color: "#555", radius: 20 },
-            ],
+            image: "/evidence/case003-pass-3.webp",
+            items: [{ kind: "area", x: 13, y: 54, w: 24, h: 18, hotspot: "gone" }],
           },
         ],
       },
@@ -450,7 +439,7 @@ export const case003: CaseFile = {
       title: "Staff medical sheet",
       body: {
         type: "document",
-        text: "Kept in the office for emergencies.\nB. Carré (owner): SEVERE PEANUT ALLERGY. EpiPen in the top desk drawer.\nNo other staff allergies recorded.",
+        text: "Kept in the office for emergencies.\nB. Carré (owner): SEVERE PEANUT ALLERGY. Carries an EpiPen, with a spare in the top desk drawer.\nNo other staff allergies recorded.",
       },
     },
     {
@@ -463,10 +452,11 @@ export const case003: CaseFile = {
         type: "scene",
         caption: "Taken by Amélie · 10:10 PM · Table 9",
         look: "cafe",
+        // Painted by one-more-clue-videos/omc_cinema/case003_photos.py, which keeps the same tap areas.
+        image: "/evidence/case003-table9.webp",
         items: [
-          { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#e9dcc7", radius: 1 },
-          { kind: "art", x: 40, y: 20, w: 18, art: "suspect:square", hotspot: "bracelet" },
-          { kind: "box", x: 18, y: 58, w: 22, h: 12, color: "#fffaf0", radius: 50, hotspot: "plate" },
+          { kind: "area", x: 57, y: 56, w: 16, h: 12, hotspot: "bracelet" },
+          { kind: "area", x: 9, y: 65, w: 33, h: 18, hotspot: "plate" },
         ],
       },
     },
@@ -539,13 +529,12 @@ export const case003: CaseFile = {
         type: "scene",
         caption: "Taken by the police · 11:20 PM · pastry station",
         look: "kitchen",
+        // Painted by one-more-clue-videos/omc_cinema/case003_photos.py, which keeps the same tap areas.
+        image: "/evidence/case003-pastry.webp",
         items: [
-          { kind: "box", x: 0, y: 60, w: 100, h: 40, color: "#a7b0ba", radius: 1 },
-          { kind: "box", x: 6, y: 30, w: 26, h: 32, color: "#f0ece4", radius: 4, text: "FLOUR", textColor: "#6b6b6b" },
-          { kind: "box", x: 26, y: 40, w: 6, h: 20, color: "#d9a441", radius: 12, hotspot: "bottle" },
-          { kind: "box", x: 44, y: 50, w: 14, h: 10, color: "#f2b33d", radius: 4, text: "Au", textColor: "#1b1f3b", hotspot: "leaf" },
-          { kind: "box", x: 66, y: 46, w: 24, h: 14, color: "#c9ced4", radius: 6, text: "SCALE", textColor: "#6b6b6b" },
-          { kind: "box", x: 72, y: 60, w: 12, h: 5, color: "#fff4e0", radius: 2, hotspot: "note" },
+          { kind: "area", x: 29, y: 29, w: 7, h: 25, hotspot: "bottle" },
+          { kind: "area", x: 37, y: 58, w: 24, h: 14, hotspot: "leaf" },
+          { kind: "area", x: 67, y: 69, w: 15, h: 9, hotspot: "note" },
         ],
       },
     },
@@ -571,7 +560,7 @@ export const case003: CaseFile = {
       chapter: 4,
       access: { kind: "inspect", scene: "photo-pastry", hotspot: "note" },
       title: "Under the scale",
-      body: { type: "finding", text: "A printed email, folded small: '…and the pastry section closes after the sale.'" },
+      body: { type: "finding", text: "A printed email, folded small: 'After the sale, pastry goes.'" },
     },
     {
       id: "storeroom-log",

@@ -83,8 +83,8 @@ export type SceneItem =
 export type TapeSound = "speech" | "music" | "jingle" | "static" | "click" | "creak" | "breath" | "beep" | "door" | "silence";
 export type TapeSegment = { at: string; text: string; sound: TapeSound };
 
-/** One frame of camera footage: a timestamp and a scene drawn like any other. */
-export type FootageFrame = { time: string; items: SceneItem[] };
+/** One frame of camera footage: a timestamp and a scene drawn like any other. `image` is a painted 4:3 frame. */
+export type FootageFrame = { time: string; items: SceneItem[]; image?: string };
 
 export type EvidenceBody =
   | { type: "statement"; speaker: string; text: string }

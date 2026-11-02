@@ -154,7 +154,7 @@ export const case004: CaseFile = {
         source: "Pinecrest Lodge · power",
         rows: [
           { time: "23:59:58", text: "Main breaker OFF · switched by hand" },
-          { time: "00:02:05", text: "Main breaker ON · switched by hand" },
+          { time: "00:02:05", text: "Main breaker ON · switched by hand (night porter)" },
           { time: "", text: "Grid supply: normal all night" },
         ],
       },
@@ -197,14 +197,12 @@ export const case004: CaseFile = {
         type: "scene",
         caption: "Lily's phone · 23:58 · the lounge",
         look: "office",
+        // Painted by one-more-clue-videos/omc_cinema/case004_photos.py, which keeps the same tap areas.
+        image: "/evidence/case004-countdown.webp",
         items: [
-          { kind: "label", x: 74, y: 6, text: "23:58", style: "clock", hotspot: "clock" },
-          { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-          { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4, hotspot: "case" },
-          { kind: "box", x: 12, y: 44, w: 10, h: 6, color: "#e9f0fb", radius: 50 },
-          { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", hotspot: "greta" },
-          { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥" },
-          { kind: "art", x: 74, y: 30, w: 12, art: "suspect:circle" },
+          { kind: "area", x: 84, y: 26, w: 13, h: 16, hotspot: "clock" },
+          { kind: "area", x: 0, y: 12, w: 13, h: 48, hotspot: "case" },
+          { kind: "area", x: 27, y: 24, w: 15, h: 37, hotspot: "greta" },
         ],
       },
     },
@@ -222,7 +220,7 @@ export const case004: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-countdown", hotspot: "greta" },
       title: "Greta at the mic",
-      body: { type: "finding", text: "Greta holds the microphone, ready to lead the countdown." },
+      body: { type: "finding", text: "Greta at the microphone, ready to lead the countdown." },
     },
     {
       id: "detail-countdown-clock",
@@ -328,43 +326,28 @@ export const case004: CaseFile = {
         type: "footage",
         caption: "Lily's phone video · the lounge, around midnight",
         look: "office",
+        // Painted by one-more-clue-videos/omc_cinema/case004_photos.py, which keeps the same tap areas.
         frames: [
           {
-            time: "23:59:20",
-            items: [
-              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4 },
-              { kind: "box", x: 12, y: 44, w: 10, h: 6, color: "#e9f0fb", radius: 50 },
-              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle" },
-              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥" },
-              { kind: "art", x: 73, y: 28, w: 13, art: "suspect:circle", hotspot: "seated" },
-            ],
+            time: "23:58:40",
+            image: "/evidence/case004-video-1.webp",
+            items: [{ kind: "area", x: 67, y: 30, w: 16, h: 34, hotspot: "seated" }],
           },
           {
             time: "23:59:55",
+            image: "/evidence/case004-video-2.webp",
             items: [
-              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4 },
-              { kind: "box", x: 12, y: 44, w: 10, h: 6, color: "#e9f0fb", radius: 50 },
-              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", hotspot: "greta" },
-              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥", hotspot: "chair" },
+              { kind: "area", x: 27, y: 24, w: 15, h: 37, hotspot: "greta" },
+              { kind: "area", x: 67, y: 38, w: 19, h: 26, hotspot: "chair" },
             ],
           },
-          {
-            time: "00:00:30",
-            items: [
-              { kind: "box", x: 0, y: 0, w: 100, h: 100, color: "#050508", radius: 0 },
-              { kind: "label", x: 34, y: 46, text: "(darkness, shrieks)", style: "stamp" },
-            ],
-          },
+          { time: "00:00:30", image: "/evidence/case004-video-3.webp", items: [] },
           {
             time: "00:02:10",
+            image: "/evidence/case004-video-4.webp",
             items: [
-              { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-              { kind: "box", x: 8, y: 34, w: 18, h: 34, color: "rgba(214,236,255,0.45)", radius: 4, hotspot: "empty-case" },
-              { kind: "art", x: 40, y: 22, w: 15, art: "suspect:rectangle", shocked: true },
-              { kind: "box", x: 70, y: 44, w: 20, h: 24, color: "#7a4a3a", radius: 10, text: "🔥" },
-              { kind: "art", x: 73, y: 28, w: 13, art: "suspect:circle", shocked: true, hotspot: "back" },
+              { kind: "area", x: 0, y: 12, w: 19, h: 48, hotspot: "empty-case" },
+              { kind: "area", x: 65, y: 24, w: 22, h: 46, hotspot: "back" },
             ],
           },
         ],
@@ -377,7 +360,7 @@ export const case004: CaseFile = {
       after: ["door-log"],
       access: { kind: "inspect", scene: "video-still", hotspot: "greta" },
       title: "Greta, counting down",
-      body: { type: "finding", text: "23:59:55: Greta is at the mic, counting down from five. The breaker room is two floors below." },
+      body: { type: "finding", text: "23:59:55: Greta is at the mic, counting down from five. The breaker room is out past the boot room, at the back of the lodge." },
     },
     {
       id: "detail-chair",
@@ -392,8 +375,8 @@ export const case004: CaseFile = {
       role: "photographer",
       chapter: 2,
       access: { kind: "inspect", scene: "video-still", hotspot: "seated" },
-      title: "23:59:20",
-      body: { type: "finding", text: "Otto in his armchair by the fire, cane on the armrest, thirty-five seconds to midnight." },
+      title: "23:58:40",
+      body: { type: "finding", text: "Otto in his armchair by the fire, cane on the armrest, eighty seconds to midnight." },
     },
     {
       id: "detail-snowy-slippers",
@@ -463,7 +446,13 @@ export const case004: CaseFile = {
       body: {
         type: "chat",
         title: "Night porter",
-        messages: [{ from: "Henrik (porter)", time: "12:10 AM", text: "Heard the back door bang during the blackout. Then a tap-tap on the boot room tiles. Thought it was the wind." }],
+        messages: [
+          {
+            from: "Henrik (porter)",
+            time: "12:10 AM",
+            text: "Heard the back door bang during the blackout. Then a tap-tap on the boot room tiles. Found the breaker room open and the main switch off, so I put it back on.",
+          },
+        ],
       },
     },
 
@@ -479,14 +468,12 @@ export const case004: CaseFile = {
         caption: "Taken by Greta · 00:20 · the back garden, no lights",
         look: "snow",
         dark: true,
+        // Painted by one-more-clue-videos/omc_cinema/case004_photos.py, which keeps the same tap areas.
+        image: "/evidence/case004-garden.webp",
         items: [
-          { kind: "box", x: 0, y: 64, w: 100, h: 36, color: "#eef3fb", radius: 1 },
-          { kind: "box", x: 8, y: 78, w: 50, h: 4, color: "#b9c7de", radius: 20, hotspot: "prints" },
-          { kind: "box", x: 12, y: 84, w: 3, h: 3, color: "#8fa0bd", radius: 50, hotspot: "holes" },
-          { kind: "box", x: 64, y: 50, w: 20, h: 22, color: "#ffffff", radius: 50 },
-          { kind: "box", x: 68, y: 32, w: 13, h: 18, color: "#ffffff", radius: 50, hotspot: "snowman" },
-          { kind: "box", x: 73, y: 38, w: 2, h: 2, color: "#1b1f3b", radius: 50 },
-          { kind: "box", x: 77, y: 38, w: 2, h: 2, color: "#1b1f3b", radius: 50 },
+          { kind: "area", x: 40, y: 68, w: 34, h: 14, hotspot: "prints" },
+          { kind: "area", x: 22, y: 72, w: 18, h: 22, hotspot: "holes" },
+          { kind: "area", x: 72, y: 24, w: 14, h: 17, hotspot: "snowman" },
         ],
       },
     },
@@ -619,10 +606,11 @@ export const case004: CaseFile = {
       { time: "After dinner", text: "Otto insists on making the snowman's head himself." },
       { time: "23:30", text: "The snow stops falling." },
       { time: "23:58", text: "Lily photographs the Aurora in its case." },
+      { time: "23:58:45", text: "Otto leaves his armchair, 'to check the boiler'." },
       { time: "23:59:40", text: "Otto opens the breaker room with Greta's stolen card." },
       { time: "Midnight", text: "Otto cuts the power, then unlocks the case with his own key in the dark." },
       { time: "00:00:50", text: "He slips out of the back door and hides the necklace in the snowman's head." },
-      { time: "00:02:05", text: "The lights come back on. Otto is back in his armchair, snow melting on his slippers." },
+      { time: "00:02:05", text: "The porter finds the breaker off and switches it back on. Otto is back in his armchair, snow melting on his slippers." },
     ],
     confession: [
       { kind: "line", who: "circle", text: "The bank takes Pinecrest in January. One necklace would have kept it." },

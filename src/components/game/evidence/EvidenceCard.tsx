@@ -69,7 +69,7 @@ export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
     case "scene":
     case "footage": {
       const canInspect = view.phase === "investigation" && view.me.abilities.includes("inspect");
-      const painted = Boolean(body.type === "scene" ? body.image : body.frames[0].image);
+      const painted = Boolean(body.type === "scene" ? body.image && !body.dark : body.frames[0].image);
       const props = {
         found: foundHotspots(view, evidence.id),
         tints: tintsOf(view.case.suspects),

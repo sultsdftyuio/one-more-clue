@@ -144,7 +144,7 @@ function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [],
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const light = useRef<HTMLDivElement>(null);
   const inspectable = Boolean(onInspect);
-  const glass = Boolean(image && magnify);
+  const glass = Boolean(image && magnify && !dark);
   const magnifier = useMagnifier(glass);
 
   const ripple = (e: MouseEvent, text: string) => {

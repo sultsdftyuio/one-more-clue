@@ -658,7 +658,7 @@ export const case001: CaseFile = {
     culprit: "rectangle",
     motives: [
       { id: "rival", label: "She was stealing HALO for a rival company" },
-      { id: "revenge", label: "Revenge on Professor Squires" },
+      { id: "revenge", label: "Revenge on Professor Squires over a deal" },
       { id: "frame", label: "To get Priya thrown out and take her place" },
       { id: "test", label: "To test the lab's security for the investors" },
     ],

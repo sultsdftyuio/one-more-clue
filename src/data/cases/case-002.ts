@@ -675,10 +675,10 @@ export const case002: CaseFile = {
   solution: {
     culprit: "square",
     motives: [
-      { id: "debt", label: "He owed £4,800 to a betting site and took the jackpot" },
+      { id: "debt", label: "He owed a betting site £4,800 by the morning" },
       { id: "darla", label: "To get Darla blamed and her show cancelled" },
-      { id: "ratings", label: "A publicity stunt for ratings" },
-      { id: "contract", label: "To get out of his contract" },
+      { id: "ratings", label: "A stunt to win back his falling ratings" },
+      { id: "contract", label: "To get out of his contract before next week" },
     ],
     motive: "debt",
     keyEvidence: [

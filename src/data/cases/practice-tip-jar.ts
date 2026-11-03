@@ -604,10 +604,10 @@ export const practiceTipJar: CaseFile = {
   solution: {
     culprit: "rectangle",
     motives: [
-      { id: "debt", label: "He owed someone money and had to pay it back tonight" },
-      { id: "revenge", label: "Revenge: the café had wronged him" },
-      { id: "cover", label: "He was covering for Lord Squarington" },
-      { id: "thrill", label: "Just because he could" },
+      { id: "debt", label: "He owed a workmate money, due back tonight" },
+      { id: "revenge", label: "Revenge: he thinks the café overcharges him" },
+      { id: "cover", label: "To cover for Lord Squarington, who owed £64" },
+      { id: "thrill", label: "Just to see if he could get away with it" },
     ],
     motive: "debt",
     keyEvidence: [

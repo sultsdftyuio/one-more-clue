@@ -639,10 +639,10 @@ export const case003: CaseFile = {
   solution: {
     culprit: "rectangle",
     motives: [
-      { id: "revenge", label: "Revenge: he was selling up and closing her section" },
-      { id: "review", label: "To ruin the review and the head chef" },
-      { id: "critic", label: "She hated the critic" },
-      { id: "accident", label: "An accident with the staff snacks" },
+      { id: "revenge", label: "He was selling the place and closing her section" },
+      { id: "review", label: "To ruin the review, and the head chef with it" },
+      { id: "critic", label: "An old grudge against the critic, Celeste Hart" },
+      { id: "accident", label: "An accident with the oil kept for staff snacks" },
     ],
     motive: "revenge",
     keyEvidence: [

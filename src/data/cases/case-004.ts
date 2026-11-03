@@ -576,10 +576,10 @@ export const case004: CaseFile = {
   solution: {
     culprit: "circle",
     motives: [
-      { id: "bank", label: "To save his lodge from the bank" },
-      { id: "frame", label: "To get Greta sacked" },
-      { id: "revenge", label: "Revenge on the Ashford family" },
-      { id: "prank", label: "A New Year's prank that went too far" },
+      { id: "bank", label: "To pay off the bank before it took his lodge" },
+      { id: "frame", label: "To get Greta sacked and blamed for the theft" },
+      { id: "revenge", label: "Revenge on the Ashford family for an old feud" },
+      { id: "prank", label: "A New Year's prank on Dame Agatha gone too far" },
     ],
     motive: "bank",
     keyEvidence: [

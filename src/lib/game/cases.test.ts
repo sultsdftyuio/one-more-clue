@@ -8,6 +8,7 @@ import { case001 } from "../../data/cases/case-001.ts";
 import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
+import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
@@ -290,6 +291,17 @@ test("every case has chains that cross roles, in both directions", () => {
     const tech = c.roles.find((r) => r.ability === "search")!.id;
     assert.ok(crossing.some((e) => e.role === tech), `${c.id}: the Tech never follows a lead`);
     assert.ok(crossing.some((e) => e.after!.some((id) => roleOf(id) === tech)), `${c.id}: the Tech never starts one`);
+  }
+});
+
+test("no motive gives itself away by its length", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const length = (id: string) => c.solution.motives.find((m) => m.id === id)!.label.length;
+    const all = c.solution.motives.map((m) => m.label.length);
+    const wrong = c.solution.motives.filter((m) => m.id !== c.solution.motive).map((m) => m.label.length);
+    // Players learn fast that the careful, specific answer is the long one, and that a short one is a joke.
+    assert.ok(length(c.solution.motive) <= Math.max(...wrong) + 3, `${c.id}: the right motive is the longest`);
+    assert.ok(Math.min(...all) >= Math.max(...all) * 0.75, `${c.id}: one motive is much shorter than the rest`);
   }
 });
 

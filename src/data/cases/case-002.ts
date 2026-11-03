@@ -23,7 +23,7 @@ export const case002: CaseFile = {
   title: "Dead Air",
   tagline: "Nine minutes of dead air, a man in a balaclava, and a £5,000 jackpot gone.",
   theme: "radio",
-  // Rendered by art/omc_cinema/case002_film.py. Hidden clue: a quiet chuckle just before the sound dies.
+  // Rendered by one-more-clue-videos/omc_cinema/case002_film.py. Hidden clue: a quiet chuckle just before the sound dies.
   cinematic: { video: "/cinematics/case-002.mp4", poster: "/cinematics/case-002.jpg" },
   deadline: {
     what: "The breakfast show goes on air at 6:00 AM",
@@ -83,7 +83,7 @@ export const case002: CaseFile = {
       checkpoint: {
         question: "How did the masked attacker get into Studio A? Show what settles it.",
         proves: ["door-log", "safety-tape", "insight-nobody"],
-        reveal: "The door log shows no entry after Vince at 11:31, and the safety recorder caught no struggle. There was no attacker in Studio A.",
+        reveal: "The door log shows nobody went in between Vince at 11:47 and Gus's master key at 12:02, and the safety recorder caught no struggle. There was no attacker in Studio A.",
       },
       hints: [
         "Check who the door let in, not just who it locked.",
@@ -94,7 +94,7 @@ export const case002: CaseFile = {
       title: "The jackpot",
       intro: "There was no attacker. So where is the £5,000, and why would Vince take it?",
       story: [
-        { kind: "narration", text: "Nobody came through that door after Vince. Nobody but Vince locked it." },
+        { kind: "narration", text: "Nobody came through that door after Vince, until Gus opened it. Nobody but Vince locked it." },
         { kind: "line", who: "square", text: "That keypad is broken! Everyone knows my code!", shocked: true },
         { kind: "narration", text: "There's still £5,000 missing. Find it, and find out why." },
       ],
@@ -219,16 +219,13 @@ export const case002: CaseFile = {
         type: "scene",
         caption: "Taken by Gus · 12:03 AM · Studio A",
         look: "office",
+        // Painted by one-more-clue-videos/omc_cinema/case002_photos.py, which keeps the same tap areas.
+        image: "/evidence/case002-studio.webp",
         items: [
-          { kind: "label", x: 6, y: 6, text: "ON AIR", style: "sign" },
-          { kind: "box", x: 64, y: 10, w: 30, h: 56, color: "#2b2b3a", radius: 3, text: "RACK", textColor: "#9aa3b5", hotspot: "rack" },
-          { kind: "box", x: 0, y: 66, w: 100, h: 34, color: "#3b3346", radius: 1 },
-          { kind: "box", x: 8, y: 54, w: 46, h: 14, color: "#1b1f3b", radius: 6 },
-          { kind: "box", x: 14, y: 56, w: 5, h: 10, color: "#ef5b5b", radius: 2, text: "1", textColor: "#fff", hotspot: "fader" },
-          { kind: "box", x: 22, y: 56, w: 5, h: 6, color: "#9aa3b5", radius: 2 },
-          { kind: "box", x: 30, y: 56, w: 5, h: 6, color: "#9aa3b5", radius: 2 },
-          { kind: "box", x: 44, y: 46, w: 7, h: 9, color: "#fff4e0", radius: 20, text: "☕", hotspot: "mug" },
-          { kind: "box", x: 36, y: 74, w: 18, h: 8, color: "#ef5b5b", radius: 3, text: "JACKPOT", textColor: "#fff", hotspot: "tray" },
+          { kind: "area", x: 3, y: 62, w: 7, h: 25, hotspot: "fader" },
+          { kind: "area", x: 71, y: 7, w: 27, h: 72, hotspot: "rack" },
+          { kind: "area", x: 64, y: 82, w: 10, h: 13, hotspot: "mug" },
+          { kind: "area", x: 50, y: 65, w: 16, h: 10, hotspot: "tray" },
         ],
       },
     },
@@ -344,11 +341,11 @@ export const case002: CaseFile = {
         type: "scene",
         caption: "Taken by Gus · 12:02 AM · outside Studio A",
         look: "office",
+        // Painted by one-more-clue-videos/omc_cinema/case002_photos.py, which keeps the same tap areas.
+        image: "/evidence/case002-corridor.webp",
         items: [
-          { kind: "box", x: 58, y: 8, w: 26, h: 62, color: "#4a3d55", radius: 3, text: "STUDIO A", textColor: "#fff4e0" },
-          { kind: "box", x: 86, y: 32, w: 8, h: 12, color: "#1b1f3b", radius: 4, text: "▦", textColor: "#3fb8af", hotspot: "keypad" },
-          { kind: "box", x: 0, y: 72, w: 100, h: 28, color: "#3b3346", radius: 1 },
-          { kind: "art", x: 16, y: 50, w: 16, art: "suspect:square", rotate: -70, hotspot: "vince" },
+          { kind: "area", x: 73, y: 28, w: 11, h: 24, hotspot: "keypad" },
+          { kind: "area", x: 22, y: 68, w: 26, h: 28, hotspot: "vince" },
         ],
       },
     },
@@ -366,7 +363,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-corridor", hotspot: "vince" },
       title: "Vince on the floor",
-      body: { type: "finding", text: "Vince on the corridor floor. Hair perfect, shirt tucked in, not a scratch on him." },
+      body: { type: "finding", text: "Vince on the corridor floor. Bow tie dead straight, not a scratch on him." },
     },
     {
       id: "photo-greenroom",
@@ -378,13 +375,12 @@ export const case002: CaseFile = {
         type: "scene",
         caption: "Taken by Tess · 12:05 AM · green room",
         look: "office",
+        // Painted by one-more-clue-videos/omc_cinema/case002_photos.py, which keeps the same tap areas.
+        image: "/evidence/case002-greenroom.webp",
         items: [
-          { kind: "box", x: 6, y: 52, w: 56, h: 22, color: "#5b3a6b", radius: 12, text: "SOFA", textColor: "#cdb8dc" },
-          { kind: "box", x: 40, y: 40, w: 18, h: 18, color: "#2a2333", radius: 14, hotspot: "bag" },
-          { kind: "box", x: 44, y: 36, w: 9, h: 7, color: "#0b0b10", radius: 40 },
-          { kind: "box", x: 70, y: 58, w: 24, h: 6, color: "#7a6a86", radius: 3 },
-          { kind: "box", x: 76, y: 52, w: 8, h: 6, color: "#1b1f3b", radius: 6, text: "📞", hotspot: "phone" },
-          { kind: "box", x: 8, y: 12, w: 14, h: 22, color: "#f2b33d", radius: 4, text: "🍪", hotspot: "biscuits" },
+          { kind: "area", x: 37, y: 37, w: 23, h: 29, hotspot: "bag" },
+          { kind: "area", x: 75, y: 63, w: 10, h: 16, hotspot: "phone" },
+          { kind: "area", x: 13, y: 19, w: 12, h: 12, hotspot: "biscuits" },
         ],
       },
     },
@@ -424,9 +420,11 @@ export const case002: CaseFile = {
         source: "Studio A · keypad",
         rows: [
           { time: "11:31:00", text: "Entry · code 0451 (V. Valentine)" },
+          { time: "11:38:20", text: "Exit · from inside" },
+          { time: "11:47:05", text: "Entry · code 0451 (V. Valentine)" },
           { time: "11:59:10", text: "Exit · from inside" },
           { time: "11:59:30", text: "Locked from corridor · code 0451 (V. Valentine)" },
-          { time: "", text: "No other entries tonight" },
+          { time: "12:02:50", text: "Opened · master key (G. Marley)" },
         ],
       },
     },
@@ -441,7 +439,7 @@ export const case002: CaseFile = {
         type: "log",
         source: "Phone records · D. Kingsley",
         rows: [
-          { time: "11:54 PM", text: "Call to 'Agent - Mo' · 13 minutes" },
+          { time: "11:50 PM", text: "Call to 'Agent - Mo' · 13 minutes" },
           { time: "11:56 PM", text: "Green room vending machine · card tap" },
         ],
       },
@@ -515,7 +513,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "crosscheck", pair: ["statement-vince", "door-log"] },
       title: "Nobody burst in",
-      body: { type: "finding", text: "Vince says an attacker burst in. The door log shows nobody entered after Vince himself at 11:31." },
+      body: { type: "finding", text: "Vince says an attacker burst in. The door log shows nobody went in after Vince at 11:47, until Gus opened it at 12:02." },
     },
     {
       id: "listener-calls",
@@ -544,11 +542,12 @@ export const case002: CaseFile = {
         type: "scene",
         caption: "KNHT car park · camera 4",
         look: "cctv",
+        // Painted by one-more-clue-videos/omc_cinema/case002_photos.py, which keeps the same tap areas.
+        image: "/evidence/case002-carpark.webp",
         items: [
-          { kind: "label", x: 4, y: 4, text: "CAM4 00:31:12", style: "stamp" },
-          { kind: "box", x: 46, y: 46, w: 46, h: 26, color: "#7a7a7a", radius: 18, hotspot: "boot" },
-          { kind: "art", x: 22, y: 26, w: 17, art: "suspect:square", hotspot: "vince" },
-          { kind: "box", x: 36, y: 48, w: 8, h: 6, color: "#b0b0b0", radius: 2, hotspot: "envelope" },
+          { kind: "area", x: 53, y: 31, w: 33, h: 33, hotspot: "boot" },
+          { kind: "area", x: 17, y: 44, w: 22, h: 42, hotspot: "vince" },
+          { kind: "area", x: 43, y: 49, w: 10, h: 10, hotspot: "envelope" },
         ],
       },
     },
@@ -676,10 +675,10 @@ export const case002: CaseFile = {
   solution: {
     culprit: "square",
     motives: [
-      { id: "debt", label: "He owed £4,800 to a betting site and took the jackpot" },
+      { id: "debt", label: "He owed a betting site £4,800 by the morning" },
       { id: "darla", label: "To get Darla blamed and her show cancelled" },
-      { id: "ratings", label: "A publicity stunt for ratings" },
-      { id: "contract", label: "To get out of his contract" },
+      { id: "ratings", label: "A stunt to win back his falling ratings" },
+      { id: "contract", label: "To get out of his contract before next week" },
     ],
     motive: "debt",
     keyEvidence: [
@@ -705,9 +704,10 @@ export const case002: CaseFile = {
       "There was no attacker. Vince owed SpinKings £4,800 by 9 AM and had the £5,000 jackpot in his hand. He planted a balaclava he'd bought at 11:12 in Darla's bag, lowered the blind, pulled his own mic down, locked Studio A with his own code and lay down in the corridor. At 12:31 he put the envelope in his car boot.",
     timeline: [
       { time: "11:12 PM", text: "On his way in, Vince buys a black balaclava at a petrol station." },
-      { time: "11:31 PM", text: "Vince enters Studio A. Nobody else enters all night." },
+      { time: "11:31 PM", text: "Vince enters Studio A." },
       { time: "11:40 PM", text: "Vince signs the £5,000 jackpot envelope out of the safe." },
       { time: "11:45 PM", text: "Vince 'fancies a biscuit' and stuffs the balaclava into Darla's bag." },
+      { time: "11:47 PM", text: "Vince is back in Studio A. Nobody else goes in until Gus opens it at 12:02." },
       { time: "11:51 PM", text: "Vince checks his SpinKings account: £4,800 due by morning." },
       { time: "11:55 PM", text: "On air: 'The jackpot winner is… Mrs Patel! After the break!'" },
       { time: "11:57 PM", text: "Vince lowers the booth blind. Tess can't see in." },

@@ -124,6 +124,19 @@
   text-shadow: 0 1px 2px #000;
 }
 
+/* The Photographer's magnifier, read over a painted photo. */
+.scene-lens {
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 5px solid var(--color-mustard);
+  border-radius: 50%;
+  background-color: var(--color-ink);
+  background-repeat: no-repeat;
+  box-shadow: 0 0 0 3px var(--color-ink), 0 10px 18px rgb(0 0 0 / 0.45), inset 0 0 14px rgb(27 31 59 / 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
 /* Paper and screen surfaces for evidence */
 .paper {
   background-color: var(--color-cream);

@@ -45,4 +45,4 @@ Keep a note with the time next to each entry.
 
 - A search pop-up ("Match found") covers the screen for 7 seconds. Tap anywhere to close it.
 - With test bots, the bots never answer checkpoints and each uses its power only once per chapter. Some questions, such as Ozzy's 9:10 round, only get asked by a human Interviewer.
-- In local dev, the Next.js "N" badge sits over the Desk tab. It doesn't show on previews or the live site.
+- In local dev, the Next.js "N" badge sits over the Board button. It doesn't show on previews or the live site.

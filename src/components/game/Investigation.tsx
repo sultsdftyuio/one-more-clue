@@ -7,9 +7,9 @@ import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { AudioToggles } from "./audio/AudioToggles";
 import { play } from "./audio/sound";
-import { BoardPanel } from "./BoardPanel";
+import { BoardPanel, BoardPeek } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
-import { DeskPanel } from "./desk/DeskPanel";
+import { DeskPanel, Notebook } from "./desk/DeskPanel";
 import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
 import { useLiveRoom } from "./live/useLive";
@@ -23,7 +23,7 @@ import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
 import { Sheet } from "./ui/Sheet";
 
-type Tab = "desk" | "board" | "solve" | "team";
+type Panel = "board" | "solve" | "team" | "notes";
 
 function useClock(startedAt: number | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -183,7 +183,7 @@ function ActivityToasts({ view }: { view: PlayerView }) {
   }, [view.activity, view.me.id]);
 
   return (
-    <div className="pointer-events-none fixed top-20 right-3 z-40 grid w-[min(22rem,calc(100%-1.5rem))] gap-2" aria-live="polite">
+    <div className="pointer-events-none fixed top-20 right-3 z-[51] grid w-[min(22rem,calc(100%-1.5rem))] gap-2" aria-live="polite">
       {toasts.map((a) => (
         <p key={a.id} className="animate-[toast-in_0.3s_ease-out] rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 text-sm leading-snug font-bold text-ink shadow-pop-sm">
           {a.text}
@@ -193,29 +193,57 @@ function ActivityToasts({ view }: { view: PlayerView }) {
   );
 }
 
-const TABS: { id: Tab; label: string; icon: IconName }[] = [
-  { id: "desk", label: "Desk", icon: "desk" },
+const DOCK: { id: Panel; label: string; icon: IconName }[] = [
   { id: "board", label: "Board", icon: "board" },
   { id: "solve", label: "Solve", icon: "target" },
   { id: "team", label: "Team", icon: "users" },
+  { id: "notes", label: "Notes", icon: "note" },
 ];
 
-/** True on laptop-width screens, where the three panels sit side by side. */
-function useWide() {
-  const [wide, setWide] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const update = () => setWide(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  return wide;
+const URGENT = ["vote", "live"];
+
+/** Everything that isn't your own desk: one tap away, with a badge when something there needs you. */
+function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Open a panel">
+      <div className="mx-auto grid max-w-2xl grid-cols-4">
+        {DOCK.map((d) => (
+          <button key={d.id} type="button" onClick={() => onOpen(d.id)} className="relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-extrabold text-cream/70 transition-colors hover:text-mustard">
+            <span className="grid h-8 w-14 place-items-center rounded-full">
+              <Icon name={d.icon} />
+            </span>
+            {d.label}
+            {badges[d.id] && (
+              <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", URGENT.includes(badges[d.id]!) || d.id === "team" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+                {badges[d.id]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/** What the team is trying to answer right now, so nobody has to go looking for why they're here. */
+function ChapterGoal({ view, onOpen }: { view: PlayerView; onOpen: () => void }) {
+  const room = view.interrogation;
+  const suspect = room && view.case.suspects.find((s) => s.id === room.suspect);
+  const question = suspect ? `Break ${suspect.name}'s story.` : view.chapter.checkpoint ? view.chapter.checkpoint.question : view.case.confrontation ? "Who did it? Name them." : "Who did it, why, and what proves it?";
+  return (
+    <button type="button" onClick={onOpen} className="mb-5 flex w-full items-center gap-3 rounded-2xl border-[3px] border-ink bg-dusk px-4 py-2.5 text-left shadow-pop-sm transition-transform hover:-translate-y-0.5">
+      <Icon name="target" className="size-5 shrink-0 text-mustard" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[0.7rem] font-extrabold tracking-widest text-mustard uppercase">{suspect ? "The confrontation" : `Chapter ${view.chapter.number}: ${view.chapter.title}`}</span>
+        <span className="line-clamp-2 leading-snug font-bold text-cream">{question}</span>
+      </span>
+      <Icon name="arrow" className="size-4 shrink-0 text-cream/60" />
+    </button>
+  );
 }
 
 export function Investigation({ view, act, busy }: { view: PlayerView; act: Act; busy: boolean }) {
-  const wide = useWide();
-  const [tab, setTab] = useState<Tab>("desk");
+  const [panel, setPanel] = useState<Panel | null>(null);
   const [opened, setOpened] = useState<string | null>(null);
   const chapterKey = `omc-chapter-${view.code}`;
   const [seenChapter, setSeenChapter] = useState<number | null>(null);
@@ -234,88 +262,67 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
     try {
       window.localStorage.setItem(chapterKey, String(view.chapter.number));
     } catch {}
-    setTab("desk");
+    setPanel(null);
   };
 
   const confrontedKey = `omc-confronted-${view.code}`;
   const [confronted, setConfronted] = useState<boolean | null>(null);
+  const inTheRoom = Boolean(view.interrogation);
   useEffect(() => {
     try {
-      setConfronted(Boolean(window.localStorage.getItem(confrontedKey)));
+      const entered = Boolean(window.localStorage.getItem(confrontedKey));
+      setConfronted(entered);
+      // Coming back to a confrontation: it's the only thing happening, so it opens by itself.
+      if (entered && inTheRoom) setPanel("solve");
     } catch {
       setConfronted(false);
     }
-  }, [confrontedKey]);
+  }, [confrontedKey, inTheRoom]);
 
   const enterConfrontation = () => {
     setConfronted(true);
     try {
       window.localStorage.setItem(confrontedKey, "1");
     } catch {}
-    setTab("solve");
+    setPanel("solve");
   };
+
+  // Chat lives behind the Team button now, so messages that arrive while it's shut get counted.
+  const heard = view.chat.filter((line) => line.playerId !== view.me.id).length;
+  const [heardSeen, setHeardSeen] = useState(heard);
+  useEffect(() => {
+    if (panel === "team") setHeardSeen(heard);
+  }, [panel, heard]);
 
   const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
-  const badges: Partial<Record<Tab, string>> = {
-    desk: view.leads.length ? "lead" : undefined,
+  const unread = heard - heardSeen;
+  const badges: Partial<Record<Panel, string>> = {
     board: `${view.pins.length}/${view.pinLimit}`,
     solve: view.proposal ? "vote" : view.interrogation && !view.interrogation.over ? "live" : undefined,
+    team: unread > 0 ? String(unread) : undefined,
   };
 
-  const panels: Record<Tab, React.ReactNode> = {
-    desk: <DeskPanel />,
-    board: <BoardPanel />,
-    solve: <SolvePanel />,
-    team: <TeamPanel />,
+  const panels: Record<Panel, { title: string; body: React.ReactNode }> = {
+    board: { title: "The board", body: <BoardPanel /> },
+    solve: { title: "Solve", body: <SolvePanel /> },
+    team: { title: "The team", body: <TeamPanel /> },
+    notes: { title: "Your notebook", body: <Notebook code={view.code} /> },
   };
 
   return (
     <GameProvider value={game}>
       <TopBar view={view} act={act} />
 
-      {wide ? (
-        // Laptops: desk, board and the case side by side
-        <main className={cx("mx-auto grid max-w-[90rem] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(20rem,0.9fr)] items-start gap-6 px-6 pt-6 pb-16", view.proposal && "pb-72")}>
-          <div className="grid gap-6">{panels.desk}</div>
-          <div className="sticky top-24 grid gap-6">{panels.board}</div>
-          <div className="grid gap-6">
-            {panels.solve}
-            {panels.team}
-          </div>
-        </main>
-      ) : (
-        // Phones and tablets: one panel at a time
-        <main className={cx("mx-auto max-w-2xl px-4 pt-5 pb-32", view.proposal && "pb-72")}>{panels[tab]}</main>
-      )}
-
-      {!wide && <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" role="tablist">
-        <div className="mx-auto grid max-w-2xl grid-cols-4">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => {
-                setTab(t.id);
-                window.scrollTo({ top: 0 });
-              }}
-              className={cx("relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-extrabold", tab === t.id ? "text-mustard" : "text-cream/60")}
-            >
-              <span className={cx("grid h-8 w-14 place-items-center rounded-full transition-colors", tab === t.id && "bg-mustard/15")}>
-                <Icon name={t.icon} />
-              </span>
-              {t.label}
-              {badges[t.id] && (
-                <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", badges[t.id] === "vote" || badges[t.id] === "live" || badges[t.id] === "lead" ? "bg-coral text-cream" : "bg-cream text-ink")}>
-                  {badges[t.id]}
-                </span>
-              )}
-            </button>
-          ))}
+      <main className={cx("mx-auto grid max-w-5xl items-start gap-6 px-4 pt-5 pb-32 lg:grid-cols-[minmax(0,1fr)_16rem] lg:px-6", view.proposal && "pb-96")}>
+        <div className="min-w-0">
+          <ChapterGoal view={view} onOpen={() => setPanel("solve")} />
+          <DeskPanel />
         </div>
-      </nav>}
+        <BoardPeek onOpen={() => setPanel("board")} />
+      </main>
+
+      <Dock badges={badges} onOpen={setPanel} />
 
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />
@@ -324,14 +331,23 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <LieMoment />
       <LieCallBar />
 
+      {panel && (
+        // An open piece of evidence sits on top of the panel: Esc closes that first.
+        <Sheet title={panels[panel].title} onClose={() => !opened && setPanel(null)}>
+          <div className={cx(view.proposal && "pb-80")}>{panels[panel].body}</div>
+        </Sheet>
+      )}
+
       {openedEvidence && (
         <Sheet title={openedEvidence.title} onClose={() => setOpened(null)}>
-          <EvidenceCard evidence={openedEvidence} />
-          {openedEvidence.pinned && (
-            <p className="mt-3 text-center text-sm font-bold text-cream/60">
-              On the board · pinned by {nameOf(view, view.pins.find((p) => p.evidenceId === openedEvidence.id)?.by)}
-            </p>
-          )}
+          <div className={cx(view.proposal && "pb-80")}>
+            <EvidenceCard evidence={openedEvidence} />
+            {openedEvidence.pinned && (
+              <p className="mt-3 text-center text-sm font-bold text-cream/60">
+                On the board · pinned by {nameOf(view, view.pins.find((p) => p.evidenceId === openedEvidence.id)?.by)}
+              </p>
+            )}
+          </div>
         </Sheet>
       )}
 

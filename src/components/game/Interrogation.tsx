@@ -68,7 +68,7 @@ function Claim({ room }: { room: Room }) {
 
 /**
  * A called lie hangs in the air for a few seconds so the team can stop it. It sits
- * over every tab, because anyone might be on the board. Each phone counts down and
+ * over every panel, because anyone might be on the board. Each phone counts down and
  * asks the room to land it; the room checks the time and the first ask wins.
  */
 export function LieCallBar() {
@@ -94,7 +94,7 @@ export function LieCallBar() {
   if (!call) return null;
   const mine = call.by === view.me.id;
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-40 p-3 lg:bottom-0 lg:p-5" role="alert">
+    <div className="fixed inset-x-0 bottom-[calc(4.6rem+env(safe-area-inset-bottom))] z-[51] p-3" role="alert">
       <div className="mx-auto max-w-2xl animate-[sheet-up_0.25s_ease-out] overflow-hidden rounded-3xl border-[3px] border-ink bg-coral text-cream shadow-card">
         <div className="p-4">
           <p className="font-display text-xl leading-tight">

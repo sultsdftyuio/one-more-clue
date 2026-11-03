@@ -3,18 +3,25 @@
 import { useEffect, type ReactNode } from "react";
 import { Icon } from "./Icon";
 
+/** Sheets can stack, so the page only scrolls again once the last one has gone. */
+let openSheets = 0;
+
 /** A modal: a bottom sheet on phones, a centred card on larger screens. Esc or the backdrop closes it. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    openSheets += 1;
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
+      openSheets -= 1;
+      if (!openSheets) document.body.style.overflow = "";
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal aria-label={title}>

@@ -1,11 +1,12 @@
 export const hero = {
-  message: {
-    from: "Unknown number",
-    time: "9:17 PM",
-    text: "The prototype is gone. Four people were in the lab tonight, and one of them is lying. Can your group work out who?",
-  },
+  hook: "Everyone holds different evidence. Nobody solves it alone.",
   intro:
-    "Mystery cases you crack together in the browser. Dig through chats, access logs and photos, argue it out, then name the culprit.",
-  facts: ["2–4 players", "15–25 min", "No app needed"],
+    "A mystery for 2 to 4 friends on their phones. Each of you takes a role, one find opens the next, and at the end you corner the culprit with proof.",
+  facts: ["2–4 players", "Same room or on a call", "First case free", "No app needed"],
+  film: {
+    video: "/landing/case-001-film.mp4",
+    poster: "/landing/case-001-film.webp",
+    label: "Case 001 · The opening",
+  },
   lineupBubble: "One of us is lying.",
 };

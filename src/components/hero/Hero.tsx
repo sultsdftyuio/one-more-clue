@@ -1,12 +1,12 @@
 import { Magnetic } from "@/components/fx/Magnetic";
 import { ButtonLink } from "@/components/ui/Button";
 import { hero } from "@/data/hero";
-import { playCta } from "@/lib/game-open";
+import { gameOpen, playCta } from "@/lib/game-open";
 import { BlackoutClock } from "./BlackoutClock";
 import { CityScene } from "./CityScene";
 import { PopIn, ScrollAway } from "./HeroMotion";
+import { HeroFilm } from "./HeroFilm";
 import { HeroTitle } from "./HeroTitle";
-import { IncomingMessage } from "./IncomingMessage";
 import { SuspectLineup } from "./SuspectLineup";
 
 export function Hero() {
@@ -15,41 +15,50 @@ export function Hero() {
     <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
       <CityScene />
 
-      <ScrollAway className="relative mx-auto w-full max-w-6xl px-4 pt-24 sm:px-6 sm:pt-28">
-        <IncomingMessage {...hero.message} />
+      <div className="relative mx-auto grid w-full max-w-6xl items-start gap-x-10 px-4 pt-24 sm:px-6 sm:pt-28 md:grid-cols-[minmax(0,1fr)_auto]">
+        {/* Only the words drift away on scroll; on phones the film is still below them. */}
+        <ScrollAway>
+          <HeroTitle />
 
-        <HeroTitle />
+          <PopIn delay={1.0}>
+            <p className="mt-5 max-w-xl font-display text-[clamp(1.6rem,3.2vw,2.5rem)] leading-[1.05] text-mustard [text-shadow:0_0.18rem_0_var(--color-ink)]">
+              {hero.hook}
+            </p>
+          </PopIn>
 
-        <PopIn delay={1.1}>
-          <p className="mt-5 max-w-lg text-lg leading-relaxed font-semibold text-cream/90 [text-shadow:0_2px_8px_var(--color-night)]">
-            {hero.intro}
-          </p>
-        </PopIn>
+          <PopIn delay={1.15}>
+            <p className="mt-4 max-w-lg text-lg leading-relaxed font-semibold text-cream/90 [text-shadow:0_2px_8px_var(--color-night)]">
+              {hero.intro}
+            </p>
+          </PopIn>
 
-        <ul className="mt-5 flex flex-wrap gap-2">
-          {hero.facts.map((fact, i) => (
-            <PopIn
-              key={fact}
-              as="li"
-              delay={1.25 + i * 0.08}
-              className="rounded-full border-2 border-cream/25 bg-night/60 px-3 py-1 text-sm font-bold text-cream backdrop-blur-sm"
-            >
-              {fact}
-            </PopIn>
-          ))}
-        </ul>
+          <ul className="mt-5 flex flex-wrap gap-2">
+            {hero.facts.map((fact, i) => (
+              <PopIn
+                key={fact}
+                as="li"
+                delay={1.25 + i * 0.08}
+                className="rounded-full border-2 border-cream/25 bg-night/60 px-3 py-1 text-sm font-bold text-cream backdrop-blur-sm"
+              >
+                {fact}
+              </PopIn>
+            ))}
+          </ul>
 
-        <PopIn delay={1.5} className="mt-7 flex flex-wrap gap-4">
-          <Magnetic>
-            <ButtonLink href={cta.href}>{cta.label}</ButtonLink>
-          </Magnetic>
-          <Magnetic>
-            <ButtonLink href="#mini-case" variant="secondary">
-              Try a 30-second case
-            </ButtonLink>
-          </Magnetic>
-        </PopIn>
-      </ScrollAway>
+          <PopIn delay={1.5} className="mt-7 flex flex-wrap gap-4">
+            <Magnetic>
+              <ButtonLink href={cta.href}>{gameOpen() ? "Play Case 001 free" : cta.label}</ButtonLink>
+            </Magnetic>
+            <Magnetic>
+              <ButtonLink href="#mini-case" variant="secondary">
+                Try a 30-second case
+              </ButtonLink>
+            </Magnetic>
+          </PopIn>
+        </ScrollAway>
+
+        <HeroFilm {...hero.film} className="mx-auto mt-12 w-[min(62vw,16.5rem)] md:mt-2 md:w-[clamp(13rem,21vw,17rem)]" />
+      </div>
 
       {/* On phones the clock sits between the copy and the lineup; wider, on the street left of the lineup. */}
       <BlackoutClock className="relative z-10 mx-auto mt-14 md:absolute md:bottom-10 md:left-[max(1.5rem,calc(50%-34rem))] md:mx-0 md:mt-0" />

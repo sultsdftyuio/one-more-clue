@@ -1,6 +1,6 @@
 """Renders the landing page's sounds with the films' sound kit.
 
-The rain, the 9:17 power cut, the lights coming back and the stamp used to be
+The 9:17 power cut, the lights coming back and the stamp used to be
 synthesised live in the browser from bare oscillators, and sounded like it.
 These come from the same instruments as the case films
 (../one-more-clue-videos/omc_cinema/sound.py), mastered here and written to
@@ -8,9 +8,7 @@ public/landing/sound/ as small MP3s.
 
     python scripts/landing-sounds.py
 
-The rain is a seamless loop with half a second of the loop's own sound on each
-side, so MP3 encoder padding never lands inside it: the page loops from
-RAIN_PAD to RAIN_PAD + RAIN_LOOP (see src/components/home/sound.ts).
+The page has no background bed, only these moments.
 """
 from __future__ import annotations
 
@@ -27,8 +25,6 @@ sys.path.insert(0, str(ROOT.parent / "one-more-clue-videos"))
 from omc_cinema import sound as s  # noqa: E402
 
 OUT = ROOT / "public" / "landing" / "sound"
-RAIN_LOOP = 12.0
-RAIN_PAD = 0.5
 
 
 def stereo(x):
@@ -62,22 +58,6 @@ def in_room(x, room=1.4, send=0.35, seed=3):
     n = s.seconds(0.25)
     fade[-n:] = np.linspace(1, 0, n)
     return out * fade[:, None]
-
-
-def rain_loop(rng):
-    """Rain on glass that loops without a seam: the tail is crossfaded into the head."""
-    cross = 2.0
-    r = s.rain(RAIN_LOOP + cross, rng, intensity=0.8)
-    # Rain on a window, heard from inside: the hiss rolled off, a little more body.
-    r = s.lowpass(r, 5200) + s.lowpass(s.rain(RAIN_LOOP + cross, rng, 0.5), 700) * 0.6
-    n, c = s.seconds(RAIN_LOOP), s.seconds(cross)
-    loop = r[:n].copy()
-    w = np.linspace(0, np.pi / 2, c)[:, None]
-    # Equal-power crossfade suits two uncorrelated washes of noise.
-    loop[:c] = r[n:n + c] * np.cos(w) + r[:c] * np.sin(w)
-    loop = level(loop, rms_db=-24)
-    p = s.seconds(RAIN_PAD)
-    return np.concatenate([loop[-p:], loop, loop[:p]])
 
 
 def power_down(rng):
@@ -127,7 +107,6 @@ def write(name, x, bitrate="128k"):
 
 if __name__ == "__main__":
     rng = np.random.default_rng(917)
-    write("rain", rain_loop(rng), bitrate="96k")
     write("power-down", power_down(rng))
     write("power-up", power_up(rng))
     write("stamp", stamp(rng))

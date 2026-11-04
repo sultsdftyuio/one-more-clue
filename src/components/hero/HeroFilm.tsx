@@ -18,7 +18,7 @@ function holdBack() {
 /**
  * The case's opening film, playing on a phone in the street. It starts muted
  * once the page has loaded and pauses when scrolled away; one tap plays it
- * from the top with the narrator, and quiets the page's rain meanwhile.
+ * from the top with the narrator, and quiets the page's own sounds meanwhile.
  */
 export function HeroFilm({ video, poster, label, className }: Props) {
   const ref = useRef<HTMLVideoElement>(null);

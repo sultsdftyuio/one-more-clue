@@ -21,11 +21,8 @@ function Letters({ text, start, className }: { text: string; start: number; clas
       {[...text].map((ch, i) => (
         <m.span
           key={i}
-          className={`inline-block ${className ?? ""}`}
-          style={{ ...extrude, transformOrigin: "50% 100%" }}
-          initial={{ y: "-0.9em", rotateX: -80, opacity: 0 }}
-          animate={{ y: 0, rotateX: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 320, damping: 16, delay: start + i * 0.045 }}
+          className={`inline-block animate-drop-in ${className ?? ""}`}
+          style={{ ...extrude, transformOrigin: "50% 100%", animationDelay: `${start + i * 0.045}s` }}
           whileHover={{ y: -10, rotate: i % 2 ? 5 : -5, transition: { type: "spring", stiffness: 500, damping: 12 } }}
         >
           {ch === " " ? " " : ch}
@@ -52,18 +49,10 @@ export function HeroTitle() {
           {[..."Clue"].map((ch, i) => (
             <m.span
               key={i}
-              className="inline-block text-mustard"
-              style={{ ...extrude, transformOrigin: "50% 100%" }}
-              initial={{ y: "-0.9em", rotateX: -80, opacity: 0 }}
-              animate={
-                reduce
-                  ? { y: 0, rotateX: 0, opacity: 1 }
-                  : { y: 0, rotateX: 0, opacity: 1, scale: [1, 1, 1.28, 1] }
-              }
-              transition={{
-                default: { type: "spring", stiffness: 320, damping: 16, delay: 0.55 + i * 0.05 },
-                scale: { duration: 0.5, delay: sweepAt + 0.12 + i * 0.13, times: [0, 0.01, 0.4, 1] },
-              }}
+              className="inline-block animate-drop-in text-mustard"
+              style={{ ...extrude, transformOrigin: "50% 100%", animationDelay: `${0.55 + i * 0.05}s` }}
+              animate={reduce ? undefined : { scale: [1, 1, 1.28, 1] }}
+              transition={{ duration: 0.5, delay: sweepAt + 0.12 + i * 0.13, times: [0, 0.01, 0.4, 1] }}
               whileHover={{ y: -10, rotate: i % 2 ? 5 : -5 }}
             >
               {ch}

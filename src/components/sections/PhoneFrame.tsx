@@ -3,14 +3,14 @@
 import Image from "next/image";
 import { AnimatePresence, m, useMotionTemplate, useMotionValue, useTransform, type MotionValue } from "motion/react";
 import { usePointer } from "@/components/fx/pointer";
+import { steps } from "@/data/how-it-works";
 import { cx } from "@/lib/cx";
 
-/** Real screenshots from a test game, one per "how it works" step. */
-export const phoneScreens = [
-  { src: "/screens/room-lobby-phone.jpg", alt: "The game lobby: Case 001, voice chat and the room code to share" },
-  { src: "/screens/room-desk-phone.jpg", alt: "Investigating: your role, a records search and your evidence" },
-  { src: "/screens/room-vote-phone.jpg", alt: "Solving: the group votes on what's wrong with the last message" },
-];
+/** Real screens from test games, one per "how it works" step. */
+export const phoneScreens = steps.map((s) => s.screen);
+
+/** The screens are 375 x 859: a 375 x 812 phone screenshot under a 47px status bar. */
+export const SCREEN_ASPECT = 859 / 375;
 
 /**
  * The WebGL phone's canvas is this many times the height of the phone's slot,
@@ -105,7 +105,7 @@ export function PhoneFrame({ screen, className, rotateX = 0, rotateY = 0 }: Prop
           {/* Front: metal rim, black glass bezel, recessed screen. */}
           <m.div className="relative p-[3px]" style={{ borderRadius: RADIUS, background: metal }}>
             <div className="rounded-[2.45rem] bg-[#07081a] p-[0.55rem] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-              <div className="relative aspect-[469/1015] overflow-hidden rounded-[1.95rem] bg-night shadow-[inset_0_0_0.6rem_rgba(0,0,0,0.6)]">
+              <div className="relative aspect-[375/859] overflow-hidden rounded-[1.95rem] bg-night shadow-[inset_0_0_0.6rem_rgba(0,0,0,0.6)]">
                 <AnimatePresence initial={false}>
                   <m.div
                     key={screen}
@@ -115,7 +115,7 @@ export function PhoneFrame({ screen, className, rotateX = 0, rotateY = 0 }: Prop
                     exit={{ y: "-25%", opacity: 0 }}
                     transition={{ type: "spring", stiffness: 140, damping: 22 }}
                   >
-                    <Image src={phoneScreens[screen].src} alt={phoneScreens[screen].alt} fill sizes="320px" className="object-cover object-top" />
+                    <Image src={phoneScreens[screen].src} alt={phoneScreens[screen].alt} fill sizes="(min-width: 768px) 320px, 60vw" className="object-cover object-top" />
                   </m.div>
                 </AnimatePresence>
                 <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0.35rem_rgba(0,0,0,0.55)]" />

@@ -11,6 +11,8 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let rain: AudioBufferSourceNode | null = null;
 let enabled = false;
+/** Turned right down while something louder plays, like the hero film with its sound on. */
+let ducked = false;
 const listeners = new Set<(on: boolean) => void>();
 
 function audio() {
@@ -67,7 +69,6 @@ export const sfx = {
   powerDown: () => tone(320, 40, 1.1, "sawtooth", 0.12),
   powerUp: () => tone(60, 520, 0.9, "triangle", 0.14),
   stamp: () => tone(140, 45, 0.25, "square", 0.22),
-  buzz: () => tone(180, 170, 0.35, "square", 0.05),
 };
 
 export function soundEnabled() {
@@ -90,11 +91,17 @@ export function setSoundEnabled(on: boolean) {
     const { ctx, master } = audio();
     void ctx.resume();
     startRain();
-    master.gain.setTargetAtTime(0.5, ctx.currentTime, 0.4);
+    master.gain.setTargetAtTime(ducked ? 0.04 : 0.5, ctx.currentTime, 0.4);
   } else if (ctx && master) {
     master.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
   }
   listeners.forEach((fn) => fn(on));
+}
+
+/** Quiet the rain under the hero film's narrator, without changing the visitor's choice. */
+export function duckSound(on: boolean) {
+  ducked = on;
+  if (enabled && ctx && master) master.gain.setTargetAtTime(on ? 0.04 : 0.5, ctx.currentTime, 0.3);
 }
 
 /** The remembered choice. Browsers only allow audio after a tap, so it starts muted either way. */

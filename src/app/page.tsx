@@ -7,6 +7,7 @@ import { CaseShelf } from "@/components/sections/CaseShelf";
 import { CaseTeaser } from "@/components/sections/CaseTeaser";
 import { FinalCta } from "@/components/sections/FinalCta";
 import { HowItWorks } from "@/components/sections/HowItWorks";
+import { Roles } from "@/components/sections/Roles";
 import { Scallop } from "@/components/ui/Scallop";
 
 export default function Home() {
@@ -16,7 +17,9 @@ export default function Home() {
       <main data-home>
         <Hero />
         <MiniCase />
-        <Scallop top="var(--color-ink)" bottom="var(--color-cream)" />
+        <Scallop top="var(--color-ink)" bottom="var(--color-dusk)" />
+        <Roles />
+        <Scallop top="var(--color-dusk)" bottom="var(--color-cream)" />
         <HowItWorks />
         <Scallop top="var(--color-cream)" bottom="var(--color-night)" />
         <CaseTeaser />

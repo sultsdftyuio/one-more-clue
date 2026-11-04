@@ -45,13 +45,10 @@ export function BlackoutClock({ className }: { className?: string }) {
   const shown = reached && phase === "lit" ? "17" : minute;
 
   return (
-    <m.a
+    <a
       ref={clock}
       href="#mini-case"
-      className={cx("block w-fit text-center", className)}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.9, type: "spring", stiffness: 160, damping: 18 }}
+      className={cx("block w-fit animate-rise-in text-center [animation-delay:1.9s]", className)}
     >
       <div
         className={cx(
@@ -80,7 +77,7 @@ export function BlackoutClock({ className }: { className?: string }) {
         </span>
         <span className="ml-2 text-xl">PM</span>
       </div>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <m.p
           key={phase}
           className="mt-3 inline-flex items-center gap-2 rounded-full border-2 border-cream/30 bg-night/70 px-3 py-1 text-xs font-extrabold tracking-widest text-cream uppercase backdrop-blur"
@@ -96,6 +93,6 @@ export function BlackoutClock({ className }: { className?: string }) {
           )}
         </m.p>
       </AnimatePresence>
-    </m.a>
+    </a>
   );
 }

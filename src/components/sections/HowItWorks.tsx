@@ -7,13 +7,15 @@ import { CountUp } from "@/components/fx/CountUp";
 import { Reveal } from "@/components/fx/Reveal";
 import { TiltCard } from "@/components/fx/TiltCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { facts, steps, type Step } from "@/data/how-it-works";
+import { hero } from "@/data/hero";
+import { facts, steps, type Clue, type Step } from "@/data/how-it-works";
+import { roles } from "@/data/roles";
 import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
 import { PhoneFrame } from "./PhoneFrame";
 import { PhoneStage } from "./PhoneStage";
 
-const tilts = ["-rotate-2", "rotate-1", "-rotate-1"];
+const tilts = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2", "-rotate-1", "rotate-1"];
 
 /** Crime-scene tape across the section, sliding in from one side. */
 function Tape({ className, from, children }: { className: string; from: "left" | "right"; children: string }) {
@@ -31,9 +33,15 @@ function Tape({ className, from, children }: { className: string; from: "left" |
   );
 }
 
-/** The bit of evidence each step carries: the invite link, the board, the verdict. */
-function StepEvidence({ index, active }: { index: number; active: boolean }) {
-  if (index === 0)
+/** The bit of evidence each step carries: the invite, the film, the roles, the vote, the objection, the stars. */
+function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
+  const pop = (i: number) => ({
+    initial: false as const,
+    animate: active ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.85, opacity: 0.6, y: 4 },
+    transition: { type: "spring" as const, stiffness: 380, damping: 18, delay: active ? 0.1 + i * 0.08 : 0 },
+  });
+
+  if (clue === "invite")
     return (
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <span className="rounded-2xl rounded-bl-sm border-[0.1875rem] border-ink bg-teal px-3 py-2 text-sm font-bold text-ink">who&apos;s in for a mystery tonight?</span>
@@ -42,19 +50,77 @@ function StepEvidence({ index, active }: { index: number; active: boolean }) {
         </span>
       </div>
     );
-  if (index === 1)
+
+  if (clue === "film")
     return (
-      <ul className="mt-5 flex flex-wrap gap-3">
-        {(["phone", "keycard", "polaroid"] as const).map((prop, i) => (
-          <li key={prop} className={cx("relative rounded-xl border-[0.1875rem] border-ink bg-cream p-1.5", ["-rotate-6", "rotate-3", "-rotate-2"][i])}>
-            <Image src={propArt.pushpin} alt="" sizes="28px" className="absolute -top-3 left-1/2 w-7 -translate-x-1/2" />
-            <Image src={propArt[prop]} alt="" sizes="56px" className="size-12" />
-          </li>
+      <div className="mt-5 flex items-center gap-4">
+        {/* A frame of the opening film, on a strip of film stock. */}
+        <div className="relative w-16 shrink-0 -rotate-3 rounded-md border-[0.1875rem] border-ink bg-ink px-2 py-1.5 shadow-pop-sm">
+          <div className="absolute inset-y-1 left-0.5 flex w-1 flex-col justify-between">
+            {Array.from({ length: 6 }, (_, i) => <span key={i} className="h-1 rounded-[1px] bg-cream/70" />)}
+          </div>
+          <div className="absolute inset-y-1 right-0.5 flex w-1 flex-col justify-between">
+            {Array.from({ length: 6 }, (_, i) => <span key={i} className="h-1 rounded-[1px] bg-cream/70" />)}
+          </div>
+          <div className="relative aspect-[9/16] overflow-hidden rounded-sm">
+            <Image src={hero.film.poster} alt="" fill sizes="64px" className="object-cover" />
+            <span className="absolute inset-0 grid place-items-center">
+              <span className="grid size-6 place-items-center rounded-full bg-cream/90 pl-0.5 text-[0.6rem] text-ink">▶</span>
+            </span>
+          </div>
+        </div>
+        <p className="font-mono text-sm font-bold text-ink/70">
+          <span className="rounded bg-mustard px-1 text-ink">9:17 PM</span> Case 001 · The opening
+        </p>
+      </div>
+    );
+
+  if (clue === "roles")
+    return (
+      <ul className="mt-5 flex flex-wrap items-center gap-2">
+        {roles.map((role, i) => (
+          <m.li key={role.id} {...pop(i)} className={cx("rounded-full border-[0.1875rem] border-ink px-3 py-1 text-sm font-extrabold shadow-pop-sm", role.tint)}>
+            {role.name}
+          </m.li>
         ))}
       </ul>
     );
+
+  if (clue === "vote")
+    return (
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <div className="relative -rotate-2 rounded-xl border-[0.1875rem] border-ink bg-cream px-3 pt-4 pb-2 shadow-pop-sm">
+          <Image src={propArt.pushpin} alt="" sizes="28px" className="absolute -top-3 left-1/2 w-7 -translate-x-1/2" />
+          <p className="text-[0.65rem] font-extrabold tracking-widest text-ink/50 uppercase">Presented</p>
+          <p aria-label="Redacted evidence" className="mt-1 h-3.5 w-28 rounded-sm bg-ink" />
+        </div>
+        <ul className="flex gap-1.5" aria-label="Three of four agree">
+          {[true, true, true, false].map((yes, i) => (
+            <m.li key={i} {...pop(i)} className={cx("grid size-8 place-items-center rounded-full border-[0.1875rem] border-ink text-sm font-extrabold", yes ? "bg-teal" : "bg-cream text-ink/40")}>
+              {yes ? "✓" : "?"}
+            </m.li>
+          ))}
+        </ul>
+      </div>
+    );
+
+  if (clue === "objection")
+    return (
+      <div className="mt-5 max-w-56 overflow-hidden rounded-xl border-[0.1875rem] border-ink bg-coral shadow-pop-sm">
+        <p className="px-3 pt-2 font-display text-lg text-cream">Objection!</p>
+        <div className="h-2 bg-ink/20">
+          <m.div
+            className="h-full origin-left bg-cream"
+            initial={false}
+            animate={active ? { scaleX: [1, 0] } : { scaleX: 1 }}
+            transition={active ? { duration: 5, ease: "linear", repeat: Infinity, repeatDelay: 0.8 } : { duration: 0.3 }}
+          />
+        </div>
+      </div>
+    );
+
   return (
-    <div className="mt-5 h-12">
+    <div className="mt-5 flex flex-wrap items-center gap-4">
       <m.span
         className="inline-block rounded-xl border-[0.3125rem] border-coral px-4 py-0.5 font-display text-2xl tracking-widest text-coral uppercase"
         initial={false}
@@ -63,6 +129,13 @@ function StepEvidence({ index, active }: { index: number; active: boolean }) {
       >
         Case closed
       </m.span>
+      <span className="flex gap-1 text-2xl text-mustard [text-shadow:0_2px_0_var(--color-ink)]" aria-label="Five stars">
+        {Array.from({ length: 5 }, (_, i) => (
+          <m.span key={i} {...pop(i + 2)}>
+            ★
+          </m.span>
+        ))}
+      </span>
     </div>
   );
 }
@@ -105,7 +178,7 @@ function StepCard({ step, index, active, onActive, pin }: { step: Step; index: n
             <p className="text-xs font-extrabold tracking-widest text-ink/50 uppercase">Exhibit {String.fromCharCode(65 + index)}</p>
             <h3 className="font-display text-3xl">{step.title}</h3>
             <p className="mt-2 text-lg leading-relaxed font-semibold text-ink/75">{step.text}</p>
-            <StepEvidence index={index} active={active} />
+            <StepEvidence clue={step.clue} active={active} />
           </div>
         </Reveal>
         {/* Phones get their own screen under each step. */}
@@ -216,8 +289,8 @@ export function HowItWorks() {
       </Tape>
 
       <Reveal>
-        <SectionHeading eyebrow="How it works" title="The internet is the crime scene" surface="light" className="relative mt-10">
-          Every case is a pile of digital evidence and a group of friends who think they know better.
+        <SectionHeading eyebrow="How a night plays" title="One case. One team. One liar." surface="light" className="relative mt-10">
+          Every case opens with a short film. Then each of you works your own role, and nobody can crack it alone.
         </SectionHeading>
       </Reveal>
 

@@ -64,6 +64,6 @@ export const miniCase = {
     explanation:
       "Rex says he was reading under a street lamp at 9:17, but the outage report says every lamp on the block was dark. Nobody reads a timetable in the dark.",
     nextStep:
-      "That was the warm-up. Case 001 is a 20-minute investigation with five pieces of evidence and a twist at the end.",
+      "That was the warm-up, and you solved it alone. In Case 001 nobody can: each of you holds different evidence, and it takes all of it to corner the culprit.",
   },
 };

@@ -19,7 +19,7 @@ export function FinalCta() {
       <Image src={propArt.magnifier} alt="" sizes="160px" className="mx-auto w-32 -rotate-12 animate-float sm:w-40" />
       <Reveal>
         <h2 className="mt-4 font-display text-5xl leading-none sm:text-7xl">Gather your group.</h2>
-        <p className="mx-auto mt-5 max-w-lg text-xl font-bold">One link. Up to four detectives. See who spots the lie first.</p>
+        <p className="mx-auto mt-5 max-w-lg text-xl font-bold">One link. Up to four detectives. A liar you can only catch together.</p>
       </Reveal>
       <GatherLineup />
       <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -29,7 +29,7 @@ export function FinalCta() {
           </ButtonLink>
         </Magnetic>
         <Magnetic strength={0.35}>
-          <ShareButton message="Bet you can't spot the liar before me." />
+          <ShareButton message="Need detectives for a mystery night. You in?" />
         </Magnetic>
       </div>
     </section>

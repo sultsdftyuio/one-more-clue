@@ -84,7 +84,7 @@ export function CaseTeaser() {
 
               <p className="mt-6 text-lg leading-relaxed font-semibold">{case001.twist}</p>
 
-              <h4 className="mt-8 font-display text-2xl">What you&apos;ll dig through</h4>
+              <h4 className="mt-8 font-display text-2xl">What your team will turn up</h4>
               <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3">
                 {case001.evidence.map((item, i) => (
                   <PinIn key={item.label} index={i} className={i === case001.evidence.length - 1 ? "col-span-2 sm:col-span-1" : undefined}>
@@ -103,7 +103,7 @@ export function CaseTeaser() {
                     {open ? "Play Case 001 free" : "Get notified when it opens"}
                   </ButtonLink>
                 </Magnetic>
-                <p className="text-sm font-extrabold text-ink/60">{open ? "No sign-up · 15–20 min · friends join with a link" : "One email when the doors open. That's it."}</p>
+                <p className="text-sm font-extrabold text-ink/60">{open ? "No sign-up · no app · friends join with a link" : "One email when the doors open. That's it."}</p>
               </div>
             </div>
           </article>

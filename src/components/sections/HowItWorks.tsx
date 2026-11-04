@@ -216,8 +216,8 @@ export function HowItWorks() {
       </Tape>
 
       <Reveal>
-        <SectionHeading eyebrow="How it works" title="The internet is the crime scene" surface="light" className="relative mt-10">
-          Every case is a pile of digital evidence and a group of friends who think they know better.
+        <SectionHeading eyebrow="How it works" title="One case. One team. One liar." surface="light" className="relative mt-10">
+          Every case opens with a short film. Then each of you works your own role, and nobody can crack it alone.
         </SectionHeading>
       </Reveal>
 

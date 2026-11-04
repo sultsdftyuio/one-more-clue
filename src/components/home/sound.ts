@@ -1,28 +1,22 @@
 /**
- * The landing page's sound: rain on the window, the power cut at 9:17, the
- * lights coming back and a stamp. They're short recordings made with the case
- * films' sound kit (scripts/landing-sounds.py), about 280 KB in all, fetched
- * only once the visitor turns sound on. Off until then; the choice is
- * remembered on this device.
+ * The landing page's sound: the power cut at 9:17, the lights coming back and a
+ * stamp. No background bed, only these moments. They're short recordings made
+ * with the case films' sound kit (scripts/landing-sounds.py), about 125 KB in
+ * all, fetched only once the visitor turns sound on. Off until then; the choice
+ * is remembered on this device.
  */
 import { playThroughSilentSwitch } from "@/lib/audio-unlock";
 
 const STORAGE_KEY = "omc-sound";
 const DIR = "/landing/sound";
 
-/** The rain file is a seamless loop with this much of itself on each side (see the script). */
-const RAIN_PAD = 0.5;
-const RAIN_LOOP = 12;
-/** The rain is a bed under the page, well below the effects. */
-const RAIN_LEVEL = 0.4;
 /** How far the page drops while the hero film plays with its narrator. */
 const DUCKED = 0.08;
 
-type Name = "rain" | "power-down" | "power-up" | "stamp";
+type Name = "power-down" | "power-up" | "stamp";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-let rain: AudioBufferSourceNode | null = null;
 let enabled = false;
 /** Turned right down while something louder plays, like the hero film with its sound on. */
 let ducked = false;
@@ -60,25 +54,6 @@ function load(name: Name) {
     loading.set(name, pending);
   }
   return pending;
-}
-
-function startRain() {
-  if (rain) return;
-  void load("rain").then((buffer) => {
-    if (!buffer || rain || !enabled) return;
-    const { ctx, master } = audio();
-    rain = ctx.createBufferSource();
-    rain.buffer = buffer;
-    rain.loop = true;
-    rain.loopStart = RAIN_PAD;
-    rain.loopEnd = RAIN_PAD + RAIN_LOOP;
-    const level = ctx.createGain();
-    // Fade the rain in rather than starting mid-downpour.
-    level.gain.setValueAtTime(0, ctx.currentTime);
-    level.gain.setTargetAtTime(RAIN_LEVEL, ctx.currentTime, 0.8);
-    rain.connect(level).connect(master);
-    rain.start(0, RAIN_PAD);
-  });
 }
 
 /**
@@ -124,7 +99,6 @@ export function setSoundEnabled(on: boolean) {
   if (on) {
     const { ctx, master } = audio();
     void ctx.resume();
-    startRain();
     void load("power-down");
     void load("power-up");
     void load("stamp");
@@ -135,7 +109,7 @@ export function setSoundEnabled(on: boolean) {
   listeners.forEach((fn) => fn(on));
 }
 
-/** Quiet the rain under the hero film's narrator, without changing the visitor's choice. */
+/** Quiet the page's effects under the hero film's narrator, without changing the visitor's choice. */
 export function duckSound(on: boolean) {
   ducked = on;
   if (enabled && ctx && master) master.gain.setTargetAtTime(on ? DUCKED : 1, ctx.currentTime, 0.3);

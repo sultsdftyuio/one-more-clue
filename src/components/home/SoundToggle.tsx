@@ -6,7 +6,7 @@ import { onTapsUntil } from "@/lib/audio-unlock";
 import { onSoundChange, rememberedSound, setSoundEnabled, soundRunning } from "./sound";
 
 /**
- * Rain and the blackout's sounds. Off by default; if the visitor turned it on
+ * The page's sounds: the blackout and the stamp. Off by default; if the visitor turned it on
  * last time, it comes back with their first tap (browsers need one).
  */
 export function SoundToggle() {

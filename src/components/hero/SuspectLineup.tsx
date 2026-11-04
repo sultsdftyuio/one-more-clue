@@ -29,11 +29,8 @@ function Character({ suspect, index, talking }: { suspect: Suspect; index: numbe
       type="button"
       onClick={poke}
       aria-label={`Poke ${suspect.name}`}
-      className="-mx-1 mb-[calc(var(--w)*-0.1)] w-(--w) focus-visible:outline-none"
-      style={{ rotate: lean, x: shift, transformOrigin: "50% 95%" }}
-      initial={{ y: 120, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.9 + index * 0.12 }}
+      className="-mx-1 mb-[calc(var(--w)*-0.1)] w-(--w) animate-step-up focus-visible:outline-none"
+      style={{ rotate: lean, x: shift, transformOrigin: "50% 95%", animationDelay: `${0.9 + index * 0.12}s` }}
     >
       <m.span className="block" animate={jump}>
         <m.span

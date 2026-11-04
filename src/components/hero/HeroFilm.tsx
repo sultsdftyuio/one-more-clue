@@ -73,13 +73,11 @@ export function HeroFilm({ video, poster, label, className }: Props) {
   };
 
   return (
-    <div className={cx("[perspective:1200px]", className)}>
+    // The entrance is CSS, so the phone shows on slow phones before the JavaScript arrives.
+    <div className={cx("animate-phone-in [perspective:1200px] [animation-delay:0.6s]", className)}>
       <m.div
         className="relative rounded-[2.4rem] border-[0.1875rem] border-ink bg-[#07081a] p-2 shadow-[0_0.625rem_0_var(--color-ink),0_30px_60px_rgba(0,0,0,0.55)]"
         style={{ rotateX, rotateY, rotate: 3 }}
-        initial={{ opacity: 0, y: 60, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 120, damping: 16, delay: 0.6 }}
       >
         <div className="relative aspect-[9/16] overflow-hidden rounded-[1.9rem] bg-night">
           <video
@@ -130,18 +128,15 @@ export function HeroFilm({ video, poster, label, className }: Props) {
       </m.div>
 
       {/* Under the phone, not on it, so it never covers the film's captions. */}
-      <m.button
+      <button
         type="button"
         onClick={() => (muted || ended || waiting ? fromTheTop(true) : hush())}
         aria-pressed={!muted && !ended}
-        className="mx-auto mt-5 flex items-center gap-2 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.4 }}
+        className="mx-auto mt-5 flex animate-rise-in items-center gap-2 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm transition-transform [animation-delay:1.4s] hover:-translate-y-0.5"
       >
         <Icon name={muted || ended ? "speakerOff" : "speaker"} className="size-4" />
         {muted || ended || waiting ? "Hear the narrator" : "Mute"}
-      </m.button>
+      </button>
     </div>
   );
 }

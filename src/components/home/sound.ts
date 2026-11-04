@@ -1,11 +1,24 @@
 /**
- * The landing page's sound, all synthesised (no audio files): soft rain, a
- * power-down at 9:17, the lights coming back, and a stamp thud. Off until the
- * visitor turns it on; the choice is remembered on this device.
+ * The landing page's sound: rain on the window, the power cut at 9:17, the
+ * lights coming back and a stamp. They're short recordings made with the case
+ * films' sound kit (scripts/landing-sounds.py), about 280 KB in all, fetched
+ * only once the visitor turns sound on. Off until then; the choice is
+ * remembered on this device.
  */
 import { playThroughSilentSwitch } from "@/lib/audio-unlock";
 
 const STORAGE_KEY = "omc-sound";
+const DIR = "/landing/sound";
+
+/** The rain file is a seamless loop with this much of itself on each side (see the script). */
+const RAIN_PAD = 0.5;
+const RAIN_LOOP = 12;
+/** The rain is a bed under the page, well below the effects. */
+const RAIN_LEVEL = 0.4;
+/** How far the page drops while the hero film plays with its narrator. */
+const DUCKED = 0.08;
+
+type Name = "rain" | "power-down" | "power-up" | "stamp";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -13,6 +26,8 @@ let rain: AudioBufferSourceNode | null = null;
 let enabled = false;
 /** Turned right down while something louder plays, like the hero film with its sound on. */
 let ducked = false;
+const buffers = new Map<Name, AudioBuffer>();
+const loading = new Map<Name, Promise<AudioBuffer | null>>();
 const listeners = new Set<(on: boolean) => void>();
 
 function audio() {
@@ -26,49 +41,68 @@ function audio() {
   return { ctx, master: master! };
 }
 
-function startRain() {
-  const { ctx, master } = audio();
-  if (rain) return;
-  // Two seconds of noise, loop it, and shape it into rain.
-  const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < data.length; i++) {
-    const white = Math.random() * 2 - 1;
-    last = (last + 0.04 * white) / 1.04;
-    data[i] = last * 3 + white * 0.15;
+function load(name: Name) {
+  let pending = loading.get(name);
+  if (!pending) {
+    const { ctx } = audio();
+    pending = fetch(`${DIR}/${name}.mp3`)
+      .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(res.statusText))))
+      .then((data) => ctx.decodeAudioData(data))
+      .then((buffer) => {
+        buffers.set(name, buffer);
+        return buffer;
+      })
+      .catch(() => {
+        // Offline or blocked: stay quiet, and let a later toggle try again.
+        loading.delete(name);
+        return null;
+      });
+    loading.set(name, pending);
   }
-  rain = ctx.createBufferSource();
-  rain.buffer = buffer;
-  rain.loop = true;
-  const band = ctx.createBiquadFilter();
-  band.type = "lowpass";
-  band.frequency.value = 1800;
-  const level = ctx.createGain();
-  level.gain.value = 0.35;
-  rain.connect(band).connect(level).connect(master);
-  rain.start();
+  return pending;
 }
 
-function tone(from: number, to: number, seconds: number, type: OscillatorType = "sine", volume = 0.25) {
+function startRain() {
+  if (rain) return;
+  void load("rain").then((buffer) => {
+    if (!buffer || rain || !enabled) return;
+    const { ctx, master } = audio();
+    rain = ctx.createBufferSource();
+    rain.buffer = buffer;
+    rain.loop = true;
+    rain.loopStart = RAIN_PAD;
+    rain.loopEnd = RAIN_PAD + RAIN_LOOP;
+    const level = ctx.createGain();
+    // Fade the rain in rather than starting mid-downpour.
+    level.gain.setValueAtTime(0, ctx.currentTime);
+    level.gain.setTargetAtTime(RAIN_LEVEL, ctx.currentTime, 0.8);
+    rain.connect(level).connect(master);
+    rain.start(0, RAIN_PAD);
+  });
+}
+
+/**
+ * Plays one effect. If its file hasn't arrived yet the moment has passed, so it
+ * stays silent rather than playing late.
+ */
+function play(name: Name) {
   if (!enabled) return;
+  const buffer = buffers.get(name);
+  if (!buffer) {
+    void load(name);
+    return;
+  }
   const { ctx, master } = audio();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(from, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(to, ctx.currentTime + seconds);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + seconds);
-  osc.connect(gain).connect(master);
-  osc.start();
-  osc.stop(ctx.currentTime + seconds + 0.05);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(master);
+  source.start();
 }
 
 export const sfx = {
-  powerDown: () => tone(320, 40, 1.1, "sawtooth", 0.12),
-  powerUp: () => tone(60, 520, 0.9, "triangle", 0.14),
-  stamp: () => tone(140, 45, 0.25, "square", 0.22),
+  powerDown: () => play("power-down"),
+  powerUp: () => play("power-up"),
+  stamp: () => play("stamp"),
 };
 
 export function soundEnabled() {
@@ -91,7 +125,10 @@ export function setSoundEnabled(on: boolean) {
     const { ctx, master } = audio();
     void ctx.resume();
     startRain();
-    master.gain.setTargetAtTime(ducked ? 0.04 : 0.5, ctx.currentTime, 0.4);
+    void load("power-down");
+    void load("power-up");
+    void load("stamp");
+    master.gain.setTargetAtTime(ducked ? DUCKED : 1, ctx.currentTime, 0.4);
   } else if (ctx && master) {
     master.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
   }
@@ -101,7 +138,7 @@ export function setSoundEnabled(on: boolean) {
 /** Quiet the rain under the hero film's narrator, without changing the visitor's choice. */
 export function duckSound(on: boolean) {
   ducked = on;
-  if (enabled && ctx && master) master.gain.setTargetAtTime(on ? 0.04 : 0.5, ctx.currentTime, 0.3);
+  if (enabled && ctx && master) master.gain.setTargetAtTime(on ? DUCKED : 1, ctx.currentTime, 0.3);
 }
 
 /** The remembered choice. Browsers only allow audio after a tap, so it starts muted either way. */

@@ -6,7 +6,7 @@ Case 001 has only been played by test bots and scripts (last on 2026-10-31): 3 c
 
 ## Before
 
-- [ ] Get a link your friends can open. The live site (playonemoreclue.com) shows "Get early access" until `GAME_OPEN=1` is set in Vercel's production settings and the site is redeployed. Vercel previews have the game open, but they ask for a Vercel login unless you make a **shareable link** for that deployment in the Vercel dashboard (Deployment → Share). Invite links use whatever address the host opened, so everyone has to be on the same one.
+- [ ] Host from the live site: www.playonemoreclue.com → Play now opens a Case 001 room (the game has been open there since 2026-11-05, `GAME_OPEN=1`). Send friends the invite link from the lobby. The live site has no test bots; for a practice run with bots, use a Vercel preview, which needs a Vercel login or a shareable link from the dashboard.
 - [ ] Redis and LiveKit are set for production and previews (checked 2026-11-04), so rooms open and Apart games have voice on either.
 - [ ] Open the preview on your own phone, host Case 001 with 3 test bots, and get through chapter 1. This catches a broken deploy before your friends arrive.
 - [ ] Get **4 players**, so each core role (Tech, Interviewer, Photographer, Archivist) is held by one person. With 2–3 players, some people hold two roles.

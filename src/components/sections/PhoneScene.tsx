@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, Environment, Lightformer, RoundedBox, useTexture } from "@react-three/drei";
+import { Environment, Lightformer, RoundedBox, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { MotionValue } from "motion/react";
 import { Suspense, useEffect, useMemo, useRef } from "react";
@@ -116,6 +116,7 @@ function Screen({ screen }: { screen: number }) {
     }
   }, [textures, anisotropy]);
 
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     const mv = move.current;
     if (mv.to === screen) return;
@@ -123,14 +124,17 @@ function Screen({ screen }: { screen: number }) {
     mv.from = mv.t < 0.5 ? mv.from : mv.to;
     mv.to = screen;
     mv.t = 0;
-  }, [screen]);
+    invalidate();
+  }, [screen, invalidate]);
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
     const mv = move.current;
-    mv.t = Math.min(1, mv.t + dt / 0.75);
+    // Frames are drawn on demand, so the first one after a still spell can carry a long dt.
+    mv.t = Math.min(1, mv.t + Math.min(dt, 1 / 30) / 0.75);
     uniforms.uFrom.value = textures[mv.from];
     uniforms.uTo.value = textures[mv.to];
     uniforms.uProgress.value = 1 - Math.pow(1 - mv.t, 4);
+    if (mv.t < 1) state.invalidate();
   });
 
   return (
@@ -168,29 +172,48 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
   // The turn the scroll and pointer ask for, smoothed.
   const turned = useRef({ x: 0, y: 0 });
 
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     const k = kick.current;
     if (k.last === screen) return;
     k.v += (screen > k.last ? 1 : -1) * 4.2;
     k.last = screen;
-  }, [screen]);
+    invalidate();
+  }, [screen, invalidate]);
+
+  // Draw when the scroll or the pointer turns the phone; otherwise the last frame stands.
+  useEffect(() => {
+    const wake = () => invalidate();
+    const offX = rotateX.on("change", wake);
+    const offY = rotateY.on("change", wake);
+    wake();
+    return () => {
+      offX();
+      offY();
+    };
+  }, [rotateX, rotateY, invalidate]);
 
   useFrame((state, dt) => {
     const g = group.current;
     if (!g) return;
+    // Frames are drawn on demand, so the first one after a still spell can carry a long dt.
     const step = Math.min(dt, 1 / 30);
     const k = kick.current;
     k.v += (-90 * k.x - 11 * k.v) * step;
     k.x += k.v * step;
-    const time = state.clock.elapsedTime;
     const turn = turned.current;
-    turn.y = THREE.MathUtils.damp(turn.y, THREE.MathUtils.degToRad(rotateY.get()), 6, dt);
-    turn.x = THREE.MathUtils.damp(turn.x, THREE.MathUtils.degToRad(rotateX.get()), 6, dt);
+    const wantY = THREE.MathUtils.degToRad(rotateY.get());
+    const wantX = THREE.MathUtils.degToRad(rotateX.get());
+    turn.y = THREE.MathUtils.damp(turn.y, wantY, 6, step);
+    turn.x = THREE.MathUtils.damp(turn.x, wantX, 6, step);
     g.rotation.y = turn.y + k.x;
     g.rotation.x = turn.x;
-    g.rotation.z = Math.sin(time * 0.55) * 0.012 - k.x * 0.08;
-    g.position.y = Math.sin(time * 1.2) * 0.03 + Math.abs(k.x) * 0.12;
+    g.rotation.z = -k.x * 0.08;
+    // The idle float is CSS on the canvas (PhoneStage), so a still phone costs nothing to show.
+    g.position.y = Math.abs(k.x) * 0.12;
     glare.uAt.value = 0.62 - g.rotation.y * 1.1;
+    const settled = Math.abs(k.x) < 1e-4 && Math.abs(k.v) < 1e-3 && Math.abs(turn.y - wantY) < 1e-4 && Math.abs(turn.x - wantX) < 1e-4;
+    if (!settled) state.invalidate();
   });
 
   return (
@@ -289,6 +312,8 @@ type Props = {
 /** Signals ready on the first frame after everything inside the Suspense has loaded. */
 function Ready({ onReady }: { onReady: () => void }) {
   const done = useRef(false);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => invalidate(), [invalidate]);
   useFrame(() => {
     if (done.current) return;
     done.current = true;
@@ -297,12 +322,25 @@ function Ready({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-/** The WebGL phone, for laptops and tablets. Loaded on demand by PhoneStage. */
+/** Brings the frame up to date when the canvas scrolls back on screen. */
+function Wake({ active }: { active: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (active) invalidate();
+  }, [active, invalidate]);
+  return null;
+}
+
+/**
+ * The WebGL phone, for laptops and tablets. Loaded on demand by PhoneStage.
+ * It draws only while something moves (a turn, a screen change, the kick), at
+ * no more than 1.5x pixel density; its shadow on the ground is the CSS phone's.
+ */
 export default function PhoneScene({ screen, rotateX, rotateY, onReady, onLost, active }: Props) {
   return (
     <Canvas
-      dpr={[1, 2]}
-      frameloop={active ? "always" : "never"}
+      dpr={[1, 1.5]}
+      frameloop={active ? "demand" : "never"}
       camera={{ fov: FOV, position: [0, 0, CAMERA_Z] }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
@@ -313,10 +351,10 @@ export default function PhoneScene({ screen, rotateX, rotateY, onReady, onLost, 
     >
       <ambientLight intensity={0.25} />
       <directionalLight position={[3, 4, 5]} intensity={0.9} />
+      <Wake active={active} />
       <Suspense fallback={null}>
         <Studio />
         <Phone screen={screen} rotateX={rotateX} rotateY={rotateY} />
-        <ContactShadows position={[0, -H / 2 - 0.13, 0]} opacity={0.5} scale={3.4} blur={2.8} far={1.4} resolution={512} color="#1b1f3b" />
         <Ready onReady={onReady} />
       </Suspense>
     </Canvas>

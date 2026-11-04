@@ -79,16 +79,18 @@ export function PhoneStage({ screen, rotateX, rotateY, className }: Props) {
 
   return (
     <div ref={slot} className={cx("relative", className)}>
-      <div className={cx("transition-opacity duration-300", ready && "opacity-0")} aria-hidden={ready || undefined}>
-        <PhoneFrame screen={screen} rotateX={rotateX} rotateY={rotateY} />
-      </div>
+      {/* Once the 3D phone is up, the CSS one steps out and leaves only its shadow on the ground. */}
+      <PhoneFrame screen={screen} rotateX={rotateX} rotateY={rotateY} standIn={ready} />
       {webgl && near && (
         <div
           className={cx("pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")}
-          style={{ width: "170%", height: `${CANVAS_TALL * 100}%` }}
+          // Wide enough for the phone's furthest turn and kick, and no wider: every pixel here is drawn.
+          style={{ width: "135%", height: `${CANVAS_TALL * 100}%` }}
           aria-hidden
         >
-          <PhoneScene screen={screen} rotateX={turnX} rotateY={turnY} onReady={onReady} onLost={onLost} active={onScreen} />
+          <div className="h-full w-full animate-hover">
+            <PhoneScene screen={screen} rotateX={turnX} rotateY={turnY} onReady={onReady} onLost={onLost} active={onScreen} />
+          </div>
         </div>
       )}
     </div>

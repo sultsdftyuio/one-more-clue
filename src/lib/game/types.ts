@@ -260,7 +260,7 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -290,6 +290,8 @@ export type RoomState = {
   checked: string[];
   /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
   clockSpent?: number;
+  /** The last piece someone pushed onto every phone. */
+  spotlight?: Spotlight;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */
@@ -320,6 +322,9 @@ export type InterrogationState = {
 
 export type LieCall = { id: string; by: string; evidenceId: string; at: number };
 
+/** A piece of evidence shown on every phone for a moment, so a team playing apart can all look at once. */
+export type Spotlight = { id: string; by: string; evidenceId: string; at: number };
+
 /** One find in the chain shown at the reveal, and who made it. */
 export type ChainStep = { id: string; title: string; by: string; source: Access["kind"] };
 
@@ -341,6 +346,8 @@ export type Action =
   | { type: "object"; callId: string }
   /** Interrogation: nobody objected in time, so the call lands. */
   | { type: "settleLie"; callId: string }
+  /** Show a piece of evidence on every phone for a moment. */
+  | { type: "spotlight"; evidenceId: string }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }

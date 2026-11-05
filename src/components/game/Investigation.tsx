@@ -13,6 +13,7 @@ import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel, Notebook } from "./desk/DeskPanel";
 import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { SpotlightMoment } from "./evidence/ShowEveryone";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
 import { Avatar } from "./parts";
@@ -205,7 +206,7 @@ function ActivityToasts({ view }: { view: PlayerView }) {
       return;
     }
     const from = view.activity.findIndex((a) => a.id === seen.current);
-    const fresh = view.activity.slice(from + 1).filter((a) => a.playerId !== view.me.id && a.kind !== "miss" && a.kind !== "unpin");
+    const fresh = view.activity.slice(from + 1).filter((a) => a.playerId !== view.me.id && a.kind !== "miss" && a.kind !== "unpin" && a.kind !== "spotlight");
     seen.current = last;
     if (!fresh.length) return;
     setToasts((t) => [...t, ...fresh].slice(-3));
@@ -359,6 +360,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <ActivityToasts view={view} />
       <SoundCues view={view} />
       <Moments />
+      <SpotlightMoment />
       <LieMoment />
       <LieCallBar />
 

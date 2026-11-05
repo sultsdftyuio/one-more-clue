@@ -13,6 +13,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   found: "sparkle",
   miss: "x",
   clock: "clock",
+  spotlight: "share",
   pin: "pin",
   unpin: "pin",
   chapter: "flag",

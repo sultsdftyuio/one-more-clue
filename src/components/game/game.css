@@ -461,3 +461,113 @@
   -webkit-mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
   mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
 }
+
+/* ---------------------------------------------------------------------------
+   Tutorials: the lit-up control, and the gestures drawn as touch points. */
+
+.coach-hole {
+  box-shadow:
+    0 0 0 3px var(--color-mustard),
+    0 0 0 9999px rgb(15 17 38 / 0.74);
+  animation: coach-glow 1.6s ease-in-out infinite;
+}
+@keyframes coach-glow {
+  50% {
+    box-shadow:
+      0 0 0 6px var(--color-mustard),
+      0 0 0 9999px rgb(15 17 38 / 0.74);
+  }
+}
+.coach-tap-dot {
+  transform-origin: 32px 32px;
+  animation: coach-tap-dot 1.4s ease-in-out infinite;
+}
+@keyframes coach-tap-dot {
+  0%, 60%, 100% { transform: scale(1); }
+  20% { transform: scale(0.7); }
+}
+.coach-tap-ring {
+  transform-origin: 32px 32px;
+  animation: coach-tap-ring 1.4s ease-out infinite;
+}
+@keyframes coach-tap-ring {
+  0%, 18% { transform: scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  70%, 100% { transform: scale(3); opacity: 0; }
+}
+.coach-hold-ring {
+  transform-origin: 32px 32px;
+  transform: rotate(-90deg);
+  animation: coach-hold 1.8s linear infinite;
+}
+@keyframes coach-hold {
+  0% { stroke-dashoffset: 95; }
+  80%, 100% { stroke-dashoffset: 0; }
+}
+.coach-pinch-a {
+  animation: coach-pinch-a 1.8s ease-in-out infinite;
+}
+.coach-pinch-b {
+  animation: coach-pinch-b 1.8s ease-in-out infinite;
+}
+@keyframes coach-pinch-a {
+  0%, 15% { transform: translate(-3px, 3px); }
+  70%, 100% { transform: translate(-13px, 13px); }
+}
+@keyframes coach-pinch-b {
+  0%, 15% { transform: translate(3px, -3px); }
+  70%, 100% { transform: translate(13px, -13px); }
+}
+.coach-drag-dot {
+  animation: coach-drag 1.8s ease-in-out infinite;
+}
+@keyframes coach-drag {
+  0% { transform: translate(14px, 40px); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate(32px, 26px); }
+  90% { transform: translate(50px, 34px); opacity: 1; }
+  100% { transform: translate(50px, 34px); opacity: 0; }
+}
+.coach-shake {
+  transform-origin: 32px 32px;
+  animation: coach-shake 0.9s ease-in-out infinite;
+}
+@keyframes coach-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(6deg); }
+}
+.coach-caret {
+  animation: coach-caret 1s steps(2) infinite;
+}
+@keyframes coach-caret {
+  50% { opacity: 0; }
+}
+.coach-look {
+  transform-origin: 32px 32px;
+  animation: coach-look 2.4s ease-in-out infinite;
+}
+@keyframes coach-look {
+  0%, 100% { transform: scaleY(1); }
+  46%, 54% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-hole,
+  .coach-tap-dot,
+  .coach-tap-ring,
+  .coach-hold-ring,
+  .coach-pinch-a,
+  .coach-pinch-b,
+  .coach-drag-dot,
+  .coach-shake,
+  .coach-caret,
+  .coach-look {
+    animation: none;
+  }
+  .coach-drag-dot {
+    transform: translate(32px, 26px);
+  }
+}

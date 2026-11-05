@@ -16,6 +16,7 @@ import { TypedSheet } from "./objects/TypedSheet";
 import { PinButton } from "./PinButton";
 import { ReadOutButton } from "./ReadOut";
 import { RecordingPlayer } from "./RecordingPlayer";
+import { ShowEveryoneButton } from "./ShowEveryone";
 import { FootageView, SceneThumb, SceneView, type Tints } from "./SceneView";
 
 const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string; tone: string }> = {
@@ -122,6 +123,7 @@ export function EvidenceCard({ evidence, footer, highlight }: { evidence: Visibl
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />
           <ReadOutButton evidence={evidence} />
+          <ShowEveryoneButton evidence={evidence} />
           {!evidence.pinned && evidence.mine && (
             <span className="flex items-center gap-1 text-xs font-bold text-cream/65">
               <Icon name="lock" className="size-3.5" /> Only you have this

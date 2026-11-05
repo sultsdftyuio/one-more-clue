@@ -5,7 +5,7 @@ import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
 import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
-import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, SPOTLIGHT_GAP_MS, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
 
 let ids = 0;
@@ -186,6 +186,17 @@ test("cross-check: an empty compare costs a little of the night, a real contradi
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
   assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
   assert.equal(spent(), before + 4 * miss, "a real contradiction is free");
+});
+
+test("show everyone: anything you can see goes onto every phone, once in a while", () => {
+  let state = roomWith(4);
+  assert.equal(act(state, TECH, { type: "spotlight", evidenceId: "statement-mo" }).ok, false, "only something you can see");
+  state = doo(state, TECH, { type: "spotlight", evidenceId: "door-log" });
+  const view = viewFor(state, tipJar, PHOTOGRAPHER, new Set());
+  assert.equal(view.spotlight?.evidence.id, "door-log", "everyone gets it for the moment");
+  assert.ok(!view.evidence.some((e) => e.id === "door-log"), "but it doesn't become theirs");
+  assert.equal(act(state, TECH, { type: "spotlight", evidenceId: "door-log" }).ok, false, "not again straight away");
+  assert.ok(applyAction(state, tipJar, TECH, { type: "spotlight", evidenceId: "door-log" }, 1 + SPOTLIGHT_GAP_MS, newId).ok);
 });
 
 test("a single wrong checkpoint answer costs the sharp star", () => {

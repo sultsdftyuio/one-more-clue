@@ -37,6 +37,8 @@ export const MAX_QUERY = 40;
 export const PIN_LIMIT = 8;
 /** How long the team has to object before a called lie lands. */
 export const OBJECTION_MS = 5000;
+/** One player can push something onto every phone this often, so it stays a moment and not a stream. */
+export const SPOTLIGHT_GAP_MS = 12_000;
 const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
@@ -595,6 +597,17 @@ export function applyAction(
       break;
     }
 
+    case "spotlight": {
+      if (!investigating) return fail("There's nothing to show yet.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !canSee(state, self, evidence)) return fail("You can't show that.");
+      if (activePlayers(state).length < 2) return fail("There's nobody else here to show.");
+      if (state.spotlight?.by === me.id && now - state.spotlight.at < SPOTLIGHT_GAP_MS) return fail("Give them a moment to look.");
+      next.spotlight = { id: newId(), by: me.id, evidenceId: evidence.id, at: now };
+      log(next, newId, now, "spotlight", `${me.name} showed everyone ${evidence.title}`, me.id, evidence.id);
+      break;
+    }
+
     case "pin": {
       if (!investigating) return fail("The board opens once the investigation starts.");
       const evidence = evidenceById(action.evidenceId);
@@ -967,6 +980,8 @@ export type PlayerView = {
   searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
+  /** The last piece someone showed on every phone. */
+  spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
   /** Once the team names the right person. Claims are only spelled out to whoever leads it, or once broken. */
   interrogation: {
     suspect: string;
@@ -1043,23 +1058,24 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
   const pinned = new Set(state.pins.map((p) => p.evidenceId));
   const titleOf = (id: string) => caseFile.evidence.find((e) => e.id === id)?.title ?? "";
 
-  const evidence: VisibleEvidence[] = caseFile.evidence
-    .filter((e) => canSee(state, me, e))
-    .map(({ access, ...e }) => {
-      const found = state.found[e.id];
-      const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
-      const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
-      return {
-        ...e,
-        source: access.kind,
-        spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
-        compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
-        pinned: pinned.has(e.id),
-        foundBy: found?.by,
-        foundAt: found?.at,
-        mine: ownDesk || ownFind,
-      };
-    });
+  const toVisible = ({ access, ...e }: CaseEvidence): VisibleEvidence => {
+    const found = state.found[e.id];
+    const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
+    const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
+    return {
+      ...e,
+      source: access.kind,
+      spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
+      compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
+      pinned: pinned.has(e.id),
+      foundBy: found?.by,
+      foundAt: found?.at,
+      mine: ownDesk || ownFind,
+    };
+  };
+  const evidence: VisibleEvidence[] = caseFile.evidence.filter((e) => canSee(state, me, e)).map(toVisible);
+  // Shown to everyone on purpose, so everyone gets it for the moment, even if it isn't theirs or pinned.
+  const shown = state.spotlight && caseFile.evidence.find((e) => e.id === state.spotlight!.evidenceId);
 
   const visibleIds = new Set(evidence.map((e) => e.id));
   const questions = abilities.includes("interview")
@@ -1146,6 +1162,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       at: s.at,
     })),
     checked: abilities.includes("crosscheck") ? state.checked : [],
+    spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
     chat: state.chat,

@@ -8,6 +8,7 @@ import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
 import { ContradictionSlip } from "../evidence/objects/FindingNote";
 import { PinButton } from "../evidence/PinButton";
 import { ReadOutButton } from "../evidence/ReadOut";
+import { ShowEveryoneButton } from "../evidence/ShowEveryone";
 import { Cassette } from "../evidence/RecordingPlayer";
 import { ZoomedSpot } from "../evidence/SceneView";
 import { SuspectPortrait } from "../parts";
@@ -114,6 +115,7 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <PinButton evidence={evidence} />
           <ReadOutButton evidence={evidence} />
+          <ShowEveryoneButton evidence={evidence} />
           <button
             type="button"
             onClick={() => (speaks && !typed.complete ? typed.finish() : onClose())}
@@ -179,6 +181,7 @@ export function SoundCues({ view }: { view: PlayerView }) {
       else if (a.kind === "pin") play("pin");
       else if (a.kind === "found" && !mine) play("tap");
       else if (a.kind === "hint") play("message");
+      else if (a.kind === "clock") play("tick");
     }
   }, [view.activity, view.me.id]);
 

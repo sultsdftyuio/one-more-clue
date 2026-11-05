@@ -14,8 +14,11 @@ import type { CaseFile } from "@/lib/game/types";
  * equipment says against what Vince says: the desk, the rack, the door.
  *
  * Hand-offs: the photo shows the cables are fine → the Archivist catches the
- * lie; the door log (Tech) shows nobody came in; Darla mentions SpinKings in
- * an interview → the Tech searches it.
+ * lie, and the Tech's rack monitor (Vince's own statement names the rack) says
+ * the same; the door log (Tech) shows nobody came in; Darla mentions SpinKings
+ * in an interview → the Tech searches it; in chapter 3 the Tech pulls the car
+ * park camera and pins it for the Photographer. Searches for things the
+ * records don't hold answer with a pointer (`searchNotes`).
  */
 export const case002: CaseFile = {
   id: "case-002",
@@ -63,12 +66,13 @@ export const case002: CaseFile = {
       story: [],
       checkpoint: {
         question: "Vince says the attacker ripped the cables out. What shows that's not what stopped the show?",
-        proves: ["detail-rack", "detail-fader", "transmitter-log", "booth-log", "safety-tape", "question-gus-cables", "insight-cables"],
+        proves: ["detail-rack", "detail-fader", "transmitter-log", "booth-log", "safety-tape", "question-gus-cables", "insight-cables", "rack-monitor"],
         reveal: "Every cable was still plugged in and the transmitter was fine. Someone inside the booth pulled MIC 1 down at 11:58:02.",
       },
       hints: [
         "Find out what actually stopped the sound: the cables, the transmitter, or the desk.",
         "Look closely at the booth photo, and at the transmitter log's 11:58 lines.",
+        "Vince blames the rack. The Tech can search the rack's own monitor.",
       ],
     },
     {
@@ -96,16 +100,28 @@ export const case002: CaseFile = {
       story: [
         { kind: "narration", text: "Nobody came through that door after Vince, until Gus opened it. Nobody but Vince locked it." },
         { kind: "line", who: "square", text: "That keypad is broken! Everyone knows my code!", shocked: true },
-        { kind: "narration", text: "There's still £5,000 missing. Find it, and find out why." },
+        { kind: "narration", text: "There's still £5,000 missing, and the car park camera has been recording all night. Find the money, and find out why." },
       ],
       hints: [
-        "Where did the jackpot envelope go? Look at the car park.",
+        "Where did the jackpot envelope go? The Tech can pull the car park camera for the Photographer.",
         "Ask around about why Vince might need £5,000. Someone has noticed his phone.",
         "The Tech can search the betting company by name.",
       ],
     },
   ],
   questionBudget: 6,
+  searchNotes: [
+    { terms: ["vince", "valentine"], text: "V. Valentine: the studio logs everything he touches. Search the room or the kit, not the man." },
+    { terms: ["tess", "okoye", "producer", "controlroom"], text: "T. Okoye: logged into the control room all night. Nothing out of the ordinary." },
+    { terms: ["darla", "kingsley"], text: "D. Kingsley's phone records need a reason. Where does she say she was at 11:58?" },
+    { terms: ["jackpot", "envelope", "safe", "money", "cash"], text: "The jackpot left the safe on paper. Whoever keeps the sign-out sheet has it." },
+    { terms: ["door", "keypad", "lock", "0451", "studioadoor"], text: "Studio A's keypad keeps a log. Has anyone seen what its little screen says?" },
+    { terms: ["booth", "blind"], text: "The booth controls log every switch by the second. Ask what the control room saw, and when." },
+    { terms: ["camera", "cameras", "cctv", "footage"], text: "Two cameras on site: the fire exit and the car park. Say which." },
+    { terms: ["carpark", "carparkcamera", "parking"], text: "The car park camera is still being pulled for the police. Try again later." },
+    { terms: ["balaclava", "mask", "attacker", "pricetag"], text: "Nobody logs a balaclava. A shop logs what it sells, though, once the card payments come in." },
+    { terms: ["betting", "bet", "gambling"], text: "Which betting site? Accounts are private without a name." },
+  ],
   interrogation: {
     suspect: "square",
     strikes: 3,
@@ -274,6 +290,22 @@ export const case002: CaseFile = {
         rows: [
           { time: "11:57:12", text: "Booth blind lowered · host switch" },
           { time: "11:58:02", text: "MIC 1 fader down · desk" },
+        ],
+      },
+    },
+    {
+      id: "rack-monitor",
+      role: "tech",
+      chapter: 1,
+      access: { kind: "search", terms: ["rack", "racks", "cable", "cables", "patchbay", "patch", "rackmonitor"] },
+      title: "Rack monitor: Studio A",
+      body: {
+        type: "log",
+        source: "KNHT 99.1 · rack monitor · Studio A",
+        rows: [
+          { time: "11:30 PM", text: "Patch bay check · 48 of 48 lines connected" },
+          { time: "11:58:02", text: "Signal fine at the rack · lost after the desk" },
+          { time: "12:15 AM", text: "Patch bay check · 48 of 48 lines connected" },
         ],
       },
     },
@@ -533,10 +565,11 @@ export const case002: CaseFile = {
 
     // ----- Chapter 3: the jackpot ---------------------------------------------
     {
+      // The Tech pulls it (the chapter's story names it) and pins it; only the Photographer can look into it.
       id: "cctv-carpark",
-      role: "photographer",
+      role: "tech",
       chapter: 3,
-      access: { kind: "desk" },
+      access: { kind: "search", terms: ["carpark", "carparkcamera", "carparkcctv", "camera4", "parking", "vincescar", "vincecar"] },
       title: "Car park camera",
       body: {
         type: "scene",

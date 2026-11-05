@@ -79,11 +79,25 @@ export function bestSearchHit(caseFile: CaseFile, chapter: number, term: string,
   for (const e of caseFile.evidence) {
     if (e.access.kind !== "search" || e.chapter > chapter || (state && !opened(state, e))) continue;
     for (const t of e.access.terms) {
-      const score = term === t ? 1000 + t.length : t.length >= 3 && term.includes(t) ? t.length : 0;
+      const score = termScore(term, t);
       if (score > (best?.score ?? 0)) best = { evidence: e, score };
     }
   }
   return best?.evidence;
+}
+
+const termScore = (term: string, t: string) => (term === t ? 1000 + t.length : t.length >= 3 && term.includes(t) ? t.length : 0);
+
+/** What the terminal says to a search that found nothing, if the case has a pointer for it. */
+export function searchNote(caseFile: CaseFile, term: string) {
+  let best: { text: string; score: number } | null = null;
+  for (const note of caseFile.searchNotes ?? []) {
+    for (const t of note.terms) {
+      const score = termScore(term, t);
+      if (score > (best?.score ?? 0)) best = { text: note.text, score };
+    }
+  }
+  return best?.text;
 }
 
 export function createRoom(input: {
@@ -440,7 +454,8 @@ export function applyAction(
       const term = normalizeTerm(query);
       if (term.length < 2) return fail("Type a name, number or place to search for.");
       const hit = bestSearchHit(caseFile, state.chapter, term, state);
-      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, at: now });
+      const note = hit ? undefined : searchNote(caseFile, term);
+      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), at: now });
       next.searches = next.searches.slice(-SEARCHES_KEPT);
       if (hit && !next.found[hit.id]) {
         next.found[hit.id] = { by: me.id, at: now };
@@ -714,6 +729,11 @@ export function checkCase(caseFile: CaseFile): string[] {
       problems.push(`"${e.id}" needs the ${a.kind} ability, but no core role has it`);
     }
   }
+  for (const note of caseFile.searchNotes ?? []) {
+    if (!note.terms.length || !note.terms.every((t) => t === normalizeTerm(t) && t.length >= 2)) {
+      problems.push(`the search note "${note.text.slice(0, 30)}…" has search terms that aren't normalised (lowercase letters and digits only)`);
+    }
+  }
   for (const role of caseFile.roles.filter((r) => r.core)) {
     if (!caseFile.evidence.some((e) => e.role === role.id && e.access.kind === "desk" && e.chapter === 1)) {
       problems.push(`core role "${role.id}" starts with nothing on their desk`);
@@ -816,6 +836,7 @@ function checkWriting(caseFile: CaseFile): string[] {
     if (i > 0) beats(`chapter ${i + 1}'s story`, c.story, 2);
     c.hints.forEach((h, j) => tooLong(`chapter ${i + 1} hint ${j + 1}`, h, L.hint));
   });
+  (caseFile.searchNotes ?? []).forEach((n, i) => tooLong(`search note ${i + 1}`, n.text, L.hint));
   beats("the confession", caseFile.solution.confession, 2);
   if (caseFile.interrogation) {
     const i = caseFile.interrogation;
@@ -916,7 +937,7 @@ export type PlayerView = {
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
   questionsLeft: number;
-  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; at: number }[];
+  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
   /** For the Archivist: empty cross-checks still allowed in this chapter. */
@@ -1093,6 +1114,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       query: s.query,
       hit: Boolean(s.hit),
       hitTitle: s.hit && visibleIds.has(s.hit) ? evidence.find((e) => e.id === s.hit)?.title : undefined,
+      note: s.note,
       at: s.at,
     })),
     checked: abilities.includes("crosscheck") ? state.checked : [],

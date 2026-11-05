@@ -54,6 +54,7 @@ export function TechTool() {
               <span className="block truncate pl-4 text-xs opacity-75">
                 {s.hit ? (s.hitTitle ?? "found something") : "no records"} · {nameOf(view, s.by)}
               </span>
+              {!s.hit && s.note && <span className="mt-0.5 block pl-4 font-printer text-[1.05rem] leading-tight text-cream/85">&rsaquo; {s.note}</span>}
             </li>
           ))}
         </ul>

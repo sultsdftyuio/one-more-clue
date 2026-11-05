@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
-import { evidenceIn, useGame } from "../context";
+import { evidenceIn, nameOf, useGame } from "../context";
 import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
 import { ContradictionSlip } from "../evidence/objects/FindingNote";
 import { PinButton } from "../evidence/PinButton";
@@ -14,6 +14,9 @@ import { Cassette } from "../evidence/RecordingPlayer";
 import { SuspectPortrait } from "../parts";
 import { DevelopPrint } from "./Develop";
 import { useTypewriter } from "./StoryPlayer";
+
+/** Kinds of find a station plays out itself while it's open (the interrogation room's answers and cracks), so they don't pop up too. */
+export const quietFinds = new Set<string>();
 
 /** Seconds into a contradiction when the stamp lands. */
 const STAMP_AT = 0.6;
@@ -137,13 +140,61 @@ export function Moments() {
     }
     const fresh = found.filter((e) => !seen.current!.has(e.id));
     fresh.forEach((e) => seen.current!.add(e.id));
-    const mine = fresh.filter((e) => e.foundBy === view.me.id).map((e) => e.id);
+    const mine = fresh.filter((e) => e.foundBy === view.me.id && !quietFinds.has(e.source)).map((e) => e.id);
     if (mine.length) setQueue((q) => [...q, ...mine]);
   }, [view.evidence, view.me.id]);
 
   const current = queue[0] ? view.evidence.find((e) => e.id === queue[0]) : undefined;
   if (!current) return null;
   return <MomentCard key={current.id} evidence={current} onClose={() => setQueue((q) => q.slice(1))} />;
+}
+
+/** How long a crack stays up on everyone else's phone. */
+const CRACK_MS = 6500;
+
+/**
+ * A suspect's story giving way, on every phone but the Interviewer's (they
+ * watched it happen in the room): the shocked face, the CRACK stamp, and what
+ * they gave up, word for word.
+ */
+export function CrackMoment() {
+  const { view } = useGame();
+  const seen = useRef<Set<string> | null>(null);
+  const [shown, setShown] = useState<PlayerView["cracks"][number] | null>(null);
+
+  useEffect(() => {
+    if (!seen.current) {
+      seen.current = new Set(view.cracks.map((c) => c.id));
+      return;
+    }
+    const fresh = view.cracks.find((c) => !seen.current!.has(c.id));
+    view.cracks.forEach((c) => seen.current!.add(c.id));
+    if (!fresh || fresh.by === view.me.id) return;
+    setShown(fresh);
+    play("crack");
+  }, [view.cracks, view.me.id]);
+
+  useEffect(() => {
+    if (!shown) return;
+    const timer = window.setTimeout(() => setShown(null), CRACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [shown]);
+
+  if (!shown) return null;
+  const suspect = view.case.suspects.find((s) => s.name === shown.suspect) ?? { id: shown.suspect, name: shown.suspect, blurb: "" };
+  return (
+    <div className="fixed inset-0 z-[53] grid animate-[fade-in_0.2s_ease-out] place-items-center bg-night/85 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={`${shown.suspect} cracked`}>
+      <button type="button" aria-label="Close" onClick={() => setShown(null)} className="absolute inset-0" />
+      <div className="relative w-full max-w-md text-center">
+        <p className="inline-block -rotate-12 animate-stamp rounded-2xl border-[6px] border-coral px-8 py-1 font-display text-6xl text-coral">CRACK!</p>
+        <p className="mt-6 text-sm font-extrabold tracking-widest text-mustard uppercase">{nameOf(view, shown.by)} broke {shown.suspect}</p>
+        <div className="mt-4 flex animate-shake items-end gap-3 text-left">
+          <SuspectPortrait suspect={suspect} shocked className="w-24 shrink-0" />
+          <p className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-lg leading-snug font-bold text-ink shadow-card">&ldquo;{shown.text}&rdquo;</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Quiet sound cues for what the rest of the team does, and for votes opening. */

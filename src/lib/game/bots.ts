@@ -41,6 +41,12 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
         const shot = scene && canSee(state, bot, scene) ? shotOf(scene.body, a.hotspot) : null;
         if (shot) return { type: "shoot", scene: a.scene, ...shot };
       }
+      if (role.ability === "interview" && a.kind === "press") {
+        const shown = a.breaks.find((id) => state.pins.some((p) => p.evidenceId === id));
+        const claim = caseFile.evidence.find((c) => c.id === a.against);
+        const heard = claim && (claim.access.kind === "desk" || state.found[claim.id]);
+        if (shown && heard) return { type: "show", suspect: a.suspect, evidenceId: shown };
+      }
       if (role.ability === "crosscheck" && a.kind === "crosscheck") {
         const [x, y] = a.pair.map((id) => caseFile.evidence.find((s) => s.id === id));
         if (x && y && canSee(state, bot, x) && canSee(state, bot, y)) return { type: "crosscheck", a: x.id, b: y.id };

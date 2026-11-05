@@ -44,6 +44,7 @@ const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
 const SHOTS_KEPT = 40;
+const SHOWS_KEPT = 40;
 
 export type Result = { ok: true; state: RoomState } | { ok: false; error: string };
 
@@ -197,6 +198,15 @@ function leadsInterrogation(state: RoomState, caseFile: CaseFile, player: Pick<P
   return leads.some((p) => p.id === player.id) || leads.every((p) => p.bot);
 }
 
+/** Whether a suspect has made the claim a crack breaks: their desk statement, or an answer the team has heard. */
+function said(state: RoomState, caseFile: CaseFile, crack: CaseEvidence) {
+  if (crack.access.kind !== "press") return false;
+  const against = crack.access.against;
+  const claim = caseFile.evidence.find((e) => e.id === against);
+  if (!claim) return false;
+  return claim.access.kind === "desk" ? claim.chapter <= state.chapter : Boolean(state.found[claim.id]);
+}
+
 /** Tells the team when a find opens someone else's next move. It doesn't say what: they have to ask. */
 function announceLeads(state: RoomState, caseFile: CaseFile, foundId: string, finder: Player, now: number, newId: () => string) {
   const roles = new Set(
@@ -320,7 +330,7 @@ export function bestChain(state: RoomState, caseFile: CaseFile): ChainStep[] {
     const known = memo.get(e.id);
     if (known) return known;
     memo.set(e.id, [e]); // stops a loop in badly written data
-    const parents = [...(e.after ?? []), ...(e.access.kind === "crosscheck" ? e.access.pair : [])];
+    const parents = [...(e.after ?? []), ...(e.access.kind === "crosscheck" ? e.access.pair : []), ...(e.access.kind === "press" ? [e.access.against] : [])];
     let best: CaseEvidence[] = [];
     for (const id of parents) {
       const parent = caseFile.evidence.find((p) => p.id === id);
@@ -559,6 +569,32 @@ export function applyAction(
       break;
     }
 
+    case "show": {
+      if (!investigating) return fail("There's nobody to question yet.");
+      if (!abilities.includes("interview")) return fail("Only the Interviewer runs the interrogation room.");
+      const suspect = String(action.suspect ?? "");
+      if (!caseFile.evidence.some((e) => e.access.kind === "interview" && e.access.suspect === suspect)) return fail("They aren't here to question.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !state.pins.some((p) => p.evidenceId === evidence.id)) return fail("Show them something from the board, so the whole team sees it.");
+      const cracks = caseFile.evidence.filter(
+        (e) => e.access.kind === "press" && e.access.suspect === suspect && e.access.breaks.includes(evidence.id) && e.chapter <= state.chapter && opened(state, e),
+      );
+      const crack = cracks.find((e) => !next.found[e.id]);
+      // Nothing to lose for showing them something they've already given up, or something about a claim they haven't made yet.
+      if (cracks.length && !crack) return fail(`${suspect} has already given that up.`);
+      if (crack && !said(state, caseFile, crack)) return fail(`Ask ${suspect} about it first.`);
+      next.shows = [...(next.shows ?? []), { id: newId(), by: me.id, suspect, evidenceId: evidence.id, crack: crack?.id ?? null, time: now }].slice(-SHOWS_KEPT);
+      if (crack) {
+        next.found[crack.id] = { by: me.id, at: now };
+        log(next, newId, now, "crack", `${me.name} showed ${suspect} ${evidence.title}, and ${suspect} cracked.`, me.id, crack.id);
+        announceLeads(next, caseFile, crack.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} showed ${suspect} ${evidence.title}. It didn't shake them.${costNote(next, caseFile, minutes)}`, me.id);
+      }
+      break;
+    }
+
     case "crosscheck": {
       if (!investigating) return fail("Nothing to cross-check yet.");
       if (!abilities.includes("crosscheck")) return fail("Only the Archivist can cross-check evidence.");
@@ -777,6 +813,7 @@ export function checkCase(caseFile: CaseFile): string[] {
     interview: "interview",
     inspect: "inspect",
     crosscheck: "crosscheck",
+    press: "interview",
   };
   for (const e of caseFile.evidence) {
     if (!roleIds.has(e.role)) problems.push(`"${e.id}" belongs to unknown role "${e.role}"`);
@@ -793,6 +830,18 @@ export function checkCase(caseFile: CaseFile): string[] {
       else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
     }
     if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
+    if (a.kind === "press") {
+      const claim = byId.get(a.against);
+      if (!claim || claim.body.type !== "statement" || claim.body.speaker !== a.suspect) problems.push(`crack "${e.id}" has to break something ${a.suspect} said`);
+      else if (claim.chapter > e.chapter) problems.push(`crack "${e.id}" opens before ${a.suspect} says what it breaks`);
+      if (e.body.type !== "statement" || e.body.speaker !== a.suspect) problems.push(`crack "${e.id}" should be ${a.suspect} talking`);
+      if (!a.breaks.length || !a.breaks.every((id) => byId.has(id))) problems.push(`crack "${e.id}" is broken by evidence that doesn't exist`);
+      else if (!a.breaks.some((id) => byId.get(id)!.chapter <= e.chapter)) problems.push(`nothing breaks crack "${e.id}" by its chapter`);
+      if (!caseFile.evidence.some((q) => q.access.kind === "interview" && q.access.suspect === a.suspect)) problems.push(`crack "${e.id}": nobody can question ${a.suspect}`);
+      if (caseFile.solution.culprit && caseFile.suspects.find((s) => s.id === caseFile.solution.culprit)?.name === a.suspect && /\b(I did it|I took it|I did take)\b/i.test(e.body.type === "statement" ? e.body.text : "")) {
+        problems.push(`crack "${e.id}" is a confession: save that for the confrontation`);
+      }
+    }
     if (a.kind !== "desk" && !caseFile.roles.some((r) => r.core && r.ability === needs[a.kind])) {
       problems.push(`"${e.id}" needs the ${a.kind} ability, but no core role has it`);
     }
@@ -828,7 +877,7 @@ function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): strin
       else if (source.access.kind === "desk") problems.push(`"${e.id}" waits on "${id}", which everyone starts with`);
       else if (source.chapter > e.chapter) problems.push(`"${e.id}" waits on "${id}", which only appears in a later chapter`);
     }
-    if (e.after && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect") problems.push(`"${e.id}" can't wait on a lead`);
+    if (e.after && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect" && e.access.kind !== "press") problems.push(`"${e.id}" can't wait on a lead`);
   }
   const reached = new Set<string>();
   for (let chapter = 1; chapter <= caseFile.chapters.length; chapter++) {
@@ -838,6 +887,7 @@ function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): strin
         if (e.chapter > chapter || reached.has(e.id) || !(e.after ?? []).every((id) => reached.has(id))) continue;
         const a = e.access;
         if ((a.kind === "inspect" && !reached.has(a.scene)) || (a.kind === "crosscheck" && !a.pair.every((id) => reached.has(id)))) continue;
+        if (a.kind === "press" && (!reached.has(a.against) || !a.breaks.some((id) => reached.has(id)))) continue;
         reached.add(e.id);
         growing = true;
       }
@@ -1013,6 +1063,10 @@ export type PlayerView = {
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
   searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
+  /** For the Interviewer: what they've shown suspects, newest last, and whether it cracked them. */
+  shows: { id: string; suspect: string; evidenceTitle: string; crack: string | null; time: number }[];
+  /** Every crack so far, for every phone: the moment someone's story gave way is the whole table's. */
+  cracks: { id: string; suspect: string; title: string; text: string; by: string; at: number }[];
   /** For the Photographer: their own shots, newest last, and what each caught. */
   shots: { id: string; scene: string; at?: number; hit: string | null; time: number }[];
   /** For the Archivist: pairs already compared without a result. */
@@ -1198,6 +1252,14 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       note: s.note,
       at: s.at,
     })),
+    shows: abilities.includes("interview")
+      ? (state.shows ?? []).filter((s) => s.by === me.id).map((s) => ({ id: s.id, suspect: s.suspect, evidenceTitle: titleOf(s.evidenceId), crack: s.crack, time: s.time }))
+      : [],
+    cracks: caseFile.evidence.flatMap((e) =>
+      e.access.kind === "press" && state.found[e.id] && e.body.type === "statement"
+        ? [{ id: e.id, suspect: e.access.suspect, title: e.title, text: e.body.text, by: state.found[e.id].by, at: state.found[e.id].at }]
+        : [],
+    ),
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,

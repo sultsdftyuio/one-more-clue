@@ -26,6 +26,7 @@ const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string;
   interview: { icon: "mic", label: "Interview", tone: "bg-lilac" },
   inspect: { icon: "eye", label: "Spotted in a photo", tone: "bg-mustard" },
   crosscheck: { icon: "scale", label: "Contradiction", tone: "bg-coral" },
+  press: { icon: "mic", label: "Cracked under questioning", tone: "bg-coral" },
 };
 
 /** One line of what a piece of evidence says, for compact cards. */

@@ -56,7 +56,7 @@ export const case003: CaseFile = {
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin." },
     { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You were front of house tonight. Diners notice things." },

@@ -74,7 +74,7 @@ export const case001: CaseFile = {
       core: true,
       ability: "interview",
       name: "Interviewer",
-      blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free.",
+      blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free.",
     },
     {
       id: "photographer",

@@ -46,6 +46,7 @@ const FIND: Record<PlayerView["chain"][number]["source"], { icon: IconName; verb
   interview: { icon: "mic", verb: "got the answer" },
   inspect: { icon: "eye", verb: "spotted" },
   crosscheck: { icon: "scale", verb: "caught" },
+  press: { icon: "mic", verb: "cracked" },
 };
 
 /** The team's best run of finds, step by step: credit for the hand-offs, not for who tapped the most. */

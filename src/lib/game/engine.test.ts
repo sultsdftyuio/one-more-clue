@@ -7,7 +7,7 @@ import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
 import { shotOf } from "./camera.ts";
 import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, SPOTLIGHT_GAP_MS, viewFor } from "./engine.ts";
-import type { Action, RoomState } from "./types.ts";
+import type { Action, CaseFile, RoomState } from "./types.ts";
 
 let ids = 0;
 const newId = () => `id${++ids}`;
@@ -221,6 +221,56 @@ test("show everyone: anything you can see goes onto every phone, once in a while
   assert.ok(!view.evidence.some((e) => e.id === "door-log"), "but it doesn't become theirs");
   assert.equal(act(state, TECH, { type: "spotlight", evidenceId: "door-log" }).ok, false, "not again straight away");
   assert.ok(applyAction(state, tipJar, TECH, { type: "spotlight", evidenceId: "door-log" }, 1 + SPOTLIGHT_GAP_MS, newId).ok);
+});
+
+test("show them: the right piece cracks a suspect, the wrong one costs time, and nothing is free twice", () => {
+  // The practice case with one crack added: Lord Squarington's "half past eight", broken by the receipts.
+  const pressed: CaseFile = {
+    ...tipJar,
+    evidence: [
+      ...tipJar.evidence,
+      {
+        id: "crack-squarington",
+        role: "interviewer",
+        chapter: 2,
+        access: { kind: "press", suspect: "Lord Squarington", against: "question-squarington-left", breaks: ["receipts", "insight-squarington"] },
+        title: "Squarington: the tab",
+        body: { type: "statement", speaker: "Lord Squarington", text: "Fine! I settled my tab at 8:42. A gentleman doesn't advertise his debts." },
+      },
+    ],
+  };
+  assert.deepEqual(checkCase(pressed), []);
+  let state = createRoom({ code: "SHOW", caseFile: pressed, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= 4; i++) state = must(addPlayer(state, pressed, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
+  const run = (who: string, action: Action) => applyAction(state, pressed, who, action, 1, newId);
+  const go = (who: string, action: Action) => (state = must(run(who, action)));
+  go("p1", { type: "start" });
+  for (const p of ["p1", "p2", "p3", "p4"]) go(p, { type: "ready" });
+  go(INTERVIEWER, { type: "pin", evidenceId: "statement-mo" });
+  go(TECH, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
+  for (const p of ["p2", "p3", "p4"]) if (state.proposal) go(p, { type: "vote", proposalId: state.proposal.id, vote: "yes" });
+  assert.equal(state.chapter, 2);
+  const spent = () => viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.spent;
+
+  go(ARCHIVIST, { type: "pin", evidenceId: "receipts" });
+  assert.equal(run(TECH, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "only the Interviewer");
+  const early = run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" });
+  assert.ok(!early.ok && early.error.includes("Ask"), "he hasn't claimed anything yet, and that's free");
+  assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "door-log" }).ok, false, "only things on the board");
+
+  go(INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  const before = spent();
+  go(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "statement-mo" });
+  assert.equal(spent(), before + viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.costs.miss, "the wrong piece costs time");
+  assert.equal(viewFor(state, pressed, INTERVIEWER, new Set()).shows.at(-1)?.crack, null);
+
+  go(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" });
+  assert.ok(state.found["crack-squarington"], "he cracks");
+  assert.equal(state.activity.at(-1)?.kind, "crack");
+  assert.equal(viewFor(state, pressed, PHOTOGRAPHER, new Set()).cracks[0]?.text.startsWith("Fine!"), true, "every phone hears it");
+  assert.ok(viewFor(state, pressed, INTERVIEWER, new Set()).evidence.some((e) => e.id === "crack-squarington" && e.source === "press"));
+  assert.equal(spent(), before + viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.costs.miss, "a crack is free");
+  assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "he's already given that up");
 });
 
 test("a single wrong checkpoint answer costs the sharp star", () => {

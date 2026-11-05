@@ -111,7 +111,13 @@ export type Access =
   /** A hidden detail: a hotspot inside a scene. */
   | { kind: "inspect"; scene: string; hotspot: string }
   /** A contradiction between two pieces of evidence. */
-  | { kind: "crosscheck"; pair: [string, string] };
+  | { kind: "crosscheck"; pair: [string, string] }
+  /**
+   * A crack: the Interviewer shows a suspect something from the board that breaks what they said
+   * (`against`, one of their statements), and they give part of their story up. The evidence is
+   * what they say when they crack. `suspect` is the name their questions use.
+   */
+  | { kind: "press"; suspect: string; against: string; breaks: string[] };
 
 export type CaseEvidence = {
   /** Evidence that has to be found first. Until then this stays hidden, so one player's find opens another's next move. */
@@ -258,11 +264,13 @@ export type DecidedProposal = Omit<Proposal, "votes"> & { passed: boolean; decid
 export type Pin = { evidenceId: string; by: string; at: number };
 export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
+/** Something the Interviewer put in front of a suspect, and whether it cracked them. */
+export type Show = { id: string; by: string; suspect: string; evidenceId: string; crack: string | null; time: number };
 /** One press of the Photographer's shutter: where the frame was, and the detail it caught (or nothing). */
 export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -290,6 +298,8 @@ export type RoomState = {
   searches: Search[];
   /** The Photographer's shots (missing in rooms made before the camera). */
   shots?: Shot[];
+  /** What the Interviewer has shown suspects (missing in rooms made before the interrogation room). */
+  shows?: Show[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
   /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
@@ -353,6 +363,8 @@ export type Action =
   | { type: "object"; callId: string }
   /** Interrogation: nobody objected in time, so the call lands. */
   | { type: "settleLie"; callId: string }
+  /** The Interviewer puts something from the board in front of a suspect. */
+  | { type: "show"; suspect: string; evidenceId: string }
   /** Show a piece of evidence on every phone for a moment. */
   | { type: "spotlight"; evidenceId: string }
   | { type: "pin"; evidenceId: string }

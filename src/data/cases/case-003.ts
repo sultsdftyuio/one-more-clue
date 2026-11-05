@@ -16,7 +16,10 @@ import type { CaseFile } from "@/lib/game/types";
  *
  * Hand-offs: the critic's plate shows gold leaf (Photographer) → the house
  * rules say only the owner's plate gets gold leaf (Archivist); the pass camera
- * shows the swap; Olu mentions the storeroom → the Tech searches it.
+ * shows the swap; Olu mentions the storeroom → the Tech searches it. The Tech
+ * also has a proof of their own in chapters 1 and 3: the kitchen's allergen
+ * sheet (against the paramedics' note) and the first-aid book. Searches for
+ * things the records don't hold answer with a pointer (`searchNotes`).
  */
 export const case003: CaseFile = {
   id: "case-003",
@@ -65,12 +68,13 @@ export const case003: CaseFile = {
       story: [],
       checkpoint: {
         question: "The kitchen swears the chocolate course was nut-free. What proves something got through?",
-        proves: ["paramedic-note", "insight-nutfree"],
+        proves: ["paramedic-note", "insight-nutfree", "insight-allergens"],
         reveal: "The paramedics found peanut, within minutes of course seven. The wine was barely touched. The 'nut-free' kitchen wasn't.",
       },
       hints: [
         "The paramedics wrote down exactly what she reacted to.",
         "The Archivist can hold the paramedics' note up against what the chef says about her kitchen.",
+        "The Tech can pull the kitchen's allergen sheet. What does it say is in course seven?",
       ],
     },
     {
@@ -99,12 +103,13 @@ export const case003: CaseFile = {
       ],
       checkpoint: {
         question: "Who was the peanut really meant for? Show what proves it.",
-        proves: ["detail-bracelet", "staff-medical", "question-bertrand-allergy", "insight-target"],
+        proves: ["detail-bracelet", "staff-medical", "question-bertrand-allergy", "insight-target", "first-aid"],
         reveal: "The poisoned plate was the owner's gold-leaf plate, and Bertrand is deadly allergic to peanuts. Celeste was an accident.",
       },
       hints: [
         "Someone at this restaurant shares the critic's allergy.",
         "Ask the owner about allergies, or look closely at his wrist.",
+        "The restaurant keeps a first-aid book. The Tech can search it.",
       ],
     },
     {
@@ -123,6 +128,16 @@ export const case003: CaseFile = {
     },
   ],
   questionBudget: 6,
+  searchNotes: [
+    { terms: ["ruth", "vale", "pastry", "pastrychef"], text: "R. Vale: twelve years of rotas and nothing else. What would she have signed for?" },
+    { terms: ["olu", "bello", "sommelier", "wine"], text: "O. Bello: wine orders only. One glass of Pinot to Table 1 tonight." },
+    { terms: ["amelie", "duret", "chef", "headchef"], text: "A. Duret signs off every course. Her allergen sheet says what's in each one." },
+    { terms: ["bertrand", "carre", "owner"], text: "Nothing logged for B. Carré yet tonight." },
+    { terms: ["peanut", "peanuts", "nut", "nuts"], text: "Nothing with nuts goes out to service. The allergen sheet swears it." },
+    { terms: ["storeroom", "stock", "oil", "peanutoil"], text: "The storeroom sheet is long. What went missing? Find that first." },
+    { terms: ["gastro", "gastrogroup", "sale", "buyer"], text: "Bertrand's sent mail stays locked until the police arrive." },
+    { terms: ["camera", "cameras", "cctv", "footage"], text: "The only camera in the building watches the kitchen pass." },
+  ],
   interrogation: {
     suspect: "rectangle",
     strikes: 3,
@@ -256,6 +271,25 @@ export const case003: CaseFile = {
           { time: "", text: "Note: SEVERE PEANUT ALLERGY · carries EpiPen" },
         ],
       },
+    },
+    {
+      id: "allergen-sheet",
+      role: "tech",
+      chapter: 1,
+      access: { kind: "search", terms: ["allergen", "allergens", "allergensheet", "allergy", "allergies", "course7", "coursevii", "dessert", "chocolate"] },
+      title: "Allergen sheet",
+      body: {
+        type: "document",
+        text: "Allergen sheet · tonight's tasting menu.\nCourse 7, Midnight chocolate: milk, egg, gluten.\nNuts: NONE. Service kitchen nut-free.\nSigned off: A. Duret",
+      },
+    },
+    {
+      id: "insight-allergens",
+      role: "archivist",
+      chapter: 1,
+      access: { kind: "crosscheck", pair: ["allergen-sheet", "paramedic-note"] },
+      title: "Not on the sheet",
+      body: { type: "finding", text: "The kitchen's own allergen sheet says course seven has no nuts. The paramedics found peanut." },
     },
     {
       id: "question-olu-wine",
@@ -489,6 +523,21 @@ export const case003: CaseFile = {
         rows: [
           { time: "Every night", text: "9:45 PM · Taste course 7 at Table 9" },
           { time: "Monday", text: "Sign the sale · Gastro Group" },
+        ],
+      },
+    },
+    {
+      id: "first-aid",
+      role: "tech",
+      chapter: 3,
+      access: { kind: "search", terms: ["firstaid", "firstaidbook", "firstaidlog", "epipen", "adrenaline", "incident", "incidents", "satay"] },
+      title: "The first-aid book",
+      body: {
+        type: "log",
+        source: "Maison Lune · first-aid book",
+        rows: [
+          { time: "3 March", text: "B. Carré · reaction to a satay canapé at a supplier tasting" },
+          { time: "", text: "EpiPen used · ambulance called · PEANUT, severe" },
         ],
       },
     },

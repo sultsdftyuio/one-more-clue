@@ -188,6 +188,12 @@ export type CaseFile = {
   chapters: Chapter[];
   /** Interview questions the whole team can ask over the case. */
   questionBudget: number;
+  /**
+   * What the records terminal says when a search finds nothing but the Tech was on to something:
+   * "visitors are signed in on paper at the security desk". It sends them to a teammate rather than
+   * leaving a blank. Matched like search terms; a real record always wins.
+   */
+  searchNotes?: { terms: string[]; text: string }[];
   /** The ending: name the culprit and they're confronted, their lies broken with pinned evidence. Without one, a report closes the case. */
   interrogation?: Interrogation;
   deadline?: Deadline;
@@ -247,7 +253,7 @@ export type DecidedProposal = Omit<Proposal, "votes"> & { passed: boolean; decid
 
 export type Pin = { evidenceId: string; by: string; at: number };
 export type Discovery = { by: string; at: number };
-export type Search = { id: string; by: string; query: string; hit: string | null; at: number };
+export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
 export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection";

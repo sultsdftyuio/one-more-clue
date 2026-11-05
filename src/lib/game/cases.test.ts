@@ -9,7 +9,7 @@ import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -112,7 +112,12 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.inspect("photo-linkedin", "halo");
   g.pin(PHOTOGRAPHER, "detail-halo");
   g.crosscheck("lab-chat", "detail-halo", "insight-message");
-  g.answer("detail-halo");
+  // The Tech's own route: the register mentions the dock, and the dock says HALO never left.
+  g.search("HALO", "asset-register");
+  g.search("battery", "dock-log");
+  g.pin(TECH, "dock-log");
+  g.crosscheck("lab-chat", "dock-log", "insight-dock");
+  g.answer("insight-dock");
 
   g.ask("question-squires-left");
   g.search("Ozzy's patrol", "guard-tour");
@@ -130,6 +135,8 @@ test("Case 001: The Last Message is solvable for five stars", () => {
   g.search("KX24 RVS", "anpr");
   g.pin(TECH, "anpr");
   g.crosscheck("question-rena-after", "anpr", "insight-home");
+  g.search("lobby camera", "cctv-lobby");
+  g.pin(TECH, "cctv-lobby");
   g.inspect("cctv-lobby", "lanyard");
   g.search("Kestrel", "kestrel-staff");
   g.pin(TECH, "kestrel-staff");
@@ -147,7 +154,9 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.pin(PHOTOGRAPHER, "detail-rack");
   g.pin(INTERVIEWER, "statement-vince");
   g.crosscheck("statement-vince", "detail-rack", "insight-cables");
-  g.answer("insight-cables");
+  // The Tech's own route: Vince's statement names the rack.
+  g.search("rack", "rack-monitor");
+  g.answer("rack-monitor");
 
   g.inspect("photo-corridor", "keypad");
   g.search("Studio A door", "door-log");
@@ -168,6 +177,8 @@ test("Case 002: Dead Air is solvable for five stars", () => {
   g.ask("question-darla-why");
   g.search("SpinKings", "spinkings");
   g.pin(TECH, "spinkings");
+  g.search("car park camera", "cctv-carpark");
+  g.pin(TECH, "cctv-carpark");
   g.inspect("cctv-carpark", "envelope");
   g.pin(PHOTOGRAPHER, "detail-envelope");
   g.ask("question-vince-envelope");
@@ -182,7 +193,10 @@ test("Case 003: The Last Course is solvable for five stars", () => {
   g.inspect("photo-table1", "card");
   g.pin(PHOTOGRAPHER, "detail-menu");
   g.crosscheck("detail-menu", "paramedic-note", "insight-nutfree");
-  g.answer("insight-nutfree");
+  g.search("allergen sheet", "allergen-sheet");
+  g.pin(TECH, "allergen-sheet");
+  g.crosscheck("allergen-sheet", "paramedic-note", "insight-allergens");
+  g.answer("insight-allergens");
 
   g.inspect("photo-table1", "plate");
   g.pin(PHOTOGRAPHER, "detail-plate-gold");
@@ -197,7 +211,8 @@ test("Case 003: The Last Course is solvable for five stars", () => {
   g.inspect("photo-table9", "bracelet");
   g.pin(PHOTOGRAPHER, "detail-bracelet");
   g.crosscheck("insight-gold", "detail-bracelet", "insight-target");
-  g.answer("insight-target");
+  g.search("first aid book", "first-aid");
+  g.answer("first-aid");
 
   g.inspect("photo-pastry", "bottle");
   g.search("peanut oil", "storeroom-log");
@@ -215,6 +230,7 @@ test("Case 003: The Last Course is solvable for five stars", () => {
 
 test("Case 004: Snowed In is solvable for five stars", () => {
   const g = play(case004);
+  g.search("display case", "case-alarm");
   g.ask("question-otto-power");
   g.pin(INTERVIEWER, "question-otto-power");
   g.search("power company", "grid-report");
@@ -227,6 +243,10 @@ test("Case 004: Snowed In is solvable for five stars", () => {
   g.crosscheck("door-log", "front-desk", "insight-stolen-card");
   g.inspect("video-still", "chair");
   g.ask("question-lily-missing");
+  g.search("boiler", "boiler-log");
+  g.pin(TECH, "boiler-log");
+  g.pin(INTERVIEWER, "question-lily-missing");
+  g.crosscheck("question-lily-missing", "boiler-log", "insight-boiler");
   g.inspect("video-still", "back"); // the last frame: snow on his slippers
   g.answer("insight-stolen-card");
 
@@ -257,7 +277,7 @@ test("a clue chain opens a step at a time, says who to ask, and doesn't charge f
 
   assert.ok(!g.view(INTERVIEWER).questions!.some((q) => q.id === "question-reginald-key"), "locked questions don't show");
   const used = g.state.questionsUsed;
-  g.inspect("photo-countdown", "case");
+  g.search("display case", "case-alarm");
   assert.equal(g.view(INTERVIEWER).questions!.find((q) => q.id === "question-reginald-key")?.lead, true);
   g.ask("question-reginald-key");
   assert.equal(g.state.questionsUsed, used, "following a lead is free");
@@ -309,6 +329,22 @@ test("search prefers the most specific match", () => {
   assert.equal(bestSearchHit(case002, 2, "studioadoor")?.id, "door-log");
   assert.equal(bestSearchHit(case002, 2, "blind")?.id, "booth-log");
   assert.equal(bestSearchHit(case004, 3, "otto")?.id, "bank-letter");
+});
+
+test("a search that finds nothing can point the Tech at a teammate, but a real record always wins", () => {
+  const g = play(case001);
+  g.attempt(TECH, { type: "search", query: "Rena Voss" });
+  const miss = g.view(TECH).searches.at(-1)!;
+  assert.equal(miss.hit, false);
+  assert.match(miss.note ?? "", /security desk/);
+  // Everyone sees the pointer, so the team can talk about it.
+  assert.equal(g.view(ARCHIVIST).searches.at(-1)?.note, miss.note);
+  // Camera footage isn't in until chapter 3: chapter 1 gets a note, chapter 3 gets the camera.
+  assert.match(searchNote(case001, "lobbycamera") ?? "", /footage/);
+  assert.equal(bestSearchHit(case001, 1, "lobbycamera"), undefined);
+  assert.equal(bestSearchHit(case001, 3, "lobbycamera")?.id, "cctv-lobby");
+  g.attempt(TECH, { type: "search", query: "zebra crossing" });
+  assert.equal(g.view(TECH).searches.at(-1)?.note, undefined);
 });
 
 test("every opening film a case names is in public/", () => {

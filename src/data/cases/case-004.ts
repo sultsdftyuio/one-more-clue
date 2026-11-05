@@ -14,9 +14,13 @@ import type { CaseFile } from "@/lib/game/types";
  * the necklace never left the lodge. The stolen keycard frames Greta.
  *
  * Hand-offs: Otto blames the storm → the Tech checks the power company;
- * the breaker room log names Greta's card → the front desk book shows it was
- * stolen and the countdown video puts Greta at the microphone; Lily mentions
- * the snowman → the Photographer reads the footprints.
+ * the Tech's display-case alarm says a key opened it → the Interviewer asks
+ * who holds one; the breaker room log names Greta's card → the front desk
+ * book shows it was stolen and the countdown video puts Greta at the
+ * microphone; Lily says Otto went to check the boiler → the Tech's boiler-room
+ * log says nobody did; Lily mentions the snowman → the Photographer reads the
+ * footprints. Searches for things the records don't hold answer with a
+ * pointer (`searchNotes`).
  */
 export const case004: CaseFile = {
   id: "case-004",
@@ -106,6 +110,17 @@ export const case004: CaseFile = {
     },
   ],
   questionBudget: 5,
+  searchNotes: [
+    { terms: ["otto", "brennan"], text: "O. Brennan: the owner's records are the lodge's own. Check something he's told you." },
+    { terms: ["greta", "holm"], text: "G. Holm: staff keycard MASTER-2. Every swipe is in the door log." },
+    { terms: ["breaker", "breakerroom", "door", "doors", "keycard"], text: "The door system is still rebooting after the blackout. Try again shortly." },
+    { terms: ["lily", "ashford", "agatha", "dame"], text: "The Ashfords are guests. Guests have a room card and nothing else in the system." },
+    { terms: ["reginald", "pike", "auction", "auctioneer"], text: "Sir R. Pike is a guest. His auction papers travel with him, not in the lodge's systems." },
+    { terms: ["grid", "storm", "outage", "outages", "alpinepower", "powercompany"], text: "Alpine Power will check for outages if someone's claiming one. Who is?" },
+    { terms: ["bank", "alpinebank", "loan", "money"], text: "Bank files need a reason. Is anyone here short of money?" },
+    { terms: ["boiler", "boilerroom", "heating"], text: "The boiler kept the lodge at 21 °C all night. Who's been talking about it?" },
+    { terms: ["snowman"], text: "A snowman isn't in any system. Ask who built it." },
+  ],
   interrogation: {
     suspect: "circle",
     strikes: 3,
@@ -119,7 +134,7 @@ export const case004: CaseFile = {
       {
         id: "chair",
         text: "I was in my armchair by the fire, counting down with everyone else.",
-        lie: { breaks: ["detail-chair", "insight-armchair", "question-lily-missing"], crack: "I popped out to check the boiler. A host's work is never done." },
+        lie: { breaks: ["detail-chair", "insight-armchair", "question-lily-missing", "insight-boiler"], crack: "I popped out to check the boiler. A host's work is never done." },
       },
       { id: "key", text: "Yes, I keep a key to the case. So does Sir Reginald." },
       {
@@ -247,6 +262,22 @@ export const case004: CaseFile = {
       },
     },
     {
+      id: "case-alarm",
+      role: "tech",
+      chapter: 1,
+      access: { kind: "search", terms: ["case", "displaycase", "casealarm", "alarm", "aurora", "necklace", "glass"] },
+      title: "Display case alarm",
+      body: {
+        type: "log",
+        source: "Lounge · Aurora display case · battery alarm",
+        rows: [
+          { time: "23:00:00", text: "Case locked · alarm armed" },
+          { time: "00:00:15", text: "Unlocked with a key · alarm off" },
+          { time: "", text: "No glass broken · no forced entry" },
+        ],
+      },
+    },
+    {
       id: "question-otto-power",
       role: "interviewer",
       chapter: 1,
@@ -258,7 +289,7 @@ export const case004: CaseFile = {
       id: "question-reginald-key",
       role: "interviewer",
       chapter: 1,
-      after: ["detail-case"],
+      after: ["case-alarm"],
       access: { kind: "interview", suspect: "Sir Reginald Pike", question: "Who has a key to the display case?" },
       title: "Sir Reginald: the case key",
       body: { type: "statement", speaker: "Sir Reginald Pike", text: "Myself, as auctioneer, and Otto, as our host. Both kept on our persons all evening, naturally." },
@@ -420,6 +451,30 @@ export const case004: CaseFile = {
       access: { kind: "interview", suspect: "Otto Brennan", question: "Where were you at midnight?" },
       title: "Otto: midnight",
       body: { type: "statement", speaker: "Otto Brennan", text: "Right there in my armchair by the fire, counting down with everyone else." },
+    },
+    {
+      id: "boiler-log",
+      role: "tech",
+      chapter: 2,
+      after: ["question-lily-missing"],
+      access: { kind: "search", terms: ["boiler", "boilerroom", "heating"] },
+      title: "Boiler room",
+      body: {
+        type: "log",
+        source: "Pinecrest Lodge · boiler room door",
+        rows: [
+          { time: "18:10", text: "Opened · keycard MASTER-1 (O. Brennan) · nightly check" },
+          { time: "", text: "No other entries tonight" },
+        ],
+      },
+    },
+    {
+      id: "insight-boiler",
+      role: "archivist",
+      chapter: 2,
+      access: { kind: "crosscheck", pair: ["question-lily-missing", "boiler-log"] },
+      title: "Nobody checked the boiler",
+      body: { type: "finding", text: "Otto told Lily he went to check the boiler at midnight. Nobody opened the boiler room after 18:10." },
     },
     {
       id: "insight-armchair",

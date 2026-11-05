@@ -21,8 +21,12 @@ import type { CaseFile } from "@/lib/game/types";
  *
  * Hand-offs: the Archivist's chat shows the edit → the Tech searches the chat
  * history and Priya's laptop; the Photographer's 8:58 photo shows HALO still
- * there; the visitor sheet gives badge V-117 and a number plate for the Tech;
- * the lobby camera shows the Kestrel lanyard for the Tech to search.
+ * there, and the Tech's search of HALO's charging dock shows it never moved
+ * until 9:13; the visitor sheet gives badge V-117 and a number plate for the
+ * Tech; in chapter 3 the Tech pulls the lobby camera (Ozzy names it) and pins
+ * it for the Photographer, whose Kestrel lanyard sends the Tech searching again.
+ * Searches for things the records don't hold answer with a pointer to a
+ * teammate (`searchNotes`) instead of a blank.
  */
 export const case001: CaseFile = {
   id: "case-001",
@@ -95,12 +99,13 @@ export const case001: CaseFile = {
       story: [],
       checkpoint: {
         question: "Priya's message says she took HALO home. What proves it isn't true?",
-        proves: ["detail-halo", "photo-linkedin", "device-log", "insight-message"],
-        reveal: "Priya badged out at 8:45, but HALO was still in Cabinet B at 8:58. And the message was edited on her laptop, in the lab, at 9:12.",
+        proves: ["detail-halo", "photo-linkedin", "device-log", "insight-message", "dock-log", "insight-dock"],
+        reveal: "Priya badged out at 8:45, but HALO sat on its dock in Cabinet B until 9:13. And the message was edited on her laptop, in the lab, at 9:12.",
       },
       hints: [
         "Check when Priya left the building, then look at what the photos show after that.",
         "HALO is in a photo taken after Priya left. Look at the cabinet, and at the clock.",
+        "HALO charges on a dock in Cabinet B, and the dock keeps a log. The Tech can search it.",
       ],
     },
     {
@@ -127,18 +132,32 @@ export const case001: CaseFile = {
       story: [
         { kind: "line", who: "square", text: "All right! I left her alone to take a call from the Dean. I filled in the sheet when I came back.", shocked: true },
         { kind: "narration", text: "After 9:02, two people were still near Lab 4: a visitor nobody knew, and a guard on his rounds." },
-        { kind: "line", who: "circle", text: "I walk past that lab every night! Check my patrol log if you don't believe me.", shocked: true },
+        { kind: "line", who: "circle", text: "I walk past that lab every night! Pull the lobby camera if you don't believe me.", shocked: true },
         { kind: "line", who: "rectangle", text: "I've told you everything. I drove home at nine." },
         { kind: "narration", text: "One of them did this. Pin whatever would break their story, because the board is all you'll have when you face them." },
       ],
       hints: [
         "Two people were still around after 9:02. Check where each of them was at 9:12, and where each one went.",
         "The visitor sheet has a number plate. The Tech can search it.",
-        "Look closely at everyone who crosses the lobby camera.",
+        "The Tech can pull the lobby camera. Pin it, so the Photographer can look closely at whoever crosses it.",
       ],
     },
   ],
   questionBudget: 6,
+  searchNotes: [
+    {
+      terms: ["rena", "voss", "renavoss", "visitor", "visitors", "guest"],
+      text: "No staff records. Visitors are signed in on paper at the security desk. Look for a badge number or a car.",
+    },
+    { terms: ["v117", "badgev117"], text: "V-117 is a day visitor's badge. Whose name is behind it? That's on the security desk's sheet." },
+    { terms: ["squires", "edmund", "professor", "esquires"], text: "E. Squires: nothing logged tonight but his badge, and that's in your building log." },
+    { terms: ["priya", "tran", "priyatran"], text: "P. Tran: dozens of records. Her badge is in your building log. For anything else, find out what you're after." },
+    { terms: ["laptop", "laptops"], text: "Lab 4 has six laptops on its network. Find out which one matters first." },
+    { terms: ["ozzy", "reyes", "guard", "patrol", "security"], text: "The guard's patrol log comes in with his incident report. Not filed yet." },
+    { terms: ["camera", "cameras", "cctv", "footage", "video", "lobby"], text: "Campus security is still pulling tonight's camera footage. Try again later." },
+    { terms: ["kx24rvs", "kx24", "plate", "numberplate", "anpr"], text: "Plate cameras need a reason. Where does the driver say they went?" },
+    { terms: ["northgate", "northgatecapital", "investor", "investors"], text: "Northgate Capital is an outside investor. Its staff aren't in the university's systems." },
+  ],
   interrogation: {
     suspect: "rectangle",
     strikes: 3,
@@ -316,11 +335,26 @@ export const case001: CaseFile = {
       id: "asset-register",
       role: "tech",
       chapter: 1,
-      access: { kind: "search", terms: ["halo", "cabinet", "cabinetb", "prototype"] },
+      access: { kind: "search", terms: ["halo", "prototype", "glasses", "smartglasses", "asset", "assets", "key", "sparekey"] },
       title: "Asset register: HALO",
       body: {
         type: "document",
-        text: "HALO prototype (smart glasses). Kept in Cabinet B, Lab 4.\nKeys: P. Tran, E. Squires.\nSpare key: top drawer of the professor's desk.",
+        text: "HALO prototype (smart glasses). Kept in Cabinet B, Lab 4, on a charging dock that logs when it's taken off.\nKeys: P. Tran, E. Squires.\nSpare key: top drawer of the professor's desk.",
+      },
+    },
+    {
+      id: "dock-log",
+      role: "tech",
+      chapter: 1,
+      access: { kind: "search", terms: ["dock", "halodock", "chargingdock", "charging", "charger", "battery", "cabinet", "cabinetb"] },
+      title: "HALO's charging dock",
+      body: {
+        type: "log",
+        source: "Lab 4 · Cabinet B · HALO charging dock",
+        rows: [
+          { time: "8:38 PM", text: "HALO placed on dock · charging" },
+          { time: "9:13 PM", text: "HALO lifted off dock" },
+        ],
       },
     },
     {
@@ -347,6 +381,14 @@ export const case001: CaseFile = {
       access: { kind: "crosscheck", pair: ["lab-chat", "detail-halo"] },
       title: "The message doesn't fit",
       body: { type: "finding", text: "The chat says Priya took HALO home, but HALO is still in Cabinet B after she'd gone." },
+    },
+    {
+      id: "insight-dock",
+      role: "archivist",
+      chapter: 1,
+      access: { kind: "crosscheck", pair: ["lab-chat", "dock-log"] },
+      title: "It never left",
+      body: { type: "finding", text: "The chat says Priya took HALO home at 8:40. Its charging dock says HALO didn't move until 9:13." },
     },
     {
       id: "profile-notes",
@@ -519,10 +561,11 @@ export const case001: CaseFile = {
 
     // ----- Chapter 3: the last clue -------------------------------------------
     {
+      // The Tech pulls it (Ozzy names it in the chapter's story) and pins it; only the Photographer can look into it.
       id: "cctv-lobby",
-      role: "photographer",
+      role: "tech",
       chapter: 3,
-      access: { kind: "desk" },
+      access: { kind: "search", terms: ["lobby", "lobbycamera", "lobbycctv", "camera", "cameras", "cctv", "footage", "video"] },
       title: "Lobby camera",
       body: {
         type: "scene",
@@ -688,6 +731,7 @@ export const case001: CaseFile = {
       { time: "9:02 PM", text: "The Dean calls. Squires leaves Rena alone in Lab 4." },
       { time: "9:10 PM", text: "Ozzy sees Rena waiting at the lab door. She says she's waiting for the professor." },
       { time: "9:12 PM", text: "Rena edits Priya's message on Priya's laptop, then opens Cabinet B with the spare key." },
+      { time: "9:13 PM", text: "HALO comes off its charging dock." },
       { time: "9:17 PM", text: "Ozzy finds Cabinet B empty and raises the alarm." },
       { time: "9:19 PM", text: "Rena walks out through the lobby with a heavy tote bag." },
       { time: "9:41 PM", text: "Squires badges back in and fills in the visitor sheet as if he'd stayed." },

@@ -16,7 +16,7 @@ import { Icon, type IconName } from "./ui/Icon";
 const POWER: Record<string, { icon: IconName; text: string }> = {
   search: { icon: "search", text: "Search the records for any name, number or place." },
   interview: { icon: "mic", text: "Spend the team's questions on suspects and witnesses." },
-  inspect: { icon: "camera", text: "Tap into photos to find details nobody else can." },
+  inspect: { icon: "camera", text: "Zoom into every photo and shoot the details. Shake to develop what you catch." },
   crosscheck: { icon: "scale", text: "Hold two pieces of evidence together to expose a lie." },
   none: { icon: "file", text: "Your evidence backs up the others." },
 };

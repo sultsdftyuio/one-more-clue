@@ -9,6 +9,7 @@ import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
+import { framedHotspot, shotOf } from "./camera.ts";
 import { costMinutes, nightMinutes } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
@@ -56,8 +57,14 @@ function play(caseFile: CaseFile) {
       found(expect);
     },
     ask: (id: string) => run(INTERVIEWER, { type: "ask", evidenceId: id }),
+    /** The Photographer frames the clue and shoots. */
     inspect(scene: string, hotspot: string) {
-      run(PHOTOGRAPHER, { type: "inspect", scene, hotspot });
+      const picture = caseFile.evidence.find((e) => e.id === scene)!;
+      const shot = shotOf(picture.body, hotspot);
+      assert.ok(shot, `"${scene}" has no "${hotspot}" to photograph`);
+      run(PHOTOGRAPHER, { type: "shoot", scene, ...shot });
+      const detail = caseFile.evidence.find((e) => e.access.kind === "inspect" && e.access.scene === scene && e.access.hotspot === hotspot)!;
+      found(detail.id);
     },
     crosscheck(a: string, b: string, expect: string) {
       run(ARCHIVIST, { type: "crosscheck", a, b });
@@ -336,6 +343,21 @@ test("the night is tuned: a careless team runs out, a decent one doesn't", () =>
     const spent = (wrong: number, misses: number) => wrong * costMinutes(d, "wrong") + misses * costMinutes(d, "miss") + open * costMinutes(d, "question");
     assert.ok(spent(3, 10) >= nightMinutes(d), `${c.id}: three wrong answers, ten misses and every question should run the night out`);
     assert.ok(spent(2, 5) < nightMinutes(d), `${c.id}: two wrong answers and a few misses shouldn't end it`);
+  }
+});
+
+test("the camera can catch every clue in every case, and each frame catches the clue it's aimed at", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    for (const e of c.evidence) {
+      if (e.access.kind !== "inspect") continue;
+      const picture = c.evidence.find((p) => p.id === (e.access as { scene: string }).scene)!;
+      const hotspot = e.access.hotspot;
+      const shot = shotOf(picture.body, hotspot);
+      assert.ok(shot, `${c.id}: no "${hotspot}" in "${picture.id}"`);
+      const items = picture.body.type === "scene" ? picture.body.items : picture.body.type === "footage" ? picture.body.frames[shot.at!].items : [];
+      assert.equal(framedHotspot(items, shot.frame), hotspot, `${c.id}: a frame on "${hotspot}" in "${picture.id}" catches something else`);
+      assert.ok(100 / shot.frame.w <= 5.001, `${c.id}: "${hotspot}" needs more zoom than the lens has`);
+    }
   }
 });
 

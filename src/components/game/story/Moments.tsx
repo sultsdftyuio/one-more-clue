@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
+import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
 import { evidenceIn, useGame } from "../context";
 import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
@@ -10,8 +11,8 @@ import { PinButton } from "../evidence/PinButton";
 import { ReadOutButton } from "../evidence/ReadOut";
 import { ShowEveryoneButton } from "../evidence/ShowEveryone";
 import { Cassette } from "../evidence/RecordingPlayer";
-import { ZoomedSpot } from "../evidence/SceneView";
 import { SuspectPortrait } from "../parts";
+import { DevelopPrint } from "./Develop";
 import { useTypewriter } from "./StoryPlayer";
 
 /** Seconds into a contradiction when the stamp lands. */
@@ -24,6 +25,9 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   const speaks = evidence.source === "interview";
   const spoken = speaks && body.type === "statement" ? body.text : "";
   const typed = useTypewriter(spoken, Boolean(spoken));
+  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
+  // A photo comes out blank and has to be developed before there's anything to do with it.
+  const [developed, setDeveloped] = useState(!(evidence.source === "inspect" && scene && evidence.spot));
 
   useEffect(() => {
     // The stamp's sound lands with the stamp, once the two papers have met.
@@ -31,11 +35,9 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
       const timer = window.setTimeout(() => play("stamp"), STAMP_AT * 1000);
       return () => window.clearTimeout(timer);
     }
-    const sound = { search: "match", inspect: "found" } as const;
+    const sound = { search: "match" } as const;
     if (evidence.source in sound) play(sound[evidence.source as keyof typeof sound]);
   }, [evidence.source]);
-
-  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
 
   let content;
   if (evidence.source === "search") {
@@ -75,16 +77,8 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
       </div>
     );
   } else if (evidence.source === "inspect" && scene && evidence.spot) {
-    // The marked part of the picture develops in the tray, then the note appears under it.
-    content = (
-      <div className="text-center">
-        <figure className="mx-auto w-[min(19rem,88%)] -rotate-2 border-[3px] border-ink bg-white p-2 pb-3 shadow-card">
-          <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} className="moment-develop" />
-          <figcaption className="mt-2 font-hand text-xl leading-tight text-ink">{evidence.title}</figcaption>
-        </figure>
-        <p className="mx-auto mt-4 max-w-sm animate-[rise-in_0.4s_ease-out_1.5s_both] border-2 border-ink bg-[#ffe98f] px-4 py-2 font-hand text-[1.3rem] leading-snug text-ink">{snippet(body)}</p>
-      </div>
-    );
+    // The camera's catch comes out blank: shake or rub it up, then the note appears under it.
+    content = <DevelopPrint scene={scene.body} hotspot={evidence.spot.hotspot} title={evidence.title} note={snippet(body)} onDeveloped={() => setDeveloped(true)} />;
   } else if (evidence.source === "crosscheck" && body.type === "finding") {
     // Two papers meet in the middle, and the stamp comes down.
     const [a, b] = evidence.compared ?? [];
@@ -112,7 +106,7 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0" />
       <div className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
         {content}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <div className={cx("mt-5 flex flex-wrap items-center justify-center gap-2", !developed && "hidden")}>
           <PinButton evidence={evidence} />
           <ReadOutButton evidence={evidence} />
           <ShowEveryoneButton evidence={evidence} />

@@ -28,6 +28,7 @@ import type {
   Score,
   ThemeId,
 } from "./types";
+import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -42,6 +43,7 @@ export const SPOTLIGHT_GAP_MS = 12_000;
 const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
+const SHOTS_KEPT = 40;
 
 export type Result = { ok: true; state: RoomState } | { ok: false; error: string };
 
@@ -524,6 +526,39 @@ export function applyAction(
       break;
     }
 
+    case "shoot": {
+      if (!investigating) return fail("Nothing to photograph yet.");
+      if (!abilities.includes("inspect")) return fail("Only the Photographer has the camera.");
+      const scene = evidenceById(action.scene);
+      if (!scene || (scene.body.type !== "scene" && scene.body.type !== "footage") || !canSee(state, self, scene)) {
+        return fail("You can't see that picture.");
+      }
+      const frame = cleanFrame(action.frame);
+      if (!frame) return fail("That shot is out of the picture.");
+      if (zoomOf(frame) < MIN_SHOT_ZOOM - 0.01) return fail("Too far away. Zoom in on something first.");
+      const tape = scene.body.type === "footage" ? scene.body.frames : null;
+      const at = tape ? Math.trunc(Number(action.at ?? 0)) : undefined;
+      if (tape && (!Number.isFinite(at) || at! < 0 || at! >= tape.length)) return fail("That moment isn't on the tape.");
+      const items = scene.body.type === "scene" ? scene.body.items : tape![at!].items;
+      const detailAt = (hotspot: string) =>
+        caseFile.evidence.find((e) => e.access.kind === "inspect" && e.access.scene === scene.id && e.access.hotspot === hotspot && e.chapter <= state.chapter);
+      const hit = framedHotspot(items, frame, (hotspot) => Boolean(detailAt(hotspot)));
+      const detail = hit ? detailAt(hit) : undefined;
+      // Shooting something you already have, or something that only matters later, costs nothing.
+      if (detail && next.found[detail.id]) return fail("That's already in your darkroom.");
+      if (detail && !opened(state, detail)) return fail("Nothing stands out there yet.");
+      next.shots = [...(next.shots ?? []), { id: newId(), by: me.id, scene: scene.id, frame, at, hit: detail?.id ?? null, time: now }].slice(-SHOTS_KEPT);
+      if (detail) {
+        next.found[detail.id] = { by: me.id, at: now };
+        log(next, newId, now, "found", `${me.name} photographed something in "${scene.title}": ${detail.title}`, me.id, detail.id);
+        announceLeads(next, caseFile, detail.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name}'s shot of "${scene.title}" caught nothing.${costNote(next, caseFile, minutes)}`, me.id);
+      }
+      break;
+    }
+
     case "crosscheck": {
       if (!investigating) return fail("Nothing to cross-check yet.");
       if (!abilities.includes("crosscheck")) return fail("Only the Archivist can cross-check evidence.");
@@ -978,6 +1013,8 @@ export type PlayerView = {
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
   searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
+  /** For the Photographer: their own shots, newest last, and what each caught. */
+  shots: { id: string; scene: string; at?: number; hit: string | null; time: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
   /** The last piece someone showed on every phone. */
@@ -1161,6 +1198,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       note: s.note,
       at: s.at,
     })),
+    shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,
     interrogation: interrogationView(state, caseFile, me),

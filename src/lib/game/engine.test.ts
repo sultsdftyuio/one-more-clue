@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
+import { shotOf } from "./camera.ts";
 import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, SPOTLIGHT_GAP_MS, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
@@ -146,10 +147,33 @@ test("interviews take time out of the night", () => {
   assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-rex-inside" }).ok, false, "chapter 2 questions are locked");
 });
 
-test("inspect: only the Photographer, only on photos they can see", () => {
+test("the camera: only the Photographer, a framed clue is theirs, a shot of nothing costs time", () => {
   let state = roomWith(4);
-  assert.equal(act(state, TECH, { type: "inspect", scene: "photo-instagram", hotspot: "jar" }).ok, false);
-  assert.equal(act(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "nowhere" }).ok, false);
+  const photo = tipJar.evidence.find((e) => e.id === "photo-instagram")!;
+  const jar = shotOf(photo.body, "jar")!;
+  const spent = () => viewFor(state, tipJar, PHOTOGRAPHER, new Set()).deadline!.spent;
+  const miss = viewFor(state, tipJar, PHOTOGRAPHER, new Set()).deadline!.costs.miss;
+
+  assert.equal(act(state, TECH, { type: "shoot", scene: "photo-instagram", ...jar }).ok, false, "only the Photographer");
+  assert.equal(act(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", frame: { x: 0, y: 0, w: 100, h: 100 } }).ok, false, "a whole-picture snapshot is too far away");
+  assert.equal(spent(), 0, "and it costs nothing");
+
+  // A corner with nothing in it: the shot is taken, and the night pays for it.
+  const empty = { x: 0, y: 0, w: 25, h: 25 };
+  state = doo(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", frame: empty });
+  assert.equal(spent(), miss);
+  assert.equal(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).shots.at(-1)?.hit, null);
+
+  state = doo(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", ...jar });
+  assert.ok(sees(state, PHOTOGRAPHER).includes("detail-jar"));
+  assert.equal(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).shots.at(-1)?.hit, "detail-jar");
+  assert.equal(spent(), miss, "a hit is free");
+  assert.equal(act(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", ...jar }).ok, false, "already in the darkroom, and free");
+  assert.equal(viewFor(state, tipJar, TECH, new Set()).shots.length, 0, "only the Photographer sees their shots");
+});
+
+test("phones still on the old page can tap to inspect for one more release", () => {
+  let state = roomWith(4);
   state = doo(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "jar" });
   assert.ok(sees(state, PHOTOGRAPHER).includes("detail-jar"));
 });

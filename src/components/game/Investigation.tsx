@@ -7,6 +7,7 @@ import type { PlayerView } from "@/lib/game/engine";
 import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { AudioToggles } from "./audio/AudioToggles";
+import { CAMERA_EVENT } from "./camera-events";
 import { play } from "./audio/sound";
 import { BoardPanel, BoardPeek } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
@@ -325,6 +326,15 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
   useEffect(() => {
     if (panel === "team") setHeardSeen(heard);
   }, [panel, heard]);
+
+  useEffect(() => {
+    const close = () => {
+      setOpened(null);
+      setPanel(null);
+    };
+    window.addEventListener(CAMERA_EVENT, close);
+    return () => window.removeEventListener(CAMERA_EVENT, close);
+  }, []);
 
   const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;

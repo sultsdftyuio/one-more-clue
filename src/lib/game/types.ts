@@ -258,6 +258,8 @@ export type DecidedProposal = Omit<Proposal, "votes"> & { passed: boolean; decid
 export type Pin = { evidenceId: string; by: string; at: number };
 export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
+/** One press of the Photographer's shutter: where the frame was, and the detail it caught (or nothing). */
+export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
 export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight";
@@ -286,6 +288,8 @@ export type RoomState = {
   pins: Pin[];
   questionsUsed: number;
   searches: Search[];
+  /** The Photographer's shots (missing in rooms made before the camera). */
+  shots?: Shot[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
   /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
@@ -336,7 +340,10 @@ export type Action =
   | { type: "ready" }
   | { type: "search"; query: string }
   | { type: "ask"; evidenceId: string }
+  /** Kept for one release so phones still on the old page keep working: the camera's `shoot` replaced it. */
   | { type: "inspect"; scene: string; hotspot: string }
+  /** The Photographer's shutter: a frame on a picture (in percent of it), and for footage, which frame of the tape. */
+  | { type: "shoot"; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number }
   | { type: "crosscheck"; a: string; b: string }
   /** Interrogation: move the suspect on to their next (or previous) claim. */
   | { type: "press"; step: 1 | -1 }

@@ -64,7 +64,7 @@ export const practiceTipJar: CaseFile = {
       core: true,
       ability: "inspect",
       name: "Photographer",
-      blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can do this, even on photos others pin.",
+      blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin.",
     },
     {
       id: "archivist",

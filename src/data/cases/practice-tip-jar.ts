@@ -112,7 +112,7 @@ export const practiceTipJar: CaseFile = {
       ],
       checkpoint: {
         question: "Someone lied about when they left the café. What gives them away?",
-        proves: ["receipts", "card-history", "detail-screen", "insight-squarington"],
+        proves: ["receipts", "card-history", "detail-screen", "insight-squarington", "crack-squarington-tab"],
         reveal: "Lord Squarington swore he left at 8:30, but his card was tapped on the counter reader at 8:42, right beside the jar.",
       },
       hints: [
@@ -425,6 +425,22 @@ export const practiceTipJar: CaseFile = {
       access: { kind: "crosscheck", pair: ["detail-ticket", "question-rex-inside"] },
       title: "The Route 50 ticket",
       body: { type: "finding", text: "Rex says he never went inside, but a Route 50 ticket, his bus, was on the café floor." },
+    },
+    {
+      id: "crack-squarington-tab",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Lord Squarington", against: "question-squarington-left", breaks: ["receipts", "card-history", "insight-squarington", "detail-screen"] },
+      title: "Lord Squarington: the tab",
+      body: { type: "statement", speaker: "Lord Squarington", text: "Oh, very well. I settled my tab at 8:42. A gentleman doesn't advertise his debts." },
+    },
+    {
+      id: "crack-rex-rain",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Rex", against: "question-rex-inside", breaks: ["detail-ticket", "insight-ticket", "detail-stop-clock", "insight-alibi", "cctv-still", "detail-hat"] },
+      title: "Rex: out of the rain",
+      body: { type: "statement", speaker: "Rex", text: "All right. I nipped in out of the rain for two minutes. I never touched any jar." },
     },
     {
       id: "neighbour-message",

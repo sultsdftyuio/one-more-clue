@@ -136,7 +136,7 @@ export const case002: CaseFile = {
       {
         id: "door",
         text: "He burst through the studio door and shoved me out into the corridor.",
-        lie: { breaks: ["door-log", "insight-nobody", "detail-keypad"], crack: "Maybe it was more of a stroll. A very firm stroll." },
+        lie: { breaks: ["door-log", "insight-nobody", "detail-keypad", "crack-vince-door", "crack-vince-code"], crack: "Maybe it was more of a stroll. A very firm stroll." },
       },
       {
         id: "darla",
@@ -146,7 +146,7 @@ export const case002: CaseFile = {
       {
         id: "envelope",
         text: "He took the envelope. I haven't seen it since.",
-        lie: { breaks: ["detail-envelope", "detail-boot", "insight-envelope", "question-gus-after"], crack: "That could be any envelope. In anyone's boot." },
+        lie: { breaks: ["detail-envelope", "detail-boot", "insight-envelope", "question-gus-after", "crack-vince-envelope"], crack: "That could be any envelope. In anyone's boot." },
       },
       {
         id: "money",
@@ -333,6 +333,14 @@ export const case002: CaseFile = {
       access: { kind: "crosscheck", pair: ["statement-vince", "detail-rack"] },
       title: "The cables that weren't ripped",
       body: { type: "finding", text: "Vince says the cables were ripped out. Every cable in the rack is still plugged in." },
+    },
+    {
+      id: "crack-vince-cables",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "press", suspect: "Vince Valentine", against: "statement-vince", breaks: ["detail-rack", "rack-monitor", "question-gus-cables", "insight-cables"] },
+      title: "Vince: the cables",
+      body: { type: "statement", speaker: "Vince Valentine", text: "Ripped, pulled, does it matter? It was dark! He must have done something to the desk instead." },
     },
     {
       id: "station-notes",
@@ -548,6 +556,22 @@ export const case002: CaseFile = {
       body: { type: "finding", text: "Vince says an attacker burst in. The door log shows nobody went in after Vince at 11:47, until Gus opened it at 12:02." },
     },
     {
+      id: "crack-vince-door",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Vince Valentine", against: "statement-vince", breaks: ["door-log", "insight-nobody"] },
+      title: "Vince: the door",
+      body: { type: "statement", speaker: "Vince Valentine", text: "Burst in, crept in, does it matter? I was face down on the carpet. I didn't see how he got in!" },
+    },
+    {
+      id: "crack-vince-code",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Vince Valentine", against: "question-vince-code", breaks: ["door-log", "insight-nobody", "detail-keypad"] },
+      title: "Vince: the lock",
+      body: { type: "statement", speaker: "Vince Valentine", text: "All right, I locked it. Habit! I always lock the studio when I've been attacked." },
+    },
+    {
       id: "listener-calls",
       role: "lookout",
       chapter: 2,
@@ -695,6 +719,14 @@ export const case002: CaseFile = {
       access: { kind: "interview", suspect: "Darla Kingsley", question: "Who'd want to hurt Vince?" },
       title: "Darla: who'd want to",
       body: { type: "statement", speaker: "Darla Kingsley", text: "Nobody wants to HURT him. Ask SpinKings who he owes. He's on that betting app between every song." },
+    },
+    {
+      id: "crack-vince-envelope",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Vince Valentine", against: "question-vince-envelope", breaks: ["detail-envelope", "detail-boot", "cctv-carpark", "insight-envelope", "question-gus-after"] },
+      title: "Vince: the envelope",
+      body: { type: "statement", speaker: "Vince Valentine", text: "I put it somewhere safe. For Mrs Patel! Obviously I was going to give it back." },
     },
     {
       id: "insight-envelope",

@@ -70,8 +70,12 @@ export function normalizeTerm(text: string) {
 
 const pairKey = (a: string, b: string) => [a, b].sort().join("+");
 
-/** Whether everything a piece of evidence depends on has turned up. */
-export const opened = (state: Pick<RoomState, "found">, evidence: CaseEvidence) => (evidence.after ?? []).every((id) => state.found[id]);
+/** Whether everything a piece of evidence depends on has turned up (and, for `afterAny`, at least one of those). */
+export const opened = (state: Pick<RoomState, "found">, evidence: CaseEvidence) =>
+  (evidence.after ?? []).every((id) => state.found[id]) && (!evidence.afterAny?.length || evidence.afterAny.some((id) => state.found[id]));
+
+/** The finds a piece of evidence waits on, whichever kind of wait. */
+const waitsOn = (evidence: CaseEvidence) => [...(evidence.after ?? []), ...(evidence.afterAny ?? [])];
 
 /**
  * The record a search finds. An exact term wins; otherwise the longest term
@@ -210,7 +214,7 @@ function said(state: RoomState, caseFile: CaseFile, crack: CaseEvidence) {
 /** Tells the team when a find opens someone else's next move. It doesn't say what: they have to ask. */
 function announceLeads(state: RoomState, caseFile: CaseFile, foundId: string, finder: Player, now: number, newId: () => string) {
   const roles = new Set(
-    caseFile.evidence.filter((e) => e.after?.includes(foundId) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e)).map((e) => e.role),
+    caseFile.evidence.filter((e) => waitsOn(e).includes(foundId) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e)).map((e) => e.role),
   );
   for (const role of roles) {
     const name = caseFile.roles.find((r) => r.id === role)?.name ?? role;
@@ -330,7 +334,7 @@ export function bestChain(state: RoomState, caseFile: CaseFile): ChainStep[] {
     const known = memo.get(e.id);
     if (known) return known;
     memo.set(e.id, [e]); // stops a loop in badly written data
-    const parents = [...(e.after ?? []), ...(e.access.kind === "crosscheck" ? e.access.pair : []), ...(e.access.kind === "press" ? [e.access.against] : [])];
+    const parents = [...waitsOn(e), ...(e.access.kind === "crosscheck" ? e.access.pair : []), ...(e.access.kind === "press" ? [e.access.against] : [])];
     let best: CaseEvidence[] = [];
     for (const id of parents) {
       const parent = caseFile.evidence.find((p) => p.id === id);
@@ -505,8 +509,9 @@ export function applyAction(
       if (next.found[question.id]) return fail("You've already asked that.");
       if (!opened(state, question)) return fail("That isn't a question you can ask yet.");
       // A question takes time out of the night. Following a lead is free, so time never stands between the team and a chain.
-      const minutes = question.after ? 0 : spend(next, caseFile, "question");
-      if (!question.after) next.questionsUsed++;
+      const lead = waitsOn(question).length > 0;
+      const minutes = lead ? 0 : spend(next, caseFile, "question");
+      if (!lead) next.questionsUsed++;
       next.found[question.id] = { by: me.id, at: now };
       log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id);
       announceLeads(next, caseFile, question.id, self, now, newId);
@@ -579,10 +584,11 @@ export function applyAction(
       const cracks = caseFile.evidence.filter(
         (e) => e.access.kind === "press" && e.access.suspect === suspect && e.access.breaks.includes(evidence.id) && e.chapter <= state.chapter && opened(state, e),
       );
-      const crack = cracks.find((e) => !next.found[e.id]);
+      const unbroken = cracks.filter((e) => !next.found[e.id]);
+      const crack = unbroken.find((e) => said(state, caseFile, e));
       // Nothing to lose for showing them something they've already given up, or something about a claim they haven't made yet.
-      if (cracks.length && !crack) return fail(`${suspect} has already given that up.`);
-      if (crack && !said(state, caseFile, crack)) return fail(`Ask ${suspect} about it first.`);
+      if (cracks.length && !unbroken.length) return fail(`${suspect} has already given that up.`);
+      if (unbroken.length && !crack) return fail(`Ask ${suspect} about it first.`);
       next.shows = [...(next.shows ?? []), { id: newId(), by: me.id, suspect, evidenceId: evidence.id, crack: crack?.id ?? null, time: now }].slice(-SHOWS_KEPT);
       if (crack) {
         next.found[crack.id] = { by: me.id, at: now };
@@ -871,13 +877,13 @@ export function checkCase(caseFile: CaseFile): string[] {
 function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): string[] {
   const problems: string[] = [];
   for (const e of caseFile.evidence) {
-    for (const id of e.after ?? []) {
+    for (const id of waitsOn(e)) {
       const source = byId.get(id);
       if (!source) problems.push(`"${e.id}" waits on "${id}", which doesn't exist`);
       else if (source.access.kind === "desk") problems.push(`"${e.id}" waits on "${id}", which everyone starts with`);
       else if (source.chapter > e.chapter) problems.push(`"${e.id}" waits on "${id}", which only appears in a later chapter`);
     }
-    if (e.after && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect" && e.access.kind !== "press") problems.push(`"${e.id}" can't wait on a lead`);
+    if (waitsOn(e).length && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect" && e.access.kind !== "press") problems.push(`"${e.id}" can't wait on a lead`);
   }
   const reached = new Set<string>();
   for (let chapter = 1; chapter <= caseFile.chapters.length; chapter++) {
@@ -885,6 +891,7 @@ function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): strin
       growing = false;
       for (const e of caseFile.evidence) {
         if (e.chapter > chapter || reached.has(e.id) || !(e.after ?? []).every((id) => reached.has(id))) continue;
+        if (e.afterAny?.length && !e.afterAny.some((id) => reached.has(id))) continue;
         const a = e.access;
         if ((a.kind === "inspect" && !reached.has(a.scene)) || (a.kind === "crosscheck" && !a.pair.every((id) => reached.has(id)))) continue;
         if (a.kind === "press" && (!reached.has(a.against) || !a.breaks.some((id) => reached.has(id)))) continue;
@@ -1172,14 +1179,14 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
   const questions = abilities.includes("interview")
     ? caseFile.evidence.flatMap((e) =>
         e.access.kind === "interview" && e.chapter <= state.chapter && opened(state, e)
-          ? [{ id: e.id, suspect: e.access.suspect, question: e.access.question, asked: Boolean(state.found[e.id]), chapter: e.chapter, lead: Boolean(e.after) }]
+          ? [{ id: e.id, suspect: e.access.suspect, question: e.access.question, asked: Boolean(state.found[e.id]), chapter: e.chapter, lead: waitsOn(e).length > 0 }]
           : [],
       )
     : null;
 
   const leadSources = caseFile.evidence
-    .filter((e) => e.after && me.roles.includes(e.role) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e))
-    .flatMap((e) => e.after!);
+    .filter((e) => waitsOn(e).length && me.roles.includes(e.role) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e))
+    .flatMap((e) => waitsOn(e).filter((id) => state.found[id]));
   const leads = [...new Set(leadSources)].flatMap((id) => {
     const source = caseFile.evidence.find((e) => e.id === id);
     return source ? [{ id, title: source.title, by: state.found[id].by }] : [];

@@ -361,6 +361,40 @@ test("the camera can catch every clue in every case, and each frame catches the 
   }
 });
 
+test("every crack in every case cracks when someone shows them what breaks it", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    for (const e of c.evidence) {
+      if (e.access.kind !== "press") continue;
+      const a = e.access;
+      let state = createRoom({ code: "CRACK", caseFile: c, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+      for (const n of [2, 3, 4]) {
+        const joined = addPlayer(state, c, { id: `p${n}`, token: `t${n}`, name: `P${n}` }, 0);
+        if (!joined.ok) throw new Error(joined.error);
+        state = joined.state;
+      }
+      for (const [who, action] of [["p1", { type: "start" }], ["p1", { type: "ready" }], ["p2", { type: "ready" }], ["p3", { type: "ready" }], ["p4", { type: "ready" }]] as const) {
+        const result = applyAction(state, c, who, action as Action, 0, newId);
+        if (!result.ok) throw new Error(result.error);
+        state = result.state;
+      }
+      // The moment it's written for: its chapter, the claim made, one breaker on the board, the suspect's other cracks used up.
+      state.chapter = e.chapter;
+      const claim = c.evidence.find((x) => x.id === a.against)!;
+      if (claim.access.kind !== "desk") state.found[claim.id] = { by: INTERVIEWER, at: 0 };
+      for (const id of [...(e.after ?? []), ...(e.afterAny ?? []).slice(0, 1)]) state.found[id] = { by: TECH, at: 0 };
+      for (const other of c.evidence) {
+        if (other !== e && other.access.kind === "press" && other.access.suspect === a.suspect) state.found[other.id] = { by: INTERVIEWER, at: 0 };
+      }
+      const breaker = c.evidence.find((x) => a.breaks.includes(x.id) && x.chapter <= e.chapter)!;
+      if (breaker.access.kind !== "desk") state.found[breaker.id] = { by: TECH, at: 0 };
+      state.pins = [{ evidenceId: breaker.id, by: TECH, at: 0 }];
+      const result = applyAction(state, c, INTERVIEWER, { type: "show", suspect: a.suspect, evidenceId: breaker.id }, 1, newId);
+      assert.ok(result.ok, `${c.id}: showing "${breaker.id}" to ${a.suspect}: ${result.ok ? "" : result.error}`);
+      assert.ok(result.state.found[e.id], `${c.id}: "${e.id}" should crack`);
+    }
+  }
+});
+
 test("search prefers the most specific match", () => {
   assert.equal(bestSearchHit(case002, 2, "studioadoor")?.id, "door-log");
   assert.equal(bestSearchHit(case002, 2, "blind")?.id, "booth-log");

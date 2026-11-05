@@ -122,6 +122,8 @@ export type Access =
 export type CaseEvidence = {
   /** Evidence that has to be found first. Until then this stays hidden, so one player's find opens another's next move. */
   after?: string[];
+  /** Like `after`, but any one of these opens it: two different finds that both point here. */
+  afterAny?: string[];
   id: string;
   /** The role this evidence belongs to: its holder can see it once it's available. */
   role: string;

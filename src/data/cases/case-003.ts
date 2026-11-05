@@ -147,12 +147,12 @@ export const case003: CaseFile = {
       {
         id: "butter",
         text: "I went to the storeroom for butter. That's all.",
-        lie: { breaks: ["storeroom-log", "insight-oil"], crack: "Peanut oil, butter. They're both fats." },
+        lie: { breaks: ["storeroom-log", "insight-oil", "crack-ruth-oil"], crack: "Peanut oil, butter. They're both fats." },
       },
       {
         id: "nuts",
         text: "No nut has ever been near my section. I would never take that risk.",
-        lie: { breaks: ["detail-bottle", "insight-oil"], crack: "Anyone could hide a bottle behind my flour." },
+        lie: { breaks: ["detail-bottle", "insight-oil", "crack-ruth-oil"], crack: "Anyone could hide a bottle behind my flour." },
       },
       {
         id: "plate",
@@ -168,7 +168,7 @@ export const case003: CaseFile = {
       {
         id: "sale",
         text: "What sale? I make desserts. I don't read his emails.",
-        lie: { breaks: ["detail-note", "ruth-letter", "sale-email"], crack: "Twelve years, and he told me with a form letter." },
+        lie: { breaks: ["detail-note", "ruth-letter", "sale-email", "crack-ruth-email"], crack: "Twelve years, and he told me with a form letter." },
       },
     ],
     walkout: "My mousse is splitting. We're finished here.",
@@ -315,6 +315,14 @@ export const case003: CaseFile = {
       access: { kind: "crosscheck", pair: ["detail-menu", "paramedic-note"] },
       title: "Not so nut-free",
       body: { type: "finding", text: "The menu swears it's nut-free, as ever. The paramedics say peanut." },
+    },
+    {
+      id: "crack-amelie-outside",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "press", suspect: "Amélie Duret", against: "statement-amelie", breaks: ["paramedic-note", "insight-nutfree", "insight-allergens"] },
+      title: "Amélie: from outside",
+      body: { type: "statement", speaker: "Amélie Duret", text: "Then it didn't come from my kitchen. It came in from outside, or somebody brought it in on purpose." },
     },
     {
       id: "kitchen-notes",
@@ -559,6 +567,22 @@ export const case003: CaseFile = {
       body: { type: "statement", speaker: "Amélie Duret", text: "Ruth. Only Ruth. She plates the owner's dessert herself, every night." },
     },
     {
+      id: "question-bertrand-buyer",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "interview", suspect: "Bertrand Carré", question: "Who's the buyer you're meeting?" },
+      title: "Bertrand: the buyer",
+      body: { type: "statement", speaker: "Bertrand Carré", text: "Suppliers. Wine people. Terribly dull, I promise you." },
+    },
+    {
+      id: "crack-bertrand-sale",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Bertrand Carré", against: "question-bertrand-buyer", breaks: ["bertrand-calendar"] },
+      title: "Bertrand: the sale",
+      body: { type: "statement", speaker: "Bertrand Carré", text: "Gastro Group. I'm selling Maison Lune on Monday. Nobody here knows yet, and I'd like to keep it that way." },
+    },
+    {
       id: "insight-target",
       role: "archivist",
       chapter: 3,
@@ -675,6 +699,22 @@ export const case003: CaseFile = {
       access: { kind: "interview", suspect: "Olu Bello", question: "Did anyone go to the storeroom tonight?" },
       title: "Olu: the storeroom",
       body: { type: "statement", speaker: "Olu Bello", text: "Ruth, around quarter past nine. Said she was out of butter. Odd, mid-service." },
+    },
+    {
+      id: "crack-ruth-oil",
+      role: "interviewer",
+      chapter: 4,
+      access: { kind: "press", suspect: "Ruth Vale", against: "question-ruth-nuts", breaks: ["storeroom-log", "detail-bottle", "insight-oil", "question-olu-storeroom"] },
+      title: "Ruth: the oil",
+      body: { type: "statement", speaker: "Ruth Vale", text: "The oil is for the staff stir-fry. Ask anyone. It never goes near service." },
+    },
+    {
+      id: "crack-ruth-email",
+      role: "interviewer",
+      chapter: 4,
+      access: { kind: "press", suspect: "Ruth Vale", against: "question-ruth-sale", breaks: ["detail-note", "sale-email"] },
+      title: "Ruth: the email",
+      body: { type: "statement", speaker: "Ruth Vale", text: "Fine. I read it. Everyone reads everything in a kitchen. It doesn't mean I did anything." },
     },
     {
       id: "insight-oil",

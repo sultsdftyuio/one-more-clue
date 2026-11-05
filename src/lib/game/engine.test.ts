@@ -224,21 +224,8 @@ test("show everyone: anything you can see goes onto every phone, once in a while
 });
 
 test("show them: the right piece cracks a suspect, the wrong one costs time, and nothing is free twice", () => {
-  // The practice case with one crack added: Lord Squarington's "half past eight", broken by the receipts.
-  const pressed: CaseFile = {
-    ...tipJar,
-    evidence: [
-      ...tipJar.evidence,
-      {
-        id: "crack-squarington",
-        role: "interviewer",
-        chapter: 2,
-        access: { kind: "press", suspect: "Lord Squarington", against: "question-squarington-left", breaks: ["receipts", "insight-squarington"] },
-        title: "Squarington: the tab",
-        body: { type: "statement", speaker: "Lord Squarington", text: "Fine! I settled my tab at 8:42. A gentleman doesn't advertise his debts." },
-      },
-    ],
-  };
+  // The practice case's own crack: Lord Squarington's "half past eight", broken by the receipts.
+  const pressed: CaseFile = tipJar;
   assert.deepEqual(checkCase(pressed), []);
   let state = createRoom({ code: "SHOW", caseFile: pressed, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
   for (let i = 2; i <= 4; i++) state = must(addPlayer(state, pressed, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
@@ -265,10 +252,10 @@ test("show them: the right piece cracks a suspect, the wrong one costs time, and
   assert.equal(viewFor(state, pressed, INTERVIEWER, new Set()).shows.at(-1)?.crack, null);
 
   go(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" });
-  assert.ok(state.found["crack-squarington"], "he cracks");
+  assert.ok(state.found["crack-squarington-tab"], "he cracks");
   assert.equal(state.activity.at(-1)?.kind, "crack");
-  assert.equal(viewFor(state, pressed, PHOTOGRAPHER, new Set()).cracks[0]?.text.startsWith("Fine!"), true, "every phone hears it");
-  assert.ok(viewFor(state, pressed, INTERVIEWER, new Set()).evidence.some((e) => e.id === "crack-squarington" && e.source === "press"));
+  assert.equal(viewFor(state, pressed, PHOTOGRAPHER, new Set()).cracks[0]?.text.startsWith("Oh, very well"), true, "every phone hears it");
+  assert.ok(viewFor(state, pressed, INTERVIEWER, new Set()).evidence.some((e) => e.id === "crack-squarington-tab" && e.source === "press"));
   assert.equal(spent(), before + viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.costs.miss, "a crack is free");
   assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "he's already given that up");
 });

@@ -20,6 +20,12 @@ export const practiceTipJar: CaseFile = {
   code: "Practice case",
   title: "Last Orders at Café Lumen",
   tagline: "Three weeks of tips, gone in three minutes.",
+  deadline: {
+    what: "Café Lumen locks up at 11:00 PM",
+    start: "9:00 PM",
+    end: "11:00 PM",
+    lost: "11:00 PM. The shutters come down, the regulars go home, and the tips are never seen again.",
+  },
   minPlayers: 2,
   maxPlayers: 4,
   story: [
@@ -51,7 +57,7 @@ export const practiceTipJar: CaseFile = {
       core: true,
       ability: "interview",
       name: "Interviewer",
-      blurb: "You talk to people. The team only gets five questions for the whole case, so choose them together.",
+      blurb: "You talk to people. Every question takes time out of the evening, so choose them together. Following a lead is free.",
     },
     {
       id: "photographer",
@@ -128,7 +134,6 @@ export const practiceTipJar: CaseFile = {
       ],
     },
   ],
-  questionBudget: 5,
   evidence: [
     // ----- Chapter 1: the scene ----------------------------------------------
     {

@@ -38,7 +38,8 @@ export const case001: CaseFile = {
   cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
   deadline: {
     what: "The investors arrive at 9:00 AM",
-    times: ["Midnight", "3:00 AM", "6:30 AM"],
+    start: "12:00 AM",
+    end: "9:00 AM",
     lost: "9:00 AM. The investors walk into an empty lab. HALO is gone for good, and Priya's name goes with it.",
   },
   minPlayers: 2,
@@ -73,7 +74,7 @@ export const case001: CaseFile = {
       core: true,
       ability: "interview",
       name: "Interviewer",
-      blurb: "You talk to people. The team gets six questions for the whole case, so choose them together.",
+      blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free.",
     },
     {
       id: "photographer",
@@ -143,7 +144,6 @@ export const case001: CaseFile = {
       ],
     },
   ],
-  questionBudget: 6,
   searchNotes: [
     {
       terms: ["rena", "voss", "renavoss", "visitor", "visitors", "guest"],

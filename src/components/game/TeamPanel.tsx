@@ -12,6 +12,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   lead: "bulb",
   found: "sparkle",
   miss: "x",
+  clock: "clock",
   pin: "pin",
   unpin: "pin",
   chapter: "flag",

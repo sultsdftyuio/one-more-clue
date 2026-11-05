@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { propArt } from "@/lib/art";
-import { EMPTY_CHECKS, type VisibleEvidence } from "@/lib/game/engine";
+import { formatSpan } from "@/lib/game/clock";
+import type { VisibleEvidence } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { useGame } from "../../context";
 import { Icon } from "../../ui/Icon";
@@ -15,7 +16,7 @@ export function ArchivistTool() {
   const candidates = view.evidence.filter((e) => e.body.type !== "scene");
   const key = [...picked].sort().join("+");
   const tried = picked.length === 2 && view.checked.includes(key);
-  const hunches = view.checksLeft ?? EMPTY_CHECKS;
+  const price = view.deadline ? formatSpan(view.deadline.costs.miss) : null;
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length === 2 ? [p[1], id] : [...p, id]));
@@ -48,16 +49,8 @@ export function ArchivistTool() {
         <span className="-rotate-6 rounded border-2 border-coral-dk px-1.5 text-xs font-black tracking-wider text-coral-dk uppercase">Confidential</span>
       </header>
       <p className="mb-3 text-sm leading-snug font-semibold text-ink/70">Lay two papers side by side. If they can&apos;t both be true, you&apos;ve caught a lie. Ask others to pin what you need.</p>
-      <div className="mb-1 flex items-center gap-2" aria-label={`${hunches} of ${EMPTY_CHECKS} hunches left this chapter`}>
-        {Array.from({ length: EMPTY_CHECKS }, (_, i) => (
-          <span key={i} className={cx("grid size-7 place-items-center rounded-full border-2", i < hunches ? "border-coral-dk text-coral-dk" : "border-ink/20 text-ink/20")}>
-            <Icon name="bulb" className="size-4" />
-          </span>
-        ))}
-        <span className="ml-1 text-sm font-extrabold">{hunches ? `${hunches} ${hunches === 1 ? "hunch" : "hunches"} left` : "No hunches left"}</span>
-      </div>
       <p className="mb-4 text-sm font-semibold text-ink/65">
-        {hunches ? "A compare that finds nothing uses a hunch. Talk it through first." : "Only a real contradiction will count until the next chapter."}
+        {price ? `A compare that finds nothing costs ${price} of the night. Talk it through first.` : "Talk it through before you compare."}
       </p>
       <div className="flex items-center gap-2">
         {slip(0)}

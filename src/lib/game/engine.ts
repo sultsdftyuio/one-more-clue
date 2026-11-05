@@ -28,14 +28,13 @@ import type {
   Score,
   ThemeId,
 } from "./types";
+import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
 export const MAX_CHAT = 300;
 export const MAX_QUERY = 40;
 /** The board only holds this many pins, so the group has to agree on what matters. */
 export const PIN_LIMIT = 8;
-/** Cross-checks that find nothing are limited per chapter, so the Archivist has to reason, not try every pair. */
-export const EMPTY_CHECKS = 3;
 /** How long the team has to object before a called lie lands. */
 export const OBJECTION_MS = 5000;
 const CHAT_KEPT = 200;
@@ -121,9 +120,9 @@ export function createRoom(input: {
     found: {},
     pins: [],
     questionsUsed: 0,
+    clockSpent: 0,
     searches: [],
     checked: [],
-    emptyChecks: {},
     chat: [],
     activity: [],
     hintsUsed: 0,
@@ -260,6 +259,27 @@ export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalR
 
 const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: false, sharp: false };
 
+/** Spends some of the story's night on a move. Returns the minutes it cost: none in a case without a clock. */
+function spend(state: RoomState, caseFile: CaseFile, kind: Spend) {
+  if (!caseFile.deadline) return 0;
+  const minutes = costMinutes(caseFile.deadline, kind);
+  state.clockSpent = spentMinutes(state, caseFile) + minutes;
+  return minutes;
+}
+
+/** What a spend adds to a line in the activity feed: " −25 min. It's 1:20 AM." */
+function costNote(state: RoomState, caseFile: CaseFile, minutes: number) {
+  return minutes ? ` −${formatSpan(minutes)}. It's ${clockTime(state, caseFile)}.` : "";
+}
+
+/** Ends the case once the night has run out. */
+function endIfOutOfTime(state: RoomState, caseFile: CaseFile, now: number, newId: () => string) {
+  if (!caseFile.deadline || state.outcome || spentMinutes(state, caseFile) < nightMinutes(caseFile.deadline)) return;
+  log(state, newId, now, "clock", "The night has run out.");
+  state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
+  state.phase = "reveal";
+}
+
 function closeCase(state: RoomState, caseFile: CaseFile, report: FinalReport, kind: "solved" | "wrong" | "walkedOut", now: number) {
   state.outcome = { kind, report, score: scoreReport(state, caseFile, report), at: now };
   state.phase = "reveal";
@@ -359,12 +379,8 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
       } else {
         state.wrongAnswers++;
         const title = caseFile.evidence.find((e) => e.id === proposal.evidenceId)?.title;
-        const time = caseFile.deadline?.times[state.wrongAnswers];
-        log(state, newId, now, "wrong", `"${title}" doesn't prove it. ${time ? `The hours slip away. It's ${time}.` : "Look again."}`);
-        if (caseFile.deadline && !time) {
-          state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
-          state.phase = "reveal";
-        }
+        const minutes = spend(state, caseFile, "wrong");
+        log(state, newId, now, "wrong", `"${title}" doesn't prove it.${minutes ? costNote(state, caseFile, minutes) : " Look again."}`);
       }
     }
     if (proposal.kind === "hint") {
@@ -474,13 +490,11 @@ export function applyAction(
       if (!question || question.access.kind !== "interview" || question.chapter > state.chapter) return fail("That question isn't available.");
       if (next.found[question.id]) return fail("You've already asked that.");
       if (!opened(state, question)) return fail("That isn't a question you can ask yet.");
-      // Following a lead is free: running out of questions must never lock the team out of a chain.
-      if (!question.after) {
-        if (next.questionsUsed >= caseFile.questionBudget) return fail("The team has used all its questions.");
-        next.questionsUsed++;
-      }
+      // A question takes time out of the night. Following a lead is free, so time never stands between the team and a chain.
+      const minutes = question.after ? 0 : spend(next, caseFile, "question");
+      if (!question.after) next.questionsUsed++;
       next.found[question.id] = { by: me.id, at: now };
-      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"`, me.id, question.id);
+      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id);
       announceLeads(next, caseFile, question.id, self, now, newId);
       break;
     }
@@ -526,11 +540,9 @@ export function applyAction(
         announceLeads(next, caseFile, insight.id, self, now, newId);
       } else {
         if (next.checked.includes(key)) return fail("You've already compared those two.");
-        const empty = next.emptyChecks?.[state.chapter] ?? 0;
-        if (empty >= EMPTY_CHECKS) return fail("Those two agree, and you're out of hunches this chapter. Only a real contradiction counts now.");
         next.checked.push(key);
-        next.emptyChecks = { ...next.emptyChecks, [state.chapter]: empty + 1 };
-        log(next, newId, now, "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.`, me.id);
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
     }
@@ -676,6 +688,7 @@ export function applyAction(
   }
 
   resolveProposal(next, caseFile, now, newId);
+  endIfOutOfTime(next, caseFile, now, newId);
   next.version++;
   return { ok: true, state: next };
 }
@@ -703,6 +716,13 @@ export function checkCase(caseFile: CaseFile): string[] {
     }
   });
   if (byId.size !== caseFile.evidence.length) problems.push("evidence ids are not unique");
+  if (caseFile.deadline) {
+    try {
+      if (nightMinutes(caseFile.deadline) < 60) problems.push("the night is under an hour: every mistake would cost almost nothing to show");
+    } catch (error) {
+      problems.push(`the deadline's times can't be read: ${(error as Error).message}`);
+    }
+  }
 
   const needs: Record<Exclude<CaseEvidence["access"]["kind"], "desk">, Ability> = {
     search: "search",
@@ -747,8 +767,6 @@ export function checkCase(caseFile: CaseFile): string[] {
   if (solution.keyEvidence.length < 2) problems.push("needs at least two pieces of key evidence");
   for (const id of solution.keyEvidence) if (!byId.has(id)) problems.push(`key evidence "${id}" doesn't exist`);
   problems.push(...checkWriting(caseFile));
-  const questions = caseFile.evidence.filter((e) => e.access.kind === "interview").length;
-  if (questions && caseFile.questionBudget >= questions) problems.push("the question budget covers every question: no choices left to make");
   return problems;
 }
 
@@ -778,8 +796,6 @@ function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): strin
     }
     for (const e of caseFile.evidence) if (e.chapter === chapter && !reached.has(e.id)) problems.push(`"${e.id}" can't be reached in chapter ${chapter}`);
   }
-  const open = caseFile.evidence.filter((e) => e.access.kind === "interview" && !e.after).length;
-  if (caseFile.evidence.some((e) => e.after) && open > caseFile.questionBudget) problems.push("more open questions than the budget: a team could spend itself out of a chain");
   return problems;
 }
 
@@ -910,7 +926,6 @@ export type PlayerView = {
     roles: CaseRole[];
     chapterTitles: string[];
     cinematic: CaseFile["cinematic"] | null;
-    questionBudget: number;
     motives: { id: string; label: string }[];
     /** Whether naming the culprit leads to a confrontation rather than closing the case. */
     confrontation: boolean;
@@ -924,8 +939,21 @@ export type PlayerView = {
     hints: string[];
     hintsTotal: number;
   };
-  /** The story's clock: what's coming, the time now, how many wrong answers are left, and how it ended if it ran out. */
-  deadline: { what: string; time: string; left: number; lost: string | null } | null;
+  /**
+   * The story's clock: what's coming, the time now, the minutes spent and left, what each paid move costs
+   * in this case's minutes, whether it's running low, and how it ended if it ran out.
+   */
+  deadline: {
+    what: string;
+    time: string;
+    end: string;
+    spent: number;
+    left: number;
+    night: number;
+    costs: Record<Spend, number>;
+    low: boolean;
+    lost: string | null;
+  } | null;
   /** Checkpoints already answered, with what they revealed. */
   solved: { number: number; title: string; question: string; reveal: string }[];
   players: PublicPlayer[];
@@ -936,12 +964,9 @@ export type PlayerView = {
   questions: { id: string; suspect: string; question: string; asked: boolean; chapter: number; lead: boolean }[] | null;
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
-  questionsLeft: number;
   searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
-  /** For the Archivist: empty cross-checks still allowed in this chapter. */
-  checksLeft: number | null;
   /** Once the team names the right person. Claims are only spelled out to whoever leads it, or once broken. */
   interrogation: {
     suspect: string;
@@ -1074,7 +1099,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       roles: caseFile.roles,
       chapterTitles: caseFile.chapters.map((c) => c.title),
       cinematic: caseFile.cinematic ?? null,
-      questionBudget: caseFile.questionBudget,
       motives: shuffledFor(state.code, caseFile.solution.motives),
       confrontation: Boolean(caseFile.interrogation),
     },
@@ -1090,8 +1114,13 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     deadline: caseFile.deadline
       ? {
           what: caseFile.deadline.what,
-          time: caseFile.deadline.times[Math.min(state.wrongAnswers, caseFile.deadline.times.length - 1)],
-          left: Math.max(0, caseFile.deadline.times.length - state.wrongAnswers),
+          time: clockTime(state, caseFile)!,
+          end: caseFile.deadline.end,
+          spent: Math.min(spentMinutes(state, caseFile), nightMinutes(caseFile.deadline)),
+          left: Math.max(0, nightMinutes(caseFile.deadline) - spentMinutes(state, caseFile)),
+          night: nightMinutes(caseFile.deadline),
+          costs: { wrong: costMinutes(caseFile.deadline, "wrong"), question: costMinutes(caseFile.deadline, "question"), miss: costMinutes(caseFile.deadline, "miss") },
+          low: nightLeft(state, caseFile) < LOW_NIGHT,
           lost: state.outcome?.kind === "tooLate" ? caseFile.deadline.lost : null,
         }
       : null,
@@ -1107,7 +1136,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     pinLimit: PIN_LIMIT,
     questions,
     leads,
-    questionsLeft: caseFile.questionBudget - state.questionsUsed,
     searches: state.searches.map((s) => ({
       id: s.id,
       by: s.by,
@@ -1118,7 +1146,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       at: s.at,
     })),
     checked: abilities.includes("crosscheck") ? state.checked : [],
-    checksLeft: abilities.includes("crosscheck") ? EMPTY_CHECKS - (state.emptyChecks?.[state.chapter] ?? 0) : null,
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
     chat: state.chat,

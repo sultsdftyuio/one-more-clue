@@ -30,7 +30,8 @@ export const case002: CaseFile = {
   cinematic: { video: "/cinematics/case-002.mp4", poster: "/cinematics/case-002.jpg" },
   deadline: {
     what: "The breakfast show goes on air at 6:00 AM",
-    times: ["12:30 AM", "2:30 AM", "4:30 AM"],
+    start: "12:30 AM",
+    end: "6:00 AM",
     lost: "6:00 AM. The breakfast show reads out the story, the trail goes cold, and the £5,000 is never seen again.",
   },
   minPlayers: 2,
@@ -53,7 +54,7 @@ export const case002: CaseFile = {
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the station's systems: transmitter, doors, phones. Type a name, place or company to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. The team gets six questions for the whole case, so choose them together." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can." },
     { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You took the listener calls tonight. Listeners hear everything." },
@@ -109,7 +110,6 @@ export const case002: CaseFile = {
       ],
     },
   ],
-  questionBudget: 6,
   searchNotes: [
     { terms: ["vince", "valentine"], text: "V. Valentine: the studio logs everything he touches. Search the room or the kit, not the man." },
     { terms: ["tess", "okoye", "producer", "controlroom"], text: "T. Okoye: logged into the control room all night. Nothing out of the ordinary." },

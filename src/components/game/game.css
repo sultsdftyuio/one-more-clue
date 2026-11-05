@@ -32,6 +32,22 @@
   from { opacity: 0; transform: scale(1.04); }
   to { opacity: 1; transform: scale(1); }
 }
+/* A spend falls off the story clock: it pops, then drifts down and fades. */
+@keyframes clock-drop {
+  0% { opacity: 0; transform: translateY(-0.4rem) scale(0.8); }
+  15% { opacity: 1; transform: translateY(0) scale(1.15); }
+  30% { transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(0.9rem); }
+}
+.clock-drop {
+  animation: clock-drop 2.2s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clock-drop {
+    animation: fade-in 0.2s ease-out both;
+  }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }

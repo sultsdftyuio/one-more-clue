@@ -158,12 +158,18 @@ export type Interrogation = {
   walkout: string;
 };
 
-/** The story's clock. Every wrong answer loses time, and when it runs out the case is lost. */
+/**
+ * The story's clock: the night the team has to solve the case in. Wrong
+ * answers, questions and wasted moves each spend some of it (see clock.ts),
+ * and when it runs out the case is lost.
+ */
 export type Deadline = {
   /** What's coming, e.g. "The investors arrive at 9:00 AM". */
   what: string;
-  /** The time at the start, then after each wrong answer. One wrong answer past the last ends the case. */
-  times: string[];
+  /** The story time when the investigation starts, written the way the case writes times: "12:00 AM", "10:15 PM", "23:30". */
+  start: string;
+  /** When the night runs out. */
+  end: string;
   /** How it ends when time runs out. */
   lost: string;
 };
@@ -186,8 +192,6 @@ export type CaseFile = {
   /** Core roles first, then extras in the order they join. */
   roles: CaseRole[];
   chapters: Chapter[];
-  /** Interview questions the whole team can ask over the case. */
-  questionBudget: number;
   /**
    * What the records terminal says when a search finds nothing but the Tech was on to something:
    * "visitors are signed in on paper at the security desk". It sends them to a teammate rather than
@@ -256,7 +260,7 @@ export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -284,8 +288,8 @@ export type RoomState = {
   searches: Search[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
-  /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
-  emptyChecks?: Record<number, number>;
+  /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
+  clockSpent?: number;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */

@@ -31,7 +31,8 @@ export const case003: CaseFile = {
   cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
   deadline: {
     what: "The kitchen is scrubbed clean at midnight",
-    times: ["10:15 PM", "10:50 PM", "11:25 PM"],
+    start: "10:15 PM",
+    end: "12:00 AM",
     lost: "Midnight. The kitchen is scrubbed and the pass is spotless. Whatever was on that plate is gone, and so is your case.",
   },
   minPlayers: 2,
@@ -55,7 +56,7 @@ export const case003: CaseFile = {
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. The team gets six questions across four chapters, so choose them together." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can." },
     { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You were front of house tonight. Diners notice things." },
@@ -127,7 +128,6 @@ export const case003: CaseFile = {
       ],
     },
   ],
-  questionBudget: 6,
   searchNotes: [
     { terms: ["ruth", "vale", "pastry", "pastrychef"], text: "R. Vale: twelve years of rotas and nothing else. What would she have signed for?" },
     { terms: ["olu", "bello", "sommelier", "wine"], text: "O. Bello: wine orders only. One glass of Pinot to Table 1 tonight." },

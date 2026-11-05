@@ -4,6 +4,7 @@
  * ability once per chapter, say so in remote rooms, and vote the way the
  * first human voter did. They never answer checkpoints: that's the humans' job.
  */
+import { nightLeft } from "./clock.ts";
 import { activePlayers, canSee, PIN_LIMIT, opened } from "./engine.ts";
 import type { Action, CaseFile, Player, RoomState } from "./types";
 
@@ -31,7 +32,7 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
       if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after)) continue;
       const a = e.access;
       if (role.ability === "search" && a.kind === "search") return { type: "search", query: a.terms[0] };
-      if (role.ability === "interview" && a.kind === "interview" && (e.after || caseFile.questionBudget - state.questionsUsed > 1)) {
+      if (role.ability === "interview" && a.kind === "interview" && (e.after || nightLeft(state, caseFile) > 0.5)) {
         return { type: "ask", evidenceId: e.id };
       }
       if (role.ability === "inspect" && a.kind === "inspect") {

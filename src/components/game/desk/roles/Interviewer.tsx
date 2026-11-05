@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { propArt } from "@/lib/art";
+import { formatSpan } from "@/lib/game/clock";
 import { cx } from "@/lib/cx";
 import { useGame } from "../../context";
 import { SuspectPortrait } from "../../parts";
@@ -13,7 +14,7 @@ export function InterviewerTool() {
   const { view, act, busy, open } = useGame();
   const [armed, setArmed] = useState<string | null>(null);
   const questions = view.questions ?? [];
-  const left = view.questionsLeft;
+  const price = view.deadline ? formatSpan(view.deadline.costs.question) : null;
   const bySuspect = questions.reduce<Record<string, typeof questions>>((acc, q) => ({ ...acc, [q.suspect]: [...(acc[q.suspect] ?? []), q] }), {});
 
   return (
@@ -25,15 +26,9 @@ export function InterviewerTool() {
           <span className="size-2 animate-pulse rounded-full bg-cream" /> REC
         </span>
       </header>
-      <p className="mb-4 text-sm leading-snug font-semibold text-cream/70">The whole team shares these tapes. Agree before you spend one. Following up a lead is free.</p>
-      <div className="mb-5 flex items-center gap-2 rounded-2xl bg-black/25 p-2.5" aria-label={`${left} of ${view.case.questionBudget} questions left`}>
-        <div className="flex flex-1 flex-wrap gap-1.5">
-          {Array.from({ length: view.case.questionBudget }, (_, i) => (
-            <span key={i} className={cx("tape-reel size-6 rounded-full border-2", i < left ? "border-lilac text-lilac" : "border-cream/15 text-cream/15")} />
-          ))}
-        </div>
-        <span className="text-sm font-extrabold whitespace-nowrap">{left} left</span>
-      </div>
+      <p className="mb-5 text-sm leading-snug font-semibold text-cream/70">
+        {price ? `Each question takes ${price} out of the night, so agree first.` : "Agree before you ask."} Following up a lead is free.
+      </p>
       <div className="space-y-5">
         {Object.entries(bySuspect).map(([name, list]) => {
           const suspect = view.case.suspects.find((s) => s.name === name);
@@ -66,7 +61,7 @@ export function InterviewerTool() {
                     ) : (
                       <button
                         type="button"
-                        disabled={busy || (left === 0 && !q.lead)}
+                        disabled={busy}
                         onClick={async () => {
                           if (armed !== q.id) return setArmed(q.id);
                           setArmed(null);
@@ -79,7 +74,7 @@ export function InterviewerTool() {
                         )}
                       >
                         <span className="flex-1">{q.question}</span>
-                        <span className="shrink-0 text-xs font-extrabold">{armed === q.id ? (q.lead ? "Tap to ask (free)" : "Tap to ask (uses 1)") : q.lead ? "Lead" : "Ask"}</span>
+                        <span className="shrink-0 text-xs font-extrabold">{armed === q.id ? (q.lead || !price ? "Tap to ask (free)" : `Tap to ask (${price})`) : q.lead ? "Lead" : "Ask"}</span>
                       </button>
                     )}
                   </li>

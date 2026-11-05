@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
+import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
 import type { Action, RoomState } from "./types.ts";
 
@@ -26,23 +27,43 @@ test("motives come in a different order in each room, so the place can't be lear
   assert.ok(firstMotives.size > 1);
 });
 
-test("three wrong answers run the clock out and lose the case", () => {
-  const caseFile = { ...tipJar, deadline: { what: "Closing time at 2:00", times: ["10:00", "11:00", "1:00"], lost: "The bar closes." } };
-  let state = createRoom({ code: "LATE", caseFile, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
-  state = must(addPlayer(state, caseFile, { id: "p2", token: "t2", name: "Bo" }, 0));
-  state = must(applyAction(state, caseFile, "p1", { type: "start" }, 0, newId));
-  for (const id of ["p1", "p2"]) state = must(applyAction(state, caseFile, id, { type: "ready" }, 0, newId));
-  state = must(applyAction(state, caseFile, "p1", { type: "pin", evidenceId: "door-log" }, 0, newId));
-  for (const time of ["11:00", "1:00", null]) {
-    state = must(applyAction(state, caseFile, "p1", { type: "propose", kind: "answer", evidenceId: "door-log" }, 0, newId));
-    state = must(applyAction(state, caseFile, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
-    if (time) assert.equal(viewFor(state, caseFile, "p1", new Set()).deadline!.time, time);
+test("the story clock reads and writes times the way each case does", () => {
+  assert.equal(parseTime("Midnight"), 0);
+  assert.equal(parseTime("12:30 AM"), 30);
+  assert.equal(parseTime("9:17 PM"), 21 * 60 + 17);
+  assert.equal(parseTime("23:30"), 23 * 60 + 30);
+  assert.throws(() => parseTime("half nine"));
+  assert.equal(formatTime(6 * 60 + 45, "12:00 AM"), "6:45 AM");
+  assert.equal(formatTime(24 * 60 + 15, "10:15 PM"), "12:15 AM");
+  assert.equal(formatTime(6 * 60 + 5, "23:30"), "06:05");
+  assert.equal(nightMinutes({ what: "", start: "10:15 PM", end: "12:00 AM", lost: "" }), 105, "a night can cross midnight");
+  assert.equal(nightMinutes(case001.deadline!), 540);
+});
+
+test("the night runs out: wrong answers spend the most of it, and the case is lost", () => {
+  // The practice night runs 9 to 11, so a wrong answer costs 30 minutes.
+  let state = createRoom({ code: "LATE", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, tipJar, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, tipJar, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, tipJar, id, { type: "ready" }, 0, newId));
+  assert.equal(viewFor(state, tipJar, "p1", new Set()).deadline!.time, "9:00 PM");
+  state = must(applyAction(state, tipJar, "p1", { type: "pin", evidenceId: "door-log" }, 0, newId));
+  for (const time of ["9:30 PM", "10:00 PM", "10:30 PM", null]) {
+    state = must(applyAction(state, tipJar, "p1", { type: "propose", kind: "answer", evidenceId: "door-log" }, 0, newId));
+    state = must(applyAction(state, tipJar, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
+    if (time) assert.equal(viewFor(state, tipJar, "p1", new Set()).deadline!.time, time);
   }
   assert.equal(state.phase, "reveal");
   assert.equal(state.outcome!.kind, "tooLate");
-  const view = viewFor(state, caseFile, "p1", new Set());
-  assert.equal(view.deadline!.lost, "The bar closes.");
+  const view = viewFor(state, tipJar, "p1", new Set());
+  assert.equal(view.deadline!.lost, tipJar.deadline!.lost);
   assert.equal(view.deadline!.left, 0);
+  assert.equal(view.deadline!.time, "11:00 PM", "the clock stops at the deadline");
+});
+
+test("rooms from before the story clock still tell the right time", () => {
+  const old = { wrongAnswers: 2, clockSpent: undefined };
+  assert.equal(clockTime(old, case001), formatTime(2 * costMinutes(case001.deadline!, "wrong"), "12:00 AM"));
 });
 
 // With four players the core roles go round in order:
@@ -114,15 +135,15 @@ test("search: only the Tech, forgiving about spelling, and locked to the open ch
   assert.equal(state.activity.at(-1)?.kind, "miss");
 });
 
-test("interviews spend a shared budget", () => {
+test("interviews take time out of the night", () => {
   let state = roomWith(4);
   assert.equal(act(state, TECH, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "only the Interviewer asks");
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" });
   assert.equal(state.questionsUsed, 1);
+  const view = viewFor(state, tipJar, INTERVIEWER, new Set());
+  assert.equal(view.deadline!.spent, view.deadline!.costs.question);
   assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "no asking twice");
   assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-rex-inside" }).ok, false, "chapter 2 questions are locked");
-  const view = viewFor(state, tipJar, INTERVIEWER, new Set());
-  assert.equal(view.questionsLeft, tipJar.questionBudget - 1);
 });
 
 test("inspect: only the Photographer, only on photos they can see", () => {
@@ -146,21 +167,25 @@ test("cross-check: the Archivist needs to see both pieces, and misses are rememb
   assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
 });
 
-test("cross-check: empty compares are limited per chapter, real contradictions never are", () => {
+test("cross-check: an empty compare costs a little of the night, a real contradiction costs nothing", () => {
   let state = roomWith(4);
   state = proveChapter1(state);
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
   for (const [who, id] of [[INTERVIEWER, "question-squarington-left"], [TECH, "door-log"]]) {
     state = doo(state, who, { type: "pin", evidenceId: id });
   }
+  const spent = () => viewFor(state, tipJar, ARCHIVIST, new Set()).deadline!.spent;
+  const miss = viewFor(state, tipJar, ARCHIVIST, new Set()).deadline!.costs.miss;
+  const before = spent();
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "staff-chat" });
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "door-log" });
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "statement-mo" });
-  assert.equal(viewFor(state, tipJar, ARCHIVIST, new Set()).checksLeft, 0);
-  assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "door-log" }).ok, false, "out of hunches");
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "door-log" });
+  assert.equal(spent(), before + 4 * miss, "no limit, but every empty compare costs time");
+  assert.equal(state.activity.at(-1)?.kind, "clock", "the whole team hears about it");
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
-  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"), "a real contradiction still lands");
-  assert.equal(viewFor(state, tipJar, TECH, new Set()).checksLeft, null, "only the Archivist counts hunches");
+  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
+  assert.equal(spent(), before + 4 * miss, "a real contradiction is free");
 });
 
 test("a single wrong checkpoint answer costs the sharp star", () => {

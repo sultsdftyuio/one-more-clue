@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { formatSpan } from "@/lib/game/clock";
 import type { PlayerView } from "@/lib/game/engine";
 import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
@@ -65,19 +66,49 @@ function ChapterSteps({ view }: { view: PlayerView }) {
   );
 }
 
-/** The night running out. It only moves when the team answers wrongly. */
+/**
+ * The night running out. Every paid move spends some of it, and each spend
+ * drops off the clock as it happens, on every phone, so the whole team feels it.
+ */
 function StoryClock({ view }: { view: PlayerView }) {
   const deadline = view.deadline;
+  const spent = deadline?.spent ?? 0;
+  const last = useRef(spent);
+  const [drop, setDrop] = useState<{ id: number; minutes: number } | null>(null);
+
+  useEffect(() => {
+    const minutes = spent - last.current;
+    last.current = spent;
+    if (minutes <= 0) return;
+    setDrop({ id: Date.now(), minutes });
+    const timer = window.setTimeout(() => setDrop(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [spent]);
+
   if (!deadline) return null;
+  const share = deadline.night ? deadline.left / deadline.night : 1;
   return (
-    <div className="flex items-center justify-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
-      <Icon name="clock" className="size-3.5 shrink-0 text-mustard" />
-      <span className="shrink-0 font-mono text-mustard">{deadline.time}</span>
-      <span className="truncate">{deadline.what}</span>
-      <span className="flex shrink-0 gap-1" aria-label={`${deadline.left} wrong answers left`}>
-        {Array.from({ length: deadline.left }, (_, i) => (
-          <span key={i} className="size-1.5 rounded-full bg-coral" />
-        ))}
+    <div className="mx-auto flex max-w-[90rem] items-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
+      <Icon name="clock" className={cx("size-3.5 shrink-0", deadline.low ? "animate-pulse text-coral" : "text-mustard")} />
+      <span className={cx("relative shrink-0 font-mono", deadline.low ? "text-coral" : "text-mustard")}>
+        {deadline.time}
+        {drop && (
+          <span key={drop.id} aria-hidden className="clock-drop absolute top-0 left-full ml-1.5 font-sans font-black whitespace-nowrap text-coral">
+            −{formatSpan(drop.minutes)}
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{deadline.low ? "The night is almost gone. Every mistake counts." : deadline.what}</span>
+      <span
+        role="meter"
+        aria-label="Night left"
+        aria-valuemin={0}
+        aria-valuemax={deadline.night}
+        aria-valuenow={deadline.left}
+        aria-valuetext={`${formatSpan(deadline.left)} left`}
+        className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-cream/15 sm:w-28"
+      >
+        <span className={cx("block h-full rounded-full transition-[width] duration-700 ease-out", deadline.low ? "bg-coral" : "bg-mustard")} style={{ width: `${share * 100}%` }} />
       </span>
     </div>
   );

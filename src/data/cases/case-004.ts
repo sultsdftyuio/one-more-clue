@@ -32,7 +32,8 @@ export const case004: CaseFile = {
   cinematic: { video: "/cinematics/case-004.mp4", poster: "/cinematics/case-004.jpg" },
   deadline: {
     what: "The plough clears the road at 9:00 AM",
-    times: ["12:30 AM", "3:30 AM", "6:30 AM"],
+    start: "12:30 AM",
+    end: "9:00 AM",
     lost: "9:00 AM. The plough clears the road and everyone goes home. Whoever took the Aurora only has to wait for the thaw.",
   },
   minPlayers: 2,
@@ -56,7 +57,7 @@ export const case004: CaseFile = {
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. The team gets five questions for the whole case, so choose them together." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. Every question takes time out of the night, so choose them together. Following a lead is free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You read pictures. Tap anything in a photo or video still to look closer. Only you can." },
     { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You talked to the night porter. He hears every door in the place." },
@@ -109,7 +110,6 @@ export const case004: CaseFile = {
       ],
     },
   ],
-  questionBudget: 5,
   searchNotes: [
     { terms: ["otto", "brennan"], text: "O. Brennan: the owner's records are the lodge's own. Check something he's told you." },
     { terms: ["greta", "holm"], text: "G. Holm: staff keycard MASTER-2. Every swipe is in the door log." },

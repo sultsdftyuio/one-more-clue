@@ -9,6 +9,7 @@ import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
+import { costMinutes, nightMinutes } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
@@ -103,6 +104,8 @@ function play(caseFile: CaseFile) {
       if (caseFile.interrogation) this.confront();
       assert.equal(state.phase, "reveal");
       assert.deepEqual(state.outcome?.score, { stars: 5, culprit: true, motive: true, evidence: true, sharp: true });
+      const clock = viewFor(state, caseFile, TECH, new Set()).deadline;
+      if (clock) assert.ok(clock.left > clock.night / 2, `a sharp team finishes with most of the night left (${clock.left} of ${clock.night} min)`);
     },
   };
 }
@@ -322,6 +325,17 @@ test("no motive gives itself away by its length", () => {
     // Players learn fast that the careful, specific answer is the long one, and that a short one is a joke.
     assert.ok(length(c.solution.motive) <= Math.max(...wrong) + 3, `${c.id}: the right motive is the longest`);
     assert.ok(Math.min(...all) >= Math.max(...all) * 0.75, `${c.id}: one motive is much shorter than the rest`);
+  }
+});
+
+test("the night is tuned: a careless team runs out, a decent one doesn't", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const d = c.deadline!;
+    assert.ok(d, `${c.id} needs a story clock`);
+    const open = c.evidence.filter((e) => e.access.kind === "interview" && !e.after).length;
+    const spent = (wrong: number, misses: number) => wrong * costMinutes(d, "wrong") + misses * costMinutes(d, "miss") + open * costMinutes(d, "question");
+    assert.ok(spent(3, 10) >= nightMinutes(d), `${c.id}: three wrong answers, ten misses and every question should run the night out`);
+    assert.ok(spent(2, 5) < nightMinutes(d), `${c.id}: two wrong answers and a few misses shouldn't end it`);
   }
 });
 

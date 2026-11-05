@@ -127,10 +127,12 @@ export function PhotographerTool() {
   const price = view.deadline ? formatSpan(view.deadline.costs.miss) : null;
   const prints = view.evidence.filter((e) => e.source === "inspect").sort((a, b) => (b.foundAt ?? 0) - (a.foundAt ?? 0));
 
+  // A different picture remounts the viewfinder, which reports its own zoom; the same picture keeps its framing.
   const pick = (id: string) => {
-    setPickedId(id);
-    setMoment(0);
-    setZoom(1);
+    setPickedId((current) => {
+      if (current !== id) setMoment(0);
+      return id;
+    });
   };
 
   // "Open in your camera" from any card lands here.

@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { MAX_SHOT_ZOOM, MIN_SHOT_ZOOM, type Frame } from "@/lib/game/camera";
 import type { EvidenceBody } from "@/lib/game/types";
+import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
 import { Icon } from "../ui/Icon";
 import { SceneCanvas, type Tints } from "./SceneView";
@@ -57,7 +59,9 @@ export const Viewfinder = forwardRef<
   const shot = picture.type === "scene" ? picture : (picture.frames[moment] ?? picture.frames[0]);
   const image = shot.image;
   const dark = picture.type === "scene" && Boolean(picture.dark);
+  // The close-up copy only comes in past 2x, and only shows once it has loaded, so the picture never blinks.
   const [hd, setHd] = useState(false);
+  const [hdShown, setHdShown] = useState(false);
   useEffect(() => setHd(Boolean(image) && bucket >= 2 && !missingHd.has(image!)), [bucket, image]);
 
   const frameNow = useCallback((): Frame => {
@@ -129,9 +133,10 @@ export const Viewfinder = forwardRef<
     [moved, paint],
   );
 
-  // Each picture opens wide, in the middle (the parent keys the viewfinder by picture).
+  // Each picture opens wide, in the middle (the parent keys the viewfinder by picture), and says so.
   useEffect(() => {
     paint();
+    zoomed.current?.(view.current.zoom);
   }, [paint]);
 
   // Scroll to zoom needs a listener that can stop the page scrolling.
@@ -213,16 +218,28 @@ export const Viewfinder = forwardRef<
           <SceneCanvas
             look={picture.look}
             items={shot.items}
-            image={image && hd ? hdOf(image) : image}
+            image={image}
             imageSizes={`(max-width: 640px) ${bucket * 100}vw, ${bucket * 672}px`}
-            onImageError={() => {
-              if (!image || !hd) return;
-              missingHd.add(image);
-              setHd(false);
-            }}
             found={found}
             tints={tints}
           />
+          {image && hd && (
+            <Image
+              key={hdOf(image)}
+              src={hdOf(image)}
+              alt=""
+              fill
+              sizes={`(max-width: 640px) ${bucket * 100}vw, ${bucket * 672}px`}
+              draggable={false}
+              onLoad={() => setHdShown(true)}
+              onError={() => {
+                missingHd.add(image);
+                setHd(false);
+                setHdShown(false);
+              }}
+              className={cx("pointer-events-none z-10 object-cover transition-opacity duration-300", hdShown ? "opacity-100" : "opacity-0")}
+            />
+          )}
         </div>
         {dark && <div aria-hidden className="camera-lamp pointer-events-none absolute inset-0" />}
 
@@ -230,9 +247,6 @@ export const Viewfinder = forwardRef<
         <span aria-hidden className="viewfinder-thirds pointer-events-none absolute inset-0" />
         <span aria-hidden className="viewfinder-corners pointer-events-none absolute inset-3" />
         <span ref={brackets} aria-hidden className="viewfinder-focus pointer-events-none absolute top-1/2 left-1/2 size-16 -translate-x-1/2 -translate-y-1/2" />
-        {picture.type === "footage" && "time" in shot && (
-          <span className="pointer-events-none absolute bottom-2 left-2.5 font-printer text-lg leading-none text-white [text-shadow:0_1px_2px_#000]">{shot.time}</span>
-        )}
         <span ref={readout} aria-hidden className="pointer-events-none absolute top-2 right-2.5 rounded-full bg-black/55 px-2 py-0.5 font-mono text-xs font-bold text-mustard">
           1.0×
         </span>

@@ -270,11 +270,14 @@ const picture = (scene: Scene | Footage) => ({
   image: scene.type === "scene" ? scene.image : scene.frames[0].image,
 });
 
-/** A small still of a photo or the first frame of footage. Nothing to tap. */
+/** A small still of a photo or the first frame of footage. Nothing to tap. A dark photo stays dark: the thumbnail mustn't give away what the light is for. */
 export function SceneThumb({ scene }: { scene: Scene | Footage }) {
   return (
-    <span className="pointer-events-none block">
+    <span className="pointer-events-none relative block">
       <SceneCanvas {...picture(scene)} />
+      {scene.type === "scene" && scene.dark && (
+        <span aria-hidden className="absolute inset-0 rounded-md bg-[radial-gradient(circle_at_50%_58%,rgb(255_244_224/0.1),rgb(2_3_10/0.97)_42%)]" />
+      )}
     </span>
   );
 }

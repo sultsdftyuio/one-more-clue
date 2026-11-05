@@ -95,7 +95,11 @@ function StoryClock({ view }: { view: PlayerView }) {
       <span className={cx("relative shrink-0 font-mono", deadline.low ? "text-coral" : "text-mustard")}>
         {deadline.time}
         {drop && (
-          <span key={drop.id} aria-hidden className="clock-drop absolute top-0 left-full ml-1.5 font-sans font-black whitespace-nowrap text-coral">
+          <span
+            key={drop.id}
+            aria-hidden
+            className="clock-drop absolute top-full left-0 z-10 mt-1 rounded-full border-2 border-ink bg-coral px-2 py-0.5 font-sans text-[0.7rem] font-black whitespace-nowrap text-cream shadow-pop-sm"
+          >
             −{formatSpan(drop.minutes)}
           </span>
         )}

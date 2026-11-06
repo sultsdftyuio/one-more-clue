@@ -657,6 +657,8 @@ export const case003: CaseFile = {
       role: "tech",
       chapter: 4,
       access: { kind: "search", terms: ["gastro", "gastrogroup", "sale", "buyer"] },
+      // Locked: the house rules say where the owner tastes every chocolate course.
+      lock: { hint: "Bertrand's mail. Password hint: where I taste dessert every night.", answers: ["Table 9", "Table nine"] },
       title: "Email to Gastro Group",
       body: {
         type: "chat",

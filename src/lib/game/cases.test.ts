@@ -11,7 +11,7 @@ import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { framedHotspot, shotOf } from "./camera.ts";
 import { costMinutes, nightMinutes } from "./clock.ts";
-import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -52,8 +52,15 @@ function play(caseFile: CaseFile) {
       if (result.ok) state = result.state;
       return result.ok;
     },
+    /** Searches; a locked record is then opened with the password a teammate holds. */
     search(query: string, expect: string) {
       run(TECH, { type: "search", query });
+      const lock = caseFile.evidence.find((e) => e.id === expect)?.lock;
+      if (lock) {
+        assert.ok(state.locked?.[expect], `"${expect}" should turn up locked`);
+        assert.ok(!state.found[expect], `"${expect}" shouldn't open before its password`);
+        run(TECH, { type: "unlock", evidenceId: expect, password: lock.answers[0] });
+      }
       found(expect);
     },
     ask: (id: string) => run(INTERVIEWER, { type: "ask", evidenceId: id }),
@@ -343,6 +350,18 @@ test("the night is tuned: a careless team runs out, a decent one doesn't", () =>
     const spent = (wrong: number, misses: number) => wrong * costMinutes(d, "wrong") + misses * costMinutes(d, "miss") + open * costMinutes(d, "question");
     assert.ok(spent(3, 10) >= nightMinutes(d), `${c.id}: three wrong answers, ten misses and every question should run the night out`);
     assert.ok(spent(2, 5) < nightMinutes(d), `${c.id}: two wrong answers and a few misses shouldn't end it`);
+  }
+});
+
+test("every case has one locked file, and its password reads however it's typed", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const locked = c.evidence.filter((e) => e.lock);
+    assert.equal(locked.length, 1, `${c.id} should have exactly one locked file`);
+    const [answer] = locked[0].lock!.answers;
+    // Capitals, dashes and spaces don't matter: "S-42", "s42" and "S 42" are one password.
+    for (const typed of [answer.toLowerCase(), answer.toUpperCase(), answer.replace(/[-\s]/g, ""), ` ${answer.replace(/-/g, " ")} `]) {
+      assert.equal(normalizeTerm(typed), normalizeTerm(answer), `${c.id}: "${typed}" should open ${locked[0].id}`);
+    }
   }
 });
 

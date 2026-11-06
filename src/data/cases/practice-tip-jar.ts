@@ -571,6 +571,8 @@ export const practiceTipJar: CaseFile = {
       role: "tech",
       chapter: 3,
       access: { kind: "search", terms: ["depot", "nightshift", "jim", "work"] },
+      // Locked: the bus Rex takes is on the ticket from the café floor and the transit notice.
+      lock: { hint: "Depot staff chat. Password hint: the bus Rex takes to work.", answers: ["Route 50", "50"] },
       title: "Depot crew chat",
       body: {
         type: "chat",

@@ -650,6 +650,8 @@ export const case002: CaseFile = {
       chapter: 3,
       after: ["question-darla-why"],
       access: { kind: "search", terms: ["spinkings", "spinking", "betting", "bet", "gambling"] },
+      // Locked: Vince uses his birthday for everything, and says so.
+      lock: { hint: "SpinKings login. PIN hint: my birthday.", answers: ["0451"] },
       title: "SpinKings account",
       body: {
         type: "log",

@@ -429,6 +429,7 @@ export const case001: CaseFile = {
         type: "log",
         source: "Security desk · visitor sheet",
         rows: [
+          { time: "", text: "On duty: O. Reyes, badge S-42" },
           { time: "8:55 PM", text: "Rena Voss · Northgate Capital · badge V-117" },
           { time: "", text: "Host: E. Squires · car: KX24 RVS" },
           { time: "9:20 PM", text: "Signed out (signed: E. Squires)" },
@@ -500,6 +501,8 @@ export const case001: CaseFile = {
       role: "tech",
       chapter: 2,
       access: { kind: "search", terms: ["ozzy", "reyes", "guard", "rounds", "patrol", "security"] },
+      // Locked: the badge number is on the Archivist's visitor sheet.
+      lock: { hint: "Security system. Password hint: the night guard's badge number.", answers: ["S-42"] },
       title: "Guard tour log: Ozzy",
       body: {
         type: "log",

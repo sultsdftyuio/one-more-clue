@@ -328,6 +328,8 @@ export const case004: CaseFile = {
       role: "tech",
       chapter: 2,
       access: { kind: "search", terms: ["breaker", "breakerroom", "doors", "door", "keycard", "master2"] },
+      // Locked: the keycard register lists the owner's card.
+      lock: { hint: "Door system admin. Password hint: the owner's own keycard.", answers: ["MASTER-1"] },
       title: "Lodge door log",
       body: {
         type: "log",

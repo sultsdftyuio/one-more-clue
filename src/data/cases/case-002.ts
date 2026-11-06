@@ -47,10 +47,10 @@ export const case002: CaseFile = {
   briefing:
     "At 11:58 PM the Night Owls show on KNHT 99.1 went silent for nine minutes, just before host Vince Valentine was due to give away a £5,000 jackpot. Vince was found in the corridor outside his locked studio, saying a masked man attacked him and took the money. Four people were in the building. Work out what really happened.",
   suspects: [
-    { id: "square", art: "square", name: "Vince Valentine", role: "Late-night host", tint: 290, blurb: "The voice of Night Owls. Loves an audience." },
-    { id: "triangle", art: "triangle", name: "Tess Okoye", role: "Producer", tint: 150, blurb: "Runs the show from the control room. Panics quietly." },
-    { id: "circle", art: "circle", name: "Gus Marley", role: "Night engineer", tint: 40, blurb: "Keeps the station on air. Takes a lot of smoke breaks." },
-    { id: "rectangle", art: "rectangle", name: "Darla Kingsley", role: "Midnight DJ", tint: 200, blurb: "Hosts the show after Vince. Wants his slot, and says so." },
+    { id: "square", art: "square", name: "Vince Valentine", role: "Late-night host", look: "c002-vince", blurb: "The voice of Night Owls. Loves an audience." },
+    { id: "triangle", art: "triangle", name: "Tess Okoye", role: "Producer", look: "c002-tess", blurb: "Runs the show from the control room. Panics quietly." },
+    { id: "circle", art: "circle", name: "Gus Marley", role: "Night engineer", look: "c002-gus", blurb: "Keeps the station on air. Takes a lot of smoke breaks." },
+    { id: "rectangle", art: "rectangle", name: "Darla Kingsley", role: "Midnight DJ", look: "c002-darla", blurb: "Hosts the show after Vince. Wants his slot, and says so." },
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the station's systems: transmitter, doors, phones. Type a name, place or company to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },

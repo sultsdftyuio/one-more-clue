@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as Reac
 import type { SuspectId } from "@/data/suspects";
 import type { EvidenceBody, SceneItem, SceneLook } from "@/lib/game/types";
 import { propArt, suspectArt, type PropName } from "@/lib/art";
+import { castArt } from "@/lib/cast-art";
 import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
 import { Icon } from "../ui/Icon";
@@ -12,8 +13,12 @@ import { Icon } from "../ui/Icon";
 type Scene = Extract<EvidenceBody, { type: "scene" }>;
 type Footage = Extract<EvidenceBody, { type: "footage" }>;
 
-/** Per-case colours for the house characters, by art name: { square: 140 } rotates the square's hue. */
-export type Tints = Record<string, number>;
+/**
+ * How this case dresses the house characters in its scenes, by art name: a
+ * character key ({ square: "c001-squires" }) draws that case's own character,
+ * a number ({ square: 140 }) rotates the house character's hue.
+ */
+export type Tints = Record<string, number | string>;
 
 function artFor(key: string, shocked?: boolean) {
   const [kind, name] = key.split(":");
@@ -24,9 +29,11 @@ function artFor(key: string, shocked?: boolean) {
 
 function ItemBody({ item, tints }: { item: SceneItem; tints?: Tints }) {
   if (item.kind === "art") {
-    const src = artFor(item.art, item.shocked);
+    const dress = tints?.[item.art.split(":")[1]];
+    const own = typeof dress === "string" && item.art.startsWith("suspect:") ? castArt[dress] : undefined;
+    const src = own ? own[item.shocked ? "shocked" : "idle"] : artFor(item.art, item.shocked);
     if (!src) return null;
-    const tint = tints?.[item.art.split(":")[1]];
+    const tint = typeof dress === "number" ? dress : undefined;
     return (
       <Image
         src={src}

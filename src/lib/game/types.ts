@@ -17,8 +17,10 @@ export type CaseSuspect = {
   blurb: string;
   /** Optional art key, e.g. a SuspectId from src/data/suspects.ts. */
   art?: string;
-  /** Recolours the house character for this case (a hue rotation in degrees), so each cast looks its own. */
+  /** Recolours the house character for this case (a hue rotation in degrees). Ignored when the suspect has a `look`. */
   tint?: number;
+  /** Their own drawn character (a key in src/lib/cast-art.ts), with its own clothes, hair and five expressions. */
+  look?: string;
 };
 
 /** A case's look, sound and weather. See src/components/game/themes.ts. */

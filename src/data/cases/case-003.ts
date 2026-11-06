@@ -49,10 +49,10 @@ export const case003: CaseFile = {
   briefing:
     "At 9:52 PM the food critic Celeste Hart collapsed at Table 1 of Maison Lune, minutes after the seventh course, a chocolate dessert. Paramedics say it was a severe allergic reaction. The kitchen swears it's nut-free. Four people handled that dinner. Find out what she ate, who it was really meant for, and who did it.",
   suspects: [
-    { id: "triangle", art: "triangle", name: "Amélie Duret", role: "Head chef", tint: 330, blurb: "A perfectionist. Tonight's review could make or break her." },
-    { id: "square", art: "square", name: "Bertrand Carré", role: "Owner", tint: 20, blurb: "Owns Maison Lune. Tastes the chocolate course every night." },
-    { id: "circle", art: "circle", name: "Olu Bello", role: "Sommelier", tint: 250, blurb: "Wine, charm and a habit of tidying other people's work." },
-    { id: "rectangle", art: "rectangle", name: "Ruth Vale", role: "Pastry chef", tint: 110, blurb: "Twelve years of desserts. Every chocolate course is hers." },
+    { id: "triangle", art: "triangle", name: "Amélie Duret", role: "Head chef", look: "c003-amelie", blurb: "A perfectionist. Tonight's review could make or break her." },
+    { id: "square", art: "square", name: "Bertrand Carré", role: "Owner", look: "c003-bertrand", blurb: "Owns Maison Lune. Tastes the chocolate course every night." },
+    { id: "circle", art: "circle", name: "Olu Bello", role: "Sommelier", look: "c003-olu", blurb: "Wine, charm and a habit of tidying other people's work." },
+    { id: "rectangle", art: "rectangle", name: "Ruth Vale", role: "Pastry chef", look: "c003-ruth", blurb: "Twelve years of desserts. Every chocolate course is hers." },
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },

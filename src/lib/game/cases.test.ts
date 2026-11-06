@@ -443,3 +443,17 @@ test("every opening film a case names is in public/", () => {
     }
   }
 });
+
+test("every case suspect has their own character, drawn in all five moods", () => {
+  const looks = new Set<string>();
+  for (const c of [case001, case002, case003, case004]) {
+    for (const s of c.suspects) {
+      assert.ok(s.look, `${c.id}: ${s.name} has no look of their own`);
+      assert.ok(!looks.has(s.look!), `${c.id}: ${s.name} shares a look with someone in another case`);
+      looks.add(s.look!);
+      for (const mood of ["idle", "nervous", "smug", "shocked", "cracked"]) {
+        assert.ok(existsSync(`src/assets/art/cast/${s.look}-${mood}.webp`), `${s.name} has no ${mood} drawing`);
+      }
+    }
+  }
+});

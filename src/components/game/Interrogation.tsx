@@ -194,7 +194,8 @@ export function InterrogationPanel() {
       )}
 
       <div className="flex items-end gap-3">
-        <SuspectPortrait suspect={suspect} shocked={room.currentBroken} className="w-20 shrink-0 sm:w-24" />
+        {/* Bluffing through their story, until a lie is caught. */}
+        <SuspectPortrait suspect={suspect} mood={room.currentBroken ? "shocked" : "smug"} className="w-20 shrink-0 sm:w-24" />
         <Claim room={room} />
       </div>
       <CallLie room={room} name={name} />
@@ -245,7 +246,7 @@ export function LieMoment() {
         <p className="inline-block -rotate-12 animate-stamp rounded-2xl border-[6px] border-coral px-8 py-1 font-display text-7xl text-coral">LIE!</p>
         <p className="mt-7 text-sm font-extrabold tracking-widest text-mustard uppercase">{nameOf(view, shown.by)} caught it</p>
         <div className="mt-4 flex animate-shake items-end gap-3 text-left">
-          <SuspectPortrait suspect={suspect} shocked className="w-24 shrink-0" />
+          <SuspectPortrait suspect={suspect} mood="cracked" className="w-24 shrink-0" />
           <div className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-ink shadow-card">
             <p className="text-sm font-bold text-ink/45 line-through decoration-coral decoration-2">&ldquo;{crack.text}&rdquo;</p>
             <p className="mt-1 text-lg leading-snug font-bold">&ldquo;{crack.crack}&rdquo;</p>

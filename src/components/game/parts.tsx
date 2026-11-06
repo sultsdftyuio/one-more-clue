@@ -4,10 +4,18 @@ import type { PublicPlayer } from "@/lib/game/engine";
 import type { CaseSuspect } from "@/lib/game/types";
 import type { SuspectId } from "@/data/suspects";
 import { suspectArt } from "@/lib/art";
+import { castArt, type Mood } from "@/lib/cast-art";
 import { cx } from "@/lib/cx";
 
-/** A suspect's portrait, when the case uses one of the house characters. */
-export function SuspectPortrait({ suspect, shocked, className }: { suspect: CaseSuspect; shocked?: boolean; className?: string }) {
+/**
+ * A suspect's portrait. A suspect with their own `look` shows that character
+ * in the mood asked for; the house characters (the practice case) only have a
+ * calm and a shocked face, so the other moods fall back to those.
+ */
+export function SuspectPortrait({ suspect, shocked, mood, className }: { suspect: CaseSuspect; shocked?: boolean; mood?: Mood; className?: string }) {
+  const want: Mood = mood ?? (shocked ? "shocked" : "idle");
+  const own = suspect.look ? castArt[suspect.look] : undefined;
+  if (own) return <Image src={own[want]} alt="" sizes="160px" className={className} />;
   const art = suspect.art && suspect.art in suspectArt ? suspectArt[suspect.art as SuspectId] : null;
   if (!art) {
     return (
@@ -18,7 +26,7 @@ export function SuspectPortrait({ suspect, shocked, className }: { suspect: Case
   }
   return (
     <Image
-      src={shocked ? art.shocked : art.idle}
+      src={want === "shocked" || want === "cracked" ? art.shocked : art.idle}
       alt=""
       sizes="160px"
       className={className}

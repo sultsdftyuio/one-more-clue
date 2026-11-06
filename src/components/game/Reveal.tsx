@@ -164,7 +164,7 @@ export function Reveal({ view, act, busy }: { view: PlayerView; act: Act; busy: 
             <Stars count={outcome.score.stars} />
           </div>
 
-          <SuspectPortrait suspect={culprit} shocked className="mx-auto mt-6 w-32 animate-pop-in [animation-delay:1.4s] sm:w-40" />
+          <SuspectPortrait suspect={culprit} mood="cracked" className="mx-auto mt-6 w-32 animate-pop-in [animation-delay:1.4s] sm:w-40" />
           <p className="font-display text-4xl text-mustard text-pop">It was {culprit.name}.</p>
           <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed font-semibold text-cream/90">{solution.explanation}</p>
         </section>

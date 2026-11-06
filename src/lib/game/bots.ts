@@ -32,6 +32,7 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
       // Bots follow up leads whenever they open, so a human tester can walk a chain with them.
       if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after && !e.afterAny)) continue;
       const a = e.access;
+      if (role.ability === "search" && e.lock && state.locked?.[e.id]) return { type: "unlock", evidenceId: e.id, password: e.lock.answers[0] };
       if (role.ability === "search" && a.kind === "search") return { type: "search", query: a.terms[0] };
       if (role.ability === "interview" && a.kind === "interview" && (e.after || e.afterAny || nightLeft(state, caseFile) > 0.5)) {
         return { type: "ask", evidenceId: e.id };

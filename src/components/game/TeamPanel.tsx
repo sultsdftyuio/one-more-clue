@@ -15,6 +15,8 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   clock: "clock",
   spotlight: "share",
   crack: "target",
+  locked: "lock",
+  access: "check",
   pin: "pin",
   unpin: "pin",
   chapter: "flag",

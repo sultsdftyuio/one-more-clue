@@ -124,6 +124,11 @@ export type CaseEvidence = {
   after?: string[];
   /** Like `after`, but any one of these opens it: two different finds that both point here. */
   afterAny?: string[];
+  /**
+   * A record the Tech finds locked. Until someone types one of `answers`, it opens nothing, proves
+   * nothing and shows only its title and `hint`. The password must be in another role's evidence.
+   */
+  lock?: { hint: string; answers: string[] };
   id: string;
   /** The role this evidence belongs to: its holder can see it once it's available. */
   role: string;
@@ -272,7 +277,7 @@ export type Show = { id: string; by: string; suspect: string; evidenceId: string
 export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -302,6 +307,10 @@ export type RoomState = {
   shots?: Shot[];
   /** What the Interviewer has shown suspects (missing in rooms made before the interrogation room). */
   shows?: Show[];
+  /** Records the Tech has found but not unlocked yet, and who found them. They count as found only once unlocked. */
+  locked?: Record<string, { by: string; at: number }>;
+  /** Passwords tried on locked records, and whether they worked. */
+  tries?: { id: string; by: string; evidenceId: string; ok: boolean; time: number }[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
   /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
@@ -369,6 +378,8 @@ export type Action =
   | { type: "settleLie"; callId: string }
   /** The Interviewer puts something from the board in front of a suspect. */
   | { type: "show"; suspect: string; evidenceId: string }
+  /** The Tech tries a password on a locked record. */
+  | { type: "unlock"; evidenceId: string; password: string }
   /** Show a piece of evidence on every phone for a moment. */
   | { type: "spotlight"; evidenceId: string }
   /** The Archivist moves a pinned piece on the wall (x and y in percent of the wall). */

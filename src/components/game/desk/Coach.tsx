@@ -83,18 +83,16 @@ export function Coach({ steps, onClose, label }: { steps: CoachStep[]; onClose: 
     const el = document.querySelector<HTMLElement>(`[data-coach="${step.target}"]`);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
-    let frame = 0;
-    const measure = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setHole(holeAround(step.target!)));
-    };
+    // Measured straight away on every scroll and resize (one rectangle is cheap), never waiting on an animation frame.
+    const measure = () => setHole(holeAround(step.target!));
     measure();
     const settle = window.setTimeout(measure, 420);
+    const late = window.setTimeout(measure, 900);
     window.addEventListener("scroll", measure, { passive: true, capture: true });
     window.addEventListener("resize", measure);
     return () => {
-      cancelAnimationFrame(frame);
       window.clearTimeout(settle);
+      window.clearTimeout(late);
       window.removeEventListener("scroll", measure, { capture: true });
       window.removeEventListener("resize", measure);
     };

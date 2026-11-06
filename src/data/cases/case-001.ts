@@ -67,7 +67,7 @@ export const case001: CaseFile = {
       core: true,
       ability: "search",
       name: "Tech",
-      blurb: "You're in the university's systems: badges, laptops, chats, cars. Type a name, number or place to pull its records.",
+      blurb: "You're in the university's systems: badges, laptops, chats, cars. Type a name, number or place to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate.",
     },
     {
       id: "interviewer",

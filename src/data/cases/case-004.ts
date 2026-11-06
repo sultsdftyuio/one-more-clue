@@ -56,7 +56,7 @@ export const case004: CaseFile = {
     { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", tint: 140, blurb: "Runs the lodge's ski trips. Has a master keycard." },
   ],
   roles: [
-    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records." },
+    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },
     { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin." },
     { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready." },

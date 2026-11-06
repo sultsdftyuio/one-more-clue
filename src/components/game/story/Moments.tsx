@@ -107,7 +107,7 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   return (
     <div className="fixed inset-0 z-[52] grid animate-[fade-in_0.2s_ease-out] grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto bg-night/80 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={evidence.title}>
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0" />
-      <div className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
+      <div data-searchable className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
         {content}
         <div className={cx("mt-5 flex flex-wrap items-center justify-center gap-2", !developed && "hidden")}>
           <PinButton evidence={evidence} />
@@ -197,6 +197,46 @@ export function CrackMoment() {
   );
 }
 
+/** How long ACCESS GRANTED stays up on everyone else's phone. */
+const ACCESS_MS = 2600;
+
+/** The Tech cracked a password: every other phone flashes ACCESS GRANTED, with the file's name. */
+export function AccessMoment() {
+  const { view } = useGame();
+  const seen = useRef<string | null>(null);
+  const [shown, setShown] = useState<{ id: string; text: string } | null>(null);
+
+  useEffect(() => {
+    const last = view.activity.filter((a) => a.kind === "access").at(-1);
+    if (seen.current === null) {
+      seen.current = last?.id ?? "";
+      return;
+    }
+    if (!last || last.id === seen.current) return;
+    seen.current = last.id;
+    if (last.playerId === view.me.id) return;
+    setShown({ id: last.id, text: last.text });
+    play("granted");
+  }, [view.activity, view.me.id]);
+
+  useEffect(() => {
+    if (!shown) return;
+    const timer = window.setTimeout(() => setShown(null), ACCESS_MS);
+    return () => window.clearTimeout(timer);
+  }, [shown]);
+
+  if (!shown) return null;
+  const title = shown.text.split("Access granted: ")[1] ?? "";
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-24 z-[53] flex justify-center px-4" role="status">
+      <div className="crt-granted tool-terminal rounded-2xl border-[3px] border-ink px-6 py-4 text-center shadow-card">
+        <p className="font-printer text-4xl leading-none text-teal">ACCESS GRANTED</p>
+        {title && <p className="mt-1.5 font-mono text-sm font-bold text-teal/80">{title}</p>}
+      </div>
+    </div>
+  );
+}
+
 /** Quiet sound cues for what the rest of the team does, and for votes opening. */
 export function SoundCues({ view }: { view: PlayerView }) {
   const lastActivity = useRef<string | null>(null);
@@ -227,6 +267,7 @@ export function SoundCues({ view }: { view: PlayerView }) {
       else if (a.kind === "found" && !mine) play("tap");
       else if (a.kind === "hint") play("message");
       else if (a.kind === "clock") play("tick");
+      else if (a.kind === "locked" && !mine) play("message");
     }
   }, [view.activity, view.me.id]);
 

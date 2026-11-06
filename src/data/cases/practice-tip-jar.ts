@@ -50,7 +50,7 @@ export const practiceTipJar: CaseFile = {
       core: true,
       ability: "search",
       name: "Tech",
-      blurb: "You have access to every system on the street: card readers, doors, couriers, buses. Type a name, number or place to pull its records.",
+      blurb: "You have access to every system on the street: card readers, doors, couriers, buses. Type a name, number or place to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate.",
     },
     {
       id: "interviewer",

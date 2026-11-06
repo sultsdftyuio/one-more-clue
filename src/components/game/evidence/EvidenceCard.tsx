@@ -119,7 +119,7 @@ function EvidenceTag({ evidence }: { evidence: VisibleEvidence }) {
 export function EvidenceCard({ evidence, footer, highlight }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean }) {
   const { view } = useGame();
   return (
-    <article id={`evidence-${evidence.id}`} className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
+    <article id={`evidence-${evidence.id}`} data-searchable className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
       <EvidenceTag evidence={evidence} />
       <EvidenceObject evidence={evidence} />
       {view.phase === "investigation" && (

@@ -45,6 +45,19 @@ const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
 const SHOTS_KEPT = 40;
 const SHOWS_KEPT = 40;
+const TRIES_KEPT = 20;
+
+/** Everything a piece of evidence says, as one searchable string: for checking a password is really in someone's evidence. */
+function textOfEvidence(evidence: CaseEvidence) {
+  const parts: string[] = [evidence.title];
+  const walk = (value: unknown) => {
+    if (typeof value === "string") parts.push(value);
+    else if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") Object.values(value).forEach(walk);
+  };
+  walk(evidence.body);
+  return normalizeTerm(parts.join(" "));
+}
 
 export type Result = { ok: true; state: RoomState } | { ok: false; error: string };
 
@@ -491,12 +504,39 @@ export function applyAction(
       const note = hit ? undefined : searchNote(caseFile, term);
       next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), at: now });
       next.searches = next.searches.slice(-SEARCHES_KEPT);
-      if (hit && !next.found[hit.id]) {
+      if (hit?.lock && !next.found[hit.id]) {
+        // A locked record turns up as its title and a hint; what's inside waits for the password.
+        if (!next.locked?.[hit.id]) {
+          next.locked = { ...next.locked, [hit.id]: { by: me.id, at: now } };
+          log(next, newId, now, "locked", `${me.name} found a locked file: ${hit.title}. ${hit.lock.hint}`, me.id);
+        }
+      } else if (hit && !next.found[hit.id]) {
         next.found[hit.id] = { by: me.id, at: now };
         log(next, newId, now, "found", `${me.name} searched "${query}" and found: ${hit.title}`, me.id, hit.id);
         announceLeads(next, caseFile, hit.id, self, now, newId);
       } else if (!hit) {
         log(next, newId, now, "miss", `${me.name} searched "${query}". No records.`, me.id);
+      }
+      break;
+    }
+
+    case "unlock": {
+      if (!investigating) return fail("Nothing to unlock yet.");
+      if (!abilities.includes("search")) return fail("Only the Tech can crack a password.");
+      const record = evidenceById(action.evidenceId);
+      if (!record?.lock || !state.locked?.[record.id]) return fail("That file isn't locked.");
+      const guess = normalizeTerm(String(action.password ?? "").slice(0, MAX_QUERY));
+      if (guess.length < 2) return fail("Type the password first.");
+      const ok = record.lock.answers.some((answer) => normalizeTerm(answer) === guess);
+      next.tries = [...(next.tries ?? []), { id: newId(), by: me.id, evidenceId: record.id, ok, time: now }].slice(-TRIES_KEPT);
+      if (ok) {
+        next.locked = Object.fromEntries(Object.entries(next.locked ?? {}).filter(([id]) => id !== record.id));
+        next.found[record.id] = { by: me.id, at: now };
+        log(next, newId, now, "access", `${me.name} cracked the password. Access granted: ${record.title}`, me.id, record.id);
+        announceLeads(next, caseFile, record.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} tried a password on ${record.title}. Access denied.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
     }
@@ -852,6 +892,13 @@ export function checkCase(caseFile: CaseFile): string[] {
       else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
     }
     if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
+    if (e.lock) {
+      if (a.kind !== "search") problems.push(`"${e.id}" is locked, but only records the Tech searches for can be`);
+      if (!e.lock.answers.length || e.lock.answers.some((x) => normalizeTerm(x).length < 2)) problems.push(`"${e.id}" needs a password`);
+      // The password has to be somewhere a teammate can find it, never only in the Tech's own records.
+      const elsewhere = caseFile.evidence.filter((x) => x.role !== e.role && x.chapter <= e.chapter && caseFile.roles.find((r) => r.id === x.role)?.core).map(textOfEvidence);
+      if (!e.lock.answers.some((x) => elsewhere.some((text) => text.includes(normalizeTerm(x))))) problems.push(`"${e.id}"'s password isn't in any other role's evidence`);
+    }
     if (a.kind === "press") {
       const claim = byId.get(a.against);
       if (!claim || claim.body.type !== "statement" || claim.body.speaker !== a.suspect) problems.push(`crack "${e.id}" has to break something ${a.suspect} said`);
@@ -974,6 +1021,7 @@ function checkWriting(caseFile: CaseFile): string[] {
     c.hints.forEach((h, j) => tooLong(`chapter ${i + 1} hint ${j + 1}`, h, L.hint));
   });
   (caseFile.searchNotes ?? []).forEach((n, i) => tooLong(`search note ${i + 1}`, n.text, L.hint));
+  caseFile.evidence.forEach((e) => e.lock && tooLong(`"${e.id}"'s password hint`, e.lock.hint, L.hint));
   beats("the confession", caseFile.solution.confession, 2);
   if (caseFile.interrogation) {
     const i = caseFile.interrogation;
@@ -1085,7 +1133,11 @@ export type PlayerView = {
   questions: { id: string; suspect: string; question: string; asked: boolean; chapter: number; lead: boolean }[] | null;
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
-  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
+  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; locked?: boolean; at: number }[];
+  /** Locked files the Tech has found: title and hint only, for every phone, so anyone can spot the password. */
+  locked: { id: string; title: string; hint: string; by: string; at: number }[];
+  /** For the Tech: passwords tried, newest last. */
+  tries: { id: string; evidenceId: string; ok: boolean; time: number }[];
   /** For the Interviewer: what they've shown suspects, newest last, and whether it cracked them. */
   shows: { id: string; suspect: string; evidenceTitle: string; crack: string | null; time: number }[];
   /** Every crack so far, for every phone: the moment someone's story gave way is the whole table's. */
@@ -1277,8 +1329,14 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       hit: Boolean(s.hit),
       hitTitle: s.hit && visibleIds.has(s.hit) ? evidence.find((e) => e.id === s.hit)?.title : undefined,
       note: s.note,
+      locked: Boolean(s.hit && state.locked?.[s.hit]),
       at: s.at,
     })),
+    locked: Object.entries(state.locked ?? {}).flatMap(([id, held]) => {
+      const record = caseFile.evidence.find((e) => e.id === id);
+      return record?.lock ? [{ id, title: record.title, hint: record.lock.hint, by: held.by, at: held.at }] : [];
+    }),
+    tries: abilities.includes("search") ? (state.tries ?? []).filter((t) => t.by === me.id).map(({ id, evidenceId, ok, time }) => ({ id, evidenceId, ok, time })) : [],
     shows: abilities.includes("interview")
       ? (state.shows ?? []).filter((s) => s.by === me.id).map((s) => ({ id: s.id, suspect: s.suspect, evidenceTitle: titleOf(s.evidenceId), crack: s.crack, time: s.time }))
       : [],

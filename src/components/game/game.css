@@ -744,3 +744,57 @@
     repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 64px),
     linear-gradient(#3d2818, #2c1c10);
 }
+
+/* ---------------------------------------------------------------------------
+   The Tech's computer: a beige monitor on a dark desk, a green screen with
+   scanlines and a little glow, and amber for anything locked. */
+
+.tool-computer {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgb(63 184 175 / 0.18), transparent 60%),
+    linear-gradient(#1b2321, #121816);
+}
+.monitor {
+  background: linear-gradient(#e6dcc4, #cbbf9f);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.6),
+    inset 0 -3px 0 rgb(0 0 0 / 0.12),
+    var(--shadow-pop-sm);
+}
+.crt {
+  background:
+    repeating-linear-gradient(0deg, rgb(63 184 175 / 0.06) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, rgb(63 184 175 / 0.14), transparent 75%),
+    #04100c;
+  box-shadow: inset 0 0 24px rgb(0 0 0 / 0.75);
+}
+.crt-cursor {
+  animation: coach-caret 1s steps(2) infinite;
+}
+.crt-granted {
+  animation: crt-granted 1.6s ease-out both;
+}
+@keyframes crt-granted {
+  0% { opacity: 0; filter: brightness(2.2); }
+  12% { opacity: 1; }
+  20% { filter: brightness(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Tap words: everything you could tap is marked, and the word you tapped lights up for a moment. */
+body.tech-tapping [data-searchable] {
+  cursor: text;
+  outline: 3px dashed rgb(63 184 175 / 0.85);
+  outline-offset: 4px;
+}
+::highlight(tapped-word) {
+  background-color: rgb(63 184 175 / 0.55);
+  color: #04100c;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crt-cursor,
+  .crt-granted {
+    animation: none;
+  }
+}

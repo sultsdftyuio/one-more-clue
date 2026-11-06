@@ -276,6 +276,44 @@ test("the wall: only the Archivist arranges it, only pinned pieces, and contradi
   assert.deepEqual(viewFor(state, tipJar, TECH, new Set()).wall, {}, "taken down, its place goes with it");
 });
 
+test("locked records: found as a title and a hint, opened only by the right password, wrong guesses cost time", () => {
+  // The practice case with its card history locked behind a word from Mo's statement.
+  const locked: CaseFile = {
+    ...tipJar,
+    evidence: tipJar.evidence.map((e) => (e.id === "card-history" ? { ...e, lock: { hint: "Password hint: what Mo was making at 8:41.", answers: ["latte"] } } : e)),
+  };
+  assert.deepEqual(checkCase(locked), []);
+  assert.ok(
+    checkCase({ ...locked, evidence: locked.evidence.map((e) => (e.id === "card-history" ? { ...e, lock: { hint: "x", answers: ["zebra"] } } : e)) }).some((p) => p.includes("password")),
+    "a password nobody else holds is caught",
+  );
+  let state = createRoom({ code: "LOCK", caseFile: locked, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= 4; i++) state = must(addPlayer(state, locked, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
+  const run = (who: string, action: Action) => applyAction(state, locked, who, action, 1, newId);
+  const go = (who: string, action: Action) => (state = must(run(who, action)));
+  go("p1", { type: "start" });
+  for (const p of ["p1", "p2", "p3", "p4"]) go(p, { type: "ready" });
+
+  go(TECH, { type: "search", query: "0007" });
+  assert.ok(!state.found["card-history"], "found, but not opened");
+  const view = viewFor(state, locked, PHOTOGRAPHER, new Set());
+  assert.deepEqual(view.locked.map((l) => [l.id, l.hint]), [["card-history", "Password hint: what Mo was making at 8:41."]], "every phone sees the hint");
+  assert.ok(!viewFor(state, locked, TECH, new Set()).evidence.some((e) => e.id === "card-history"), "nothing inside shows yet");
+  assert.equal(state.activity.at(-1)?.kind, "locked");
+
+  assert.equal(run(INTERVIEWER, { type: "unlock", evidenceId: "card-history", password: "latte" }).ok, false, "only the Tech");
+  const before = viewFor(state, locked, TECH, new Set()).deadline!.spent;
+  go(TECH, { type: "unlock", evidenceId: "card-history", password: "espresso" });
+  assert.ok(!state.found["card-history"]);
+  assert.equal(viewFor(state, locked, TECH, new Set()).deadline!.spent, before + viewFor(state, locked, TECH, new Set()).deadline!.costs.miss, "a wrong guess costs time");
+  go(TECH, { type: "unlock", evidenceId: "card-history", password: "  LATTE! " });
+  assert.ok(state.found["card-history"], "forgiving about case and punctuation");
+  assert.equal(state.activity.at(-1)?.kind, "access");
+  assert.deepEqual(viewFor(state, locked, TECH, new Set()).locked, []);
+  assert.deepEqual(viewFor(state, locked, TECH, new Set()).tries.map((t) => t.ok), [false, true]);
+  assert.equal(run(TECH, { type: "unlock", evidenceId: "card-history", password: "latte" }).ok, false, "nothing left to unlock");
+});
+
 test("a single wrong checkpoint answer costs the sharp star", () => {
   let state = doo(roomWith(4), TECH, { type: "pin", evidenceId: "door-log" });
   state = agree(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" });

@@ -20,7 +20,8 @@ import { VoiceControl } from "./live/VoiceControl";
 import { Avatar } from "./parts";
 import { ProposalBar } from "./ProposalBar";
 import { SolvePanel } from "./SolvePanel";
-import { CrackMoment, Moments, SoundCues } from "./story/Moments";
+import { WordTap } from "./desk/roles/WordTap";
+import { AccessMoment, CrackMoment, Moments, SoundCues } from "./story/Moments";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
@@ -378,6 +379,8 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <Moments />
       <SpotlightMoment />
       <CrackMoment />
+      <AccessMoment />
+      {view.me.abilities.includes("search") && <WordTap />}
       <LieMoment />
       <LieCallBar />
 

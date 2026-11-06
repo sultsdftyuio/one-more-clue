@@ -133,6 +133,16 @@
 }
 
 /* Landing page: a little magnifier for a cursor on desktop. */
+/* A print from the landing page's camera: blank and bright, then the picture swims up. */
+.develop {
+  animation: develop 1.8s ease-out both;
+}
+@keyframes develop {
+  0% { filter: brightness(2.6) saturate(0) blur(6px); opacity: 0.6; }
+  60% { filter: brightness(1.2) saturate(0.5) blur(1px); opacity: 1; }
+  100% { filter: none; }
+}
+
 @media (pointer: fine) {
   [data-home] {
     cursor: url("/cursor-magnifier.png") 11 11, auto;

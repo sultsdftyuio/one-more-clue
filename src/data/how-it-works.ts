@@ -35,16 +35,16 @@ export const steps: Step[] = [
   {
     prop: "magnifier",
     title: "Work your role",
-    text: "Pull records, question suspects, zoom into photos, hold two stories side by side. Your find opens a teammate's next move.",
+    text: "Every phone becomes a different tool: a camera, an interrogation room, an evidence wall, a hacked computer. Your find opens a teammate's next move.",
     clue: "roles",
-    screen: { src: "/screens/night-roles.webp", alt: "The Photographer's darkroom: photos only they can look into" },
+    screen: { src: "/screens/night-camera.webp", alt: "The Photographer's camera, zoomed in on the café counter, with a Shoot button" },
   },
   {
     prop: "folder",
     title: "Show your proof",
-    text: "Each chapter ends with a question. Pin your best evidence and put it to a vote. Real proof opens the next chapter; a bluff costs you.",
+    text: "Each chapter ends with a question. Pin your best evidence and put it to a vote. Real proof opens the next chapter; a wrong answer costs time on the night's clock.",
     clue: "vote",
-    screen: { src: "/screens/night-proof.webp", alt: "A teammate presents a pinned piece of evidence and the team votes on it" },
+    screen: { src: "/screens/night-vote.webp", alt: "A teammate presents a piece from the board and the team votes on it, over the interrogation room" },
   },
   {
     prop: "fingerprint",
@@ -64,7 +64,7 @@ export const steps: Step[] = [
 
 // No play time here until a real playtest gives us one.
 export const facts = [
-  { value: "4", label: "roles, each with a power" },
+  { value: "4", label: "roles, each with its own tool" },
   { value: "2–4", label: "detectives" },
   { value: "0", label: "apps to install" },
   { value: "1st", label: "case free" },

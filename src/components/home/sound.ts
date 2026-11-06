@@ -74,10 +74,59 @@ function play(name: Name) {
   source.start();
 }
 
+/**
+ * Tiny made-on-the-spot sounds for the role tools: nothing to download, and
+ * silent until the visitor turns sound on.
+ */
+function tone(notes: { f: number; at: number; len: number; type?: OscillatorType; vol?: number; to?: number }[]) {
+  if (!enabled || ducked) return;
+  const { ctx, master } = audio();
+  const now = ctx.currentTime;
+  for (const n of notes) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = n.type ?? "sine";
+    osc.frequency.setValueAtTime(n.f, now + n.at);
+    if (n.to) osc.frequency.exponentialRampToValueAtTime(n.to, now + n.at + n.len);
+    gain.gain.setValueAtTime(0.0001, now + n.at);
+    gain.gain.exponentialRampToValueAtTime(n.vol ?? 0.25, now + n.at + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.at + n.len);
+    osc.connect(gain).connect(master);
+    osc.start(now + n.at);
+    osc.stop(now + n.at + n.len + 0.05);
+  }
+}
+
+/** A short burst of noise, for the shutter. */
+function noise(len: number, vol: number) {
+  if (!enabled || ducked) return;
+  const { ctx, master } = audio();
+  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * len), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 3;
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  gain.gain.value = vol;
+  source.buffer = buffer;
+  source.connect(gain).connect(master);
+  source.start();
+}
+
 export const sfx = {
   powerDown: () => play("power-down"),
   powerUp: () => play("power-up"),
   stamp: () => play("stamp"),
+  shutter: () => {
+    noise(0.05, 0.5);
+    setTimeout(() => noise(0.04, 0.35), 70);
+  },
+  /** One syllable of a suspect's voice. */
+  blip: () => tone([{ f: 180 + Math.random() * 60, at: 0, len: 0.06, type: "triangle", vol: 0.12 }]),
+  key: () => tone([{ f: 900 + Math.random() * 200, at: 0, len: 0.025, type: "square", vol: 0.04 }]),
+  granted: () => tone([0, 0.09, 0.18].map((at, i) => ({ f: [523, 659, 784][i], at, len: 0.18, type: "square" as const, vol: 0.08 }))),
+  denied: () => tone([{ f: 150, at: 0, len: 0.25, type: "sawtooth", vol: 0.1 }, { f: 110, at: 0.12, len: 0.3, type: "sawtooth", vol: 0.1 }]),
+  /** A string pulled, then let go. */
+  string: () => tone([{ f: 220, at: 0, len: 0.5, type: "triangle", vol: 0.15, to: 165 }]),
 };
 
 export function soundEnabled() {

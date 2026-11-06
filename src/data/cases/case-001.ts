@@ -88,7 +88,7 @@ export const case001: CaseFile = {
       core: true,
       ability: "crosscheck",
       name: "Archivist",
-      blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other to expose a contradiction.",
+      blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready.",
     },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You asked around campus. People notice cars." },
     { id: "profiler", core: false, ability: "none", name: "Profiler", blurb: "You know the people in this lab, and their habits." },

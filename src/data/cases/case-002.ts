@@ -56,7 +56,7 @@ export const case002: CaseFile = {
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the station's systems: transmitter, doors, phones. Type a name, place or company to pull its records." },
     { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free." },
     { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin." },
-    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
+    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You took the listener calls tonight. Listeners hear everything." },
     { id: "profiler", core: false, ability: "none", name: "Profiler", blurb: "You know everyone at this station, and their habits." },
   ],

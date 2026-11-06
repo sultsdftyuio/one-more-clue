@@ -308,6 +308,8 @@ export type RoomState = {
   clockSpent?: number;
   /** The last piece someone pushed onto every phone. */
   spotlight?: Spotlight;
+  /** Where the Archivist has put each pinned piece on the wall, in percent of the wall (missing pieces sit in the default grid). */
+  wall?: Record<string, { x: number; y: number }>;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */
@@ -369,6 +371,8 @@ export type Action =
   | { type: "show"; suspect: string; evidenceId: string }
   /** Show a piece of evidence on every phone for a moment. */
   | { type: "spotlight"; evidenceId: string }
+  /** The Archivist moves a pinned piece on the wall (x and y in percent of the wall). */
+  | { type: "arrange"; evidenceId: string; x: number; y: number }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }

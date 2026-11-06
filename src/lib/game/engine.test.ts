@@ -260,6 +260,22 @@ test("show them: the right piece cracks a suspect, the wrong one costs time, and
   assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "he's already given that up");
 });
 
+test("the wall: only the Archivist arranges it, only pinned pieces, and contradictions show as string for everyone", () => {
+  let state = proveChapter1(roomWith(4));
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  state = doo(state, INTERVIEWER, { type: "pin", evidenceId: "question-squarington-left" });
+  assert.equal(act(state, TECH, { type: "arrange", evidenceId: "question-squarington-left", x: 30, y: 40 }).ok, false, "only the Archivist");
+  assert.equal(act(state, ARCHIVIST, { type: "arrange", evidenceId: "receipts", x: 30, y: 40 }).ok, false, "only pinned pieces");
+  state = doo(state, ARCHIVIST, { type: "arrange", evidenceId: "question-squarington-left", x: 140, y: -5 });
+  assert.deepEqual(viewFor(state, tipJar, TECH, new Set()).wall["question-squarington-left"], { x: 96, y: 2 }, "kept on the wall, and everyone sees where");
+
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" });
+  assert.deepEqual(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).strings, [{ id: "insight-squarington", a: "receipts", b: "question-squarington-left" }]);
+
+  state = doo(state, INTERVIEWER, { type: "unpin", evidenceId: "question-squarington-left" });
+  assert.deepEqual(viewFor(state, tipJar, TECH, new Set()).wall, {}, "taken down, its place goes with it");
+});
+
 test("a single wrong checkpoint answer costs the sharp star", () => {
   let state = doo(roomWith(4), TECH, { type: "pin", evidenceId: "door-log" });
   state = agree(state, TECH, { type: "propose", kind: "answer", evidenceId: "door-log" });

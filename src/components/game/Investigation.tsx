@@ -36,7 +36,9 @@ function useClock(startedAt: number | null) {
   }, []);
   if (!startedAt) return "0:00";
   const s = Math.max(0, Math.floor((now - startedAt) / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const two = (n: number) => String(n).padStart(2, "0");
+  // A long night reads as hours: 1:05:09, not 65:09.
+  return s >= 3600 ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}` : `${Math.floor(s / 60)}:${two(s % 60)}`;
 }
 
 function ChapterSteps({ view }: { view: PlayerView }) {

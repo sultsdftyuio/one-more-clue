@@ -154,7 +154,11 @@ export const Viewfinder = forwardRef<
   useEffect(() => () => window.clearTimeout(settle.current), []);
 
   const down = (e: ReactPointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // A pointer the browser no longer tracks: dragging still works without capture.
+    }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     pinch.current = null;
   };

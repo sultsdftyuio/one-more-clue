@@ -685,6 +685,19 @@ export function applyAction(
       break;
     }
 
+    case "arrange": {
+      if (!investigating) return fail("The wall opens once the investigation starts.");
+      if (!abilities.includes("crosscheck")) return fail("Only the Archivist arranges the wall.");
+      if (!state.pins.some((p) => p.evidenceId === action.evidenceId)) return fail("Only pinned pieces go on the wall.");
+      const x = Number(action.x);
+      const y = Number(action.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return fail("That's off the wall.");
+      // The pin stays far enough in that the whole piece stays on the cork.
+      const clamp = (n: number, low: number, high: number) => Math.round(Math.min(high, Math.max(low, n)) * 10) / 10;
+      next.wall = { ...next.wall, [action.evidenceId]: { x: clamp(x, 4, 96), y: clamp(y, 2, 72) } };
+      break;
+    }
+
     case "pin": {
       if (!investigating) return fail("The board opens once the investigation starts.");
       const evidence = evidenceById(action.evidenceId);
@@ -703,6 +716,9 @@ export function applyAction(
       if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId) || next.proposal?.evidenceId === pin.evidenceId) return fail("That's part of the vote in progress.");
       if (next.interrogation?.call?.evidenceId === pin.evidenceId) return fail("That's being presented right now.");
       next.pins = next.pins.filter((p) => p !== pin);
+      if (next.wall?.[pin.evidenceId]) {
+        next.wall = Object.fromEntries(Object.entries(next.wall).filter(([id]) => id !== pin.evidenceId));
+      }
       log(next, newId, now, "unpin", `${me.name} unpinned ${evidenceById(pin.evidenceId)?.title}`, me.id, pin.evidenceId);
       break;
     }
@@ -1080,6 +1096,10 @@ export type PlayerView = {
   checked: string[];
   /** The last piece someone showed on every phone. */
   spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
+  /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
+  wall: Record<string, { x: number; y: number }>;
+  /** Red string: every contradiction found so far, as the two pieces it ties. Drawn on the wall for everyone. */
+  strings: { id: string; a: string; b: string }[];
   /** Once the team names the right person. Claims are only spelled out to whoever leads it, or once broken. */
   interrogation: {
     suspect: string;
@@ -1269,6 +1289,8 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     ),
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
+    wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
+    strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),

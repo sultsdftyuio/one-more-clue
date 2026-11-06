@@ -142,7 +142,7 @@ export function EvidenceCard({ evidence, footer, highlight }: { evidence: Visibl
 const TILT = ["-rotate-2", "rotate-1", "rotate-2", "-rotate-1"];
 
 /** What a pinned piece looks like from across the room: its own paper, a title and a few words. */
-function TileFace({ evidence }: { evidence: VisibleEvidence }) {
+export function TileFace({ evidence }: { evidence: VisibleEvidence }) {
   const body = evidence.body;
   const text = snippet(body);
   if (body.type === "scene" || body.type === "footage") {

@@ -1,8 +1,8 @@
 "use client";
 
 import { evidenceIn, useGame } from "./context";
-import { EvidenceTile } from "./evidence/EvidenceCard";
 import { Icon } from "./ui/Icon";
+import { Wall } from "./wall/Wall";
 
 /** The board at a glance on a laptop, so it stays part of the room. Tap it to open it properly. */
 export function BoardPeek({ onOpen }: { onOpen: () => void }) {
@@ -50,19 +50,10 @@ export function BoardPanel() {
           {pins.length}/{view.pinLimit}
         </span>
       </h2>
-      <p className="mb-4 text-sm font-bold text-cream/65">Everyone sees what&apos;s pinned here. Space is tight, so agree on what matters.</p>
-      <ul className="corkboard grid grid-cols-2 items-start gap-x-3 gap-y-4 rounded-2xl sm:grid-cols-3 border-[3px] border-ink p-3.5 shadow-pop">
-        {pins.map((e, i) => (
-          <li key={e.id}>
-            <EvidenceTile evidence={e} index={i} onOpen={() => open(e.id)} />
-          </li>
-        ))}
-        {Array.from({ length: empty }, (_, i) => (
-          <li key={`empty-${i}`} className="grid min-h-28 place-items-center rounded-lg border-2 border-dashed border-ink/25 text-ink/30">
-            <Icon name="pin" />
-          </li>
-        ))}
-      </ul>
+      <p className="mb-4 text-sm font-bold text-cream/65">
+        Everyone sees what&apos;s pinned here, and red string ties every lie caught. Space is tight: {empty} {empty === 1 ? "pin" : "pins"} left.
+      </p>
+      <Wall pieces={pins} places={view.wall} strings={view.strings} onTap={(id) => open(id)} />
     </section>
   );
 }

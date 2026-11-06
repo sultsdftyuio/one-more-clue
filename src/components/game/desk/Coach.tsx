@@ -65,6 +65,14 @@ export function Coach({ steps, onClose, label }: { steps: CoachStep[]; onClose: 
   const [hole, setHole] = useState<Hole | null>(null);
   const next = useRef<HTMLButtonElement>(null);
   const last = index >= steps.length - 1;
+  // A find or a vote on screen comes first: the tour waits until nothing else is asking for attention.
+  const [waiting, setWaiting] = useState(true);
+  useEffect(() => {
+    const check = () => setWaiting(Boolean(document.querySelector('[role="dialog"][aria-modal="true"]')));
+    check();
+    const timer = window.setInterval(check, 400);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Bring the control into view, then keep the light on it as the page moves.
   useLayoutEffect(() => {
@@ -90,7 +98,7 @@ export function Coach({ steps, onClose, label }: { steps: CoachStep[]; onClose: 
       window.removeEventListener("scroll", measure, { capture: true });
       window.removeEventListener("resize", measure);
     };
-  }, [step.target]);
+  }, [step.target, waiting]);
 
   useEffect(() => {
     play("message");
@@ -102,6 +110,8 @@ export function Coach({ steps, onClose, label }: { steps: CoachStep[]; onClose: 
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  if (waiting) return null;
 
   // The card sits on the other half of the screen from the control it points at.
   const below = !hole || hole.top + hole.height / 2 < window.innerHeight / 2;

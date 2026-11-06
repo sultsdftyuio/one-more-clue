@@ -733,3 +733,14 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   The Archivist's wall: an office of dark wood panelling around the cork. */
+
+.tool-wall {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse at 50% -15%, rgb(242 179 61 / 0.2), transparent 60%),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 64px),
+    linear-gradient(#3d2818, #2c1c10);
+}

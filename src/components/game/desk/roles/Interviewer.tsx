@@ -38,7 +38,7 @@ function TheChair({ person, line }: { person: CaseSuspect; line: Line | null }) 
     <div data-coach="room" className="interrogation-room relative flex min-h-[15.5rem] items-end gap-2 overflow-hidden rounded-2xl border-[3px] border-black px-3 pt-8 pb-3">
       <span aria-hidden className="interrogation-lamp pointer-events-none absolute inset-x-0 top-0 h-full" />
       <div key={`${line?.key ?? "idle"}-${person.name}`} className={cx("relative z-10 w-28 shrink-0 sm:w-36", cracked ? "animate-shake" : smug ? "suspect-smug" : "suspect-breathe")}>
-        <SuspectPortrait suspect={person} shocked={cracked} className="aspect-[5/7] w-full object-contain object-bottom" />
+        <SuspectPortrait suspect={person} mood={cracked ? "cracked" : smug ? "smug" : "idle"} className="aspect-[5/7] w-full object-contain object-bottom" />
         {cracked && <span aria-hidden className="suspect-sweat pointer-events-none absolute top-[18%] right-[14%]" />}
       </div>
       <div className="relative z-10 mb-6 min-w-0 flex-1">

@@ -50,10 +50,10 @@ export const case004: CaseFile = {
   briefing:
     "At midnight on New Year's Eve the lights went out at snowbound Pinecrest Lodge. When they came back two minutes later, Dame Agatha's diamond necklace, the Aurora, was gone from its display case. The road has been closed since 6 PM, so nobody could arrive or leave. Find out who took it, and how.",
   suspects: [
-    { id: "circle", art: "circle", name: "Otto Brennan", role: "Lodge owner", tint: 200, blurb: "Your host. Very keen on everyone's comfort, and on his old fireplaces." },
-    { id: "triangle", art: "triangle", name: "Lily Ashford", role: "Dame Agatha's niece", tint: 300, blurb: "Nervous. Films everything on her phone." },
-    { id: "square", art: "square", name: "Sir Reginald Pike", role: "Auctioneer", tint: 40, blurb: "Selling the Aurora tomorrow at ten. Holds a key to its case." },
-    { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", tint: 140, blurb: "Runs the lodge's ski trips. Has a master keycard." },
+    { id: "circle", art: "circle", name: "Otto Brennan", role: "Lodge owner", look: "c004-otto", blurb: "Your host. Very keen on everyone's comfort, and on his old fireplaces." },
+    { id: "triangle", art: "triangle", name: "Lily Ashford", role: "Dame Agatha's niece", look: "c004-lily", blurb: "Nervous. Films everything on her phone." },
+    { id: "square", art: "square", name: "Sir Reginald Pike", role: "Auctioneer", look: "c004-reginald", blurb: "Selling the Aurora tomorrow at ten. Holds a key to its case." },
+    { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", look: "c004-greta", blurb: "Runs the lodge's ski trips. Has a master keycard." },
   ],
   roles: [
     { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },

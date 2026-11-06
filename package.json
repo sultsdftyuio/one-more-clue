@@ -12,7 +12,8 @@
     "art:sync": "node scripts/sync-art.mjs",
     "setup:payments": "node scripts/setup-payments.mjs",
     "setup:dodo-products": "node scripts/create-dodo-products.mjs",
-    "setup:supabase": "node scripts/setup-supabase.mjs"
+    "setup:supabase": "node scripts/setup-supabase.mjs",
+    "art:cast": "node scripts/sync-cast.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

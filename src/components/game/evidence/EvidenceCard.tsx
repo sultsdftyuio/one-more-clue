@@ -48,9 +48,9 @@ export function snippet(body: EvidenceBody) {
   }
 }
 
-/** This case's character colours, keyed by art name, for drawing scenes. */
-export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
-  Object.fromEntries(suspects.flatMap((s) => (s.art && s.tint ? [[s.art, s.tint]] : [])));
+/** How this case dresses its characters in drawn scenes, keyed by art name: their own look, or a colour. */
+export const tintsOf = (suspects: { art?: string; tint?: number; look?: string }[]): Tints =>
+  Object.fromEntries(suspects.flatMap((s) => (s.art && (s.look || s.tint) ? [[s.art, s.look ?? s.tint!]] : [])));
 
 /** The piece of evidence itself, as the object it really is. */
 export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {

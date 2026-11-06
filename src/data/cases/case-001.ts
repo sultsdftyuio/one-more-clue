@@ -56,10 +56,10 @@ export const case001: CaseFile = {
   briefing:
     "At 9:17 PM the night guard found Cabinet B in Lab 4 open and HALO, a smart-glasses prototype, gone. The last message in the lab chat says its creator, Priya, took it home. Priya says she never wrote it. Four people were in the building. Work out who took HALO, and why.",
   suspects: [
-    { id: "triangle", art: "triangle", name: "Priya Tran", role: "PhD researcher", tint: 30, blurb: "Built HALO. Hasn't slept properly in a month." },
-    { id: "square", art: "square", name: "Prof. Edmund Squires", role: "Lab director", tint: 310, blurb: "Needs tomorrow's investor demo to go perfectly." },
-    { id: "circle", art: "circle", name: "Ozzy Reyes", role: "Night security", tint: 330, blurb: "Knows every corridor, and every football score." },
-    { id: "rectangle", art: "rectangle", name: "Rena Voss", role: "Visiting engineer", tint: 20, blurb: "Here from Northgate Capital, the investors. Nobody had met her before tonight." },
+    { id: "triangle", art: "triangle", name: "Priya Tran", role: "PhD researcher", look: "c001-priya", blurb: "Built HALO. Hasn't slept properly in a month." },
+    { id: "square", art: "square", name: "Prof. Edmund Squires", role: "Lab director", look: "c001-squires", blurb: "Needs tomorrow's investor demo to go perfectly." },
+    { id: "circle", art: "circle", name: "Ozzy Reyes", role: "Night security", look: "c001-ozzy", blurb: "Knows every corridor, and every football score." },
+    { id: "rectangle", art: "rectangle", name: "Rena Voss", role: "Visiting engineer", look: "c001-rena", blurb: "Here from Northgate Capital, the investors. Nobody had met her before tonight." },
   ],
   roles: [
     {

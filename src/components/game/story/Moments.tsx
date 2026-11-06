@@ -189,7 +189,7 @@ export function CrackMoment() {
         <p className="inline-block -rotate-12 animate-stamp rounded-2xl border-[6px] border-coral px-8 py-1 font-display text-6xl text-coral">CRACK!</p>
         <p className="mt-6 text-sm font-extrabold tracking-widest text-mustard uppercase">{nameOf(view, shown.by)} broke {shown.suspect}</p>
         <div className="mt-4 flex animate-shake items-end gap-3 text-left">
-          <SuspectPortrait suspect={suspect} shocked className="w-24 shrink-0" />
+          <SuspectPortrait suspect={suspect} mood="cracked" className="w-24 shrink-0" />
           <p className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-lg leading-snug font-bold text-ink shadow-card">&ldquo;{shown.text}&rdquo;</p>
         </div>
       </div>

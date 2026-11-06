@@ -5,9 +5,12 @@ import { TiltCard } from "@/components/fx/TiltCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { case001 } from "@/data/case-001";
-import { suspects } from "@/data/suspects";
 import { gameOpen, playCta } from "@/lib/game-open";
-import { posterArt, propArt, suspectArt } from "@/lib/art";
+import { posterArt, propArt } from "@/lib/art";
+import { castArt } from "@/lib/cast-art";
+
+/** Case 001's four, as they look in the game. */
+const CAST = ["c001-priya", "c001-squires", "c001-ozzy", "c001-rena"];
 import { cx } from "@/lib/cx";
 import { FlyIn, FolderCover, PinIn, Redacted } from "./CaseFileMotion";
 
@@ -69,13 +72,13 @@ export function CaseTeaser() {
 
               {/* The four people in the building, names blacked out. */}
               <ul className="mt-5 grid grid-cols-4 gap-2 sm:gap-3">
-                {suspects.map((s, i) => (
-                  <li key={s.id} className="text-center">
+                {CAST.map((look, i) => (
+                  <li key={look} className="text-center">
                     <div
                       className={cx("overflow-hidden rounded-xl border-[0.1875rem] border-ink", i % 2 ? "rotate-1" : "-rotate-1")}
                       style={{ backgroundImage: heightChart, backgroundColor: "#f4e6c8" }}
                     >
-                      <Image src={suspectArt[s.id].idle} alt="" sizes="110px" className="mx-auto -mb-2 w-[88%]" />
+                      <Image src={castArt[look].idle} alt="" sizes="110px" className="mx-auto -mb-2 w-[88%]" />
                     </div>
                     <Redacted className="mt-2 text-xs sm:text-sm" />
                   </li>

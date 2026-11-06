@@ -20,6 +20,12 @@ export const practiceTipJar: CaseFile = {
   code: "Practice case",
   title: "Last Orders at Café Lumen",
   tagline: "Three weeks of tips, gone in three minutes.",
+  deadline: {
+    what: "Café Lumen locks up at 11:00 PM",
+    start: "9:00 PM",
+    end: "11:00 PM",
+    lost: "11:00 PM. The shutters come down, the regulars go home, and the tips are never seen again.",
+  },
   minPlayers: 2,
   maxPlayers: 4,
   story: [
@@ -44,28 +50,28 @@ export const practiceTipJar: CaseFile = {
       core: true,
       ability: "search",
       name: "Tech",
-      blurb: "You have access to every system on the street: card readers, doors, couriers, buses. Type a name, number or place to pull its records.",
+      blurb: "You have access to every system on the street: card readers, doors, couriers, buses. Type a name, number or place to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate.",
     },
     {
       id: "interviewer",
       core: true,
       ability: "interview",
       name: "Interviewer",
-      blurb: "You talk to people. The team only gets five questions for the whole case, so choose them together.",
+      blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free.",
     },
     {
       id: "photographer",
       core: true,
       ability: "inspect",
       name: "Photographer",
-      blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can do this, even on photos others pin.",
+      blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin.",
     },
     {
       id: "archivist",
       core: true,
       ability: "crosscheck",
       name: "Archivist",
-      blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other to expose a contradiction.",
+      blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready.",
     },
     {
       id: "lookout",
@@ -106,7 +112,7 @@ export const practiceTipJar: CaseFile = {
       ],
       checkpoint: {
         question: "Someone lied about when they left the café. What gives them away?",
-        proves: ["receipts", "card-history", "detail-screen", "insight-squarington"],
+        proves: ["receipts", "card-history", "detail-screen", "insight-squarington", "crack-squarington-tab"],
         reveal: "Lord Squarington swore he left at 8:30, but his card was tapped on the counter reader at 8:42, right beside the jar.",
       },
       hints: [
@@ -128,7 +134,6 @@ export const practiceTipJar: CaseFile = {
       ],
     },
   ],
-  questionBudget: 5,
   evidence: [
     // ----- Chapter 1: the scene ----------------------------------------------
     {
@@ -422,6 +427,22 @@ export const practiceTipJar: CaseFile = {
       body: { type: "finding", text: "Rex says he never went inside, but a Route 50 ticket, his bus, was on the café floor." },
     },
     {
+      id: "crack-squarington-tab",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Lord Squarington", against: "question-squarington-left", breaks: ["receipts", "card-history", "insight-squarington", "detail-screen"] },
+      title: "Lord Squarington: the tab",
+      body: { type: "statement", speaker: "Lord Squarington", text: "Oh, very well. I settled my tab at 8:42. A gentleman doesn't advertise his debts." },
+    },
+    {
+      id: "crack-rex-rain",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Rex", against: "question-rex-inside", breaks: ["detail-ticket", "insight-ticket", "detail-stop-clock", "insight-alibi", "cctv-still", "detail-hat"] },
+      title: "Rex: out of the rain",
+      body: { type: "statement", speaker: "Rex", text: "All right. I nipped in out of the rain for two minutes. I never touched any jar." },
+    },
+    {
       id: "neighbour-message",
       role: "lookout",
       chapter: 2,
@@ -550,6 +571,8 @@ export const practiceTipJar: CaseFile = {
       role: "tech",
       chapter: 3,
       access: { kind: "search", terms: ["depot", "nightshift", "jim", "work"] },
+      // Locked: the bus Rex takes is on the ticket from the café floor and the transit notice.
+      lock: { hint: "Depot staff chat. Password hint: the bus Rex takes to work.", answers: ["Route 50", "50"] },
       title: "Depot crew chat",
       body: {
         type: "chat",

@@ -112,7 +112,8 @@ export function DeskPanel() {
   const Tool = active && active.ability !== "none" ? TOOL[active.ability] : null;
 
   return (
-    <div className="grid gap-5">
+    // minmax(0, 1fr): one long line inside a station (a photo's caption) must never widen the page.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       {active && <RoleStrip roles={myRoles} active={active} onPick={setPicked} />}
 
       <Leads />

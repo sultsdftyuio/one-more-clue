@@ -123,6 +123,9 @@ function useMagnifier(on: boolean) {
 
 type CanvasProps = {
   look: SceneLook;
+  /** How wide the painted image shows, for picking the download size (the viewfinder asks for more as it zooms). */
+  imageSizes?: string;
+  onImageError?: () => void;
   items: SceneItem[];
   /** Pitch dark: only what the flashlight touches can be seen. */
   dark?: boolean;
@@ -140,7 +143,7 @@ type CanvasProps = {
 type Ripple = { id: number; x: number; y: number; text: string };
 
 /** The 4:3 picture itself, shared by photos and camera footage. */
-function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [], tints }: CanvasProps) {
+export function SceneCanvas({ look, items, dark, image, imageSizes = IMAGE_SIZES, onImageError, magnify, onInspect, found = [], tints }: CanvasProps) {
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const light = useRef<HTMLDivElement>(null);
   const inspectable = Boolean(onInspect);
@@ -190,7 +193,7 @@ function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [],
         inspectable && "cursor-zoom-in",
       )}
     >
-      {image && <Image src={image} alt="" fill sizes={IMAGE_SIZES} className="pointer-events-none object-cover" draggable={false} />}
+      {image && <Image key={image} src={image} alt="" fill sizes={imageSizes} className="pointer-events-none object-cover" draggable={false} onError={onImageError} />}
       {items.map((item, i) => {
         const style = {
           left: `${item.x}%`,
@@ -217,7 +220,7 @@ function SceneCanvas({ look, items, dark, image, magnify, onInspect, found = [],
               <ItemBody item={item} tints={tints} />
             )}
             {marked && (
-              <span className="pointer-events-none absolute top-1/2 left-1/2 z-30 grid size-6 animate-[found-pop_0.4s_ease-out_both] place-items-center rounded-full border-2 border-ink bg-mustard text-xs font-black text-ink shadow-pop-sm">
+              <span className="scene-mark pointer-events-none absolute top-1/2 left-1/2 z-30 grid size-6 animate-[found-pop_0.4s_ease-out_both] place-items-center rounded-full border-2 border-ink bg-mustard text-xs font-black text-ink shadow-pop-sm">
                 ✓
               </span>
             )}
@@ -267,11 +270,14 @@ const picture = (scene: Scene | Footage) => ({
   image: scene.type === "scene" ? scene.image : scene.frames[0].image,
 });
 
-/** A small still of a photo or the first frame of footage. Nothing to tap. */
+/** A small still of a photo or the first frame of footage. Nothing to tap. A dark photo stays dark: the thumbnail mustn't give away what the light is for. */
 export function SceneThumb({ scene }: { scene: Scene | Footage }) {
   return (
-    <span className="pointer-events-none block">
+    <span className="pointer-events-none relative block">
       <SceneCanvas {...picture(scene)} />
+      {scene.type === "scene" && scene.dark && (
+        <span aria-hidden className="absolute inset-0 rounded-md bg-[radial-gradient(circle_at_50%_58%,rgb(255_244_224/0.1),rgb(2_3_10/0.97)_42%)]" />
+      )}
     </span>
   );
 }

@@ -14,10 +14,10 @@ import { StoryPlayer } from "./story/StoryPlayer";
 import { Icon, type IconName } from "./ui/Icon";
 
 const POWER: Record<string, { icon: IconName; text: string }> = {
-  search: { icon: "search", text: "Search the records for any name, number or place." },
-  interview: { icon: "mic", text: "Spend the team's questions on suspects and witnesses." },
-  inspect: { icon: "camera", text: "Tap into photos to find details nobody else can." },
-  crosscheck: { icon: "scale", text: "Hold two pieces of evidence together to expose a lie." },
+  search: { icon: "search", text: "Search the records, tap words in evidence to search them, and crack locked files with a teammate's help." },
+  interview: { icon: "mic", text: "Question suspects. Show them the evidence and watch their story crack." },
+  inspect: { icon: "camera", text: "Zoom into every photo and shoot the details. Shake to develop what you catch." },
+  crosscheck: { icon: "scale", text: "Tie two pieces on the wall with red string. If they can't both be true, it snaps tight." },
   none: { icon: "file", text: "Your evidence backs up the others." },
 };
 

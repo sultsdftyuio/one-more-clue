@@ -30,6 +30,19 @@ Keep a note with the time next to each entry.
 - [ ] **Story:** do people read the pop-ups or tap Skip? Does anyone use Read out?
 - [ ] **Score:** wrong answers against the story clock, time, stars.
 
+### The four tools (new on 2026-11-06)
+
+Each role now has its own tool and a three-step tutorial. Nobody real has used them yet.
+
+- [ ] **Tutorials:** does each player get through their three steps, or tap Skip? Does anyone tap **?** to see it again later?
+- [ ] **The camera:** how many shots catch nothing before the first hit? Do people pinch, or use the + and − buttons? On Android, does anyone shake to develop, or rub? Do the misses feel fair or random?
+- [ ] **The interrogation room:** does the Interviewer ever **show** a suspect something on their own, or only when someone tells them to? Note every crack and who suggested it.
+- [ ] **The wall:** does the Archivist tie strings or just look at it? Does anyone else open the wall to see the strings? Count slack strings (misses).
+- [ ] **Locked files:** when the Tech meets one, do they read the hint out loud? How long until someone says the password, and who?
+- [ ] **Tap words:** does the Tech use it, or type everything?
+- [ ] **Show everyone:** used at all? It matters most when playing apart.
+- [ ] **The clock:** does anyone talk about time ("that cost us 15 minutes")? Does it make people careful, or anxious and slow? Note how much of the night is left at the end.
+
 ## After (5 minutes)
 
 - [ ] Everyone rates the case on the reveal screen. Ratings land in the Redis `feedback` list.
@@ -48,5 +61,7 @@ Keep a note with the time next to each entry.
 
 ## Known rough edges (from the bot run)
 
-- With test bots, the bots never answer checkpoints and each uses its power only once per chapter. Some questions, such as Ozzy's 9:10 round, only get asked by a human Interviewer.
+- With test bots, the bots never answer checkpoints and each uses its tool only once per chapter. Some questions, such as Ozzy's 9:10 round, only get asked by a human Interviewer.
+- Shaking the phone to develop a photo needs motion permission on iPhone, asked once in the camera's tutorial. Web pages can't vibrate on iPhone, so the haptics only work on Android.
+- The wall's strings swing with physics. They have only been checked in a desktop browser, not on a phone.
 - In local dev, the Next.js "N" badge sits over the Board button. It doesn't show on previews or the live site.

@@ -9,7 +9,9 @@ import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
+import { framedHotspot, shotOf } from "./camera.ts";
+import { costMinutes, nightMinutes } from "./clock.ts";
+import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -50,13 +52,26 @@ function play(caseFile: CaseFile) {
       if (result.ok) state = result.state;
       return result.ok;
     },
+    /** Searches; a locked record is then opened with the password a teammate holds. */
     search(query: string, expect: string) {
       run(TECH, { type: "search", query });
+      const lock = caseFile.evidence.find((e) => e.id === expect)?.lock;
+      if (lock) {
+        assert.ok(state.locked?.[expect], `"${expect}" should turn up locked`);
+        assert.ok(!state.found[expect], `"${expect}" shouldn't open before its password`);
+        run(TECH, { type: "unlock", evidenceId: expect, password: lock.answers[0] });
+      }
       found(expect);
     },
     ask: (id: string) => run(INTERVIEWER, { type: "ask", evidenceId: id }),
+    /** The Photographer frames the clue and shoots. */
     inspect(scene: string, hotspot: string) {
-      run(PHOTOGRAPHER, { type: "inspect", scene, hotspot });
+      const picture = caseFile.evidence.find((e) => e.id === scene)!;
+      const shot = shotOf(picture.body, hotspot);
+      assert.ok(shot, `"${scene}" has no "${hotspot}" to photograph`);
+      run(PHOTOGRAPHER, { type: "shoot", scene, ...shot });
+      const detail = caseFile.evidence.find((e) => e.access.kind === "inspect" && e.access.scene === scene && e.access.hotspot === hotspot)!;
+      found(detail.id);
     },
     crosscheck(a: string, b: string, expect: string) {
       run(ARCHIVIST, { type: "crosscheck", a, b });
@@ -103,6 +118,8 @@ function play(caseFile: CaseFile) {
       if (caseFile.interrogation) this.confront();
       assert.equal(state.phase, "reveal");
       assert.deepEqual(state.outcome?.score, { stars: 5, culprit: true, motive: true, evidence: true, sharp: true });
+      const clock = viewFor(state, caseFile, TECH, new Set()).deadline;
+      if (clock) assert.ok(clock.left > clock.night / 2, `a sharp team finishes with most of the night left (${clock.left} of ${clock.night} min)`);
     },
   };
 }
@@ -322,6 +339,78 @@ test("no motive gives itself away by its length", () => {
     // Players learn fast that the careful, specific answer is the long one, and that a short one is a joke.
     assert.ok(length(c.solution.motive) <= Math.max(...wrong) + 3, `${c.id}: the right motive is the longest`);
     assert.ok(Math.min(...all) >= Math.max(...all) * 0.75, `${c.id}: one motive is much shorter than the rest`);
+  }
+});
+
+test("the night is tuned: a careless team runs out, a decent one doesn't", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const d = c.deadline!;
+    assert.ok(d, `${c.id} needs a story clock`);
+    const open = c.evidence.filter((e) => e.access.kind === "interview" && !e.after).length;
+    const spent = (wrong: number, misses: number) => wrong * costMinutes(d, "wrong") + misses * costMinutes(d, "miss") + open * costMinutes(d, "question");
+    assert.ok(spent(3, 10) >= nightMinutes(d), `${c.id}: three wrong answers, ten misses and every question should run the night out`);
+    assert.ok(spent(2, 5) < nightMinutes(d), `${c.id}: two wrong answers and a few misses shouldn't end it`);
+  }
+});
+
+test("every case has one locked file, and its password reads however it's typed", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const locked = c.evidence.filter((e) => e.lock);
+    assert.equal(locked.length, 1, `${c.id} should have exactly one locked file`);
+    const [answer] = locked[0].lock!.answers;
+    // Capitals, dashes and spaces don't matter: "S-42", "s42" and "S 42" are one password.
+    for (const typed of [answer.toLowerCase(), answer.toUpperCase(), answer.replace(/[-\s]/g, ""), ` ${answer.replace(/-/g, " ")} `]) {
+      assert.equal(normalizeTerm(typed), normalizeTerm(answer), `${c.id}: "${typed}" should open ${locked[0].id}`);
+    }
+  }
+});
+
+test("the camera can catch every clue in every case, and each frame catches the clue it's aimed at", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    for (const e of c.evidence) {
+      if (e.access.kind !== "inspect") continue;
+      const picture = c.evidence.find((p) => p.id === (e.access as { scene: string }).scene)!;
+      const hotspot = e.access.hotspot;
+      const shot = shotOf(picture.body, hotspot);
+      assert.ok(shot, `${c.id}: no "${hotspot}" in "${picture.id}"`);
+      const items = picture.body.type === "scene" ? picture.body.items : picture.body.type === "footage" ? picture.body.frames[shot.at!].items : [];
+      assert.equal(framedHotspot(items, shot.frame), hotspot, `${c.id}: a frame on "${hotspot}" in "${picture.id}" catches something else`);
+      assert.ok(100 / shot.frame.w <= 5.001, `${c.id}: "${hotspot}" needs more zoom than the lens has`);
+    }
+  }
+});
+
+test("every crack in every case cracks when someone shows them what breaks it", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    for (const e of c.evidence) {
+      if (e.access.kind !== "press") continue;
+      const a = e.access;
+      let state = createRoom({ code: "CRACK", caseFile: c, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+      for (const n of [2, 3, 4]) {
+        const joined = addPlayer(state, c, { id: `p${n}`, token: `t${n}`, name: `P${n}` }, 0);
+        if (!joined.ok) throw new Error(joined.error);
+        state = joined.state;
+      }
+      for (const [who, action] of [["p1", { type: "start" }], ["p1", { type: "ready" }], ["p2", { type: "ready" }], ["p3", { type: "ready" }], ["p4", { type: "ready" }]] as const) {
+        const result = applyAction(state, c, who, action as Action, 0, newId);
+        if (!result.ok) throw new Error(result.error);
+        state = result.state;
+      }
+      // The moment it's written for: its chapter, the claim made, one breaker on the board, the suspect's other cracks used up.
+      state.chapter = e.chapter;
+      const claim = c.evidence.find((x) => x.id === a.against)!;
+      if (claim.access.kind !== "desk") state.found[claim.id] = { by: INTERVIEWER, at: 0 };
+      for (const id of [...(e.after ?? []), ...(e.afterAny ?? []).slice(0, 1)]) state.found[id] = { by: TECH, at: 0 };
+      for (const other of c.evidence) {
+        if (other !== e && other.access.kind === "press" && other.access.suspect === a.suspect) state.found[other.id] = { by: INTERVIEWER, at: 0 };
+      }
+      const breaker = c.evidence.find((x) => a.breaks.includes(x.id) && x.chapter <= e.chapter)!;
+      if (breaker.access.kind !== "desk") state.found[breaker.id] = { by: TECH, at: 0 };
+      state.pins = [{ evidenceId: breaker.id, by: TECH, at: 0 }];
+      const result = applyAction(state, c, INTERVIEWER, { type: "show", suspect: a.suspect, evidenceId: breaker.id }, 1, newId);
+      assert.ok(result.ok, `${c.id}: showing "${breaker.id}" to ${a.suspect}: ${result.ok ? "" : result.error}`);
+      assert.ok(result.state.found[e.id], `${c.id}: "${e.id}" should crack`);
+    }
   }
 });
 

@@ -11,8 +11,15 @@ const TYPE_MS = 22;
 
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Reveals `text` a letter at a time, ticking like a typewriter. `done` finishes it at once. */
-export function useTypewriter(text: string, enabled = true) {
+/**
+ * Reveals `text` a letter at a time, ticking like a typewriter, or with `onLetter`
+ * making some other sound (a character's voice). `finish` completes it at once.
+ */
+export function useTypewriter(text: string, enabled = true, onLetter?: () => void) {
+  const letter = useRef(onLetter);
+  useEffect(() => {
+    letter.current = onLetter;
+  }, [onLetter]);
   const [shown, setShown] = useState(enabled && !reducedMotion() ? 0 : text.length);
   const finished = useRef(false);
   useEffect(() => {
@@ -25,7 +32,10 @@ export function useTypewriter(text: string, enabled = true) {
     setShown(0);
     const timer = window.setInterval(() => {
       if (finished.current || n >= text.length) return window.clearInterval(timer);
-      if (text[n] !== " ") play("type");
+      if (text[n] !== " ") {
+        if (letter.current) letter.current();
+        else play("type");
+      }
       n++;
       setShown(n);
     }, TYPE_MS);

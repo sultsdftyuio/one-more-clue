@@ -18,7 +18,7 @@ const HEADLINES = {
   solved: { stamp: "Case closed", text: "You caught the culprit." },
   wrong: { stamp: "Wrong suspect", text: "The real culprit walks free tonight." },
   gaveUp: { stamp: "Case abandoned", text: "Here's what really happened." },
-  tooLate: { stamp: "Out of time", text: "Three wrong answers, and the night ran out." },
+  tooLate: { stamp: "Out of time", text: "The night ran out before you cracked it." },
   walkedOut: { stamp: "Walked out", text: "You had the right person, but you couldn't break their story." },
 };
 
@@ -46,6 +46,7 @@ const FIND: Record<PlayerView["chain"][number]["source"], { icon: IconName; verb
   interview: { icon: "mic", verb: "got the answer" },
   inspect: { icon: "eye", verb: "spotted" },
   crosscheck: { icon: "scale", verb: "caught" },
+  press: { icon: "mic", verb: "cracked" },
 };
 
 /** The team's best run of finds, step by step: credit for the hand-offs, not for who tapped the most. */

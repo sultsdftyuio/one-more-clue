@@ -32,6 +32,22 @@
   from { opacity: 0; transform: scale(1.04); }
   to { opacity: 1; transform: scale(1); }
 }
+/* A spend falls off the story clock: it pops, then drifts down and fades. */
+@keyframes clock-drop {
+  0% { opacity: 0; transform: translateY(-0.4rem) scale(0.8); }
+  15% { opacity: 1; transform: translateY(0) scale(1.15); }
+  30% { transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(0.9rem); }
+}
+.clock-drop {
+  animation: clock-drop 2.2s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clock-drop {
+    animation: fade-in 0.2s ease-out both;
+  }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
@@ -444,4 +460,341 @@
   background: rgb(2 3 10 / 0.96);
   -webkit-mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
   mask-image: radial-gradient(circle 70px at var(--fx) var(--fy), transparent 0%, transparent 45%, #000 100%);
+}
+
+/* ---------------------------------------------------------------------------
+   Tutorials: the lit-up control, and the gestures drawn as touch points. */
+
+.coach-hole {
+  box-shadow:
+    0 0 0 3px var(--color-mustard),
+    0 0 0 9999px rgb(15 17 38 / 0.74);
+  animation: coach-glow 1.6s ease-in-out infinite;
+}
+@keyframes coach-glow {
+  50% {
+    box-shadow:
+      0 0 0 6px var(--color-mustard),
+      0 0 0 9999px rgb(15 17 38 / 0.74);
+  }
+}
+.coach-tap-dot {
+  transform-origin: 32px 32px;
+  animation: coach-tap-dot 1.4s ease-in-out infinite;
+}
+@keyframes coach-tap-dot {
+  0%, 60%, 100% { transform: scale(1); }
+  20% { transform: scale(0.7); }
+}
+.coach-tap-ring {
+  transform-origin: 32px 32px;
+  animation: coach-tap-ring 1.4s ease-out infinite;
+}
+@keyframes coach-tap-ring {
+  0%, 18% { transform: scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  70%, 100% { transform: scale(3); opacity: 0; }
+}
+.coach-hold-ring {
+  transform-origin: 32px 32px;
+  transform: rotate(-90deg);
+  animation: coach-hold 1.8s linear infinite;
+}
+@keyframes coach-hold {
+  0% { stroke-dashoffset: 95; }
+  80%, 100% { stroke-dashoffset: 0; }
+}
+.coach-pinch-a {
+  animation: coach-pinch-a 1.8s ease-in-out infinite;
+}
+.coach-pinch-b {
+  animation: coach-pinch-b 1.8s ease-in-out infinite;
+}
+@keyframes coach-pinch-a {
+  0%, 15% { transform: translate(-3px, 3px); }
+  70%, 100% { transform: translate(-13px, 13px); }
+}
+@keyframes coach-pinch-b {
+  0%, 15% { transform: translate(3px, -3px); }
+  70%, 100% { transform: translate(13px, -13px); }
+}
+.coach-drag-dot {
+  animation: coach-drag 1.8s ease-in-out infinite;
+}
+@keyframes coach-drag {
+  0% { transform: translate(14px, 40px); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate(32px, 26px); }
+  90% { transform: translate(50px, 34px); opacity: 1; }
+  100% { transform: translate(50px, 34px); opacity: 0; }
+}
+.coach-shake {
+  transform-origin: 32px 32px;
+  animation: coach-shake 0.9s ease-in-out infinite;
+}
+@keyframes coach-shake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(6deg); }
+}
+.coach-caret {
+  animation: coach-caret 1s steps(2) infinite;
+}
+@keyframes coach-caret {
+  50% { opacity: 0; }
+}
+.coach-look {
+  transform-origin: 32px 32px;
+  animation: coach-look 2.4s ease-in-out infinite;
+}
+@keyframes coach-look {
+  0%, 100% { transform: scaleY(1); }
+  46%, 54% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-hole,
+  .coach-tap-dot,
+  .coach-tap-ring,
+  .coach-hold-ring,
+  .coach-pinch-a,
+  .coach-pinch-b,
+  .coach-drag-dot,
+  .coach-shake,
+  .coach-caret,
+  .coach-look {
+    animation: none;
+  }
+  .coach-drag-dot {
+    transform: translate(32px, 26px);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The Photographer's camera: a charcoal body in grippy leatherette, a black
+   viewfinder with the camera's own marks, and the darkroom's red glow. */
+
+.tool-camera {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse at 50% -20%, rgb(239 91 91 / 0.28), transparent 60%),
+    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.05) 1px, transparent 1.5px) 0 0 / 5px 5px,
+    #17151c;
+}
+.viewfinder-thirds {
+  background:
+    linear-gradient(90deg, transparent calc(33.33% - 0.5px), rgb(255 255 255 / 0.22) calc(33.33% - 0.5px) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px) calc(66.66% - 0.5px), rgb(255 255 255 / 0.22) calc(66.66% - 0.5px) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px)),
+    linear-gradient(0deg, transparent calc(33.33% - 0.5px), rgb(255 255 255 / 0.22) calc(33.33% - 0.5px) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px) calc(66.66% - 0.5px), rgb(255 255 255 / 0.22) calc(66.66% - 0.5px) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px));
+}
+.viewfinder-corners {
+  --c: rgb(255 244 224 / 0.9);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 18px 3px,
+    linear-gradient(var(--c), var(--c)) top left / 3px 18px,
+    linear-gradient(var(--c), var(--c)) top right / 18px 3px,
+    linear-gradient(var(--c), var(--c)) top right / 3px 18px,
+    linear-gradient(var(--c), var(--c)) bottom left / 18px 3px,
+    linear-gradient(var(--c), var(--c)) bottom left / 3px 18px,
+    linear-gradient(var(--c), var(--c)) bottom right / 18px 3px,
+    linear-gradient(var(--c), var(--c)) bottom right / 3px 18px;
+  background-repeat: no-repeat;
+}
+/* The focus square: it opens wide while the frame moves and snaps tight when it settles. */
+.viewfinder-focus {
+  --c: var(--color-mustard);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 12px 2px,
+    linear-gradient(var(--c), var(--c)) top left / 2px 12px,
+    linear-gradient(var(--c), var(--c)) top right / 12px 2px,
+    linear-gradient(var(--c), var(--c)) top right / 2px 12px,
+    linear-gradient(var(--c), var(--c)) bottom left / 12px 2px,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 12px,
+    linear-gradient(var(--c), var(--c)) bottom right / 12px 2px,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 12px;
+  background-repeat: no-repeat;
+  transition: scale 0.18s ease-out, opacity 0.18s ease-out;
+}
+.viewfinder-focus.is-hunting {
+  --c: rgb(255 244 224 / 0.7);
+  scale: 1.45;
+  opacity: 0.6;
+}
+/* Clues already photographed keep their tick small, however close the lens is. */
+.viewfinder .scene-mark {
+  scale: calc(1 / var(--zoom, 1));
+  transform-origin: top left;
+}
+/* In the dark, a lamp on the camera lights whatever the frame points at. */
+.camera-lamp {
+  background: radial-gradient(ellipse 30% 40% at 50% 50%, transparent 0%, transparent 55%, rgb(2 3 10 / 0.97) 100%);
+}
+.shutter-flash {
+  animation: shutter-flash 0.35s ease-out both;
+}
+@keyframes shutter-flash {
+  0% { background: #fff; opacity: 0.95; box-shadow: inset 0 0 0 0 #000; }
+  35% { background: transparent; opacity: 1; box-shadow: inset 0 0 0 60px #000; }
+  100% { background: transparent; opacity: 0; box-shadow: inset 0 0 0 0 #000; }
+}
+.camera-miss {
+  animation: camera-miss 2.6s ease-out both;
+}
+@keyframes camera-miss {
+  0% { opacity: 0; transform: translate(-50%, 0.6rem) rotate(-3deg); }
+  12% { opacity: 1; transform: translate(-50%, 0) rotate(-3deg); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 0.3rem) rotate(-3deg); }
+}
+/* An instant photo coming up: pale grey and blank at first, the picture surfacing as it develops. */
+.develop-image {
+  filter: brightness(calc(1 + 1.4 * (1 - var(--dev, 1)))) contrast(var(--dev, 1)) sepia(calc(0.5 * (1 - var(--dev, 1))));
+  transition: filter 0.25s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewfinder-focus,
+  .develop-image {
+    transition: none;
+  }
+  .shutter-flash {
+    animation-duration: 0.01s;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The Interviewer's interrogation room: one lamp over a bare table, the
+   suspect under it, and their nerves showing. */
+
+.tool-interrogation {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgb(255 230 167 / 0.22), transparent 70%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 46px),
+    #161328;
+}
+.interrogation-room {
+  background: #0d0b1a;
+}
+/* The lamp: a hard cone of warm light from above, and a pool of it on the table. */
+.interrogation-lamp {
+  background:
+    radial-gradient(ellipse 22% 5% at 50% 2%, rgb(255 236 170 / 0.95), transparent 100%),
+    conic-gradient(from 180deg at 50% -2%, transparent 155deg, rgb(255 230 167 / 0.2) 168deg, rgb(255 230 167 / 0.28) 180deg, rgb(255 230 167 / 0.2) 192deg, transparent 205deg),
+    radial-gradient(ellipse 60% 22% at 50% 100%, rgb(255 230 167 / 0.22), transparent 70%);
+}
+.interrogation-table {
+  background: linear-gradient(#5b3a26, #3b2416);
+  border-top: 3px solid #1b0f08;
+  box-shadow: inset 0 3px 0 rgb(255 255 255 / 0.12);
+}
+/* Nerves: breathing while they talk, a smug little bob when your evidence misses, sweat when it lands. */
+.suspect-breathe {
+  transform-origin: 50% 100%;
+  animation: suspect-breathe 3.2s ease-in-out infinite;
+}
+@keyframes suspect-breathe {
+  50% { transform: scaleY(1.015) translateY(-1px); }
+}
+.suspect-smug {
+  transform-origin: 50% 100%;
+  animation: suspect-smug 0.9s ease-in-out 2;
+}
+@keyframes suspect-smug {
+  30% { transform: rotate(-3deg) translateY(-2px); }
+  60% { transform: rotate(2deg); }
+}
+.suspect-sweat::before,
+.suspect-sweat::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 13px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: #bfe8ff;
+  border: 2px solid var(--color-ink);
+  animation: suspect-sweat 1.6s ease-in infinite;
+}
+.suspect-sweat::after {
+  left: 14px;
+  top: 10px;
+  animation-delay: 0.7s;
+}
+@keyframes suspect-sweat {
+  0% { opacity: 0; transform: translateY(-4px) scale(0.6); }
+  20% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(26px) scale(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .suspect-breathe,
+  .suspect-smug,
+  .suspect-sweat::before,
+  .suspect-sweat::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The Archivist's wall: an office of dark wood panelling around the cork. */
+
+.tool-wall {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse at 50% -15%, rgb(242 179 61 / 0.2), transparent 60%),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 64px),
+    linear-gradient(#3d2818, #2c1c10);
+}
+
+/* ---------------------------------------------------------------------------
+   The Tech's computer: a beige monitor on a dark desk, a green screen with
+   scanlines and a little glow, and amber for anything locked. */
+
+.tool-computer {
+  color: var(--color-cream);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgb(63 184 175 / 0.18), transparent 60%),
+    linear-gradient(#1b2321, #121816);
+}
+.monitor {
+  background: linear-gradient(#e6dcc4, #cbbf9f);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.6),
+    inset 0 -3px 0 rgb(0 0 0 / 0.12),
+    var(--shadow-pop-sm);
+}
+.crt {
+  background:
+    repeating-linear-gradient(0deg, rgb(63 184 175 / 0.06) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, rgb(63 184 175 / 0.14), transparent 75%),
+    #04100c;
+  box-shadow: inset 0 0 24px rgb(0 0 0 / 0.75);
+}
+.crt-cursor {
+  animation: coach-caret 1s steps(2) infinite;
+}
+.crt-granted {
+  animation: crt-granted 1.6s ease-out both;
+}
+@keyframes crt-granted {
+  0% { opacity: 0; filter: brightness(2.2); }
+  12% { opacity: 1; }
+  20% { filter: brightness(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Tap words: everything you could tap is marked, and the word you tapped lights up for a moment. */
+body.tech-tapping [data-searchable] {
+  cursor: text;
+  outline: 3px dashed rgb(63 184 175 / 0.85);
+  outline-offset: 4px;
+}
+::highlight(tapped-word) {
+  background-color: rgb(63 184 175 / 0.55);
+  color: #04100c;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crt-cursor,
+  .crt-granted {
+    animation: none;
+  }
 }

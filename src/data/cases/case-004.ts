@@ -32,7 +32,8 @@ export const case004: CaseFile = {
   cinematic: { video: "/cinematics/case-004.mp4", poster: "/cinematics/case-004.jpg" },
   deadline: {
     what: "The plough clears the road at 9:00 AM",
-    times: ["12:30 AM", "3:30 AM", "6:30 AM"],
+    start: "12:30 AM",
+    end: "9:00 AM",
     lost: "9:00 AM. The plough clears the road and everyone goes home. Whoever took the Aurora only has to wait for the thaw.",
   },
   minPlayers: 2,
@@ -55,10 +56,10 @@ export const case004: CaseFile = {
     { id: "rectangle", art: "rectangle", name: "Greta Holm", role: "Mountain guide", tint: 140, blurb: "Runs the lodge's ski trips. Has a master keycard." },
   ],
   roles: [
-    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. The team gets five questions for the whole case, so choose them together." },
-    { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You read pictures. Tap anything in a photo or video still to look closer. Only you can." },
-    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
+    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the lodge's systems: power, doors, keycards, the weather station. Type a name or thing to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free." },
+    { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin." },
+    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You talked to the night porter. He hears every door in the place." },
     { id: "profiler", core: false, ability: "none", name: "Profiler", blurb: "You know everyone staying at the lodge." },
   ],
@@ -109,7 +110,6 @@ export const case004: CaseFile = {
       ],
     },
   ],
-  questionBudget: 5,
   searchNotes: [
     { terms: ["otto", "brennan"], text: "O. Brennan: the owner's records are the lodge's own. Check something he's told you." },
     { terms: ["greta", "holm"], text: "G. Holm: staff keycard MASTER-2. Every swipe is in the door log." },
@@ -129,12 +129,12 @@ export const case004: CaseFile = {
       {
         id: "storm",
         text: "It was the storm. These old lines can't take the weight of the snow.",
-        lie: { breaks: ["grid-report", "power-log", "insight-storm"], crack: "So the lines held. How lovely for the lines." },
+        lie: { breaks: ["grid-report", "power-log", "insight-storm", "crack-otto-fusebox"], crack: "So the lines held. How lovely for the lines." },
       },
       {
         id: "chair",
         text: "I was in my armchair by the fire, counting down with everyone else.",
-        lie: { breaks: ["detail-chair", "insight-armchair", "question-lily-missing", "insight-boiler"], crack: "I popped out to check the boiler. A host's work is never done." },
+        lie: { breaks: ["detail-chair", "insight-armchair", "question-lily-missing", "insight-boiler", "crack-otto-boiler", "insight-boiler-otto"], crack: "I popped out to check the boiler. A host's work is never done." },
       },
       { id: "key", text: "Yes, I keep a key to the case. So does Sir Reginald." },
       {
@@ -146,7 +146,7 @@ export const case004: CaseFile = {
       {
         id: "outside",
         text: "Go outside? At minus fifteen, on this knee? I never left the building.",
-        lie: { breaks: ["detail-holes", "insight-cane", "detail-snowy-slippers"], crack: "Slippers get damp. It's a damp lodge." },
+        lie: { breaks: ["detail-holes", "insight-cane", "detail-snowy-slippers", "crack-otto-snowman"], crack: "Slippers get damp. It's a damp lodge." },
       },
       {
         id: "money",
@@ -303,6 +303,14 @@ export const case004: CaseFile = {
       body: { type: "finding", text: "Otto blames the storm. The power company had no outages in the valley tonight." },
     },
     {
+      id: "crack-otto-fusebox",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "press", suspect: "Otto Brennan", against: "question-otto-power", breaks: ["grid-report", "power-log", "insight-storm"] },
+      title: "Otto: the fuse box",
+      body: { type: "statement", speaker: "Otto Brennan", text: "Not the storm, then. That old fuse box trips if you so much as look at it. Ask anyone." },
+    },
+    {
       id: "guest-notes",
       role: "profiler",
       chapter: 1,
@@ -320,6 +328,8 @@ export const case004: CaseFile = {
       role: "tech",
       chapter: 2,
       access: { kind: "search", terms: ["breaker", "breakerroom", "doors", "door", "keycard", "master2"] },
+      // Locked: the keycard register lists the owner's card.
+      lock: { hint: "Door system admin. Password hint: the owner's own keycard.", answers: ["MASTER-1"] },
       title: "Lodge door log",
       body: {
         type: "log",
@@ -456,7 +466,7 @@ export const case004: CaseFile = {
       id: "boiler-log",
       role: "tech",
       chapter: 2,
-      after: ["question-lily-missing"],
+      afterAny: ["question-lily-missing", "crack-otto-boiler"],
       access: { kind: "search", terms: ["boiler", "boilerroom", "heating"] },
       title: "Boiler room",
       body: {
@@ -475,6 +485,22 @@ export const case004: CaseFile = {
       access: { kind: "crosscheck", pair: ["question-lily-missing", "boiler-log"] },
       title: "Nobody checked the boiler",
       body: { type: "finding", text: "Otto told Lily he went to check the boiler at midnight. Nobody opened the boiler room after 18:10." },
+    },
+    {
+      id: "crack-otto-boiler",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Otto Brennan", against: "question-otto-midnight", breaks: ["detail-chair", "insight-armchair", "question-lily-missing", "detail-snowy-slippers"] },
+      title: "Otto: stepping out",
+      body: { type: "statement", speaker: "Otto Brennan", text: "I stepped out for a moment. The boiler was making that noise again." },
+    },
+    {
+      id: "insight-boiler-otto",
+      role: "archivist",
+      chapter: 2,
+      access: { kind: "crosscheck", pair: ["crack-otto-boiler", "boiler-log"] },
+      title: "No boiler, no noise",
+      body: { type: "finding", text: "Otto says he stepped out to see to the boiler. Nobody opened the boiler room after 18:10." },
     },
     {
       id: "insight-armchair",
@@ -618,6 +644,22 @@ export const case004: CaseFile = {
       access: { kind: "interview", suspect: "Sir Reginald Pike", question: "Did anyone go outside tonight?" },
       title: "Sir Reginald: outside",
       body: { type: "statement", speaker: "Sir Reginald Pike", text: "Outside? It's minus fifteen and pitch black. Nobody in their right mind." },
+    },
+    {
+      id: "question-otto-outside",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "interview", suspect: "Otto Brennan", question: "Did you go outside tonight?" },
+      title: "Otto: outside",
+      body: { type: "statement", speaker: "Otto Brennan", text: "At minus fifteen, on this knee? Never. Not once." },
+    },
+    {
+      id: "crack-otto-snowman",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Otto Brennan", against: "question-otto-outside", breaks: ["detail-holes", "insight-cane", "detail-snowy-slippers", "detail-prints"] },
+      title: "Otto: the snowman",
+      body: { type: "statement", speaker: "Otto Brennan", text: "Only to check on the snowman. It was leaning. I'm very fond of that snowman." },
     },
     {
       id: "insight-cane",

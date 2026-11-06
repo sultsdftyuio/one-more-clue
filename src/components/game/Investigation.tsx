@@ -2,22 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { formatSpan } from "@/lib/game/clock";
 import type { PlayerView } from "@/lib/game/engine";
 import type { Beat } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { AudioToggles } from "./audio/AudioToggles";
+import { CAMERA_EVENT } from "./camera-events";
 import { play } from "./audio/sound";
 import { BoardPanel, BoardPeek } from "./BoardPanel";
 import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
 import { DeskPanel, Notebook } from "./desk/DeskPanel";
 import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { SpotlightMoment } from "./evidence/ShowEveryone";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
 import { Avatar } from "./parts";
 import { ProposalBar } from "./ProposalBar";
 import { SolvePanel } from "./SolvePanel";
-import { Moments, SoundCues } from "./story/Moments";
+import { WordTap } from "./desk/roles/WordTap";
+import { AccessMoment, CrackMoment, Moments, SoundCues } from "./story/Moments";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
@@ -33,7 +37,9 @@ function useClock(startedAt: number | null) {
   }, []);
   if (!startedAt) return "0:00";
   const s = Math.max(0, Math.floor((now - startedAt) / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const two = (n: number) => String(n).padStart(2, "0");
+  // A long night reads as hours: 1:05:09, not 65:09.
+  return s >= 3600 ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}` : `${Math.floor(s / 60)}:${two(s % 60)}`;
 }
 
 function ChapterSteps({ view }: { view: PlayerView }) {
@@ -65,19 +71,53 @@ function ChapterSteps({ view }: { view: PlayerView }) {
   );
 }
 
-/** The night running out. It only moves when the team answers wrongly. */
+/**
+ * The night running out. Every paid move spends some of it, and each spend
+ * drops off the clock as it happens, on every phone, so the whole team feels it.
+ */
 function StoryClock({ view }: { view: PlayerView }) {
   const deadline = view.deadline;
+  const spent = deadline?.spent ?? 0;
+  const last = useRef(spent);
+  const [drop, setDrop] = useState<{ id: number; minutes: number } | null>(null);
+
+  useEffect(() => {
+    const minutes = spent - last.current;
+    last.current = spent;
+    if (minutes <= 0) return;
+    setDrop({ id: Date.now(), minutes });
+    const timer = window.setTimeout(() => setDrop(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [spent]);
+
   if (!deadline) return null;
+  const share = deadline.night ? deadline.left / deadline.night : 1;
   return (
-    <div className="flex items-center justify-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
-      <Icon name="clock" className="size-3.5 shrink-0 text-mustard" />
-      <span className="shrink-0 font-mono text-mustard">{deadline.time}</span>
-      <span className="truncate">{deadline.what}</span>
-      <span className="flex shrink-0 gap-1" aria-label={`${deadline.left} wrong answers left`}>
-        {Array.from({ length: deadline.left }, (_, i) => (
-          <span key={i} className="size-1.5 rounded-full bg-coral" />
-        ))}
+    <div className="mx-auto flex max-w-[90rem] items-center gap-2 border-t border-cream/10 px-4 py-1 text-xs font-bold text-cream/80">
+      <Icon name="clock" className={cx("size-3.5 shrink-0", deadline.low ? "animate-pulse text-coral" : "text-mustard")} />
+      <span className={cx("relative shrink-0 font-mono", deadline.low ? "text-coral" : "text-mustard")}>
+        {deadline.time}
+        {drop && (
+          <span
+            key={drop.id}
+            aria-hidden
+            className="clock-drop absolute top-full left-0 z-10 mt-1 rounded-full border-2 border-ink bg-coral px-2 py-0.5 font-sans text-[0.7rem] font-black whitespace-nowrap text-cream shadow-pop-sm"
+          >
+            −{formatSpan(drop.minutes)}
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{deadline.low ? "The night is almost gone. Every mistake counts." : deadline.what}</span>
+      <span
+        role="meter"
+        aria-label="Night left"
+        aria-valuemin={0}
+        aria-valuemax={deadline.night}
+        aria-valuenow={deadline.left}
+        aria-valuetext={`${formatSpan(deadline.left)} left`}
+        className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-cream/15 sm:w-28"
+      >
+        <span className={cx("block h-full rounded-full transition-[width] duration-700 ease-out", deadline.low ? "bg-coral" : "bg-mustard")} style={{ width: `${share * 100}%` }} />
       </span>
     </div>
   );
@@ -174,7 +214,7 @@ function ActivityToasts({ view }: { view: PlayerView }) {
       return;
     }
     const from = view.activity.findIndex((a) => a.id === seen.current);
-    const fresh = view.activity.slice(from + 1).filter((a) => a.playerId !== view.me.id && a.kind !== "miss" && a.kind !== "unpin");
+    const fresh = view.activity.slice(from + 1).filter((a) => a.playerId !== view.me.id && a.kind !== "miss" && a.kind !== "unpin" && a.kind !== "spotlight");
     seen.current = last;
     if (!fresh.length) return;
     setToasts((t) => [...t, ...fresh].slice(-3));
@@ -294,6 +334,15 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
     if (panel === "team") setHeardSeen(heard);
   }, [panel, heard]);
 
+  useEffect(() => {
+    const close = () => {
+      setOpened(null);
+      setPanel(null);
+    };
+    window.addEventListener(CAMERA_EVENT, close);
+    return () => window.removeEventListener(CAMERA_EVENT, close);
+  }, []);
+
   const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
   const unread = heard - heardSeen;
@@ -328,6 +377,10 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
       <ActivityToasts view={view} />
       <SoundCues view={view} />
       <Moments />
+      <SpotlightMoment />
+      <CrackMoment />
+      <AccessMoment />
+      {view.me.abilities.includes("search") && <WordTap />}
       <LieMoment />
       <LieCallBar />
 

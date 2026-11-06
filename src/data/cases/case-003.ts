@@ -31,7 +31,8 @@ export const case003: CaseFile = {
   cinematic: { video: "/cinematics/case-003.mp4", poster: "/cinematics/case-003.jpg" },
   deadline: {
     what: "The kitchen is scrubbed clean at midnight",
-    times: ["10:15 PM", "10:50 PM", "11:25 PM"],
+    start: "10:15 PM",
+    end: "12:00 AM",
     lost: "Midnight. The kitchen is scrubbed and the pass is spotless. Whatever was on that plate is gone, and so is your case.",
   },
   minPlayers: 2,
@@ -54,10 +55,10 @@ export const case003: CaseFile = {
     { id: "rectangle", art: "rectangle", name: "Ruth Vale", role: "Pastry chef", tint: 110, blurb: "Twelve years of desserts. Every chocolate course is hers." },
   ],
   roles: [
-    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records." },
-    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You talk to people. The team gets six questions across four chapters, so choose them together." },
-    { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can." },
-    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other." },
+    { id: "tech", core: true, ability: "search", name: "Tech", blurb: "You're in the restaurant's systems: bookings, kitchen tickets, the storeroom, emails. Type a name or thing to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate." },
+    { id: "interviewer", core: true, ability: "interview", name: "Interviewer", blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free." },
+    { id: "photographer", core: true, ability: "inspect", name: "Photographer", blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin." },
+    { id: "archivist", core: true, ability: "crosscheck", name: "Archivist", blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready." },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You were front of house tonight. Diners notice things." },
     { id: "profiler", core: false, ability: "none", name: "Profiler", blurb: "You know this kitchen, and the people in it." },
   ],
@@ -127,7 +128,6 @@ export const case003: CaseFile = {
       ],
     },
   ],
-  questionBudget: 6,
   searchNotes: [
     { terms: ["ruth", "vale", "pastry", "pastrychef"], text: "R. Vale: twelve years of rotas and nothing else. What would she have signed for?" },
     { terms: ["olu", "bello", "sommelier", "wine"], text: "O. Bello: wine orders only. One glass of Pinot to Table 1 tonight." },
@@ -147,12 +147,12 @@ export const case003: CaseFile = {
       {
         id: "butter",
         text: "I went to the storeroom for butter. That's all.",
-        lie: { breaks: ["storeroom-log", "insight-oil"], crack: "Peanut oil, butter. They're both fats." },
+        lie: { breaks: ["storeroom-log", "insight-oil", "crack-ruth-oil"], crack: "Peanut oil, butter. They're both fats." },
       },
       {
         id: "nuts",
         text: "No nut has ever been near my section. I would never take that risk.",
-        lie: { breaks: ["detail-bottle", "insight-oil"], crack: "Anyone could hide a bottle behind my flour." },
+        lie: { breaks: ["detail-bottle", "insight-oil", "crack-ruth-oil"], crack: "Anyone could hide a bottle behind my flour." },
       },
       {
         id: "plate",
@@ -168,7 +168,7 @@ export const case003: CaseFile = {
       {
         id: "sale",
         text: "What sale? I make desserts. I don't read his emails.",
-        lie: { breaks: ["detail-note", "ruth-letter", "sale-email"], crack: "Twelve years, and he told me with a form letter." },
+        lie: { breaks: ["detail-note", "ruth-letter", "sale-email", "crack-ruth-email"], crack: "Twelve years, and he told me with a form letter." },
       },
     ],
     walkout: "My mousse is splitting. We're finished here.",
@@ -315,6 +315,14 @@ export const case003: CaseFile = {
       access: { kind: "crosscheck", pair: ["detail-menu", "paramedic-note"] },
       title: "Not so nut-free",
       body: { type: "finding", text: "The menu swears it's nut-free, as ever. The paramedics say peanut." },
+    },
+    {
+      id: "crack-amelie-outside",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "press", suspect: "Amélie Duret", against: "statement-amelie", breaks: ["paramedic-note", "insight-nutfree", "insight-allergens"] },
+      title: "Amélie: from outside",
+      body: { type: "statement", speaker: "Amélie Duret", text: "Then it didn't come from my kitchen. It came in from outside, or somebody brought it in on purpose." },
     },
     {
       id: "kitchen-notes",
@@ -559,6 +567,22 @@ export const case003: CaseFile = {
       body: { type: "statement", speaker: "Amélie Duret", text: "Ruth. Only Ruth. She plates the owner's dessert herself, every night." },
     },
     {
+      id: "question-bertrand-buyer",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "interview", suspect: "Bertrand Carré", question: "Who's the buyer you're meeting?" },
+      title: "Bertrand: the buyer",
+      body: { type: "statement", speaker: "Bertrand Carré", text: "Suppliers. Wine people. Terribly dull, I promise you." },
+    },
+    {
+      id: "crack-bertrand-sale",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Bertrand Carré", against: "question-bertrand-buyer", breaks: ["bertrand-calendar"] },
+      title: "Bertrand: the sale",
+      body: { type: "statement", speaker: "Bertrand Carré", text: "Gastro Group. I'm selling Maison Lune on Monday. Nobody here knows yet, and I'd like to keep it that way." },
+    },
+    {
       id: "insight-target",
       role: "archivist",
       chapter: 3,
@@ -633,6 +657,8 @@ export const case003: CaseFile = {
       role: "tech",
       chapter: 4,
       access: { kind: "search", terms: ["gastro", "gastrogroup", "sale", "buyer"] },
+      // Locked: the house rules say where the owner tastes every chocolate course.
+      lock: { hint: "Bertrand's mail. Password hint: where I taste dessert every night.", answers: ["Table 9", "Table nine"] },
       title: "Email to Gastro Group",
       body: {
         type: "chat",
@@ -675,6 +701,22 @@ export const case003: CaseFile = {
       access: { kind: "interview", suspect: "Olu Bello", question: "Did anyone go to the storeroom tonight?" },
       title: "Olu: the storeroom",
       body: { type: "statement", speaker: "Olu Bello", text: "Ruth, around quarter past nine. Said she was out of butter. Odd, mid-service." },
+    },
+    {
+      id: "crack-ruth-oil",
+      role: "interviewer",
+      chapter: 4,
+      access: { kind: "press", suspect: "Ruth Vale", against: "question-ruth-nuts", breaks: ["storeroom-log", "detail-bottle", "insight-oil", "question-olu-storeroom"] },
+      title: "Ruth: the oil",
+      body: { type: "statement", speaker: "Ruth Vale", text: "The oil is for the staff stir-fry. Ask anyone. It never goes near service." },
+    },
+    {
+      id: "crack-ruth-email",
+      role: "interviewer",
+      chapter: 4,
+      access: { kind: "press", suspect: "Ruth Vale", against: "question-ruth-sale", breaks: ["detail-note", "sale-email"] },
+      title: "Ruth: the email",
+      body: { type: "statement", speaker: "Ruth Vale", text: "Fine. I read it. Everyone reads everything in a kitchen. It doesn't mean I did anything." },
     },
     {
       id: "insight-oil",

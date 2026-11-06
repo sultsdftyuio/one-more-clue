@@ -32,7 +32,23 @@ export type Sfx =
   | "powerdown"
   | "static"
   | "shutter"
-  | "whoosh";
+  | "whoosh"
+  /** The camera: film winding on after a shot, focus settling, a print coming up in the tray. */
+  | "wind"
+  | "focus"
+  | "develop"
+  /** The interrogation room: someone's story giving way. */
+  | "crack"
+  /** The evidence wall: red string pulled tight on a contradiction, or sagging off two things that agree. */
+  | "taut"
+  | "slack"
+  /** The computer: a password taken, or refused. */
+  | "granted"
+  | "denied"
+  /** The story clock losing time. */
+  | "tick"
+  /** Something pushed onto every phone. */
+  | "spotlight";
 
 type Settings = { sound: boolean; music: boolean };
 
@@ -262,12 +278,102 @@ export function play(sfx: Sfx) {
     case "whoosh":
       hiss({ length: 0.7, volume: 0.1, from: 300, to: 1200, type: "lowpass" });
       break;
+    case "wind":
+      // A ratchet: three quick teeth, then the lever settling.
+      [0, 0.05, 0.1].forEach((start) => hiss({ start, length: 0.03, volume: 0.16, from: 2600, to: 1800 }));
+      tone({ freq: 300, glide: 240, start: 0.14, length: 0.08, volume: 0.08, type: "triangle" });
+      break;
+    case "focus":
+      tone({ freq: 2093, length: 0.05, volume: 0.07 });
+      tone({ freq: 2093, start: 0.08, length: 0.05, volume: 0.07 });
+      break;
+    case "develop":
+      // Chemistry fizzing in the tray, then the picture arriving.
+      hiss({ length: 1.1, volume: 0.06, from: 4000, to: 9000, type: "highpass" });
+      [0, 7, 12].forEach((n, i) => tone({ freq: NOTE(n + 3), type: "sine", start: 0.5 + i * 0.09, length: 0.6, volume: 0.1 }));
+      break;
+    case "crack":
+      // A sharp split, a falling note, and a thump in the chest.
+      hiss({ length: 0.09, volume: 0.45, from: 5000, to: 1200 });
+      tone({ freq: 880, glide: 220, start: 0.03, length: 0.35, volume: 0.16, type: "sawtooth" });
+      tone({ freq: 90, glide: 45, start: 0.05, length: 0.4, volume: 0.45 });
+      break;
+    case "taut":
+      // A plucked string pulled tight: it rises as it tightens, then rings.
+      tone({ freq: 196, glide: 392, length: 0.18, volume: 0.16, type: "sawtooth" });
+      tone({ freq: 392, start: 0.17, length: 0.7, volume: 0.14, type: "triangle" });
+      tone({ freq: 784, start: 0.17, length: 0.45, volume: 0.05, type: "triangle" });
+      break;
+    case "slack":
+      tone({ freq: 220, glide: 98, length: 0.45, volume: 0.12, type: "triangle" });
+      hiss({ start: 0.38, length: 0.12, volume: 0.12, from: 600, to: 300, type: "lowpass" });
+      break;
+    case "granted":
+      [0, 4, 7, 12, 16].forEach((n, i) => tone({ freq: NOTE(n + 3), type: "square", start: i * 0.055, length: 0.12, volume: 0.06 }));
+      tone({ freq: NOTE(15), type: "triangle", start: 0.3, length: 0.5, volume: 0.12 });
+      break;
+    case "denied":
+      tone({ freq: 196, type: "square", length: 0.12, volume: 0.08 });
+      tone({ freq: 185, type: "square", start: 0.16, length: 0.22, volume: 0.08 });
+      break;
+    case "tick":
+      // Tick, tock, and a low bell for the time that's gone.
+      hiss({ length: 0.025, volume: 0.2, from: 3500, to: 3000 });
+      hiss({ start: 0.22, length: 0.025, volume: 0.16, from: 2400, to: 2000 });
+      tone({ freq: NOTE(-17), start: 0.4, length: 0.9, volume: 0.12, type: "triangle" });
+      tone({ freq: NOTE(-5), start: 0.4, length: 0.6, volume: 0.04 });
+      break;
+    case "spotlight":
+      hiss({ length: 0.4, volume: 0.08, from: 400, to: 2400, type: "lowpass" });
+      tone({ freq: 1568, start: 0.25, length: 0.4, volume: 0.1 });
+      tone({ freq: 2093, start: 0.33, length: 0.5, volume: 0.07 });
+      break;
     case "reveal":
       hiss({ length: 1.4, volume: 0.1, from: 300, to: 6000 });
       tone({ freq: 55, start: 1.35, length: 1.2, volume: 0.5 });
       [-21, -14, -9, -5].forEach((n) => tone({ freq: NOTE(n), type: "sawtooth", start: 1.35, length: 1.6, volume: 0.05 }));
       break;
   }
+}
+
+let lastSpoke = 0;
+
+/** A steady number from a name, so each character always sounds the same. */
+function voiceSeed(who: string) {
+  return [...who].reduce((hash, ch) => Math.imul(hash ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0;
+}
+
+/**
+ * A character talking: a short voiced blip under their words, pitched and
+ * coloured by who they are, so every suspect has their own voice. Call it as
+ * the text types on; it thins itself out.
+ */
+export function speak(who: string) {
+  load();
+  if (!settings.sound || !ctx || ctx.state !== "running") return;
+  const now = ctx.currentTime;
+  if (now - lastSpoke < 0.07) return;
+  lastSpoke = now;
+  const seed = voiceSeed(who);
+  const base = 110 + (seed % 170);
+  const shape: OscillatorType[] = ["triangle", "square", "sawtooth", "triangle"];
+  const type = shape[(seed >> 8) % shape.length];
+  const freq = base * (0.92 + Math.random() * 0.18);
+  const osc = ctx.createOscillator();
+  const formant = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(freq * (0.82 + ((seed >> 4) % 10) / 100), now + 0.07);
+  formant.type = "bandpass";
+  formant.frequency.value = 700 + ((seed >> 12) % 900);
+  formant.Q.value = 1.4;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(type === "triangle" ? 0.22 : 0.13, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+  osc.connect(formant).connect(gain).connect(sfxBus);
+  osc.start(now);
+  osc.stop(now + 0.1);
 }
 
 /** One moment of a tape recording, synthesised. Plays for about `seconds`. */

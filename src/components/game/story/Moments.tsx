@@ -2,16 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
+import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
-import { evidenceIn, useGame } from "../context";
+import { evidenceIn, nameOf, useGame } from "../context";
 import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
 import { ContradictionSlip } from "../evidence/objects/FindingNote";
 import { PinButton } from "../evidence/PinButton";
 import { ReadOutButton } from "../evidence/ReadOut";
+import { ShowEveryoneButton } from "../evidence/ShowEveryone";
 import { Cassette } from "../evidence/RecordingPlayer";
-import { ZoomedSpot } from "../evidence/SceneView";
 import { SuspectPortrait } from "../parts";
+import { DevelopPrint } from "./Develop";
 import { useTypewriter } from "./StoryPlayer";
+
+/** Kinds of find a station plays out itself while it's open (the interrogation room's answers and cracks), so they don't pop up too. */
+export const quietFinds = new Set<string>();
 
 /** Seconds into a contradiction when the stamp lands. */
 const STAMP_AT = 0.6;
@@ -23,6 +28,9 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   const speaks = evidence.source === "interview";
   const spoken = speaks && body.type === "statement" ? body.text : "";
   const typed = useTypewriter(spoken, Boolean(spoken));
+  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
+  // A photo comes out blank and has to be developed before there's anything to do with it.
+  const [developed, setDeveloped] = useState(!(evidence.source === "inspect" && scene && evidence.spot));
 
   useEffect(() => {
     // The stamp's sound lands with the stamp, once the two papers have met.
@@ -30,11 +38,9 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
       const timer = window.setTimeout(() => play("stamp"), STAMP_AT * 1000);
       return () => window.clearTimeout(timer);
     }
-    const sound = { search: "match", inspect: "found" } as const;
+    const sound = { search: "match" } as const;
     if (evidence.source in sound) play(sound[evidence.source as keyof typeof sound]);
   }, [evidence.source]);
-
-  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
 
   let content;
   if (evidence.source === "search") {
@@ -74,16 +80,8 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
       </div>
     );
   } else if (evidence.source === "inspect" && scene && evidence.spot) {
-    // The marked part of the picture develops in the tray, then the note appears under it.
-    content = (
-      <div className="text-center">
-        <figure className="mx-auto w-[min(19rem,88%)] -rotate-2 border-[3px] border-ink bg-white p-2 pb-3 shadow-card">
-          <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} className="moment-develop" />
-          <figcaption className="mt-2 font-hand text-xl leading-tight text-ink">{evidence.title}</figcaption>
-        </figure>
-        <p className="mx-auto mt-4 max-w-sm animate-[rise-in_0.4s_ease-out_1.5s_both] border-2 border-ink bg-[#ffe98f] px-4 py-2 font-hand text-[1.3rem] leading-snug text-ink">{snippet(body)}</p>
-      </div>
-    );
+    // The camera's catch comes out blank: shake or rub it up, then the note appears under it.
+    content = <DevelopPrint scene={scene.body} hotspot={evidence.spot.hotspot} title={evidence.title} note={snippet(body)} onDeveloped={() => setDeveloped(true)} />;
   } else if (evidence.source === "crosscheck" && body.type === "finding") {
     // Two papers meet in the middle, and the stamp comes down.
     const [a, b] = evidence.compared ?? [];
@@ -109,11 +107,12 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   return (
     <div className="fixed inset-0 z-[52] grid animate-[fade-in_0.2s_ease-out] grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto bg-night/80 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={evidence.title}>
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0" />
-      <div className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
+      <div data-searchable className="relative w-full max-w-md animate-[curtain_0.3s_ease-out]">
         {content}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <div className={cx("mt-5 flex flex-wrap items-center justify-center gap-2", !developed && "hidden")}>
           <PinButton evidence={evidence} />
           <ReadOutButton evidence={evidence} />
+          <ShowEveryoneButton evidence={evidence} />
           <button
             type="button"
             onClick={() => (speaks && !typed.complete ? typed.finish() : onClose())}
@@ -141,13 +140,101 @@ export function Moments() {
     }
     const fresh = found.filter((e) => !seen.current!.has(e.id));
     fresh.forEach((e) => seen.current!.add(e.id));
-    const mine = fresh.filter((e) => e.foundBy === view.me.id).map((e) => e.id);
+    const mine = fresh.filter((e) => e.foundBy === view.me.id && !quietFinds.has(e.source)).map((e) => e.id);
     if (mine.length) setQueue((q) => [...q, ...mine]);
   }, [view.evidence, view.me.id]);
 
   const current = queue[0] ? view.evidence.find((e) => e.id === queue[0]) : undefined;
   if (!current) return null;
   return <MomentCard key={current.id} evidence={current} onClose={() => setQueue((q) => q.slice(1))} />;
+}
+
+/** How long a crack stays up on everyone else's phone. */
+const CRACK_MS = 6500;
+
+/**
+ * A suspect's story giving way, on every phone but the Interviewer's (they
+ * watched it happen in the room): the shocked face, the CRACK stamp, and what
+ * they gave up, word for word.
+ */
+export function CrackMoment() {
+  const { view } = useGame();
+  const seen = useRef<Set<string> | null>(null);
+  const [shown, setShown] = useState<PlayerView["cracks"][number] | null>(null);
+
+  useEffect(() => {
+    if (!seen.current) {
+      seen.current = new Set(view.cracks.map((c) => c.id));
+      return;
+    }
+    const fresh = view.cracks.find((c) => !seen.current!.has(c.id));
+    view.cracks.forEach((c) => seen.current!.add(c.id));
+    if (!fresh || fresh.by === view.me.id) return;
+    setShown(fresh);
+    play("crack");
+  }, [view.cracks, view.me.id]);
+
+  useEffect(() => {
+    if (!shown) return;
+    const timer = window.setTimeout(() => setShown(null), CRACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [shown]);
+
+  if (!shown) return null;
+  const suspect = view.case.suspects.find((s) => s.name === shown.suspect) ?? { id: shown.suspect, name: shown.suspect, blurb: "" };
+  return (
+    <div className="fixed inset-0 z-[53] grid animate-[fade-in_0.2s_ease-out] place-items-center bg-night/85 p-4 backdrop-blur-sm" role="dialog" aria-modal aria-label={`${shown.suspect} cracked`}>
+      <button type="button" aria-label="Close" onClick={() => setShown(null)} className="absolute inset-0" />
+      <div className="relative w-full max-w-md text-center">
+        <p className="inline-block -rotate-12 animate-stamp rounded-2xl border-[6px] border-coral px-8 py-1 font-display text-6xl text-coral">CRACK!</p>
+        <p className="mt-6 text-sm font-extrabold tracking-widest text-mustard uppercase">{nameOf(view, shown.by)} broke {shown.suspect}</p>
+        <div className="mt-4 flex animate-shake items-end gap-3 text-left">
+          <SuspectPortrait suspect={suspect} shocked className="w-24 shrink-0" />
+          <p className="mb-4 flex-1 rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-lg leading-snug font-bold text-ink shadow-card">&ldquo;{shown.text}&rdquo;</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** How long ACCESS GRANTED stays up on everyone else's phone. */
+const ACCESS_MS = 2600;
+
+/** The Tech cracked a password: every other phone flashes ACCESS GRANTED, with the file's name. */
+export function AccessMoment() {
+  const { view } = useGame();
+  const seen = useRef<string | null>(null);
+  const [shown, setShown] = useState<{ id: string; text: string } | null>(null);
+
+  useEffect(() => {
+    const last = view.activity.filter((a) => a.kind === "access").at(-1);
+    if (seen.current === null) {
+      seen.current = last?.id ?? "";
+      return;
+    }
+    if (!last || last.id === seen.current) return;
+    seen.current = last.id;
+    if (last.playerId === view.me.id) return;
+    setShown({ id: last.id, text: last.text });
+    play("granted");
+  }, [view.activity, view.me.id]);
+
+  useEffect(() => {
+    if (!shown) return;
+    const timer = window.setTimeout(() => setShown(null), ACCESS_MS);
+    return () => window.clearTimeout(timer);
+  }, [shown]);
+
+  if (!shown) return null;
+  const title = shown.text.split("Access granted: ")[1] ?? "";
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-24 z-[53] flex justify-center px-4" role="status">
+      <div className="crt-granted tool-terminal rounded-2xl border-[3px] border-ink px-6 py-4 text-center shadow-card">
+        <p className="font-printer text-4xl leading-none text-teal">ACCESS GRANTED</p>
+        {title && <p className="mt-1.5 font-mono text-sm font-bold text-teal/80">{title}</p>}
+      </div>
+    </div>
+  );
 }
 
 /** Quiet sound cues for what the rest of the team does, and for votes opening. */
@@ -179,6 +266,8 @@ export function SoundCues({ view }: { view: PlayerView }) {
       else if (a.kind === "pin") play("pin");
       else if (a.kind === "found" && !mine) play("tap");
       else if (a.kind === "hint") play("message");
+      else if (a.kind === "clock") play("tick");
+      else if (a.kind === "locked" && !mine) play("message");
     }
   }, [view.activity, view.me.id]);
 

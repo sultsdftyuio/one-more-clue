@@ -4,6 +4,8 @@
  * ability once per chapter, say so in remote rooms, and vote the way the
  * first human voter did. They never answer checkpoints: that's the humans' job.
  */
+import { shotOf } from "./camera.ts";
+import { nightLeft } from "./clock.ts";
 import { activePlayers, canSee, PIN_LIMIT, opened } from "./engine.ts";
 import type { Action, CaseFile, Player, RoomState } from "./types";
 
@@ -28,15 +30,23 @@ function abilityMove(state: RoomState, caseFile: CaseFile, bot: Player): Action 
   for (const role of roles) {
     for (const e of caseFile.evidence) {
       // Bots follow up leads whenever they open, so a human tester can walk a chain with them.
-      if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after)) continue;
+      if (state.found[e.id] || !current(e) || !opened(state, e) || (usedThisChapter && !e.after && !e.afterAny)) continue;
       const a = e.access;
+      if (role.ability === "search" && e.lock && state.locked?.[e.id]) return { type: "unlock", evidenceId: e.id, password: e.lock.answers[0] };
       if (role.ability === "search" && a.kind === "search") return { type: "search", query: a.terms[0] };
-      if (role.ability === "interview" && a.kind === "interview" && (e.after || caseFile.questionBudget - state.questionsUsed > 1)) {
+      if (role.ability === "interview" && a.kind === "interview" && (e.after || e.afterAny || nightLeft(state, caseFile) > 0.5)) {
         return { type: "ask", evidenceId: e.id };
       }
       if (role.ability === "inspect" && a.kind === "inspect") {
         const scene = caseFile.evidence.find((s) => s.id === a.scene);
-        if (scene && canSee(state, bot, scene)) return { type: "inspect", scene: a.scene, hotspot: a.hotspot };
+        const shot = scene && canSee(state, bot, scene) ? shotOf(scene.body, a.hotspot) : null;
+        if (shot) return { type: "shoot", scene: a.scene, ...shot };
+      }
+      if (role.ability === "interview" && a.kind === "press") {
+        const shown = a.breaks.find((id) => state.pins.some((p) => p.evidenceId === id));
+        const claim = caseFile.evidence.find((c) => c.id === a.against);
+        const heard = claim && (claim.access.kind === "desk" || state.found[claim.id]);
+        if (shown && heard) return { type: "show", suspect: a.suspect, evidenceId: shown };
       }
       if (role.ability === "crosscheck" && a.kind === "crosscheck") {
         const [x, y] = a.pair.map((id) => caseFile.evidence.find((s) => s.id === id));

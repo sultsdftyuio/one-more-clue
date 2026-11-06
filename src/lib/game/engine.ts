@@ -28,19 +28,36 @@ import type {
   Score,
   ThemeId,
 } from "./types";
+import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
+import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
 export const MAX_CHAT = 300;
 export const MAX_QUERY = 40;
 /** The board only holds this many pins, so the group has to agree on what matters. */
 export const PIN_LIMIT = 8;
-/** Cross-checks that find nothing are limited per chapter, so the Archivist has to reason, not try every pair. */
-export const EMPTY_CHECKS = 3;
 /** How long the team has to object before a called lie lands. */
 export const OBJECTION_MS = 5000;
+/** One player can push something onto every phone this often, so it stays a moment and not a stream. */
+export const SPOTLIGHT_GAP_MS = 12_000;
 const CHAT_KEPT = 200;
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
+const SHOTS_KEPT = 40;
+const SHOWS_KEPT = 40;
+const TRIES_KEPT = 20;
+
+/** Everything a piece of evidence says, as one searchable string: for checking a password is really in someone's evidence. */
+function textOfEvidence(evidence: CaseEvidence) {
+  const parts: string[] = [evidence.title];
+  const walk = (value: unknown) => {
+    if (typeof value === "string") parts.push(value);
+    else if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") Object.values(value).forEach(walk);
+  };
+  walk(evidence.body);
+  return normalizeTerm(parts.join(" "));
+}
 
 export type Result = { ok: true; state: RoomState } | { ok: false; error: string };
 
@@ -66,8 +83,12 @@ export function normalizeTerm(text: string) {
 
 const pairKey = (a: string, b: string) => [a, b].sort().join("+");
 
-/** Whether everything a piece of evidence depends on has turned up. */
-export const opened = (state: Pick<RoomState, "found">, evidence: CaseEvidence) => (evidence.after ?? []).every((id) => state.found[id]);
+/** Whether everything a piece of evidence depends on has turned up (and, for `afterAny`, at least one of those). */
+export const opened = (state: Pick<RoomState, "found">, evidence: CaseEvidence) =>
+  (evidence.after ?? []).every((id) => state.found[id]) && (!evidence.afterAny?.length || evidence.afterAny.some((id) => state.found[id]));
+
+/** The finds a piece of evidence waits on, whichever kind of wait. */
+const waitsOn = (evidence: CaseEvidence) => [...(evidence.after ?? []), ...(evidence.afterAny ?? [])];
 
 /**
  * The record a search finds. An exact term wins; otherwise the longest term
@@ -121,9 +142,9 @@ export function createRoom(input: {
     found: {},
     pins: [],
     questionsUsed: 0,
+    clockSpent: 0,
     searches: [],
     checked: [],
-    emptyChecks: {},
     chat: [],
     activity: [],
     hintsUsed: 0,
@@ -194,10 +215,19 @@ function leadsInterrogation(state: RoomState, caseFile: CaseFile, player: Pick<P
   return leads.some((p) => p.id === player.id) || leads.every((p) => p.bot);
 }
 
+/** Whether a suspect has made the claim a crack breaks: their desk statement, or an answer the team has heard. */
+function said(state: RoomState, caseFile: CaseFile, crack: CaseEvidence) {
+  if (crack.access.kind !== "press") return false;
+  const against = crack.access.against;
+  const claim = caseFile.evidence.find((e) => e.id === against);
+  if (!claim) return false;
+  return claim.access.kind === "desk" ? claim.chapter <= state.chapter : Boolean(state.found[claim.id]);
+}
+
 /** Tells the team when a find opens someone else's next move. It doesn't say what: they have to ask. */
 function announceLeads(state: RoomState, caseFile: CaseFile, foundId: string, finder: Player, now: number, newId: () => string) {
   const roles = new Set(
-    caseFile.evidence.filter((e) => e.after?.includes(foundId) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e)).map((e) => e.role),
+    caseFile.evidence.filter((e) => waitsOn(e).includes(foundId) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e)).map((e) => e.role),
   );
   for (const role of roles) {
     const name = caseFile.roles.find((r) => r.id === role)?.name ?? role;
@@ -260,6 +290,27 @@ export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalR
 
 const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: false, sharp: false };
 
+/** Spends some of the story's night on a move. Returns the minutes it cost: none in a case without a clock. */
+function spend(state: RoomState, caseFile: CaseFile, kind: Spend) {
+  if (!caseFile.deadline) return 0;
+  const minutes = costMinutes(caseFile.deadline, kind);
+  state.clockSpent = spentMinutes(state, caseFile) + minutes;
+  return minutes;
+}
+
+/** What a spend adds to a line in the activity feed: " −25 min. It's 1:20 AM." */
+function costNote(state: RoomState, caseFile: CaseFile, minutes: number) {
+  return minutes ? ` −${formatSpan(minutes)}. It's ${clockTime(state, caseFile)}.` : "";
+}
+
+/** Ends the case once the night has run out. */
+function endIfOutOfTime(state: RoomState, caseFile: CaseFile, now: number, newId: () => string) {
+  if (!caseFile.deadline || state.outcome || spentMinutes(state, caseFile) < nightMinutes(caseFile.deadline)) return;
+  log(state, newId, now, "clock", "The night has run out.");
+  state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
+  state.phase = "reveal";
+}
+
 function closeCase(state: RoomState, caseFile: CaseFile, report: FinalReport, kind: "solved" | "wrong" | "walkedOut", now: number) {
   state.outcome = { kind, report, score: scoreReport(state, caseFile, report), at: now };
   state.phase = "reveal";
@@ -296,7 +347,7 @@ export function bestChain(state: RoomState, caseFile: CaseFile): ChainStep[] {
     const known = memo.get(e.id);
     if (known) return known;
     memo.set(e.id, [e]); // stops a loop in badly written data
-    const parents = [...(e.after ?? []), ...(e.access.kind === "crosscheck" ? e.access.pair : [])];
+    const parents = [...waitsOn(e), ...(e.access.kind === "crosscheck" ? e.access.pair : []), ...(e.access.kind === "press" ? [e.access.against] : [])];
     let best: CaseEvidence[] = [];
     for (const id of parents) {
       const parent = caseFile.evidence.find((p) => p.id === id);
@@ -359,12 +410,8 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
       } else {
         state.wrongAnswers++;
         const title = caseFile.evidence.find((e) => e.id === proposal.evidenceId)?.title;
-        const time = caseFile.deadline?.times[state.wrongAnswers];
-        log(state, newId, now, "wrong", `"${title}" doesn't prove it. ${time ? `The hours slip away. It's ${time}.` : "Look again."}`);
-        if (caseFile.deadline && !time) {
-          state.outcome = { kind: "tooLate", score: NO_SCORE, at: now };
-          state.phase = "reveal";
-        }
+        const minutes = spend(state, caseFile, "wrong");
+        log(state, newId, now, "wrong", `"${title}" doesn't prove it.${minutes ? costNote(state, caseFile, minutes) : " Look again."}`);
       }
     }
     if (proposal.kind === "hint") {
@@ -457,12 +504,39 @@ export function applyAction(
       const note = hit ? undefined : searchNote(caseFile, term);
       next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), at: now });
       next.searches = next.searches.slice(-SEARCHES_KEPT);
-      if (hit && !next.found[hit.id]) {
+      if (hit?.lock && !next.found[hit.id]) {
+        // A locked record turns up as its title and a hint; what's inside waits for the password.
+        if (!next.locked?.[hit.id]) {
+          next.locked = { ...next.locked, [hit.id]: { by: me.id, at: now } };
+          log(next, newId, now, "locked", `${me.name} found a locked file: ${hit.title}. ${hit.lock.hint}`, me.id);
+        }
+      } else if (hit && !next.found[hit.id]) {
         next.found[hit.id] = { by: me.id, at: now };
         log(next, newId, now, "found", `${me.name} searched "${query}" and found: ${hit.title}`, me.id, hit.id);
         announceLeads(next, caseFile, hit.id, self, now, newId);
       } else if (!hit) {
         log(next, newId, now, "miss", `${me.name} searched "${query}". No records.`, me.id);
+      }
+      break;
+    }
+
+    case "unlock": {
+      if (!investigating) return fail("Nothing to unlock yet.");
+      if (!abilities.includes("search")) return fail("Only the Tech can crack a password.");
+      const record = evidenceById(action.evidenceId);
+      if (!record?.lock || !state.locked?.[record.id]) return fail("That file isn't locked.");
+      const guess = normalizeTerm(String(action.password ?? "").slice(0, MAX_QUERY));
+      if (guess.length < 2) return fail("Type the password first.");
+      const ok = record.lock.answers.some((answer) => normalizeTerm(answer) === guess);
+      next.tries = [...(next.tries ?? []), { id: newId(), by: me.id, evidenceId: record.id, ok, time: now }].slice(-TRIES_KEPT);
+      if (ok) {
+        next.locked = Object.fromEntries(Object.entries(next.locked ?? {}).filter(([id]) => id !== record.id));
+        next.found[record.id] = { by: me.id, at: now };
+        log(next, newId, now, "access", `${me.name} cracked the password. Access granted: ${record.title}`, me.id, record.id);
+        announceLeads(next, caseFile, record.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} tried a password on ${record.title}. Access denied.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
     }
@@ -474,13 +548,12 @@ export function applyAction(
       if (!question || question.access.kind !== "interview" || question.chapter > state.chapter) return fail("That question isn't available.");
       if (next.found[question.id]) return fail("You've already asked that.");
       if (!opened(state, question)) return fail("That isn't a question you can ask yet.");
-      // Following a lead is free: running out of questions must never lock the team out of a chain.
-      if (!question.after) {
-        if (next.questionsUsed >= caseFile.questionBudget) return fail("The team has used all its questions.");
-        next.questionsUsed++;
-      }
+      // A question takes time out of the night. Following a lead is free, so time never stands between the team and a chain.
+      const lead = waitsOn(question).length > 0;
+      const minutes = lead ? 0 : spend(next, caseFile, "question");
+      if (!lead) next.questionsUsed++;
       next.found[question.id] = { by: me.id, at: now };
-      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"`, me.id, question.id);
+      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id);
       announceLeads(next, caseFile, question.id, self, now, newId);
       break;
     }
@@ -508,6 +581,66 @@ export function applyAction(
       break;
     }
 
+    case "shoot": {
+      if (!investigating) return fail("Nothing to photograph yet.");
+      if (!abilities.includes("inspect")) return fail("Only the Photographer has the camera.");
+      const scene = evidenceById(action.scene);
+      if (!scene || (scene.body.type !== "scene" && scene.body.type !== "footage") || !canSee(state, self, scene)) {
+        return fail("You can't see that picture.");
+      }
+      const frame = cleanFrame(action.frame);
+      if (!frame) return fail("That shot is out of the picture.");
+      if (zoomOf(frame) < MIN_SHOT_ZOOM - 0.01) return fail("Too far away. Zoom in on something first.");
+      const tape = scene.body.type === "footage" ? scene.body.frames : null;
+      const at = tape ? Math.trunc(Number(action.at ?? 0)) : undefined;
+      if (tape && (!Number.isFinite(at) || at! < 0 || at! >= tape.length)) return fail("That moment isn't on the tape.");
+      const items = scene.body.type === "scene" ? scene.body.items : tape![at!].items;
+      const detailAt = (hotspot: string) =>
+        caseFile.evidence.find((e) => e.access.kind === "inspect" && e.access.scene === scene.id && e.access.hotspot === hotspot && e.chapter <= state.chapter);
+      const hit = framedHotspot(items, frame, (hotspot) => Boolean(detailAt(hotspot)));
+      const detail = hit ? detailAt(hit) : undefined;
+      // Shooting something you already have, or something that only matters later, costs nothing.
+      if (detail && next.found[detail.id]) return fail("That's already in your darkroom.");
+      if (detail && !opened(state, detail)) return fail("Nothing stands out there yet.");
+      next.shots = [...(next.shots ?? []), { id: newId(), by: me.id, scene: scene.id, frame, at, hit: detail?.id ?? null, time: now }].slice(-SHOTS_KEPT);
+      if (detail) {
+        next.found[detail.id] = { by: me.id, at: now };
+        log(next, newId, now, "found", `${me.name} photographed something in "${scene.title}": ${detail.title}`, me.id, detail.id);
+        announceLeads(next, caseFile, detail.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name}'s shot of "${scene.title}" caught nothing.${costNote(next, caseFile, minutes)}`, me.id);
+      }
+      break;
+    }
+
+    case "show": {
+      if (!investigating) return fail("There's nobody to question yet.");
+      if (!abilities.includes("interview")) return fail("Only the Interviewer runs the interrogation room.");
+      const suspect = String(action.suspect ?? "");
+      if (!caseFile.evidence.some((e) => e.access.kind === "interview" && e.access.suspect === suspect)) return fail("They aren't here to question.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !state.pins.some((p) => p.evidenceId === evidence.id)) return fail("Show them something from the board, so the whole team sees it.");
+      const cracks = caseFile.evidence.filter(
+        (e) => e.access.kind === "press" && e.access.suspect === suspect && e.access.breaks.includes(evidence.id) && e.chapter <= state.chapter && opened(state, e),
+      );
+      const unbroken = cracks.filter((e) => !next.found[e.id]);
+      const crack = unbroken.find((e) => said(state, caseFile, e));
+      // Nothing to lose for showing them something they've already given up, or something about a claim they haven't made yet.
+      if (cracks.length && !unbroken.length) return fail(`${suspect} has already given that up.`);
+      if (unbroken.length && !crack) return fail(`Ask ${suspect} about it first.`);
+      next.shows = [...(next.shows ?? []), { id: newId(), by: me.id, suspect, evidenceId: evidence.id, crack: crack?.id ?? null, time: now }].slice(-SHOWS_KEPT);
+      if (crack) {
+        next.found[crack.id] = { by: me.id, at: now };
+        log(next, newId, now, "crack", `${me.name} showed ${suspect} ${evidence.title}, and ${suspect} cracked.`, me.id, crack.id);
+        announceLeads(next, caseFile, crack.id, self, now, newId);
+      } else {
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} showed ${suspect} ${evidence.title}. It didn't shake them.${costNote(next, caseFile, minutes)}`, me.id);
+      }
+      break;
+    }
+
     case "crosscheck": {
       if (!investigating) return fail("Nothing to cross-check yet.");
       if (!abilities.includes("crosscheck")) return fail("Only the Archivist can cross-check evidence.");
@@ -526,11 +659,9 @@ export function applyAction(
         announceLeads(next, caseFile, insight.id, self, now, newId);
       } else {
         if (next.checked.includes(key)) return fail("You've already compared those two.");
-        const empty = next.emptyChecks?.[state.chapter] ?? 0;
-        if (empty >= EMPTY_CHECKS) return fail("Those two agree, and you're out of hunches this chapter. Only a real contradiction counts now.");
         next.checked.push(key);
-        next.emptyChecks = { ...next.emptyChecks, [state.chapter]: empty + 1 };
-        log(next, newId, now, "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.`, me.id);
+        const minutes = spend(next, caseFile, "miss");
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
     }
@@ -583,6 +714,30 @@ export function applyAction(
       break;
     }
 
+    case "spotlight": {
+      if (!investigating) return fail("There's nothing to show yet.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !canSee(state, self, evidence)) return fail("You can't show that.");
+      if (activePlayers(state).length < 2) return fail("There's nobody else here to show.");
+      if (state.spotlight?.by === me.id && now - state.spotlight.at < SPOTLIGHT_GAP_MS) return fail("Give them a moment to look.");
+      next.spotlight = { id: newId(), by: me.id, evidenceId: evidence.id, at: now };
+      log(next, newId, now, "spotlight", `${me.name} showed everyone ${evidence.title}`, me.id, evidence.id);
+      break;
+    }
+
+    case "arrange": {
+      if (!investigating) return fail("The wall opens once the investigation starts.");
+      if (!abilities.includes("crosscheck")) return fail("Only the Archivist arranges the wall.");
+      if (!state.pins.some((p) => p.evidenceId === action.evidenceId)) return fail("Only pinned pieces go on the wall.");
+      const x = Number(action.x);
+      const y = Number(action.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return fail("That's off the wall.");
+      // The pin stays far enough in that the whole piece stays on the cork.
+      const clamp = (n: number, low: number, high: number) => Math.round(Math.min(high, Math.max(low, n)) * 10) / 10;
+      next.wall = { ...next.wall, [action.evidenceId]: { x: clamp(x, 4, 96), y: clamp(y, 2, 72) } };
+      break;
+    }
+
     case "pin": {
       if (!investigating) return fail("The board opens once the investigation starts.");
       const evidence = evidenceById(action.evidenceId);
@@ -601,6 +756,9 @@ export function applyAction(
       if (next.proposal?.report?.evidenceIds.includes(pin.evidenceId) || next.proposal?.evidenceId === pin.evidenceId) return fail("That's part of the vote in progress.");
       if (next.interrogation?.call?.evidenceId === pin.evidenceId) return fail("That's being presented right now.");
       next.pins = next.pins.filter((p) => p !== pin);
+      if (next.wall?.[pin.evidenceId]) {
+        next.wall = Object.fromEntries(Object.entries(next.wall).filter(([id]) => id !== pin.evidenceId));
+      }
       log(next, newId, now, "unpin", `${me.name} unpinned ${evidenceById(pin.evidenceId)?.title}`, me.id, pin.evidenceId);
       break;
     }
@@ -676,6 +834,7 @@ export function applyAction(
   }
 
   resolveProposal(next, caseFile, now, newId);
+  endIfOutOfTime(next, caseFile, now, newId);
   next.version++;
   return { ok: true, state: next };
 }
@@ -703,12 +862,20 @@ export function checkCase(caseFile: CaseFile): string[] {
     }
   });
   if (byId.size !== caseFile.evidence.length) problems.push("evidence ids are not unique");
+  if (caseFile.deadline) {
+    try {
+      if (nightMinutes(caseFile.deadline) < 60) problems.push("the night is under an hour: every mistake would cost almost nothing to show");
+    } catch (error) {
+      problems.push(`the deadline's times can't be read: ${(error as Error).message}`);
+    }
+  }
 
   const needs: Record<Exclude<CaseEvidence["access"]["kind"], "desk">, Ability> = {
     search: "search",
     interview: "interview",
     inspect: "inspect",
     crosscheck: "crosscheck",
+    press: "interview",
   };
   for (const e of caseFile.evidence) {
     if (!roleIds.has(e.role)) problems.push(`"${e.id}" belongs to unknown role "${e.role}"`);
@@ -725,6 +892,25 @@ export function checkCase(caseFile: CaseFile): string[] {
       else if (scene.chapter > e.chapter) problems.push(`"${e.id}" opens before its scene does`);
     }
     if (a.kind === "crosscheck" && !a.pair.every((id) => byId.has(id))) problems.push(`"${e.id}" cross-checks evidence that doesn't exist`);
+    if (e.lock) {
+      if (a.kind !== "search") problems.push(`"${e.id}" is locked, but only records the Tech searches for can be`);
+      if (!e.lock.answers.length || e.lock.answers.some((x) => normalizeTerm(x).length < 2)) problems.push(`"${e.id}" needs a password`);
+      // The password has to be somewhere a teammate can find it, never only in the Tech's own records.
+      const elsewhere = caseFile.evidence.filter((x) => x.role !== e.role && x.chapter <= e.chapter && caseFile.roles.find((r) => r.id === x.role)?.core).map(textOfEvidence);
+      if (!e.lock.answers.some((x) => elsewhere.some((text) => text.includes(normalizeTerm(x))))) problems.push(`"${e.id}"'s password isn't in any other role's evidence`);
+    }
+    if (a.kind === "press") {
+      const claim = byId.get(a.against);
+      if (!claim || claim.body.type !== "statement" || claim.body.speaker !== a.suspect) problems.push(`crack "${e.id}" has to break something ${a.suspect} said`);
+      else if (claim.chapter > e.chapter) problems.push(`crack "${e.id}" opens before ${a.suspect} says what it breaks`);
+      if (e.body.type !== "statement" || e.body.speaker !== a.suspect) problems.push(`crack "${e.id}" should be ${a.suspect} talking`);
+      if (!a.breaks.length || !a.breaks.every((id) => byId.has(id))) problems.push(`crack "${e.id}" is broken by evidence that doesn't exist`);
+      else if (!a.breaks.some((id) => byId.get(id)!.chapter <= e.chapter)) problems.push(`nothing breaks crack "${e.id}" by its chapter`);
+      if (!caseFile.evidence.some((q) => q.access.kind === "interview" && q.access.suspect === a.suspect)) problems.push(`crack "${e.id}": nobody can question ${a.suspect}`);
+      if (caseFile.solution.culprit && caseFile.suspects.find((s) => s.id === caseFile.solution.culprit)?.name === a.suspect && /\b(I did it|I took it|I did take)\b/i.test(e.body.type === "statement" ? e.body.text : "")) {
+        problems.push(`crack "${e.id}" is a confession: save that for the confrontation`);
+      }
+    }
     if (a.kind !== "desk" && !caseFile.roles.some((r) => r.core && r.ability === needs[a.kind])) {
       problems.push(`"${e.id}" needs the ${a.kind} ability, but no core role has it`);
     }
@@ -747,8 +933,6 @@ export function checkCase(caseFile: CaseFile): string[] {
   if (solution.keyEvidence.length < 2) problems.push("needs at least two pieces of key evidence");
   for (const id of solution.keyEvidence) if (!byId.has(id)) problems.push(`key evidence "${id}" doesn't exist`);
   problems.push(...checkWriting(caseFile));
-  const questions = caseFile.evidence.filter((e) => e.access.kind === "interview").length;
-  if (questions && caseFile.questionBudget >= questions) problems.push("the question budget covers every question: no choices left to make");
   return problems;
 }
 
@@ -756,13 +940,13 @@ export function checkCase(caseFile: CaseFile): string[] {
 function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): string[] {
   const problems: string[] = [];
   for (const e of caseFile.evidence) {
-    for (const id of e.after ?? []) {
+    for (const id of waitsOn(e)) {
       const source = byId.get(id);
       if (!source) problems.push(`"${e.id}" waits on "${id}", which doesn't exist`);
       else if (source.access.kind === "desk") problems.push(`"${e.id}" waits on "${id}", which everyone starts with`);
       else if (source.chapter > e.chapter) problems.push(`"${e.id}" waits on "${id}", which only appears in a later chapter`);
     }
-    if (e.after && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect") problems.push(`"${e.id}" can't wait on a lead`);
+    if (waitsOn(e).length && e.access.kind !== "search" && e.access.kind !== "interview" && e.access.kind !== "inspect" && e.access.kind !== "press") problems.push(`"${e.id}" can't wait on a lead`);
   }
   const reached = new Set<string>();
   for (let chapter = 1; chapter <= caseFile.chapters.length; chapter++) {
@@ -770,16 +954,16 @@ function checkChains(caseFile: CaseFile, byId: Map<string, CaseEvidence>): strin
       growing = false;
       for (const e of caseFile.evidence) {
         if (e.chapter > chapter || reached.has(e.id) || !(e.after ?? []).every((id) => reached.has(id))) continue;
+        if (e.afterAny?.length && !e.afterAny.some((id) => reached.has(id))) continue;
         const a = e.access;
         if ((a.kind === "inspect" && !reached.has(a.scene)) || (a.kind === "crosscheck" && !a.pair.every((id) => reached.has(id)))) continue;
+        if (a.kind === "press" && (!reached.has(a.against) || !a.breaks.some((id) => reached.has(id)))) continue;
         reached.add(e.id);
         growing = true;
       }
     }
     for (const e of caseFile.evidence) if (e.chapter === chapter && !reached.has(e.id)) problems.push(`"${e.id}" can't be reached in chapter ${chapter}`);
   }
-  const open = caseFile.evidence.filter((e) => e.access.kind === "interview" && !e.after).length;
-  if (caseFile.evidence.some((e) => e.after) && open > caseFile.questionBudget) problems.push("more open questions than the budget: a team could spend itself out of a chain");
   return problems;
 }
 
@@ -837,6 +1021,7 @@ function checkWriting(caseFile: CaseFile): string[] {
     c.hints.forEach((h, j) => tooLong(`chapter ${i + 1} hint ${j + 1}`, h, L.hint));
   });
   (caseFile.searchNotes ?? []).forEach((n, i) => tooLong(`search note ${i + 1}`, n.text, L.hint));
+  caseFile.evidence.forEach((e) => e.lock && tooLong(`"${e.id}"'s password hint`, e.lock.hint, L.hint));
   beats("the confession", caseFile.solution.confession, 2);
   if (caseFile.interrogation) {
     const i = caseFile.interrogation;
@@ -910,7 +1095,6 @@ export type PlayerView = {
     roles: CaseRole[];
     chapterTitles: string[];
     cinematic: CaseFile["cinematic"] | null;
-    questionBudget: number;
     motives: { id: string; label: string }[];
     /** Whether naming the culprit leads to a confrontation rather than closing the case. */
     confrontation: boolean;
@@ -924,8 +1108,21 @@ export type PlayerView = {
     hints: string[];
     hintsTotal: number;
   };
-  /** The story's clock: what's coming, the time now, how many wrong answers are left, and how it ended if it ran out. */
-  deadline: { what: string; time: string; left: number; lost: string | null } | null;
+  /**
+   * The story's clock: what's coming, the time now, the minutes spent and left, what each paid move costs
+   * in this case's minutes, whether it's running low, and how it ended if it ran out.
+   */
+  deadline: {
+    what: string;
+    time: string;
+    end: string;
+    spent: number;
+    left: number;
+    night: number;
+    costs: Record<Spend, number>;
+    low: boolean;
+    lost: string | null;
+  } | null;
   /** Checkpoints already answered, with what they revealed. */
   solved: { number: number; title: string; question: string; reveal: string }[];
   players: PublicPlayer[];
@@ -936,12 +1133,25 @@ export type PlayerView = {
   questions: { id: string; suspect: string; question: string; asked: boolean; chapter: number; lead: boolean }[] | null;
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
-  questionsLeft: number;
-  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; at: number }[];
+  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; locked?: boolean; at: number }[];
+  /** Locked files the Tech has found: title and hint only, for every phone, so anyone can spot the password. */
+  locked: { id: string; title: string; hint: string; by: string; at: number }[];
+  /** For the Tech: passwords tried, newest last. */
+  tries: { id: string; evidenceId: string; ok: boolean; time: number }[];
+  /** For the Interviewer: what they've shown suspects, newest last, and whether it cracked them. */
+  shows: { id: string; suspect: string; evidenceTitle: string; crack: string | null; time: number }[];
+  /** Every crack so far, for every phone: the moment someone's story gave way is the whole table's. */
+  cracks: { id: string; suspect: string; title: string; text: string; by: string; at: number }[];
+  /** For the Photographer: their own shots, newest last, and what each caught. */
+  shots: { id: string; scene: string; at?: number; hit: string | null; time: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
-  /** For the Archivist: empty cross-checks still allowed in this chapter. */
-  checksLeft: number | null;
+  /** The last piece someone showed on every phone. */
+  spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
+  /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
+  wall: Record<string, { x: number; y: number }>;
+  /** Red string: every contradiction found so far, as the two pieces it ties. Drawn on the wall for everyone. */
+  strings: { id: string; a: string; b: string }[];
   /** Once the team names the right person. Claims are only spelled out to whoever leads it, or once broken. */
   interrogation: {
     suspect: string;
@@ -1018,36 +1228,37 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
   const pinned = new Set(state.pins.map((p) => p.evidenceId));
   const titleOf = (id: string) => caseFile.evidence.find((e) => e.id === id)?.title ?? "";
 
-  const evidence: VisibleEvidence[] = caseFile.evidence
-    .filter((e) => canSee(state, me, e))
-    .map(({ access, ...e }) => {
-      const found = state.found[e.id];
-      const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
-      const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
-      return {
-        ...e,
-        source: access.kind,
-        spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
-        compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
-        pinned: pinned.has(e.id),
-        foundBy: found?.by,
-        foundAt: found?.at,
-        mine: ownDesk || ownFind,
-      };
-    });
+  const toVisible = ({ access, ...e }: CaseEvidence): VisibleEvidence => {
+    const found = state.found[e.id];
+    const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
+    const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
+    return {
+      ...e,
+      source: access.kind,
+      spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
+      compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
+      pinned: pinned.has(e.id),
+      foundBy: found?.by,
+      foundAt: found?.at,
+      mine: ownDesk || ownFind,
+    };
+  };
+  const evidence: VisibleEvidence[] = caseFile.evidence.filter((e) => canSee(state, me, e)).map(toVisible);
+  // Shown to everyone on purpose, so everyone gets it for the moment, even if it isn't theirs or pinned.
+  const shown = state.spotlight && caseFile.evidence.find((e) => e.id === state.spotlight!.evidenceId);
 
   const visibleIds = new Set(evidence.map((e) => e.id));
   const questions = abilities.includes("interview")
     ? caseFile.evidence.flatMap((e) =>
         e.access.kind === "interview" && e.chapter <= state.chapter && opened(state, e)
-          ? [{ id: e.id, suspect: e.access.suspect, question: e.access.question, asked: Boolean(state.found[e.id]), chapter: e.chapter, lead: Boolean(e.after) }]
+          ? [{ id: e.id, suspect: e.access.suspect, question: e.access.question, asked: Boolean(state.found[e.id]), chapter: e.chapter, lead: waitsOn(e).length > 0 }]
           : [],
       )
     : null;
 
   const leadSources = caseFile.evidence
-    .filter((e) => e.after && me.roles.includes(e.role) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e))
-    .flatMap((e) => e.after!);
+    .filter((e) => waitsOn(e).length && me.roles.includes(e.role) && e.chapter <= state.chapter && !state.found[e.id] && opened(state, e))
+    .flatMap((e) => waitsOn(e).filter((id) => state.found[id]));
   const leads = [...new Set(leadSources)].flatMap((id) => {
     const source = caseFile.evidence.find((e) => e.id === id);
     return source ? [{ id, title: source.title, by: state.found[id].by }] : [];
@@ -1074,7 +1285,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       roles: caseFile.roles,
       chapterTitles: caseFile.chapters.map((c) => c.title),
       cinematic: caseFile.cinematic ?? null,
-      questionBudget: caseFile.questionBudget,
       motives: shuffledFor(state.code, caseFile.solution.motives),
       confrontation: Boolean(caseFile.interrogation),
     },
@@ -1090,8 +1300,13 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     deadline: caseFile.deadline
       ? {
           what: caseFile.deadline.what,
-          time: caseFile.deadline.times[Math.min(state.wrongAnswers, caseFile.deadline.times.length - 1)],
-          left: Math.max(0, caseFile.deadline.times.length - state.wrongAnswers),
+          time: clockTime(state, caseFile)!,
+          end: caseFile.deadline.end,
+          spent: Math.min(spentMinutes(state, caseFile), nightMinutes(caseFile.deadline)),
+          left: Math.max(0, nightMinutes(caseFile.deadline) - spentMinutes(state, caseFile)),
+          night: nightMinutes(caseFile.deadline),
+          costs: { wrong: costMinutes(caseFile.deadline, "wrong"), question: costMinutes(caseFile.deadline, "question"), miss: costMinutes(caseFile.deadline, "miss") },
+          low: nightLeft(state, caseFile) < LOW_NIGHT,
           lost: state.outcome?.kind === "tooLate" ? caseFile.deadline.lost : null,
         }
       : null,
@@ -1107,7 +1322,6 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     pinLimit: PIN_LIMIT,
     questions,
     leads,
-    questionsLeft: caseFile.questionBudget - state.questionsUsed,
     searches: state.searches.map((s) => ({
       id: s.id,
       by: s.by,
@@ -1115,10 +1329,27 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       hit: Boolean(s.hit),
       hitTitle: s.hit && visibleIds.has(s.hit) ? evidence.find((e) => e.id === s.hit)?.title : undefined,
       note: s.note,
+      locked: Boolean(s.hit && state.locked?.[s.hit]),
       at: s.at,
     })),
+    locked: Object.entries(state.locked ?? {}).flatMap(([id, held]) => {
+      const record = caseFile.evidence.find((e) => e.id === id);
+      return record?.lock ? [{ id, title: record.title, hint: record.lock.hint, by: held.by, at: held.at }] : [];
+    }),
+    tries: abilities.includes("search") ? (state.tries ?? []).filter((t) => t.by === me.id).map(({ id, evidenceId, ok, time }) => ({ id, evidenceId, ok, time })) : [],
+    shows: abilities.includes("interview")
+      ? (state.shows ?? []).filter((s) => s.by === me.id).map((s) => ({ id: s.id, suspect: s.suspect, evidenceTitle: titleOf(s.evidenceId), crack: s.crack, time: s.time }))
+      : [],
+    cracks: caseFile.evidence.flatMap((e) =>
+      e.access.kind === "press" && state.found[e.id] && e.body.type === "statement"
+        ? [{ id: e.id, suspect: e.access.suspect, title: e.title, text: e.body.text, by: state.found[e.id].by, at: state.found[e.id].at }]
+        : [],
+    ),
+    shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
-    checksLeft: abilities.includes("crosscheck") ? EMPTY_CHECKS - (state.emptyChecks?.[state.chapter] ?? 0) : null,
+    wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
+    strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
+    spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
     chat: state.chat,

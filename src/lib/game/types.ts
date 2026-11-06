@@ -111,11 +111,24 @@ export type Access =
   /** A hidden detail: a hotspot inside a scene. */
   | { kind: "inspect"; scene: string; hotspot: string }
   /** A contradiction between two pieces of evidence. */
-  | { kind: "crosscheck"; pair: [string, string] };
+  | { kind: "crosscheck"; pair: [string, string] }
+  /**
+   * A crack: the Interviewer shows a suspect something from the board that breaks what they said
+   * (`against`, one of their statements), and they give part of their story up. The evidence is
+   * what they say when they crack. `suspect` is the name their questions use.
+   */
+  | { kind: "press"; suspect: string; against: string; breaks: string[] };
 
 export type CaseEvidence = {
   /** Evidence that has to be found first. Until then this stays hidden, so one player's find opens another's next move. */
   after?: string[];
+  /** Like `after`, but any one of these opens it: two different finds that both point here. */
+  afterAny?: string[];
+  /**
+   * A record the Tech finds locked. Until someone types one of `answers`, it opens nothing, proves
+   * nothing and shows only its title and `hint`. The password must be in another role's evidence.
+   */
+  lock?: { hint: string; answers: string[] };
   id: string;
   /** The role this evidence belongs to: its holder can see it once it's available. */
   role: string;
@@ -158,12 +171,18 @@ export type Interrogation = {
   walkout: string;
 };
 
-/** The story's clock. Every wrong answer loses time, and when it runs out the case is lost. */
+/**
+ * The story's clock: the night the team has to solve the case in. Wrong
+ * answers, questions and wasted moves each spend some of it (see clock.ts),
+ * and when it runs out the case is lost.
+ */
 export type Deadline = {
   /** What's coming, e.g. "The investors arrive at 9:00 AM". */
   what: string;
-  /** The time at the start, then after each wrong answer. One wrong answer past the last ends the case. */
-  times: string[];
+  /** The story time when the investigation starts, written the way the case writes times: "12:00 AM", "10:15 PM", "23:30". */
+  start: string;
+  /** When the night runs out. */
+  end: string;
   /** How it ends when time runs out. */
   lost: string;
 };
@@ -186,8 +205,6 @@ export type CaseFile = {
   /** Core roles first, then extras in the order they join. */
   roles: CaseRole[];
   chapters: Chapter[];
-  /** Interview questions the whole team can ask over the case. */
-  questionBudget: number;
   /**
    * What the records terminal says when a search finds nothing but the Tech was on to something:
    * "visitors are signed in on paper at the security desk". It sends them to a teammate rather than
@@ -254,9 +271,13 @@ export type DecidedProposal = Omit<Proposal, "votes"> & { passed: boolean; decid
 export type Pin = { evidenceId: string; by: string; at: number };
 export type Discovery = { by: string; at: number };
 export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
+/** Something the Interviewer put in front of a suspect, and whether it cracked them. */
+export type Show = { id: string; by: string; suspect: string; evidenceId: string; crack: string | null; time: number };
+/** One press of the Photographer's shutter: where the frame was, and the detail it caught (or nothing). */
+export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -282,10 +303,22 @@ export type RoomState = {
   pins: Pin[];
   questionsUsed: number;
   searches: Search[];
+  /** The Photographer's shots (missing in rooms made before the camera). */
+  shots?: Shot[];
+  /** What the Interviewer has shown suspects (missing in rooms made before the interrogation room). */
+  shows?: Show[];
+  /** Records the Tech has found but not unlocked yet, and who found them. They count as found only once unlocked. */
+  locked?: Record<string, { by: string; at: number }>;
+  /** Passwords tried on locked records, and whether they worked. */
+  tries?: { id: string; by: string; evidenceId: string; ok: boolean; time: number }[];
   /** Cross-checks that found nothing, so nobody repeats them. */
   checked: string[];
-  /** Cross-checks that found nothing, by chapter number (missing in rooms made before the limit). */
-  emptyChecks?: Record<number, number>;
+  /** Minutes of the story's night spent so far (missing in rooms made before the clock: see clock.ts). */
+  clockSpent?: number;
+  /** The last piece someone pushed onto every phone. */
+  spotlight?: Spotlight;
+  /** Where the Archivist has put each pinned piece on the wall, in percent of the wall (missing pieces sit in the default grid). */
+  wall?: Record<string, { x: number; y: number }>;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */
@@ -316,6 +349,9 @@ export type InterrogationState = {
 
 export type LieCall = { id: string; by: string; evidenceId: string; at: number };
 
+/** A piece of evidence shown on every phone for a moment, so a team playing apart can all look at once. */
+export type Spotlight = { id: string; by: string; evidenceId: string; at: number };
+
 /** One find in the chain shown at the reveal, and who made it. */
 export type ChainStep = { id: string; title: string; by: string; source: Access["kind"] };
 
@@ -327,7 +363,10 @@ export type Action =
   | { type: "ready" }
   | { type: "search"; query: string }
   | { type: "ask"; evidenceId: string }
+  /** Kept for one release so phones still on the old page keep working: the camera's `shoot` replaced it. */
   | { type: "inspect"; scene: string; hotspot: string }
+  /** The Photographer's shutter: a frame on a picture (in percent of it), and for footage, which frame of the tape. */
+  | { type: "shoot"; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number }
   | { type: "crosscheck"; a: string; b: string }
   /** Interrogation: move the suspect on to their next (or previous) claim. */
   | { type: "press"; step: 1 | -1 }
@@ -337,6 +376,14 @@ export type Action =
   | { type: "object"; callId: string }
   /** Interrogation: nobody objected in time, so the call lands. */
   | { type: "settleLie"; callId: string }
+  /** The Interviewer puts something from the board in front of a suspect. */
+  | { type: "show"; suspect: string; evidenceId: string }
+  /** The Tech tries a password on a locked record. */
+  | { type: "unlock"; evidenceId: string; password: string }
+  /** Show a piece of evidence on every phone for a moment. */
+  | { type: "spotlight"; evidenceId: string }
+  /** The Archivist moves a pinned piece on the wall (x and y in percent of the wall). */
+  | { type: "arrange"; evidenceId: string; x: number; y: number }
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }

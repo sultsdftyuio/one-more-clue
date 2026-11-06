@@ -38,7 +38,8 @@ export const case001: CaseFile = {
   cinematic: { video: "/cinematics/case-001.mp4", poster: "/cinematics/case-001.jpg" },
   deadline: {
     what: "The investors arrive at 9:00 AM",
-    times: ["Midnight", "3:00 AM", "6:30 AM"],
+    start: "12:00 AM",
+    end: "9:00 AM",
     lost: "9:00 AM. The investors walk into an empty lab. HALO is gone for good, and Priya's name goes with it.",
   },
   minPlayers: 2,
@@ -66,28 +67,28 @@ export const case001: CaseFile = {
       core: true,
       ability: "search",
       name: "Tech",
-      blurb: "You're in the university's systems: badges, laptops, chats, cars. Type a name, number or place to pull its records.",
+      blurb: "You're in the university's systems: badges, laptops, chats, cars. Type a name, number or place to pull its records. Tap words in any evidence to search them. Locked files need a password from a teammate.",
     },
     {
       id: "interviewer",
       core: true,
       ability: "interview",
       name: "Interviewer",
-      blurb: "You talk to people. The team gets six questions for the whole case, so choose them together.",
+      blurb: "You run the interrogation room. Ask questions, then show suspects something from the board to crack their story. Questions take time; leads are free.",
     },
     {
       id: "photographer",
       core: true,
       ability: "inspect",
       name: "Photographer",
-      blurb: "You read pictures. Tap anything in a photo or camera still to look closer. Only you can, even on photos others pin.",
+      blurb: "You have the camera. Zoom into any photo or camera still and shoot what looks off. Only you can, even on photos others pin.",
     },
     {
       id: "archivist",
       core: true,
       ability: "crosscheck",
       name: "Archivist",
-      blurb: "You keep the paperwork and you catch liars. Hold two pieces of evidence up against each other to expose a contradiction.",
+      blurb: "You keep the wall. Tie two pieces with red string: if they can't both be true, you've caught a lie. Arrange the wall, and present proof when the team is ready.",
     },
     { id: "lookout", core: false, ability: "none", name: "Lookout", blurb: "You asked around campus. People notice cars." },
     { id: "profiler", core: false, ability: "none", name: "Profiler", blurb: "You know the people in this lab, and their habits." },
@@ -118,7 +119,7 @@ export const case001: CaseFile = {
       ],
       checkpoint: {
         question: "The professor says he and Rena left together at nine. What breaks that?",
-        proves: ["badge-log", "question-ozzy-round", "insight-sheet", "insight-together"],
+        proves: ["badge-log", "question-ozzy-round", "insight-sheet", "insight-together", "crack-squires-dean", "crack-rena-waited"],
         reveal: "The professor's badge left at 9:02, but the sheet says he signed his visitor out at 9:20. He filled it in later. So who was still in the building?",
       },
       hints: [
@@ -143,7 +144,6 @@ export const case001: CaseFile = {
       ],
     },
   ],
-  questionBudget: 6,
   searchNotes: [
     {
       terms: ["rena", "voss", "renavoss", "visitor", "visitors", "guest"],
@@ -168,7 +168,7 @@ export const case001: CaseFile = {
         id: "northgate",
         text: "I'm a senior engineer at Northgate Capital.",
         lie: {
-          breaks: ["kestrel-staff", "northgate-email", "detail-lanyard", "insight-employer"],
+          breaks: ["kestrel-staff", "northgate-email", "detail-lanyard", "insight-employer", "crack-rena-kestrel"],
           crack: "Northgate, Kestrel… investors all look the same in the end, don't they?",
         },
       },
@@ -176,7 +176,7 @@ export const case001: CaseFile = {
         id: "together",
         text: "The professor was with me every single minute.",
         lie: {
-          breaks: ["badge-log", "insight-sheet", "question-ozzy-round", "insight-together", "question-squires-sheet", "detail-alone"],
+          breaks: ["badge-log", "insight-sheet", "question-ozzy-round", "insight-together", "question-squires-sheet", "detail-alone", "crack-squires-dean", "crack-rena-waited"],
           crack: "Fine. He took a call from the Dean and left me waiting. Is that my fault?",
         },
       },
@@ -197,7 +197,7 @@ export const case001: CaseFile = {
       {
         id: "home",
         text: "And then I drove straight home.",
-        lie: { breaks: ["anpr", "insight-home"], crack: "…I'd like to stop talking now." },
+        lie: { breaks: ["anpr", "insight-home", "crack-rena-drive"], crack: "…I'd like to stop talking now." },
       },
     ],
     walkout: "This is harassment. I'm leaving, and Northgate's lawyers will be in touch.",
@@ -375,6 +375,22 @@ export const case001: CaseFile = {
       body: { type: "statement", speaker: "Ozzy Reyes", text: "9:17, on my round. Door wide open, key still in the lock. I called it in straight away." },
     },
     {
+      id: "question-ozzy-lab",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "interview", suspect: "Ozzy Reyes", question: "Did anyone go into Lab 4 after Priya left?" },
+      title: "Ozzy: after Priya left",
+      body: { type: "statement", speaker: "Ozzy Reyes", text: "Nobody. I walk that corridor every ten minutes. I'd have seen." },
+    },
+    {
+      id: "crack-ozzy-match",
+      role: "interviewer",
+      chapter: 1,
+      access: { kind: "press", suspect: "Ozzy Reyes", against: "question-ozzy-lab", breaks: ["photo-linkedin", "detail-rena"] },
+      title: "Ozzy: the match",
+      body: { type: "statement", speaker: "Ozzy Reyes", text: "All right. The match was on. I had my eyes on my phone till nine. I didn't see who went where." },
+    },
+    {
       id: "insight-message",
       role: "archivist",
       chapter: 1,
@@ -413,6 +429,7 @@ export const case001: CaseFile = {
         type: "log",
         source: "Security desk · visitor sheet",
         rows: [
+          { time: "", text: "On duty: O. Reyes, badge S-42" },
           { time: "8:55 PM", text: "Rena Voss · Northgate Capital · badge V-117" },
           { time: "", text: "Host: E. Squires · car: KX24 RVS" },
           { time: "9:20 PM", text: "Signed out (signed: E. Squires)" },
@@ -484,6 +501,8 @@ export const case001: CaseFile = {
       role: "tech",
       chapter: 2,
       access: { kind: "search", terms: ["ozzy", "reyes", "guard", "rounds", "patrol", "security"] },
+      // Locked: the badge number is on the Archivist's visitor sheet.
+      lock: { hint: "Security system. Password hint: the night guard's badge number.", answers: ["S-42"] },
       title: "Guard tour log: Ozzy",
       body: {
         type: "log",
@@ -545,6 +564,22 @@ export const case001: CaseFile = {
       access: { kind: "crosscheck", pair: ["question-squires-left", "question-ozzy-round"] },
       title: "Not together after all",
       body: { type: "finding", text: "The professor says he and Rena left together at nine. Ozzy saw her alone at 9:10." },
+    },
+    {
+      id: "crack-squires-dean",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Prof. Edmund Squires", against: "question-squires-left", breaks: ["badge-log", "insight-sheet", "question-ozzy-round", "insight-together"] },
+      title: "Squires: the Dean's call",
+      body: { type: "statement", speaker: "Prof. Edmund Squires", text: "The Dean rang at nine about our funding. I stepped out to take it. Ms Voss said she'd wait in the lab." },
+    },
+    {
+      id: "crack-rena-waited",
+      role: "interviewer",
+      chapter: 2,
+      access: { kind: "press", suspect: "Rena Voss", against: "question-rena-after", breaks: ["badge-log", "question-ozzy-round", "insight-together", "insight-sheet", "detail-badge-clip"] },
+      title: "Rena: waiting",
+      body: { type: "statement", speaker: "Rena Voss", text: "Nine, quarter past, who's counting? The professor told me to wait, so I waited. Then I drove home." },
     },
     {
       id: "car-park-message",
@@ -687,6 +722,22 @@ export const case001: CaseFile = {
       access: { kind: "crosscheck", pair: ["question-rena-employer", "kestrel-staff"] },
       title: "Northgate? No, Kestrel",
       body: { type: "finding", text: "Rena says she works for Northgate. Kestrel Dynamics lists her as a senior engineer." },
+    },
+    {
+      id: "crack-rena-kestrel",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Rena Voss", against: "question-rena-employer", breaks: ["kestrel-staff", "detail-lanyard", "northgate-email", "insight-employer"] },
+      title: "Rena: Kestrel",
+      body: { type: "statement", speaker: "Rena Voss", text: "Fine. I joined Kestrel in March. Northgate asked me to look at HALO as a favour. That's all this was." },
+    },
+    {
+      id: "crack-rena-drive",
+      role: "interviewer",
+      chapter: 3,
+      access: { kind: "press", suspect: "Rena Voss", against: "question-rena-after", breaks: ["anpr", "insight-home"] },
+      title: "Rena: the drive",
+      body: { type: "statement", speaker: "Rena Voss", text: "I stopped somewhere on the way. Is that a crime now?" },
     },
     {
       id: "insight-home",

@@ -6,6 +6,7 @@ import type { VisibleEvidence } from "@/lib/game/engine";
 import type { EvidenceBody } from "@/lib/game/types";
 import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
+import { aimCamera } from "../camera-events";
 import { foundHotspots, nameOf, useGame } from "../context";
 import { Icon, type IconName } from "../ui/Icon";
 import { ChatPhone } from "./objects/ChatPhone";
@@ -16,6 +17,7 @@ import { TypedSheet } from "./objects/TypedSheet";
 import { PinButton } from "./PinButton";
 import { ReadOutButton } from "./ReadOut";
 import { RecordingPlayer } from "./RecordingPlayer";
+import { ShowEveryoneButton } from "./ShowEveryone";
 import { FootageView, SceneThumb, SceneView, type Tints } from "./SceneView";
 
 const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string; tone: string }> = {
@@ -24,6 +26,7 @@ const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string;
   interview: { icon: "mic", label: "Interview", tone: "bg-lilac" },
   inspect: { icon: "eye", label: "Spotted in a photo", tone: "bg-mustard" },
   crosscheck: { icon: "scale", label: "Contradiction", tone: "bg-coral" },
+  press: { icon: "mic", label: "Cracked under questioning", tone: "bg-coral" },
 };
 
 /** One line of what a piece of evidence says, for compact cards. */
@@ -51,7 +54,7 @@ export const tintsOf = (suspects: { art?: string; tint?: number }[]): Tints =>
 
 /** The piece of evidence itself, as the object it really is. */
 export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
-  const { view, act } = useGame();
+  const { view } = useGame();
   const body = evidence.body;
   switch (body.type) {
     case "statement":
@@ -68,26 +71,27 @@ export function EvidenceObject({ evidence }: { evidence: VisibleEvidence }) {
       return <RecordingPlayer recording={body} />;
     case "scene":
     case "footage": {
-      const canInspect = view.phase === "investigation" && view.me.abilities.includes("inspect");
-      const painted = Boolean(body.type === "scene" ? body.image && !body.dark : body.frames[0].image);
-      const props = {
-        found: foundHotspots(view, evidence.id),
-        tints: tintsOf(view.case.suspects),
-        magnify: painted && canInspect,
-        onInspect: canInspect ? (hotspot: string) => act({ type: "inspect", scene: evidence.id, hotspot }, { quiet: true }) : undefined,
-      };
-      const hint = !canInspect
-        ? "Only the Photographer can inspect photos. Pin it for them."
-        : painted
-          ? "Slide the magnifier around. Tap anything that looks off."
-          : "You're the Photographer: tap anything to look closer.";
+      const photographer = view.phase === "investigation" && view.me.abilities.includes("inspect");
+      const props = { found: foundHotspots(view, evidence.id), tints: tintsOf(view.case.suspects) };
       return (
         <div>
           {body.type === "scene" ? <SceneView scene={body} {...props} /> : <FootageView footage={body} {...props} />}
-          <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-cream/70">
-            <Icon name="eye" className="size-4" />
-            {hint}
-          </p>
+          {photographer ? (
+            <button
+              type="button"
+              onClick={() => aimCamera(evidence.id)}
+              className="mt-3 inline-flex items-center gap-2 rounded-full border-[3px] border-ink bg-mustard px-4 py-2 font-extrabold text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5"
+            >
+              <Icon name="camera" className="size-5" /> Open in your camera
+            </button>
+          ) : (
+            view.phase === "investigation" && (
+              <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-cream/70">
+                <Icon name="camera" className="size-4" />
+                Only the Photographer can photograph details. Pin it for them.
+              </p>
+            )
+          )}
         </div>
       );
     }
@@ -115,13 +119,14 @@ function EvidenceTag({ evidence }: { evidence: VisibleEvidence }) {
 export function EvidenceCard({ evidence, footer, highlight }: { evidence: VisibleEvidence; footer?: ReactNode; highlight?: boolean }) {
   const { view } = useGame();
   return (
-    <article id={`evidence-${evidence.id}`} className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
+    <article id={`evidence-${evidence.id}`} data-searchable className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
       <EvidenceTag evidence={evidence} />
       <EvidenceObject evidence={evidence} />
       {view.phase === "investigation" && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />
           <ReadOutButton evidence={evidence} />
+          <ShowEveryoneButton evidence={evidence} />
           {!evidence.pinned && evidence.mine && (
             <span className="flex items-center gap-1 text-xs font-bold text-cream/65">
               <Icon name="lock" className="size-3.5" /> Only you have this
@@ -137,7 +142,7 @@ export function EvidenceCard({ evidence, footer, highlight }: { evidence: Visibl
 const TILT = ["-rotate-2", "rotate-1", "rotate-2", "-rotate-1"];
 
 /** What a pinned piece looks like from across the room: its own paper, a title and a few words. */
-function TileFace({ evidence }: { evidence: VisibleEvidence }) {
+export function TileFace({ evidence }: { evidence: VisibleEvidence }) {
   const body = evidence.body;
   const text = snippet(body);
   if (body.type === "scene" || body.type === "footage") {

@@ -4,8 +4,10 @@ import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
 import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
-import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, viewFor } from "./engine.ts";
-import type { Action, RoomState } from "./types.ts";
+import { shotOf } from "./camera.ts";
+import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
+import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, SPOTLIGHT_GAP_MS, viewFor } from "./engine.ts";
+import type { Action, CaseFile, RoomState } from "./types.ts";
 
 let ids = 0;
 const newId = () => `id${++ids}`;
@@ -26,23 +28,43 @@ test("motives come in a different order in each room, so the place can't be lear
   assert.ok(firstMotives.size > 1);
 });
 
-test("three wrong answers run the clock out and lose the case", () => {
-  const caseFile = { ...tipJar, deadline: { what: "Closing time at 2:00", times: ["10:00", "11:00", "1:00"], lost: "The bar closes." } };
-  let state = createRoom({ code: "LATE", caseFile, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
-  state = must(addPlayer(state, caseFile, { id: "p2", token: "t2", name: "Bo" }, 0));
-  state = must(applyAction(state, caseFile, "p1", { type: "start" }, 0, newId));
-  for (const id of ["p1", "p2"]) state = must(applyAction(state, caseFile, id, { type: "ready" }, 0, newId));
-  state = must(applyAction(state, caseFile, "p1", { type: "pin", evidenceId: "door-log" }, 0, newId));
-  for (const time of ["11:00", "1:00", null]) {
-    state = must(applyAction(state, caseFile, "p1", { type: "propose", kind: "answer", evidenceId: "door-log" }, 0, newId));
-    state = must(applyAction(state, caseFile, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
-    if (time) assert.equal(viewFor(state, caseFile, "p1", new Set()).deadline!.time, time);
+test("the story clock reads and writes times the way each case does", () => {
+  assert.equal(parseTime("Midnight"), 0);
+  assert.equal(parseTime("12:30 AM"), 30);
+  assert.equal(parseTime("9:17 PM"), 21 * 60 + 17);
+  assert.equal(parseTime("23:30"), 23 * 60 + 30);
+  assert.throws(() => parseTime("half nine"));
+  assert.equal(formatTime(6 * 60 + 45, "12:00 AM"), "6:45 AM");
+  assert.equal(formatTime(24 * 60 + 15, "10:15 PM"), "12:15 AM");
+  assert.equal(formatTime(6 * 60 + 5, "23:30"), "06:05");
+  assert.equal(nightMinutes({ what: "", start: "10:15 PM", end: "12:00 AM", lost: "" }), 105, "a night can cross midnight");
+  assert.equal(nightMinutes(case001.deadline!), 540);
+});
+
+test("the night runs out: wrong answers spend the most of it, and the case is lost", () => {
+  // The practice night runs 9 to 11, so a wrong answer costs 30 minutes.
+  let state = createRoom({ code: "LATE", caseFile: tipJar, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, tipJar, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, tipJar, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, tipJar, id, { type: "ready" }, 0, newId));
+  assert.equal(viewFor(state, tipJar, "p1", new Set()).deadline!.time, "9:00 PM");
+  state = must(applyAction(state, tipJar, "p1", { type: "pin", evidenceId: "door-log" }, 0, newId));
+  for (const time of ["9:30 PM", "10:00 PM", "10:30 PM", null]) {
+    state = must(applyAction(state, tipJar, "p1", { type: "propose", kind: "answer", evidenceId: "door-log" }, 0, newId));
+    state = must(applyAction(state, tipJar, "p2", { type: "vote", proposalId: state.proposal!.id, vote: "yes" }, 0, newId));
+    if (time) assert.equal(viewFor(state, tipJar, "p1", new Set()).deadline!.time, time);
   }
   assert.equal(state.phase, "reveal");
   assert.equal(state.outcome!.kind, "tooLate");
-  const view = viewFor(state, caseFile, "p1", new Set());
-  assert.equal(view.deadline!.lost, "The bar closes.");
+  const view = viewFor(state, tipJar, "p1", new Set());
+  assert.equal(view.deadline!.lost, tipJar.deadline!.lost);
   assert.equal(view.deadline!.left, 0);
+  assert.equal(view.deadline!.time, "11:00 PM", "the clock stops at the deadline");
+});
+
+test("rooms from before the story clock still tell the right time", () => {
+  const old = { wrongAnswers: 2, clockSpent: undefined };
+  assert.equal(clockTime(old, case001), formatTime(2 * costMinutes(case001.deadline!, "wrong"), "12:00 AM"));
 });
 
 // With four players the core roles go round in order:
@@ -114,21 +136,44 @@ test("search: only the Tech, forgiving about spelling, and locked to the open ch
   assert.equal(state.activity.at(-1)?.kind, "miss");
 });
 
-test("interviews spend a shared budget", () => {
+test("interviews take time out of the night", () => {
   let state = roomWith(4);
   assert.equal(act(state, TECH, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "only the Interviewer asks");
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" });
   assert.equal(state.questionsUsed, 1);
+  const view = viewFor(state, tipJar, INTERVIEWER, new Set());
+  assert.equal(view.deadline!.spent, view.deadline!.costs.question);
   assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-mo-door" }).ok, false, "no asking twice");
   assert.equal(act(state, INTERVIEWER, { type: "ask", evidenceId: "question-rex-inside" }).ok, false, "chapter 2 questions are locked");
-  const view = viewFor(state, tipJar, INTERVIEWER, new Set());
-  assert.equal(view.questionsLeft, tipJar.questionBudget - 1);
 });
 
-test("inspect: only the Photographer, only on photos they can see", () => {
+test("the camera: only the Photographer, a framed clue is theirs, a shot of nothing costs time", () => {
   let state = roomWith(4);
-  assert.equal(act(state, TECH, { type: "inspect", scene: "photo-instagram", hotspot: "jar" }).ok, false);
-  assert.equal(act(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "nowhere" }).ok, false);
+  const photo = tipJar.evidence.find((e) => e.id === "photo-instagram")!;
+  const jar = shotOf(photo.body, "jar")!;
+  const spent = () => viewFor(state, tipJar, PHOTOGRAPHER, new Set()).deadline!.spent;
+  const miss = viewFor(state, tipJar, PHOTOGRAPHER, new Set()).deadline!.costs.miss;
+
+  assert.equal(act(state, TECH, { type: "shoot", scene: "photo-instagram", ...jar }).ok, false, "only the Photographer");
+  assert.equal(act(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", frame: { x: 0, y: 0, w: 100, h: 100 } }).ok, false, "a whole-picture snapshot is too far away");
+  assert.equal(spent(), 0, "and it costs nothing");
+
+  // A corner with nothing in it: the shot is taken, and the night pays for it.
+  const empty = { x: 0, y: 0, w: 25, h: 25 };
+  state = doo(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", frame: empty });
+  assert.equal(spent(), miss);
+  assert.equal(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).shots.at(-1)?.hit, null);
+
+  state = doo(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", ...jar });
+  assert.ok(sees(state, PHOTOGRAPHER).includes("detail-jar"));
+  assert.equal(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).shots.at(-1)?.hit, "detail-jar");
+  assert.equal(spent(), miss, "a hit is free");
+  assert.equal(act(state, PHOTOGRAPHER, { type: "shoot", scene: "photo-instagram", ...jar }).ok, false, "already in the darkroom, and free");
+  assert.equal(viewFor(state, tipJar, TECH, new Set()).shots.length, 0, "only the Photographer sees their shots");
+});
+
+test("phones still on the old page can tap to inspect for one more release", () => {
+  let state = roomWith(4);
   state = doo(state, PHOTOGRAPHER, { type: "inspect", scene: "photo-instagram", hotspot: "jar" });
   assert.ok(sees(state, PHOTOGRAPHER).includes("detail-jar"));
 });
@@ -146,21 +191,127 @@ test("cross-check: the Archivist needs to see both pieces, and misses are rememb
   assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
 });
 
-test("cross-check: empty compares are limited per chapter, real contradictions never are", () => {
+test("cross-check: an empty compare costs a little of the night, a real contradiction costs nothing", () => {
   let state = roomWith(4);
   state = proveChapter1(state);
   state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
   for (const [who, id] of [[INTERVIEWER, "question-squarington-left"], [TECH, "door-log"]]) {
     state = doo(state, who, { type: "pin", evidenceId: id });
   }
+  const spent = () => viewFor(state, tipJar, ARCHIVIST, new Set()).deadline!.spent;
+  const miss = viewFor(state, tipJar, ARCHIVIST, new Set()).deadline!.costs.miss;
+  const before = spent();
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "staff-chat" });
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "door-log" });
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "statement-mo" });
-  assert.equal(viewFor(state, tipJar, ARCHIVIST, new Set()).checksLeft, 0);
-  assert.equal(act(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "door-log" }).ok, false, "out of hunches");
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "staff-chat", b: "door-log" });
+  assert.equal(spent(), before + 4 * miss, "no limit, but every empty compare costs time");
+  assert.equal(state.activity.at(-1)?.kind, "clock", "the whole team hears about it");
   state = doo(state, ARCHIVIST, { type: "crosscheck", a: "question-squarington-left", b: "receipts" });
-  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"), "a real contradiction still lands");
-  assert.equal(viewFor(state, tipJar, TECH, new Set()).checksLeft, null, "only the Archivist counts hunches");
+  assert.ok(sees(state, ARCHIVIST).includes("insight-squarington"));
+  assert.equal(spent(), before + 4 * miss, "a real contradiction is free");
+});
+
+test("show everyone: anything you can see goes onto every phone, once in a while", () => {
+  let state = roomWith(4);
+  assert.equal(act(state, TECH, { type: "spotlight", evidenceId: "statement-mo" }).ok, false, "only something you can see");
+  state = doo(state, TECH, { type: "spotlight", evidenceId: "door-log" });
+  const view = viewFor(state, tipJar, PHOTOGRAPHER, new Set());
+  assert.equal(view.spotlight?.evidence.id, "door-log", "everyone gets it for the moment");
+  assert.ok(!view.evidence.some((e) => e.id === "door-log"), "but it doesn't become theirs");
+  assert.equal(act(state, TECH, { type: "spotlight", evidenceId: "door-log" }).ok, false, "not again straight away");
+  assert.ok(applyAction(state, tipJar, TECH, { type: "spotlight", evidenceId: "door-log" }, 1 + SPOTLIGHT_GAP_MS, newId).ok);
+});
+
+test("show them: the right piece cracks a suspect, the wrong one costs time, and nothing is free twice", () => {
+  // The practice case's own crack: Lord Squarington's "half past eight", broken by the receipts.
+  const pressed: CaseFile = tipJar;
+  assert.deepEqual(checkCase(pressed), []);
+  let state = createRoom({ code: "SHOW", caseFile: pressed, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= 4; i++) state = must(addPlayer(state, pressed, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
+  const run = (who: string, action: Action) => applyAction(state, pressed, who, action, 1, newId);
+  const go = (who: string, action: Action) => (state = must(run(who, action)));
+  go("p1", { type: "start" });
+  for (const p of ["p1", "p2", "p3", "p4"]) go(p, { type: "ready" });
+  go(INTERVIEWER, { type: "pin", evidenceId: "statement-mo" });
+  go(TECH, { type: "propose", kind: "answer", evidenceId: "statement-mo" });
+  for (const p of ["p2", "p3", "p4"]) if (state.proposal) go(p, { type: "vote", proposalId: state.proposal.id, vote: "yes" });
+  assert.equal(state.chapter, 2);
+  const spent = () => viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.spent;
+
+  go(ARCHIVIST, { type: "pin", evidenceId: "receipts" });
+  assert.equal(run(TECH, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "only the Interviewer");
+  const early = run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" });
+  assert.ok(!early.ok && early.error.includes("Ask"), "he hasn't claimed anything yet, and that's free");
+  assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "door-log" }).ok, false, "only things on the board");
+
+  go(INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  const before = spent();
+  go(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "statement-mo" });
+  assert.equal(spent(), before + viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.costs.miss, "the wrong piece costs time");
+  assert.equal(viewFor(state, pressed, INTERVIEWER, new Set()).shows.at(-1)?.crack, null);
+
+  go(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" });
+  assert.ok(state.found["crack-squarington-tab"], "he cracks");
+  assert.equal(state.activity.at(-1)?.kind, "crack");
+  assert.equal(viewFor(state, pressed, PHOTOGRAPHER, new Set()).cracks[0]?.text.startsWith("Oh, very well"), true, "every phone hears it");
+  assert.ok(viewFor(state, pressed, INTERVIEWER, new Set()).evidence.some((e) => e.id === "crack-squarington-tab" && e.source === "press"));
+  assert.equal(spent(), before + viewFor(state, pressed, INTERVIEWER, new Set()).deadline!.costs.miss, "a crack is free");
+  assert.equal(run(INTERVIEWER, { type: "show", suspect: "Lord Squarington", evidenceId: "receipts" }).ok, false, "he's already given that up");
+});
+
+test("the wall: only the Archivist arranges it, only pinned pieces, and contradictions show as string for everyone", () => {
+  let state = proveChapter1(roomWith(4));
+  state = doo(state, INTERVIEWER, { type: "ask", evidenceId: "question-squarington-left" });
+  state = doo(state, INTERVIEWER, { type: "pin", evidenceId: "question-squarington-left" });
+  assert.equal(act(state, TECH, { type: "arrange", evidenceId: "question-squarington-left", x: 30, y: 40 }).ok, false, "only the Archivist");
+  assert.equal(act(state, ARCHIVIST, { type: "arrange", evidenceId: "receipts", x: 30, y: 40 }).ok, false, "only pinned pieces");
+  state = doo(state, ARCHIVIST, { type: "arrange", evidenceId: "question-squarington-left", x: 140, y: -5 });
+  assert.deepEqual(viewFor(state, tipJar, TECH, new Set()).wall["question-squarington-left"], { x: 96, y: 2 }, "kept on the wall, and everyone sees where");
+
+  state = doo(state, ARCHIVIST, { type: "crosscheck", a: "receipts", b: "question-squarington-left" });
+  assert.deepEqual(viewFor(state, tipJar, PHOTOGRAPHER, new Set()).strings, [{ id: "insight-squarington", a: "receipts", b: "question-squarington-left" }]);
+
+  state = doo(state, INTERVIEWER, { type: "unpin", evidenceId: "question-squarington-left" });
+  assert.deepEqual(viewFor(state, tipJar, TECH, new Set()).wall, {}, "taken down, its place goes with it");
+});
+
+test("locked records: found as a title and a hint, opened only by the right password, wrong guesses cost time", () => {
+  // The practice case with its card history locked behind a word from Mo's statement.
+  const locked: CaseFile = {
+    ...tipJar,
+    evidence: tipJar.evidence.map((e) => (e.id === "card-history" ? { ...e, lock: { hint: "Password hint: what Mo was making at 8:41.", answers: ["latte"] } } : e)),
+  };
+  assert.deepEqual(checkCase(locked), []);
+  assert.ok(
+    checkCase({ ...locked, evidence: locked.evidence.map((e) => (e.id === "card-history" ? { ...e, lock: { hint: "x", answers: ["zebra"] } } : e)) }).some((p) => p.includes("password")),
+    "a password nobody else holds is caught",
+  );
+  let state = createRoom({ code: "LOCK", caseFile: locked, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (let i = 2; i <= 4; i++) state = must(addPlayer(state, locked, { id: `p${i}`, token: `t${i}`, name: `Player ${i}` }, 0));
+  const run = (who: string, action: Action) => applyAction(state, locked, who, action, 1, newId);
+  const go = (who: string, action: Action) => (state = must(run(who, action)));
+  go("p1", { type: "start" });
+  for (const p of ["p1", "p2", "p3", "p4"]) go(p, { type: "ready" });
+
+  go(TECH, { type: "search", query: "0007" });
+  assert.ok(!state.found["card-history"], "found, but not opened");
+  const view = viewFor(state, locked, PHOTOGRAPHER, new Set());
+  assert.deepEqual(view.locked.map((l) => [l.id, l.hint]), [["card-history", "Password hint: what Mo was making at 8:41."]], "every phone sees the hint");
+  assert.ok(!viewFor(state, locked, TECH, new Set()).evidence.some((e) => e.id === "card-history"), "nothing inside shows yet");
+  assert.equal(state.activity.at(-1)?.kind, "locked");
+
+  assert.equal(run(INTERVIEWER, { type: "unlock", evidenceId: "card-history", password: "latte" }).ok, false, "only the Tech");
+  const before = viewFor(state, locked, TECH, new Set()).deadline!.spent;
+  go(TECH, { type: "unlock", evidenceId: "card-history", password: "espresso" });
+  assert.ok(!state.found["card-history"]);
+  assert.equal(viewFor(state, locked, TECH, new Set()).deadline!.spent, before + viewFor(state, locked, TECH, new Set()).deadline!.costs.miss, "a wrong guess costs time");
+  go(TECH, { type: "unlock", evidenceId: "card-history", password: "  LATTE! " });
+  assert.ok(state.found["card-history"], "forgiving about case and punctuation");
+  assert.equal(state.activity.at(-1)?.kind, "access");
+  assert.deepEqual(viewFor(state, locked, TECH, new Set()).locked, []);
+  assert.deepEqual(viewFor(state, locked, TECH, new Set()).tries.map((t) => t.ok), [false, true]);
+  assert.equal(run(TECH, { type: "unlock", evidenceId: "card-history", password: "latte" }).ok, false, "nothing left to unlock");
 });
 
 test("a single wrong checkpoint answer costs the sharp star", () => {

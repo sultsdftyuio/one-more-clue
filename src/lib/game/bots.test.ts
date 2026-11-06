@@ -85,6 +85,24 @@ test("humans pinning lots doesn't stop bots showing their desks", () => {
   assert.notEqual(nextBotMove(state, tipJar, 10_000)?.action.type, "pin", "but never onto a full board");
 });
 
+test("a Tech bot searches into a locked file, then opens it with the password", () => {
+  let state = soloWithBots("together");
+  // Hand the Tech to a bot and jump to chapter 3, where the depot chat is locked.
+  const tech = tipJar.roles.find((r) => r.ability === "search")!.id;
+  state = {
+    ...state,
+    chapter: 3,
+    botMovedAt: 0,
+    // The chapter's other records are already found, so the depot chat is the bot's search.
+    found: { ...state.found, "transit-card": { by: "me", at: 0 }, "cctv-still": { by: "me", at: 0 } },
+    players: state.players.map((p) => ({ ...p, roles: p.id === "me" ? p.roles.filter((r) => r !== tech) : p.id === "bot1" ? [...p.roles, tech] : p.roles })),
+  };
+  state = letBotsPlay(state);
+  assert.ok(state.found["depot-chat"], "the bot unlocked the depot chat");
+  assert.ok(!state.locked?.["depot-chat"]);
+  assert.ok(state.tries?.some((t) => t.evidenceId === "depot-chat" && t.ok));
+});
+
 test("bots wait between moves", () => {
   const state = createRoom({ code: "B", caseFile: tipJar, host: { id: "me", token: "t", name: "Me" }, mode: "together", now: 0 });
   const withBot = must(addPlayer(state, tipJar, { id: "bot", token: "b", name: "Bot", bot: true }, 0));

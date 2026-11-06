@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatSpan } from "@/lib/game/clock";
 import { cx } from "@/lib/cx";
 import { evidenceIn, useGame } from "./context";
 import { InterrogationPanel } from "./Interrogation";
@@ -66,7 +67,11 @@ function Checkpoint() {
       </button>
       <p className="mt-2 text-center text-xs font-bold text-cream/55">
         The majority decides.{" "}
-        {!view.deadline ? "Weak proof counts against your stars." : view.deadline.left === 1 ? "One more failed proof and the night is over." : "Weak proof costs you hours."}
+        {!view.deadline
+          ? "Weak proof counts against your stars."
+          : view.deadline.left <= view.deadline.costs.wrong
+            ? "One more failed proof and the night is over."
+            : `Weak proof costs ${formatSpan(view.deadline.costs.wrong)} of the night.`}
       </p>
     </div>
   );

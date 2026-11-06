@@ -2,9 +2,11 @@ import { AccessToken, DataPacket_Kind, RoomServiceClient, TrackSource } from "li
 
 /**
  * LiveKit carries two things for a room: voice chat (remote rooms) and an
- * instant "the room changed" nudge after every write, so phones refetch
- * straight away instead of waiting for their next poll. Everything here is
- * off until LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET are set.
+ * instant "the room changed" nudge after every write, so phones in voice
+ * refetch straight away instead of waiting for their next poll. Phones only
+ * connect while their player is in voice (LiveKit bills connected minutes).
+ * Everything here is off until LIVEKIT_URL, LIVEKIT_API_KEY and
+ * LIVEKIT_API_SECRET are set.
  */
 export function liveConfigured() {
   const env = process.env;

@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, m, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
-import { useRef, useState } from "react";
+import { animate, AnimatePresence, m, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, type MotionValue } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/fx/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { hero } from "@/data/hero";
@@ -13,7 +13,13 @@ import { cx } from "@/lib/cx";
 import { PhoneStage } from "./PhoneStage";
 
 /** How far you scroll per step while the stage is pinned, in screen heights. */
-const PER_STEP = 0.6;
+const PER_STEP = 0.5;
+
+/** The phone's angle at each step: from turned left at the start to turned right at the end. */
+const turnFor = (i: number) => {
+  const t = steps.length > 1 ? i / (steps.length - 1) : 0;
+  return { y: -24 + t * 46, x: 10 - t * 14 };
+};
 
 /** Crime-scene tape across the section, sliding in from one side. */
 function Tape({ className, from, children }: { className: string; from: "left" | "right"; children: string }) {
@@ -227,11 +233,31 @@ export function HowItWorks() {
   const [active, setActive] = useState(0);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
-  useMotionValueEvent(scrollYProgress, "change", (p) => setActive(Math.min(steps.length - 1, Math.max(0, Math.floor(p * steps.length)))));
+  // Only a new step re-renders; scrolling within a step changes nothing.
+  const current = useRef(0);
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    const step = Math.min(steps.length - 1, Math.max(0, Math.floor(p * steps.length)));
+    if (step !== current.current) {
+      current.current = step;
+      setActive(step);
+    }
+  });
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 24 });
-  // The phone turns slowly in your hand as the night goes on.
-  const rotateY = useTransform(scrollYProgress, [0, 1], [-24, 22]);
-  const rotateX = useTransform(scrollYProgress, [0, 1], [10, -4]);
+  // The phone turns a little further in your hand with each step, then holds
+  // still. Turning it on every scroll frame repainted the phone non-stop.
+  const rotateY = useMotionValue(turnFor(0).y);
+  const rotateX = useMotionValue(turnFor(0).x);
+  useEffect(() => {
+    const { x, y } = turnFor(active);
+    if (reduce) {
+      rotateX.set(x);
+      rotateY.set(y);
+      return;
+    }
+    const opts = { type: "spring", stiffness: 70, damping: 16 } as const;
+    const runs = [animate(rotateY, y, opts), animate(rotateX, x, opts)];
+    return () => runs.forEach((r) => r.stop());
+  }, [active, reduce, rotateX, rotateY]);
 
   /** Scrolls to the middle of a step's stretch of the pinned track. */
   const go = (i: number) => {

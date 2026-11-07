@@ -132,7 +132,7 @@ export function HeroFilm({ video, poster, label, className }: Props) {
         type="button"
         onClick={() => (muted || ended || waiting ? fromTheTop(true) : hush())}
         aria-pressed={!muted && !ended}
-        className="mx-auto mt-5 flex animate-rise-in items-center gap-2 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm transition-transform [animation-delay:1.4s] hover:-translate-y-0.5"
+        className="mx-auto mt-5 flex min-h-[44px] animate-rise-in items-center gap-2 rounded-full border-[0.1875rem] border-ink bg-cream px-4 py-2 text-sm font-extrabold whitespace-nowrap text-ink shadow-pop-sm transition-transform [animation-delay:1.4s] hover:-translate-y-0.5"
       >
         <Icon name={muted || ended ? "speakerOff" : "speaker"} className="size-4" />
         {muted || ended || waiting ? "Hear the narrator" : "Mute"}

@@ -18,7 +18,7 @@ export function SiteFooter() {
         </Link>
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-bold text-cream/80">
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-mustard">
+            <Link key={l.href} href={l.href} className="inline-flex min-h-[44px] items-center hover:text-mustard">
               {l.label}
             </Link>
           ))}

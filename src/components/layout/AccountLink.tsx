@@ -15,7 +15,7 @@ export function AccountLink() {
   useEffect(() => setSignedIn(SESSION_COOKIE.test(document.cookie)), []);
 
   return (
-    <Link href={signedIn ? "/account" : "/login"} className="font-extrabold whitespace-nowrap text-cream hover:text-mustard">
+    <Link href={signedIn ? "/account" : "/login"} className="inline-flex min-h-[44px] items-center font-extrabold whitespace-nowrap text-cream hover:text-mustard">
       {signedIn ? "Account" : "Log in"}
     </Link>
   );

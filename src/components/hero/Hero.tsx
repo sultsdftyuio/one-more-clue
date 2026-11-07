@@ -45,10 +45,14 @@ export function Hero() {
             ))}
           </ul>
 
-          <PopIn delay={1.5} className="mt-7 flex flex-wrap gap-4">
-            <Magnetic>
-              <ButtonLink href={cta.href}>{gameOpen() ? "Play Case 001 free" : cta.label}</ButtonLink>
-            </Magnetic>
+          <PopIn delay={1.5} className="mt-7 flex flex-wrap items-start gap-4">
+            {/* The note sits under the play button itself, so on phones it can't read as the warm-up's. */}
+            <div className="flex flex-col items-start gap-2">
+              <Magnetic>
+                <ButtonLink href={cta.href}>{gameOpen() ? "Play Case 001 free" : cta.label}</ButtonLink>
+              </Magnetic>
+              {gameOpen() && <p className="pl-2 text-sm font-bold text-cream/75 [text-shadow:0_2px_8px_var(--color-night)]">{hero.ctaNote}</p>}
+            </div>
             <Magnetic>
               <ButtonLink href="#mini-case" variant="secondary">
                 Try a 30-second case

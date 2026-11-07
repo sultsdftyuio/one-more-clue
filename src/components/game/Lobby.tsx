@@ -148,6 +148,15 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
             </Button>
           </div>
         </div>
+        {isHost && count === 1 && (
+          <p className="mt-4 text-sm font-bold text-cream/70">
+            You need at least one friend for this case. Send them the link, and they&apos;ll appear below when they join. While you wait,{" "}
+            <a href="/#mini-case" target="_blank" rel="noopener" className="text-mustard underline decoration-2 underline-offset-4 hover:text-cream">
+              try the 30-second warm-up
+            </a>
+            .
+          </p>
+        )}
       </Panel>
 
       <Panel title={`Detectives ${count}/${view.case.maxPlayers}`}>

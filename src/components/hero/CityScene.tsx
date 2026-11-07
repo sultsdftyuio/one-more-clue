@@ -46,7 +46,8 @@ export function CityScene() {
         <StarField />
       </Layer>
 
-      <Layer look={14} sink={0.42} className="top-[7%] right-[5%] w-[clamp(130px,19vw,300px)]">
+      {/* On phones the hero is tall, so a % top would sit behind the tagline: pin it small near the top instead. */}
+      <Layer look={14} sink={0.42} className="top-14 right-[3%] w-24 md:top-[7%] md:right-[5%] md:w-[clamp(130px,19vw,300px)]">
         {/* Moon halo breathes slowly. */}
         <m.div
           className="absolute inset-[-35%] rounded-full bg-[radial-gradient(circle,rgba(255,230,167,0.35),rgba(255,230,167,0)_65%)]"

@@ -17,7 +17,7 @@ export function SiteHeader() {
         <nav className="flex items-center gap-5">
           {authEnabled() && <AccountLink />}
           {gameOpen() && (
-            <Link href="/host#join" className="font-extrabold whitespace-nowrap text-cream hover:text-mustard">
+            <Link href="/host#join" className="inline-flex min-h-[44px] items-center font-extrabold whitespace-nowrap text-cream hover:text-mustard">
               <span className="sm:hidden">Join</span>
               <span className="max-sm:hidden">Have a code?</span>
             </Link>

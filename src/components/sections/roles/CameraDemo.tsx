@@ -144,7 +144,7 @@ export function CameraDemo({ found, onFind, next }: { found: string[]; onFind: (
             type="button"
             onClick={() => setAim(null)}
             disabled={!aim}
-            className="rounded-full border-2 border-cream/40 px-3 py-1.5 text-sm font-extrabold text-cream/85 transition-colors hover:border-cream disabled:opacity-30"
+            className="min-h-[44px] rounded-full border-2 border-cream/40 px-3 py-1.5 text-sm font-extrabold text-cream/85 transition-colors hover:border-cream disabled:opacity-30"
           >
             Zoom out
           </button>

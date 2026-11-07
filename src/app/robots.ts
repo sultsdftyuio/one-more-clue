@@ -7,7 +7,8 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Account and auth pages carry noindex themselves; these are never useful to crawl.
-      disallow: ["/account", "/auth/", "/api/", "/reset-password"],
+      // /new/ opens a real room when its script runs, and /r/ is a private room, so crawlers stay out of both.
+      disallow: ["/account", "/auth/", "/api/", "/reset-password", "/new/", "/r/"],
     },
     host: SITE_URL,
     sitemap: `${SITE_URL}/sitemap.xml`,

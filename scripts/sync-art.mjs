@@ -22,7 +22,8 @@ const icons = { "favicon.ico": "favicon.ico", "icon-192.png": "icon.png", "apple
 for (const [from, to] of Object.entries(icons)) copyFileSync(join(out, "icons", from), join(app, to));
 
 // Link-preview card: Next.js serves these file names as the Open Graph and Twitter images.
-const alt = "One More Clue: four cartoon shape suspects on a night street. Mysteries you crack with friends.";
+const alt =
+  'One More Clue: four cartoon suspects on a night street, with the line "Everyone holds different evidence. Nobody solves it alone." A mystery for 2 to 4 friends on their phones.';
 for (const name of ["opengraph-image", "twitter-image"]) {
   copyFileSync(join(out, "social", "og-image.png"), join(app, `${name}.png`));
   writeFileSync(join(app, `${name}.alt.txt`), alt);

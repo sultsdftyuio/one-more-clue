@@ -10,7 +10,7 @@ import { useLiveRoom } from "./useLive";
  */
 export function VoiceControl({ compact }: { compact?: boolean }) {
   const live = useLiveRoom();
-  if (!live.connected) return null;
+  if (!live.available) return null;
 
   const soundPrompt = live.soundBlocked && (
     <button

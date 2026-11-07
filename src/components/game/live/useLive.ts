@@ -5,7 +5,9 @@ import type { RemoteTrack, Room } from "livekit-client";
 import { trackEvent } from "@/lib/analytics";
 
 export type Live = {
-  /** LiveKit is set up and this phone is connected to the room's channel. */
+  /** LiveKit is set up for this room, so voice can be joined. */
+  available: boolean;
+  /** This phone is in the room's voice channel (and so gets instant updates). */
   connected: boolean;
   voice: "off" | "joining" | "on";
   muted: boolean;
@@ -24,6 +26,7 @@ export type Live = {
 };
 
 const OFF: Live = {
+  available: false,
   connected: false,
   voice: "off",
   muted: false,
@@ -42,13 +45,28 @@ const LiveContext = createContext<Live>(OFF);
 export const LiveProvider = LiveContext.Provider;
 export const useLiveRoom = () => useContext(LiveContext);
 
+type Pass = { url: string; token: string; at: number };
+/** Passes last 6 hours on the server; fetch a new one well before that. */
+const PASS_FRESH_MS = 5 * 60 * 60 * 1000;
+
+const fetchPass = (code: string): Promise<Pass | null> =>
+  fetch(`/api/rooms/${code}/live`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((p) => (p?.enabled ? { url: p.url, token: p.token, at: Date.now() } : null))
+    .catch(() => null);
+
+type LiveKit = typeof import("livekit-client");
+
 /**
- * Connects to the room's LiveKit channel once this player is in the room.
- * `onNudge` fires with the room's new version whenever the server saves a
- * change. Voice is opt-in: nobody hears or is heard until they join it.
+ * The room's LiveKit voice channel. A phone only connects while its player is
+ * in voice, because LiveKit bills every connected minute; everyone else keeps
+ * up by polling. While connected, `onNudge` fires with the room's new version
+ * whenever the server saves a change.
  */
 export function useLive(code: string, enabled: boolean, onNudge: (version: number) => void): Live {
   const room = useRef<Room | null>(null);
+  const pass = useRef<Pass | null>(null);
+  const livekit = useRef<LiveKit | null>(null);
   const audio = useRef(new Map<string, HTMLMediaElement[]>());
   const listening = useRef(false);
   const silencedRef = useRef(new Set<string>());
@@ -57,6 +75,7 @@ export function useLive(code: string, enabled: boolean, onNudge: (version: numbe
     nudge.current = onNudge;
   }, [onNudge]);
 
+  const [available, setAvailable] = useState(false);
   const [connected, setConnected] = useState(false);
   const [voice, setVoice] = useState<Live["voice"]>("off");
   const [muted, setMuted] = useState(false);
@@ -72,100 +91,110 @@ export function useLive(code: string, enabled: boolean, onNudge: (version: numbe
     }
   }, []);
 
+  /** Closes the connection (which stops LiveKit's meter) and removes every voice it played. */
+  const hangUp = useCallback(() => {
+    listening.current = false;
+    const lk = room.current;
+    room.current = null;
+    lk?.disconnect();
+    for (const list of audio.current.values()) list.forEach((el) => el.remove());
+    audio.current.clear();
+    setConnected(false);
+    setSpeaking(new Set());
+    setSoundBlocked(false);
+  }, []);
+
+  // Only finds out whether voice is set up, and loads the library so joining is quick.
+  // Nothing connects until the player taps Join voice.
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    let lk: Room | null = null;
-    const elements = audio.current;
-
     (async () => {
-      const pass = await fetch(`/api/rooms/${code}/live`, { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null);
-      if (cancelled || !pass?.enabled) return;
-
-      const { Room, RoomEvent, Track } = await import("livekit-client");
-      lk = new Room({
-        audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      room.current = lk;
-
-      lk.on(RoomEvent.DataReceived, (payload, _participant, _kind, topic) => {
-        if (topic !== "room") return;
-        try {
-          const { v } = JSON.parse(new TextDecoder().decode(payload));
-          if (typeof v === "number") nudge.current(v);
-        } catch {}
-      });
-      lk.on(RoomEvent.ActiveSpeakersChanged, (speakers) => setSpeaking(new Set(speakers.map((s) => s.identity))));
-      lk.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant) => {
-        if (track.kind !== Track.Kind.Audio) return;
-        const el = track.attach();
-        el.style.display = "none";
-        document.body.appendChild(el);
-        audio.current.set(participant.identity, [...(audio.current.get(participant.identity) ?? []), el]);
-        applyAudio();
-      });
-      lk.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _pub, participant) => {
-        const gone = track.detach();
-        gone.forEach((el) => el.remove());
-        audio.current.set(participant.identity, (audio.current.get(participant.identity) ?? []).filter((el) => !gone.includes(el)));
-      });
-      lk.on(RoomEvent.AudioPlaybackStatusChanged, () => setSoundBlocked(listening.current && !lk!.canPlaybackAudio));
-      lk.on(RoomEvent.Reconnecting, () => setConnected(false));
-      lk.on(RoomEvent.Reconnected, () => setConnected(true));
-      lk.on(RoomEvent.Disconnected, () => {
-        setConnected(false);
-        setVoice("off");
-      });
-
-      try {
-        await lk.connect(pass.url, pass.token, { autoSubscribe: true });
-        if (!cancelled) setConnected(true);
-      } catch {
-        // Can't reach LiveKit: polling keeps the game going without voice.
-      }
+      const p = await fetchPass(code);
+      if (cancelled || !p) return;
+      pass.current = p;
+      livekit.current = await import("livekit-client").catch(() => null);
+      if (!cancelled && livekit.current) setAvailable(true);
     })();
-
     return () => {
       cancelled = true;
-      listening.current = false;
-      lk?.disconnect();
-      room.current = null;
-      for (const list of elements.values()) list.forEach((el) => el.remove());
-      elements.clear();
+      hangUp();
+      setVoice("off");
     };
-  }, [applyAudio, code, enabled]);
+  }, [code, enabled, hangUp]);
 
   const joinVoice = useCallback(async () => {
-    const lk = room.current;
-    if (!lk) return;
+    const lib = livekit.current;
+    if (!lib || room.current) return;
+    const { Room, RoomEvent, Track } = lib;
     setError(null);
     setVoice("joining");
+
+    const lk = new Room({
+      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    room.current = lk;
+    // Browsers only allow sound inside the tap that called this, so ask before any waiting.
+    const unlocked = lk.startAudio().catch(() => undefined);
+
+    lk.on(RoomEvent.DataReceived, (payload, _participant, _kind, topic) => {
+      if (topic !== "room") return;
+      try {
+        const { v } = JSON.parse(new TextDecoder().decode(payload));
+        if (typeof v === "number") nudge.current(v);
+      } catch {}
+    });
+    lk.on(RoomEvent.ActiveSpeakersChanged, (speakers) => setSpeaking(new Set(speakers.map((s) => s.identity))));
+    lk.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant) => {
+      if (track.kind !== Track.Kind.Audio) return;
+      const el = track.attach();
+      el.style.display = "none";
+      document.body.appendChild(el);
+      audio.current.set(participant.identity, [...(audio.current.get(participant.identity) ?? []), el]);
+      applyAudio();
+    });
+    lk.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _pub, participant) => {
+      const gone = track.detach();
+      gone.forEach((el) => el.remove());
+      audio.current.set(participant.identity, (audio.current.get(participant.identity) ?? []).filter((el) => !gone.includes(el)));
+    });
+    lk.on(RoomEvent.AudioPlaybackStatusChanged, () => setSoundBlocked(listening.current && !lk.canPlaybackAudio));
+    lk.on(RoomEvent.Reconnecting, () => setConnected(false));
+    lk.on(RoomEvent.Reconnected, () => setConnected(true));
+    lk.on(RoomEvent.Disconnected, () => {
+      // Our own hang-up has already moved on; this is the connection dropping.
+      if (room.current !== lk) return;
+      hangUp();
+      setVoice("off");
+    });
+
     try {
-      // Both need the tap that called this, or the browser refuses.
-      await lk.startAudio();
+      if (!pass.current || Date.now() - pass.current.at > PASS_FRESH_MS) pass.current = await fetchPass(code);
+      if (!pass.current) throw new Error("No voice pass");
+      await lk.connect(pass.current.url, pass.current.token, { autoSubscribe: true });
+      if (room.current !== lk) return; // they left while it was connecting
+      await unlocked;
       await lk.localParticipant.setMicrophoneEnabled(true);
       listening.current = true;
+      setConnected(true);
       applyAudio();
       setMuted(false);
       setVoice("on");
       trackEvent("voice_joined");
       setSoundBlocked(!lk.canPlaybackAudio);
     } catch (e) {
+      if (room.current !== lk) return;
+      hangUp();
       const blocked = e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "SecurityError");
       setError(blocked ? "Your microphone is blocked. Allow it in your browser's settings, then try again." : "Couldn't start voice. Try again.");
       setVoice("off");
     }
-  }, [applyAudio]);
+  }, [applyAudio, code, hangUp]);
 
   const leaveVoice = useCallback(async () => {
-    listening.current = false;
-    applyAudio();
-    await room.current?.localParticipant.setMicrophoneEnabled(false).catch(() => undefined);
+    hangUp();
     setVoice("off");
-    setSoundBlocked(false);
-  }, [applyAudio]);
+  }, [hangUp]);
 
   const toggleMute = useCallback(async () => {
     const lk = room.current;
@@ -193,5 +222,5 @@ export function useLive(code: string, enabled: boolean, onNudge: (version: numbe
   }, []);
 
   if (!enabled) return OFF;
-  return { connected, voice, muted, speaking, silenced, soundBlocked, error, joinVoice, leaveVoice, toggleMute, toggleSilenced, startSound };
+  return { available, connected, voice, muted, speaking, silenced, soundBlocked, error, joinVoice, leaveVoice, toggleMute, toggleSilenced, startSound };
 }

@@ -122,17 +122,23 @@ type BodyProps = {
   glare: MotionValue<string>;
 };
 
+/**
+ * One slice of the metal edge, a little darker the deeper it sits. The shade is
+ * a dark wash painted over the metal, not a CSS filter: fourteen filtered
+ * layers repainting on every turn made phones drop to a few frames a second.
+ */
+function Slice({ index, metal }: { index: number; metal: MotionValue<string> }) {
+  const shade = (0.05 + (index / SLICES) * 0.35).toFixed(3);
+  const background = useTransform(metal, (m) => `linear-gradient(rgba(5,6,15,${shade}), rgba(5,6,15,${shade})), ${m}`);
+  return <m.span aria-hidden className="absolute inset-0" style={{ borderRadius: RADIUS, background, transform: `translateZ(-${(index + 1) * STEP}px)` }} />;
+}
+
 function PhoneBody({ screen, turnX, turnY, metal, glare }: BodyProps) {
   return (
     <m.div className="relative [transform-style:preserve-3d]" style={{ rotateX: turnX, rotateY: turnY }}>
       {/* Body: slices behind the front form the rounded metal edge. */}
       {Array.from({ length: SLICES }, (_, i) => (
-        <m.span
-          key={i}
-          aria-hidden
-          className="absolute inset-0"
-          style={{ borderRadius: RADIUS, background: metal, transform: `translateZ(-${(i + 1) * STEP}px)`, filter: `brightness(${0.95 - (i / SLICES) * 0.35})` }}
-        />
+        <Slice key={i} index={i} metal={metal} />
       ))}
       {/* Side buttons, a few slices deep so they read from the side. */}
       {[0.3, 0.5].map((z) =>

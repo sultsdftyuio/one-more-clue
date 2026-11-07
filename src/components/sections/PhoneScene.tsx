@@ -326,16 +326,36 @@ type Props = {
   active: boolean;
 };
 
-/** Signals ready on the first frame after everything inside the Suspense has loaded. */
+/**
+ * Gets the phone ready while it's still below the screen: compiles its shaders
+ * in the background, uploads every screenshot and draws one frame. Left to the
+ * first visible frame, that work froze the page for about a third of a second
+ * just as the phone scrolled in. Then PhoneStage can retire the CSS phone.
+ */
 function Ready({ onReady }: { onReady: () => void }) {
-  const done = useRef(false);
-  const invalidate = useThree((s) => s.invalidate);
-  useEffect(() => invalidate(), [invalidate]);
-  useFrame(() => {
-    if (done.current) return;
-    done.current = true;
-    onReady();
-  });
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const advance = useThree((s) => s.advance);
+  const textures = useTexture(phoneScreens.map((s) => s.src));
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        await gl.compileAsync(scene, camera);
+      } catch {
+        // Without parallel compiling it just happens on the first frame, as before.
+      }
+      if (cancelled) return;
+      for (const t of textures) gl.initTexture(t);
+      // One frame now, even though the canvas isn't drawing yet: the studio light and the first screen.
+      advance(performance.now());
+      if (!cancelled) onReady();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [gl, scene, camera, advance, textures, onReady]);
   return null;
 }
 

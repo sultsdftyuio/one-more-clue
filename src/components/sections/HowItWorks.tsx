@@ -1,19 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { m, useInView, useScroll, useSpring, useTransform } from "motion/react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, m, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "motion/react";
+import { useRef, useState } from "react";
 import { Reveal } from "@/components/fx/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { hero } from "@/data/hero";
-import { steps, type Clue, type Step } from "@/data/how-it-works";
+import { steps, type Clue } from "@/data/how-it-works";
 import { roles } from "@/data/roles";
 import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
-import { PhoneFrame } from "./PhoneFrame";
 import { PhoneStage } from "./PhoneStage";
 
-const tilts = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2", "-rotate-1", "rotate-1"];
+/** How far you scroll per step while the stage is pinned, in screen heights. */
+const PER_STEP = 0.6;
 
 /** Crime-scene tape across the section, sliding in from one side. */
 function Tape({ className, from, children }: { className: string; from: "left" | "right"; children: string }) {
@@ -81,7 +81,10 @@ function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
         <div className="relative -rotate-2 rounded-xl border-[0.1875rem] border-ink bg-cream px-3 pt-4 pb-2 shadow-pop-sm">
           <Image src={propArt.pushpin} alt="" sizes="28px" className="absolute -top-3 left-1/2 w-7 -translate-x-1/2" />
           <p className="text-[0.65rem] font-extrabold tracking-widest text-ink/50 uppercase">Presented</p>
-          <p aria-label="Redacted evidence" className="mt-1 h-3.5 w-28 rounded-sm bg-ink" />
+          {/* Hidden on purpose, like the game screens: blurred, never a black bar. */}
+          <p aria-label="A piece of evidence, hidden" className="mt-1 text-sm font-extrabold whitespace-nowrap text-ink blur-[3px] select-none">
+            <span aria-hidden>The night&apos;s best clue</span>
+          </p>
         </div>
         <ul className="flex gap-1.5" aria-label="Three of four agree">
           {[true, true, true, false].map((yes, i) => (
@@ -129,174 +132,196 @@ function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
   );
 }
 
-function StepCard({ step, index, active, onActive, pin }: { step: Step; index: number; active: boolean; onActive: (i: number) => void; pin: (el: HTMLElement | null) => void }) {
-  const ref = useRef<HTMLLIElement>(null);
-  // A step is "active" while it crosses the middle band of the screen.
-  const centred = useInView(ref, { margin: "-45% 0px -45% 0px" });
-  useEffect(() => {
-    if (centred) onActive(index);
-  }, [centred, index, onActive]);
-
+/** The step's number, title, words and its small piece of evidence: the caption beside (or under) the phone. */
+function Caption({ index }: { index: number }) {
+  const step = steps[index];
   return (
-    <li ref={ref} className="md:flex md:min-h-[64vh] md:items-center">
-      <m.div
-        className="w-full"
-        animate={{ opacity: active ? 1 : 0.55, scale: active ? 1 : 0.95 }}
-        transition={{ type: "spring", stiffness: 160, damping: 20 }}
-      >
-        <Reveal>
-          <div className={cx("relative rounded-3xl border-[0.1875rem] border-ink bg-white px-6 pt-20 pb-7 shadow-card", tilts[index])}>
-            {/* The pin the red string runs through. */}
-            <span ref={pin} aria-hidden className="absolute top-3 left-1/2 z-10 size-0" />
-            <Image src={propArt.pushpin} alt="" sizes="40px" className="absolute -top-4 left-1/2 z-20 w-10 -translate-x-1/2" />
-            <m.div
-              className="absolute -top-16 -right-4 w-32 sm:w-36"
-              animate={active ? { y: [0, -10, 0], rotate: [0, -6, 0] } : { y: 0, rotate: 0 }}
-              transition={{ duration: 2.4, repeat: active ? Infinity : 0, ease: "easeInOut" }}
-            >
-              <Image src={propArt[step.prop]} alt="" sizes="144px" />
-            </m.div>
-            <span
-              className={cx(
-                "absolute top-5 left-5 grid size-11 place-items-center rounded-full border-[0.1875rem] border-ink font-display text-xl transition-colors",
-                active ? "bg-coral text-cream" : "bg-mustard",
-              )}
-            >
-              {index + 1}
-            </span>
-            <p className="text-xs font-extrabold tracking-widest text-ink/50 uppercase">Exhibit {String.fromCharCode(65 + index)}</p>
-            <h3 className="font-display text-3xl">{step.title}</h3>
-            <p className="mt-2 text-lg leading-relaxed font-semibold text-ink/75">{step.text}</p>
-            <StepEvidence clue={step.clue} active={active} />
-          </div>
-        </Reveal>
-        {/* Phones get their own screen under each step. */}
-        <m.div
-          className="mx-auto mt-12 w-[min(12rem,46vw)] md:hidden"
-          initial={{ opacity: 0, rotateX: 35, y: 60 }}
-          whileInView={{ opacity: 1, rotateX: 8, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ type: "spring", stiffness: 80, damping: 16 }}
-          style={{ transformPerspective: 1000 }}
-        >
-          <PhoneFrame screen={index} rotateY={index % 2 ? 12 : -12} />
-        </m.div>
-      </m.div>
-    </li>
+    <div>
+      <p className="flex items-center gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full border-[0.1875rem] border-ink bg-coral font-display text-lg text-cream lg:size-11 lg:text-xl">
+          {index + 1}
+        </span>
+        <span className="text-xs font-extrabold tracking-widest text-ink/50 uppercase">
+          Exhibit {String.fromCharCode(65 + index)} · {index + 1} of {steps.length}
+        </span>
+      </p>
+      <h3 className="mt-3 font-display text-3xl leading-none lg:text-5xl">{step.title}</h3>
+      <p className="mt-3 max-w-md text-base leading-relaxed font-semibold text-ink/75 lg:text-lg">{step.text}</p>
+      <div className="max-lg:hidden">
+        <StepEvidence clue={step.clue} active />
+      </div>
+    </div>
   );
 }
 
 /**
- * Red string from pin to pin down the steps, drawn as you scroll. The pins are
- * measured, so it follows the cards wherever the layout puts them.
+ * The steps as pins on a red string: the string fills as you scroll, and each
+ * pin jumps to its step. A column beside the phone on wide screens, a row of
+ * pins above it on phones.
  */
-function RedString({ pins, children }: { pins: (HTMLElement | null)[]; children: ReactNode }) {
-  const box = useRef<HTMLOListElement>(null);
-  const [d, setD] = useState("");
-  const { scrollYProgress } = useScroll({ target: box, offset: ["start 70%", "end 60%"] });
-  const length = useSpring(scrollYProgress, { stiffness: 80, damping: 20 });
-
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const measure = () => {
-      const o = el.getBoundingClientRect();
-      const pts = pins.flatMap((p) => {
-        if (!p) return [];
-        const r = p.getBoundingClientRect();
-        return [[r.left - o.left, r.top - o.top] as const];
-      });
-      if (pts.length < 2) return;
-      // Each span sags a little and swings out to the side, like string pulled between pins.
-      setD(
-        pts.reduce((path, [x, y], i) => {
-          if (i === 0) return `M ${x} ${y}`;
-          const [px, py] = pts[i - 1];
-          const swing = i % 2 ? -1 : 1;
-          return `${path} Q ${(px + x) / 2 + swing * Math.min(140, o.width * 0.3)} ${(py + y) / 2 + 40} ${x} ${y}`;
-        }, ""),
-      );
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [pins]);
-
+function StepPins({ active, progress, go, vertical }: { active: number; progress: MotionValue<number>; go: (i: number) => void; vertical: boolean }) {
   return (
-    <ol ref={box} className="relative space-y-24 md:space-y-0">
-      {/* Behind the cards: the string disappears under each one and comes out at its pin. */}
-      <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
-        {d && (
-          <>
-            <m.path d={d} fill="none" stroke="rgba(27,31,59,0.18)" strokeWidth={5} strokeLinecap="round" style={{ pathLength: length, translateY: 4 }} />
-            <m.path d={d} fill="none" stroke="var(--color-coral)" strokeWidth={3.5} strokeLinecap="round" style={{ pathLength: length }} />
-          </>
-        )}
-      </svg>
-      {children}
-    </ol>
+    <nav aria-label="Steps of a night" className="relative">
+      {/* The string: a faint track, and the red part pulled through so far. */}
+      <span aria-hidden className={cx("absolute rounded-full bg-ink/15", vertical ? "top-5 bottom-5 left-[1.0625rem] w-1" : "top-[1.3rem] right-5 left-5 h-1")} />
+      <m.span
+        aria-hidden
+        className={cx("absolute rounded-full bg-coral", vertical ? "top-5 bottom-5 left-[1.0625rem] w-1 origin-top" : "top-[1.3rem] right-5 left-5 h-1 origin-left")}
+        style={vertical ? { scaleY: progress } : { scaleX: progress }}
+      />
+      <ol className={cx("relative flex", vertical ? "flex-col gap-3" : "justify-between")}>
+        {steps.map((step, i) => (
+          <li key={step.title}>
+            <button
+              type="button"
+              onClick={() => go(i)}
+              aria-current={i === active ? "step" : undefined}
+              aria-label={`Step ${i + 1}: ${step.title}`}
+              className="group flex min-h-[44px] items-center gap-3 text-left"
+            >
+              <span
+                className={cx(
+                  "grid size-9 shrink-0 place-items-center rounded-full border-[0.1875rem] border-ink font-display text-base transition-[background-color,transform] duration-200",
+                  i === active ? "scale-110 bg-coral text-cream" : i < active ? "bg-mustard text-ink" : "bg-cream text-ink/60 group-hover:bg-mustard/60",
+                )}
+              >
+                {i + 1}
+              </span>
+              {vertical && (
+                <span className={cx("font-display text-lg leading-tight transition-colors", i === active ? "text-ink" : "text-ink/45 group-hover:text-ink/70")}>
+                  {step.title}
+                </span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }
 
-export function HowItWorks() {
-  const section = useRef<HTMLElement>(null);
-  const [active, setActive] = useState(0);
-  const [pins, setPins] = useState<(HTMLElement | null)[]>([]);
-  // One stable ref callback per step, so React doesn't detach and reattach them every render.
-  const pinRefs = useMemo(
-    () =>
-      steps.map((_, i) => (el: HTMLElement | null) => {
-        if (el) setPins((p) => (p[i] === el ? p : Object.assign([...p], { [i]: el })));
-      }),
-    [],
+/** The caption, swapping as the step changes. */
+function LiveCaption({ active, reduce, rise }: { active: number; reduce: boolean | null; rise: number }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <m.div
+        key={active}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: rise }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -rise * 0.6 }}
+        transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Caption index={active} />
+      </m.div>
+    </AnimatePresence>
   );
-  const { scrollYProgress } = useScroll({ target: section, offset: ["start end", "end start"] });
-  // The phone turns slowly in your hand as you read down the steps.
-  const rotateY = useTransform(scrollYProgress, [0.2, 0.8], [-26, 20]);
-  const rotateX = useTransform(scrollYProgress, [0.2, 0.8], [12, -4]);
+}
+
+/**
+ * "How a night plays": the phone is the stage. The section pins to the screen
+ * while you scroll through the five moments; the phone turns in your hand and
+ * its screen moves on, with the words for each moment beside it.
+ */
+export function HowItWorks() {
+  const track = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
+  useMotionValueEvent(scrollYProgress, "change", (p) => setActive(Math.min(steps.length - 1, Math.max(0, Math.floor(p * steps.length)))));
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 24 });
+  // The phone turns slowly in your hand as the night goes on.
+  const rotateY = useTransform(scrollYProgress, [0, 1], [-24, 22]);
+  const rotateX = useTransform(scrollYProgress, [0, 1], [10, -4]);
+
+  /** Scrolls to the middle of a step's stretch of the pinned track. */
+  const go = (i: number) => {
+    const el = track.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const run = el.offsetHeight - window.innerHeight;
+    window.scrollTo({ top: top + ((i + 0.5) / steps.length) * run, behavior: reduce ? "auto" : "smooth" });
+  };
 
   return (
     <section
-      ref={section}
-      className="relative overflow-x-clip bg-cream px-4 pt-28 pb-20 text-ink sm:px-6 sm:pt-32 sm:pb-24"
+      className="relative overflow-x-clip bg-cream text-ink"
       style={{
         backgroundImage:
           "linear-gradient(rgba(27,31,59,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(27,31,59,0.06) 1px, transparent 1px)",
         backgroundSize: "28px 28px",
       }}
     >
-      <Tape className="top-10 -left-[20%] -rotate-3" from="left">
-        Crime scene · Do not cross
-      </Tape>
-      <Tape className="top-[4.6rem] -left-[10%] rotate-2 opacity-90" from="right">
-        Evidence inside
-      </Tape>
+      <div className="relative px-4 pt-28 sm:px-6 sm:pt-32">
+        <Tape className="top-10 -left-[20%] -rotate-3" from="left">
+          Crime scene · Do not cross
+        </Tape>
+        <Tape className="top-[4.6rem] -left-[10%] rotate-2 opacity-90" from="right">
+          Evidence inside
+        </Tape>
+        <Reveal>
+          <SectionHeading eyebrow="How a night plays" title="One case. One team. One liar." surface="light" className="relative mt-10">
+            Every case opens with a short film. Then each of you works your own role, and nobody can crack it alone.
+          </SectionHeading>
+        </Reveal>
+      </div>
 
-      <Reveal>
-        <SectionHeading eyebrow="How a night plays" title="One case. One team. One liar." surface="light" className="relative mt-10">
-          Every case opens with a short film. Then each of you works your own role, and nobody can crack it alone.
-        </SectionHeading>
-      </Reveal>
+      {/* Every step's words for screen readers and search engines; the stage below shows one at a time. */}
+      <ol className="sr-only">
+        {steps.map((step) => (
+          <li key={step.title}>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
+          </li>
+        ))}
+      </ol>
 
-      <div className="mx-auto mt-28 max-w-6xl md:grid md:grid-cols-[minmax(0,1fr)_15rem] md:gap-14 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-24">
-        <RedString pins={pins}>
-          {steps.map((step, i) => (
-            <StepCard key={step.title} step={step} index={i} active={active === i} onActive={setActive} pin={pinRefs[i]} />
-          ))}
-        </RedString>
-        <div className="hidden md:block">
-          <div className="sticky top-[12vh] lg:px-10">
-            <PhoneStage screen={active} rotateX={rotateX} rotateY={rotateY} />
-            <p className="mt-14 text-center text-sm font-extrabold text-ink/60">Real screens from a real game</p>
+      {/* The track is as tall as the scrolling the steps need; the stage stays pinned inside it. */}
+      <div ref={track} className="relative" style={{ height: `${100 + steps.length * PER_STEP * 100}svh` }}>
+        <div className="sticky top-0 flex h-[100svh] flex-col px-4 pt-5 pb-[4.5rem] sm:px-6 lg:justify-center lg:py-8">
+          <div className="mx-auto grid w-full max-w-6xl flex-1 grid-rows-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:flex-none lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,15rem)] lg:grid-rows-1 lg:gap-10 lg:gap-16">
+            {/* Phones: the pins in a row over the phone. */}
+            <div className="mx-auto w-full max-w-xs lg:hidden">
+              <StepPins active={active} progress={progress} go={go} vertical={false} />
+            </div>
+
+            {/* Wide screens: the words on the left. */}
+            <div className="relative max-lg:hidden" aria-hidden>
+              <LiveCaption active={active} reduce={reduce} rise={24} />
+            </div>
+
+            {/* The phone: the hero of the section. */}
+            <div className="relative isolate flex min-h-0 flex-col items-center justify-center">
+              {/* Behind the phone: a warm pool of light and the step's number, huge and faint. */}
+              <span aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 -z-10 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,180,61,0.38),rgba(244,180,61,0)_62%)]" />
+              <AnimatePresence initial={false}>
+                <m.span
+                  key={active}
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[11rem] leading-none text-ink/[0.07] lg:text-[26rem]"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.35 }}
+                >
+                  0{active + 1}
+                </m.span>
+              </AnimatePresence>
+              <div className="w-[min(calc(44svh*375/859),54vw)] sm:w-[min(calc(52svh*375/859),20rem)] lg:w-[min(calc(76svh*375/859),26rem)]">
+                <PhoneStage screen={active} rotateX={rotateX} rotateY={rotateY} />
+              </div>
+              <p className="mt-10 text-center text-xs font-extrabold tracking-wide text-ink/50 uppercase max-lg:hidden">Real screens from a real game</p>
+            </div>
+
+            {/* Wide screens: the pins on the right. Phones: the words under the phone. */}
+            <div className="max-lg:hidden">
+              <StepPins active={active} progress={progress} go={go} vertical />
+            </div>
+            <div className="relative min-h-[10.5rem] w-full sm:mx-auto sm:max-w-lg lg:hidden" aria-hidden>
+              <LiveCaption active={active} reduce={reduce} rise={16} />
+            </div>
           </div>
         </div>
       </div>
-
     </section>
   );
 }

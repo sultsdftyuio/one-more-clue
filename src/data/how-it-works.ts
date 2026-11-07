@@ -37,7 +37,7 @@ export const steps: Step[] = [
     title: "Show your proof",
     text: "Each chapter ends with a question. Pin your best evidence and put it to a vote. Real proof opens the next chapter; a wrong answer costs time on the night's clock.",
     clue: "vote",
-    screen: { src: "/screens/night-vote.webp", alt: "A teammate presents a piece from the board and the team votes on it, over the interrogation room" },
+    screen: { src: "/screens/night-proof.webp", alt: "Mei presents a piece from the board and the team votes on it, over the interrogation room. The piece is blurred." },
   },
   {
     prop: "fingerprint",

@@ -4,7 +4,6 @@ import { AnimatePresence, m, useAnimate } from "motion/react";
 import { useEffect, useRef } from "react";
 import { burstConfetti } from "@/components/fx/confetti";
 import { Reveal } from "@/components/fx/Reveal";
-import { TiltCard } from "@/components/fx/TiltCard";
 import { useBlackout } from "@/components/home/blackout";
 import { sfx } from "@/components/home/sound";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -12,7 +11,7 @@ import { miniCase } from "@/data/mini-case";
 import { suspectById } from "@/data/suspects";
 import { brandArt } from "@/lib/art";
 import { EvidenceCard } from "./EvidenceCard";
-import { SuspectCard } from "./SuspectCard";
+import { SuspectScene } from "./SuspectScene";
 import { useMiniCase } from "./useMiniCase";
 import { VerdictPanel } from "./VerdictPanel";
 
@@ -43,7 +42,7 @@ export function MiniCase({ play }: { play: { href: string; label: string } }) {
   const hint = miniCase.hints[Math.min(wrongGuesses, miniCase.hints.length) - 1];
   const status = lastWrong ? `Not ${suspectById(lastWrong).name}. ${hint}` : miniCase.prompt;
   return (
-    <section ref={scope} id="mini-case" className="relative isolate overflow-hidden bg-ink px-4 py-20 sm:px-6 sm:py-24">
+    <section ref={scope} id="mini-case" className="relative isolate overflow-hidden bg-ink px-4 py-16 sm:px-6 sm:py-24">
       <div
         aria-hidden
         className="absolute inset-0 -z-10 opacity-20"
@@ -56,27 +55,14 @@ export function MiniCase({ play }: { play: { href: string; label: string } }) {
         </SectionHeading>
       </Reveal>
 
-      <div className="mx-auto mt-14 grid max-w-6xl items-start gap-x-10 gap-y-16 sm:mt-20 sm:gap-y-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <Reveal className="lg:sticky lg:top-24">
+      {/* The evidence, then the street: four suspects, one bubble, one liar. */}
+      <div className="mx-auto mt-12 grid max-w-5xl items-center gap-x-10 gap-y-16 sm:mt-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <Reveal>
           <EvidenceCard {...miniCase.evidence} highlight={wrongGuesses > 0 && !solved} />
         </Reveal>
-
-        <div className="grid grid-cols-2 gap-x-3 gap-y-14 sm:gap-x-6 sm:gap-y-20">
-          {miniCase.alibis.map((alibi, i) => (
-            <Reveal key={alibi.suspect} delay={(i % 2) * 0.12} className="h-full">
-              <TiltCard className="h-full rounded-3xl" max={8}>
-                <SuspectCard
-                  suspect={suspectById(alibi.suspect)}
-                  alibi={alibi}
-                  verdict={verdicts[alibi.suspect]}
-                  locked={solved}
-                  justCleared={lastWrong === alibi.suspect}
-                  onAccuse={() => accuse(alibi.suspect)}
-                />
-              </TiltCard>
-            </Reveal>
-          ))}
-        </div>
+        <Reveal delay={0.1}>
+          <SuspectScene alibis={miniCase.alibis} verdicts={verdicts} locked={solved} justCleared={lastWrong} onAccuse={accuse} />
+        </Reveal>
       </div>
 
       {solved ? (
@@ -86,7 +72,7 @@ export function MiniCase({ play }: { play: { href: string; label: string } }) {
           <m.p
             key={status}
             aria-live="polite"
-            className="mx-auto mt-14 max-w-xl text-center text-lg font-bold text-mustard"
+            className="mx-auto mt-8 max-w-xl text-center text-lg font-bold text-mustard"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}

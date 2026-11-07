@@ -27,7 +27,7 @@ function splitMark(text: string, mark: string) {
 function Sheet({ entries, uv, ink }: { entries: EvidenceEntry[]; uv: Uv; ink?: boolean }) {
   return (
     <div className={cx(ink && "text-transparent")}>
-      <ol className="space-y-4 p-5">
+      <ol className="space-y-3 p-4 sm:space-y-4 sm:p-5">
         {entries.map((entry, i) => {
           const parts = splitMark(entry.text, uv.mark);
           return (
@@ -58,13 +58,13 @@ function Sheet({ entries, uv, ink }: { entries: EvidenceEntry[]; uv: Uv; ink?: b
         })}
       </ol>
       {/* The margin for notes: blank ruled lines on paper, handwriting under UV. */}
-      <div className="mx-5 mb-3 border-t-2 border-dashed border-ink/20 pt-2">
+      <div className="mx-4 mb-3 border-t-2 border-dashed border-ink/20 pt-2 sm:mx-5">
         <p className={cx("text-[0.7rem] font-extrabold tracking-widest uppercase", ink ? "text-transparent" : "text-ink/40")}>Notes</p>
         {uv.notes.map((note, i) => (
           <p
             key={note}
             className={cx(
-              "h-8 border-b-2 font-display text-xl leading-8",
+              "h-7 border-b-2 font-display text-lg leading-7 sm:h-8 sm:text-xl sm:leading-8",
               ink ? cx(glow, "border-transparent", i % 2 ? "rotate-1 pl-6" : "-rotate-2") : "border-ink/10 text-transparent",
             )}
           >
@@ -132,7 +132,7 @@ export function EvidenceCard({ source, entries, uv, highlight }: Props) {
         transition={highlight ? { duration: 1.6, repeat: Infinity } : { duration: 0.4 }}
       />
       <Image src={propArt.pushpin} alt="" sizes="64px" className="absolute -top-8 left-1/2 z-10 w-16 -translate-x-1/2" />
-      <Image src={propArt.clock} alt="" sizes="112px" className="absolute -top-12 -right-8 z-10 w-28 rotate-12 animate-float" />
+      <Image src={propArt.clock} alt="" sizes="112px" className="absolute -top-10 -right-5 z-10 w-20 rotate-12 animate-float sm:-top-12 sm:-right-8 sm:w-28" />
 
       <AnimatePresence>
         {torch && (
@@ -169,8 +169,8 @@ export function EvidenceCard({ source, entries, uv, highlight }: Props) {
             </m.div>
           )}
         </div>
-        <p className="border-t-2 border-dashed border-ink/25 px-5 py-3 text-sm font-bold text-ink/60">
-          Every alibi below is about the minute the lights went out.
+        <p className="border-t-2 border-dashed border-ink/25 px-4 py-2.5 text-sm font-bold text-ink/60 sm:px-5 sm:py-3">
+          Every alibi is about the minute the lights went out.
         </p>
       </div>
     </m.div>

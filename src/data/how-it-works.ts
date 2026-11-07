@@ -51,14 +51,14 @@ export const steps: Step[] = [
     title: "Catch the lie",
     text: "The culprit tells their story one claim at a time. Call the lie with evidence from the board, and anyone who isn't sure has five seconds to shout Objection!",
     clue: "objection",
-    screen: { src: "/screens/night-objection.webp", alt: "The confrontation: a teammate calls a lie, with an Objection! button for everyone else" },
+    screen: { src: "/screens/night-confront.webp", alt: "The confrontation: Mei calls a lie, with an Objection! button for everyone else. The culprit is hidden behind question marks." },
   },
   {
     prop: "sparkle",
     title: "Close the case",
     text: "Up to five stars: for naming the culprit, the motive, breaking their story, and a sharp run with no wrong answers.",
     clue: "stars",
-    screen: { src: "/screens/night-stars.webp", alt: "The reveal: case closed with five stars, the culprit's name blacked out" },
+    screen: { src: "/screens/night-reveal.webp", alt: "The reveal: case closed with five stars. The culprit is a question mark and the explanation is stamped classified." },
   },
 ];
 

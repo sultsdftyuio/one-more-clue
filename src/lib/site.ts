@@ -18,6 +18,8 @@ function resolveSiteUrl() {
 
 export const SITE_URL = resolveSiteUrl();
 export const SITE_NAME = "One More Clue";
+/** Where players write for help and refunds; null until NEXT_PUBLIC_CONTACT_EMAIL is set, so no placeholder ever shows. */
+export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 export const SITE_DESCRIPTION =
   "A mystery for 2 to 4 friends on their phones. Everyone holds different evidence: take a role, follow the leads together, then corner the culprit with proof.";
 

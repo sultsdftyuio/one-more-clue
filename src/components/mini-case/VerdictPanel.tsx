@@ -4,6 +4,8 @@ import { ShareButton } from "@/components/ui/ShareButton";
 import { propArt } from "@/lib/art";
 
 type Props = {
+  /** Where "play" goes: the one-tap room, decided on the server (GAME_OPEN isn't visible here). */
+  play: { href: string; label: string };
   headline: string;
   explanation: string;
   nextStep: string;
@@ -17,7 +19,7 @@ function scoreLine(wrongGuesses: number) {
 }
 
 /** Shown once the liar is caught: the explanation, then the push to Case 001. */
-export function VerdictPanel({ headline, explanation, nextStep, wrongGuesses, onReset }: Props) {
+export function VerdictPanel({ play, headline, explanation, nextStep, wrongGuesses, onReset }: Props) {
   return (
     <div className="relative mx-auto mt-16 max-w-3xl animate-pop-in rounded-3xl border-[0.1875rem] border-ink bg-mustard p-6 text-ink shadow-card sm:p-8">
       <Image
@@ -31,8 +33,8 @@ export function VerdictPanel({ headline, explanation, nextStep, wrongGuesses, on
       <p className="mt-3 text-lg leading-relaxed font-semibold">{explanation}</p>
       <p className="mt-4 rounded-2xl border-[0.1875rem] border-ink bg-cream px-4 py-3 font-bold">{nextStep}</p>
       <div className="mt-6 flex flex-wrap items-center gap-4">
-        <ButtonLink href="/play" variant="coral">
-          Play Case 001
+        <ButtonLink href={play.href} variant="coral">
+          {play.label}
         </ButtonLink>
         <ShareButton message="I just caught a liar in 30 seconds. Your turn:" />
         <button

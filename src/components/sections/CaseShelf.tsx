@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { bundleSaving, bundles, paidCases } from "@/data/catalog";
 import { caseById } from "@/data/cases";
 import { gameOpen } from "@/lib/game-open";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { posterArt, seasonArt } from "@/lib/art";
 import { PosterCard, PosterFan, SeasonBanner, type ShelfCase } from "./ShelfMotion";
 
@@ -82,6 +83,24 @@ export function CaseShelf() {
             </div>
           </div>
         </Reveal>
+      )}
+
+      {/* The refund promise from the terms (section 8), where the prices are. */}
+      {open && (
+        <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed font-bold text-cream/70">
+          Bought a case and haven&apos;t started it? Ask for a refund within 14 days.{" "}
+          <Link href="/terms#refunds" className="text-mustard underline decoration-2 underline-offset-4 hover:text-cream">
+            Refund terms
+          </Link>
+          {SUPPORT_EMAIL && (
+            <>
+              {" · "}Questions?{" "}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-mustard underline decoration-2 underline-offset-4 hover:text-cream">
+                {SUPPORT_EMAIL}
+              </a>
+            </>
+          )}
+        </p>
       )}
     </section>
   );

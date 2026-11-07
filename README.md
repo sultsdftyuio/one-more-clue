@@ -59,6 +59,7 @@ Auth, payments and the domain setup are adapted from the dataomen (Arcli) projec
 1. `npm run setup:payments` and paste the Supabase keys, `DODO_PAYMENTS_ENV=test_mode` and a Dodo API key.
 2. `npm run setup:dodo-products` creates a product per paid case (prices from `src/data/catalog.ts`) and the webhook (`payment.succeeded`, `refund.succeeded`), and saves their ids and secret.
 3. Stay on `DODO_PAYMENTS_ENV=test_mode` until you've done a test purchase end to end.
+4. To take real payments: `npm run setup:dodo-live` and paste a live-mode API key. It creates the live products and webhook (or reuses them on a re-run) and saves them, with `DODO_PAYMENTS_ENV=live_mode`, to Vercel production only. `.env.local` and Vercel development stay on test mode. Then `vercel --prod`.
 
 **Reading signups:** Upstash console → your database → Data Browser → `waitlist:emails` (the set of emails) and `waitlist:entry:<email>` (source and time). Links can carry a source, e.g. `/play?ref=tiktok`.
 

@@ -12,6 +12,7 @@
     "art:sync": "node scripts/sync-art.mjs",
     "setup:payments": "node scripts/setup-payments.mjs",
     "setup:dodo-products": "node scripts/create-dodo-products.mjs",
+    "setup:dodo-live": "node --no-warnings scripts/go-live-dodo.mjs",
     "setup:supabase": "node scripts/setup-supabase.mjs",
     "art:cast": "node scripts/sync-cast.mjs"
   },

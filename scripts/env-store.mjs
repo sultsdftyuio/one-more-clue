@@ -17,17 +17,20 @@ export function readLocalEnv() {
   return env;
 }
 
-/** entries: [name, value][]. Writes .env.local, and Vercel too unless toVercel is false. */
-export function saveEnv(entries, { toVercel = true } = {}) {
-  saveLocal(entries);
+/**
+ * entries: [name, value][]. Writes .env.local (unless toLocal is false), and
+ * Vercel too unless toVercel is false, in the given Vercel environments.
+ */
+export function saveEnv(entries, { toVercel = true, toLocal = true, environments = ENVIRONMENTS } = {}) {
+  if (toLocal) saveLocal(entries);
   if (!toVercel) return;
 
   const failed = [];
   for (const [name, value] of entries) {
-    for (const env of ENVIRONMENTS) {
+    for (const env of environments) {
       if (!addToVercel(name, value, env) && !addToVercel(name, value, env)) failed.push(`${name} (${env})`);
     }
-    if (!failed.some((f) => f.startsWith(`${name} `))) console.log(`✓ ${name} saved to Vercel (${ENVIRONMENTS.join(", ")})`);
+    if (!failed.some((f) => f.startsWith(`${name} `))) console.log(`✓ ${name} saved to Vercel (${environments.join(", ")})`);
   }
   if (failed.length) {
     console.error(`✗ Not saved to Vercel: ${failed.join(", ")}. Re-run to retry.`);

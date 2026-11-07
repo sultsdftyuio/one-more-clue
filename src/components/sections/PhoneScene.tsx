@@ -181,12 +181,23 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
     invalidate();
   }, [screen, invalidate]);
 
-  // Draw when the scroll or the pointer turns the phone; otherwise the last frame stands.
+  // Draw when the step or the pointer turns the phone; otherwise the last frame stands.
+  // Changes too small to see (the tail of the pointer's spring) don't wake it:
+  // they kept the phone redrawing for seconds after the mouse stopped.
   useEffect(() => {
-    const wake = () => invalidate();
+    let lastX = rotateX.get();
+    let lastY = rotateY.get();
+    const wake = () => {
+      const x = rotateX.get();
+      const y = rotateY.get();
+      if (Math.abs(x - lastX) < 0.05 && Math.abs(y - lastY) < 0.05) return;
+      lastX = x;
+      lastY = y;
+      invalidate();
+    };
     const offX = rotateX.on("change", wake);
     const offY = rotateY.on("change", wake);
-    wake();
+    invalidate();
     return () => {
       offX();
       offY();
@@ -204,15 +215,21 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
     const turn = turned.current;
     const wantY = THREE.MathUtils.degToRad(rotateY.get());
     const wantX = THREE.MathUtils.degToRad(rotateX.get());
-    turn.y = THREE.MathUtils.damp(turn.y, wantY, 6, step);
-    turn.x = THREE.MathUtils.damp(turn.x, wantX, 6, step);
+    turn.y = THREE.MathUtils.damp(turn.y, wantY, 10, step);
+    turn.x = THREE.MathUtils.damp(turn.x, wantX, 10, step);
     g.rotation.y = turn.y + k.x;
     g.rotation.x = turn.x;
     g.rotation.z = -k.x * 0.08;
     // The idle float is CSS on the canvas (PhoneStage), so a still phone costs nothing to show.
     g.position.y = Math.abs(k.x) * 0.12;
     glare.uAt.value = 0.62 - g.rotation.y * 1.1;
-    const settled = Math.abs(k.x) < 1e-4 && Math.abs(k.v) < 1e-3 && Math.abs(turn.y - wantY) < 1e-4 && Math.abs(turn.x - wantX) < 1e-4;
+    // Close enough to stop drawing: under a twentieth of a degree is invisible at this size.
+    const settled = Math.abs(k.x) < 1e-3 && Math.abs(k.v) < 1e-2 && Math.abs(turn.y - wantY) < 1e-3 && Math.abs(turn.x - wantX) < 1e-3;
+    if (settled) {
+      // Land exactly, so the last frame shows the resting angle.
+      g.rotation.y = wantY + k.x;
+      g.rotation.x = wantX;
+    }
     if (!settled) state.invalidate();
   });
 
@@ -220,11 +237,11 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
     <group ref={group}>
       {/* Titanium frame. */}
       <mesh geometry={frame}>
-        <meshPhysicalMaterial color={TITANIUM} metalness={1} roughness={0.22} anisotropy={0.8} anisotropyRotation={Math.PI / 2} clearcoat={0.35} clearcoatRoughness={0.2} />
+        <meshStandardMaterial color={TITANIUM} metalness={1} roughness={0.24} />
       </mesh>
       {/* Black glass front: reflects the studio, with the screen just under it. */}
       <mesh geometry={glass} position={[0, 0, FRONT + 0.0015]}>
-        <meshPhysicalMaterial color="#04050c" metalness={0} roughness={0.05} clearcoat={1} clearcoatRoughness={0.02} envMapIntensity={1.6} />
+        <meshStandardMaterial color="#04050c" metalness={0.1} roughness={0.06} envMapIntensity={1.6} />
       </mesh>
       <Screen screen={screen} />
       <mesh geometry={island} position={[0, SCREEN_H / 2 - STATUS_BAR / 2, FRONT + 0.004]}>
@@ -235,7 +252,7 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
       </mesh>
       {/* Frosted glass back. */}
       <mesh geometry={back} position={[0, 0, -FRONT - 0.0015]} rotation={[0, Math.PI, 0]}>
-        <meshPhysicalMaterial color="#2b3163" metalness={0.15} roughness={0.42} clearcoat={1} clearcoatRoughness={0.25} />
+        <meshStandardMaterial color="#2b3163" metalness={0.15} roughness={0.42} />
       </mesh>
       {/* Side buttons. */}
       {[
@@ -245,13 +262,13 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
         { x: -W / 2 - 0.005, y: 0.82, h: 0.07 },
       ].map((b) => (
         <RoundedBox key={`${b.x}${b.y}`} args={[0.016, b.h, 0.04]} radius={0.007} smoothness={4} position={[b.x, b.y, 0]}>
-          <meshPhysicalMaterial color={TITANIUM} metalness={1} roughness={0.28} />
+          <meshStandardMaterial color={TITANIUM} metalness={1} roughness={0.28} />
         </RoundedBox>
       ))}
       {/* Camera bump on the back. */}
       <group position={[-0.22, H / 2 - 0.29, -FRONT - 0.014]}>
         <RoundedBox args={[0.42, 0.42, 0.028]} radius={0.1} smoothness={6}>
-          <meshPhysicalMaterial color="#323a72" metalness={0.5} roughness={0.25} clearcoat={1} />
+          <meshStandardMaterial color="#323a72" metalness={0.5} roughness={0.25} />
         </RoundedBox>
         {[
           [-0.09, 0.09],
@@ -261,11 +278,11 @@ function Phone({ screen, rotateX, rotateY }: { screen: number; rotateX: MotionVa
           <group key={`${x}${y}`} position={[x, y, -0.02]} rotation={[Math.PI / 2, 0, 0]}>
             <mesh>
               <cylinderGeometry args={[0.068, 0.068, 0.022, 48]} />
-              <meshPhysicalMaterial color={TITANIUM} metalness={1} roughness={0.25} />
+              <meshStandardMaterial color={TITANIUM} metalness={1} roughness={0.25} />
             </mesh>
             <mesh position={[0, -0.0115, 0]}>
               <cylinderGeometry args={[0.05, 0.05, 0.002, 48]} />
-              <meshPhysicalMaterial color="#05060f" metalness={0.2} roughness={0.02} clearcoat={1} iridescence={0.6} iridescenceIOR={1.6} />
+              <meshStandardMaterial color="#05060f" metalness={0.2} roughness={0.04} />
             </mesh>
           </group>
         ))}
@@ -334,12 +351,12 @@ function Wake({ active }: { active: boolean }) {
 /**
  * The WebGL phone, for laptops and tablets. Loaded on demand by PhoneStage.
  * It draws only while something moves (a turn, a screen change, the kick), at
- * no more than 1.5x pixel density; its shadow on the ground is the CSS phone's.
+ * no more than 1.25x pixel density; its shadow on the ground is the CSS phone's.
  */
 export default function PhoneScene({ screen, rotateX, rotateY, onReady, onLost, active }: Props) {
   return (
     <Canvas
-      dpr={[1, 1.5]}
+      dpr={[1, 1.25]}
       frameloop={active ? "demand" : "never"}
       camera={{ fov: FOV, position: [0, 0, CAMERA_Z] }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}

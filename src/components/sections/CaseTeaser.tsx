@@ -51,7 +51,7 @@ export function CaseTeaser() {
                   </div>
                 </div>
               </TiltCard>
-              <span className="absolute -right-3 bottom-10 z-10 -rotate-12 rounded-lg border-[0.3125rem] border-coral bg-cream/90 px-3 font-display text-3xl tracking-widest text-coral uppercase shadow-pop-sm">
+              <span className="absolute -right-3 bottom-10 z-10 -rotate-12 rounded-lg border-[0.3125rem] border-coral bg-cream/90 px-3 font-display text-3xl tracking-widest text-coral-dk uppercase shadow-pop-sm">
                 Free
               </span>
               <span aria-hidden className="absolute -top-3 left-1/2 z-10 h-6 w-20 -translate-x-1/2 -rotate-3 bg-white/70" />
@@ -94,6 +94,7 @@ export function CaseTeaser() {
                     <Image src={propArt.pushpin} alt="" sizes="40px" className="absolute -top-4 left-1/2 z-10 w-9 -translate-x-1/2" />
                     <div className="flex h-full flex-col items-center gap-2 rounded-xl border-[0.1875rem] border-ink bg-white px-3 pt-4 pb-3 text-center shadow-pop-sm">
                       <Image src={propArt[item.prop]} alt="" sizes="72px" className="size-16" />
+                      <span className="text-[0.6875rem] font-extrabold tracking-widest text-coral-dk uppercase">{item.who}</span>
                       <span className="text-sm leading-snug font-bold">{item.label}</span>
                     </div>
                   </PinIn>

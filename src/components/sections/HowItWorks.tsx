@@ -46,7 +46,7 @@ function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <span className="rounded-2xl rounded-bl-sm border-[0.1875rem] border-ink bg-teal px-3 py-2 text-sm font-bold text-ink">who&apos;s in for a mystery tonight?</span>
         <span className="rounded-2xl rounded-br-sm border-[0.1875rem] border-ink bg-cream px-3 py-2 font-mono text-sm font-bold text-ink">
-          onemoreclue.com/r/<span className="rounded bg-mustard px-1">K7QX</span>
+          playonemoreclue.com/r/<span className="rounded bg-mustard px-1">K7QX</span>
         </span>
       </div>
     );

@@ -11,11 +11,12 @@ export const case001 = {
   redactedNames: 4,
   twist:
     "A final message seems to settle it. But its timestamp, a visitor record and one person's story don't agree.",
+  // One find per role, then the face-off. Hints at the tools, never at the answer.
   evidence: [
-    { prop: "phone", label: "A group chat with one edited message" },
-    { prop: "keycard", label: "The building's access log" },
-    { prop: "polaroid", label: "A photo with a detail nobody noticed" },
-    { prop: "question", label: "Two statements that can't both be true" },
-    { prop: "folder", label: "One last clue that changes everything" },
-  ] satisfies { prop: PropName; label: string }[],
+    { who: "Photographer", prop: "polaroid", label: "A lab photo worth zooming into" },
+    { who: "Interviewer", prop: "question", label: "Four suspects with stories to crack" },
+    { who: "Tech", prop: "keycard", label: "Badge logs, laptops and number plates" },
+    { who: "Archivist", prop: "phone", label: "A group chat with one edited message" },
+    { who: "Everyone", prop: "fingerprint", label: "One culprit to corner with proof" },
+  ] satisfies { who: string; prop: PropName; label: string }[],
 };

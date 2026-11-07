@@ -4,7 +4,7 @@ import { SITE_URL } from "@/lib/site";
 const isLocalHostname = (hostname: string) =>
   ["localhost", "127.0.0.1", "::1"].includes(hostname) || hostname.endsWith(".localhost");
 
-/** Optional: share the session across subdomains, e.g. NEXT_PUBLIC_SUPABASE_COOKIE_DOMAIN=.onemoreclue.com */
+/** Optional: share the session across subdomains, e.g. NEXT_PUBLIC_SUPABASE_COOKIE_DOMAIN=.playonemoreclue.com */
 function cookieDomain() {
   const configured = process.env.NEXT_PUBLIC_SUPABASE_COOKIE_DOMAIN?.trim();
   if (!configured) return undefined;

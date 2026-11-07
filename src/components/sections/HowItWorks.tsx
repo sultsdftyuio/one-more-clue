@@ -3,12 +3,10 @@
 import Image from "next/image";
 import { m, useInView, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CountUp } from "@/components/fx/CountUp";
 import { Reveal } from "@/components/fx/Reveal";
-import { TiltCard } from "@/components/fx/TiltCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { hero } from "@/data/hero";
-import { facts, steps, type Clue, type Step } from "@/data/how-it-works";
+import { steps, type Clue, type Step } from "@/data/how-it-works";
 import { roles } from "@/data/roles";
 import { propArt } from "@/lib/art";
 import { cx } from "@/lib/cx";
@@ -33,7 +31,7 @@ function Tape({ className, from, children }: { className: string; from: "left" |
   );
 }
 
-/** The bit of evidence each step carries: the invite, the film, the roles, the vote, the objection, the stars. */
+/** The bit of evidence each step carries: the film, the roles, the vote, the objection, the stars. */
 function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
   const pop = (i: number) => ({
     initial: false as const,
@@ -41,15 +39,6 @@ function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
     transition: { type: "spring" as const, stiffness: 380, damping: 18, delay: active ? 0.1 + i * 0.08 : 0 },
   });
 
-  if (clue === "invite")
-    return (
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl rounded-bl-sm border-[0.1875rem] border-ink bg-teal px-3 py-2 text-sm font-bold text-ink">who&apos;s in for a mystery tonight?</span>
-        <span className="rounded-2xl rounded-br-sm border-[0.1875rem] border-ink bg-cream px-3 py-2 font-mono text-sm font-bold text-ink">
-          playonemoreclue.com/r/<span className="rounded bg-mustard px-1">K7QX</span>
-        </span>
-      </div>
-    );
 
   if (clue === "film")
     return (
@@ -183,7 +172,7 @@ function StepCard({ step, index, active, onActive, pin }: { step: Step; index: n
         </Reveal>
         {/* Phones get their own screen under each step. */}
         <m.div
-          className="mx-auto mt-16 w-[min(15rem,58vw)] md:hidden"
+          className="mx-auto mt-12 w-[min(12rem,46vw)] md:hidden"
           initial={{ opacity: 0, rotateX: 35, y: 60 }}
           whileInView={{ opacity: 1, rotateX: 8, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -239,7 +228,7 @@ function RedString({ pins, children }: { pins: (HTMLElement | null)[]; children:
   }, [pins]);
 
   return (
-    <ol ref={box} className="relative space-y-32 md:space-y-0">
+    <ol ref={box} className="relative space-y-24 md:space-y-0">
       {/* Behind the cards: the string disappears under each one and comes out at its pin. */}
       <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
         {d && (
@@ -308,21 +297,6 @@ export function HowItWorks() {
         </div>
       </div>
 
-      {/* The facts, tied on like evidence tags. */}
-      <div className="mx-auto mt-24 grid max-w-4xl grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4">
-        {facts.map((fact, i) => (
-          <Reveal key={fact.label} delay={i * 0.08} className="relative">
-            <span aria-hidden className="absolute -top-6 left-1/2 h-8 w-0.5 -translate-x-1/2 bg-ink/40" />
-            <TiltCard className="rounded-2xl" max={14}>
-              <p className={cx("relative rounded-2xl border-[0.1875rem] border-ink bg-[#e8c98d] px-4 pt-7 pb-4 text-center shadow-pop", ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2"][i])}>
-                <span aria-hidden className="absolute top-2 left-1/2 size-3 -translate-x-1/2 rounded-full border-2 border-ink bg-cream" />
-                <CountUp value={fact.value} className="block font-display text-4xl text-ink" />
-                <span className="text-sm font-extrabold text-ink/70">{fact.label}</span>
-              </p>
-            </TiltCard>
-          </Reveal>
-        ))}
-      </div>
     </section>
   );
 }

@@ -30,7 +30,7 @@ export function PosterCard({ item, index, href, cta, bundleNote }: { item: Shelf
       viewport={{ once: true, amount: 0.25 }}
       transition={{ type: "spring", stiffness: 80, damping: 13, delay: index * 0.12 }}
       whileHover="hover"
-      className="relative pt-3"
+      className="relative w-[min(74vw,19rem)] shrink-0 snap-center pt-3 sm:w-auto"
     >
       <TiltCard className="rounded-3xl" max={10}>
         <article className="relative overflow-hidden rounded-3xl border-[0.1875rem] border-ink bg-cream text-ink shadow-card">

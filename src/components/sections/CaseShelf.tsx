@@ -43,7 +43,8 @@ export function CaseShelf() {
         </SectionHeading>
       </Reveal>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Phones swipe through the three (the next one peeks in); wider screens get the grid. */}
+      <div className="mx-auto mt-12 flex max-w-6xl snap-x snap-mandatory gap-4 overflow-x-auto px-4 pt-3 pb-6 [scrollbar-width:none] max-sm:-mx-4 sm:mt-16 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-x-8 sm:gap-y-14 sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
         {singles.map((item, i) => (
           <PosterCard
             key={item.id}
@@ -55,10 +56,11 @@ export function CaseShelf() {
           />
         ))}
       </div>
+      <p className="mt-1 text-center text-sm font-bold text-cream/60 sm:hidden">Swipe to see all three →</p>
 
       {bundle && (
         <Reveal>
-          <div id="season-1" className="mx-auto mt-24 max-w-6xl scroll-mt-24 overflow-hidden rounded-[2rem] border-[0.1875rem] border-ink bg-dusk shadow-card">
+          <div id="season-1" className="mx-auto mt-12 max-w-6xl scroll-mt-24 sm:mt-24 overflow-hidden rounded-[2rem] border-[0.1875rem] border-ink bg-dusk shadow-card">
             <SeasonBanner art={seasonArt.season1} cases={inBundle} />
             <div className="grid items-center gap-8 p-6 sm:p-10 md:grid-cols-[auto_1fr_auto]">
               <PosterFan cases={inBundle} />

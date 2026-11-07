@@ -56,15 +56,15 @@ export function MiniCase({ play }: { play: { href: string; label: string } }) {
         </SectionHeading>
       </Reveal>
 
-      <div className="mx-auto mt-20 grid max-w-6xl items-start gap-x-10 gap-y-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div className="mx-auto mt-14 grid max-w-6xl items-start gap-x-10 gap-y-16 sm:mt-20 sm:gap-y-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <Reveal className="lg:sticky lg:top-24">
           <EvidenceCard {...miniCase.evidence} highlight={wrongGuesses > 0 && !solved} />
         </Reveal>
 
-        <div className="grid gap-x-6 gap-y-20 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-14 sm:gap-x-6 sm:gap-y-20">
           {miniCase.alibis.map((alibi, i) => (
-            <Reveal key={alibi.suspect} delay={(i % 2) * 0.12}>
-              <TiltCard className="rounded-3xl" max={8}>
+            <Reveal key={alibi.suspect} delay={(i % 2) * 0.12} className="h-full">
+              <TiltCard className="h-full rounded-3xl" max={8}>
                 <SuspectCard
                   suspect={suspectById(alibi.suspect)}
                   alibi={alibi}

@@ -24,7 +24,8 @@ function Board({ pins }: { pins: Pin[] }) {
         <p className="font-display text-2xl text-ink">Team board</p>
         <p className="text-sm font-extrabold text-ink/75">{pins.length} of 8 pins · the only way everyone sees what you found</p>
       </div>
-      <ul className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
+      {/* On phones an empty board is one thin row; it grows to readable cards with the first pin. */}
+      <ul className={cx("mt-4 grid sm:grid-cols-8 sm:gap-2", pins.length ? "grid-cols-4 gap-2" : "grid-cols-8 gap-1.5")}>
         {Array.from({ length: 8 }, (_, i) => {
           const pin = pins[i];
           return (

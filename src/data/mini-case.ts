@@ -18,7 +18,7 @@ export const miniCase = {
   code: "Case 000 · 30-second warm-up",
   title: "Who's lying?",
   briefing:
-    "At 9:17 PM the whole block went dark for one minute. When the lights came back on, the lab's prototype was gone. Four suspects were out on the street. Check the evidence, read their alibis, then point your finger.",
+    "9:17 PM. The whole block goes dark for one minute, and the lab's prototype vanishes. Four suspects were out on the street. One of them is lying.",
   evidence: {
     source: "City Power · Outage report",
     entries: [
@@ -54,7 +54,7 @@ export const miniCase = {
     },
   ] satisfies Alibi[],
   liar: "rectangle" as SuspectId,
-  prompt: "Hit Accuse on the suspect whose story doesn't add up.",
+  prompt: "Tap each suspect to hear their alibi, then accuse the one whose story doesn't add up.",
   hints: [
     "Re-read the outage report. Whose story only works with the lights on?",
     "Someone says they were reading. What were they reading by?",

@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Lilita_One, Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const display = Lilita_One({
+// Fonts are self-hosted (see src/assets/fonts) so builds never depend on Google Fonts.
+const display = localFont({
+  src: "../assets/fonts/lilita-one-400.woff2",
   weight: "400",
-  subsets: ["latin"],
   variable: "--font-lilita",
   display: "swap",
 });
 
-const body = Nunito({
-  subsets: ["latin"],
+const body = localFont({
+  src: "../assets/fonts/nunito-variable.woff2",
+  weight: "200 1000",
   variable: "--font-nunito",
   display: "swap",
 });

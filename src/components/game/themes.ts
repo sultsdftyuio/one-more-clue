@@ -1,11 +1,18 @@
-import { Monoton, Mountains_of_Christmas, Playfair_Display, Special_Elite } from "next/font/google";
+import localFont from "next/font/local";
 import type { ThemeId } from "@/lib/game/types";
 
 // Each case's display font, loaded only on game pages. They all set --font-case.
-const typewriter = Special_Elite({ weight: "400", subsets: ["latin"], variable: "--font-case", display: "swap" });
-const neon = Monoton({ weight: "400", subsets: ["latin"], variable: "--font-case", display: "swap" });
-const serif = Playfair_Display({ weight: ["700", "900"], style: ["italic"], subsets: ["latin"], variable: "--font-case", display: "swap" });
-const frosty = Mountains_of_Christmas({ weight: "700", subsets: ["latin"], variable: "--font-case", display: "swap" });
+// Self-hosted (see src/assets/fonts) so builds never depend on Google Fonts.
+const typewriter = localFont({ src: "../../assets/fonts/special-elite-400.woff2", weight: "400", variable: "--font-case", display: "swap" });
+const neon = localFont({ src: "../../assets/fonts/monoton-400.woff2", weight: "400", variable: "--font-case", display: "swap" });
+const serif = localFont({
+  src: "../../assets/fonts/playfair-display-italic-700-900.woff2",
+  weight: "700 900",
+  style: "italic",
+  variable: "--font-case",
+  display: "swap",
+});
+const frosty = localFont({ src: "../../assets/fonts/mountains-of-christmas-700.woff2", weight: "700", variable: "--font-case", display: "swap" });
 
 export type Weather = "rain" | "radio" | "steam" | "snow";
 

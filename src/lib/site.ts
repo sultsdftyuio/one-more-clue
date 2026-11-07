@@ -1,7 +1,7 @@
 /**
  * The one canonical origin used in metadata, sitemap, auth emails and checkout
  * return URLs. Set NEXT_PUBLIC_SITE_URL to the real domain (e.g.
- * https://www.onemoreclue.com); until then Vercel's own address is used.
+ * https://www.playonemoreclue.com); until then Vercel's own address is used.
  */
 function resolveSiteUrl() {
   const raw =
@@ -19,7 +19,7 @@ function resolveSiteUrl() {
 export const SITE_URL = resolveSiteUrl();
 export const SITE_NAME = "One More Clue";
 export const SITE_DESCRIPTION =
-  "Cooperative mystery cases you solve together in the browser. Dig through chats, logs and photos, argue it out, then name the culprit.";
+  "A mystery for 2 to 4 friends on their phones. Everyone holds different evidence: take a role, follow the leads together, then corner the culprit with proof.";
 
 /**
  * When the canonical host is www.example.com, requests for example.com are

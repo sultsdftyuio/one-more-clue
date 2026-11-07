@@ -317,21 +317,9 @@ export function HowItWorks() {
 
             {/* The phone: the hero of the section. */}
             <div className="relative isolate flex min-h-0 flex-col items-center justify-center">
-              {/* Behind the phone: a warm pool of light and the step's number, huge and faint. */}
+              {/* Behind the phone: a warm pool of light. (A huge faint step number used to sit here too;
+                  repainting ~350px glyphs on every step change made the stage stutter.) */}
               <span aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 -z-10 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,180,61,0.38),rgba(244,180,61,0)_62%)]" />
-              <AnimatePresence initial={false}>
-                <m.span
-                  key={active}
-                  aria-hidden
-                  className="pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 font-display text-[11rem] leading-none text-ink/[0.07] lg:text-[26rem]"
-                  initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  0{active + 1}
-                </m.span>
-              </AnimatePresence>
               <div className="w-[min(calc(44svh*375/859),54vw)] sm:w-[min(calc(52svh*375/859),20rem)] lg:w-[min(calc(76svh*375/859),26rem)]">
                 <PhoneStage screen={active} rotateX={rotateX} rotateY={rotateY} />
               </div>

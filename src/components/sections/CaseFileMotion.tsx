@@ -4,49 +4,6 @@ import { AnimatePresence, m } from "motion/react";
 import { useState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
 
-/**
- * The case file opens like a real folder: a manila cover, taped shut, swings
- * open in 3D the first time it scrolls into view. On phones the file is too
- * tall and narrow for that (the cover would be a screen-high blank sheet
- * swinging across the page), so there it just slides up into place.
- */
-export function FolderCover({ code, children }: { code: string; children: ReactNode }) {
-  return (
-    <m.div className="relative [perspective:1800px]" initial="closed" whileInView="open" viewport={{ once: true, amount: 0.15 }}>
-      <m.div
-        variants={{
-          closed: { opacity: 0, y: 48 },
-          open: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 90, damping: 16 } },
-        }}
-      >
-        {children}
-      </m.div>
-      <m.div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden -rotate-1 rounded-3xl sm:block border-[0.1875rem] border-ink bg-[#e3bf7c] shadow-card [backface-visibility:hidden] [transform-origin:left_center]"
-        variants={{
-          closed: { rotateY: 0, opacity: 1 },
-          open: { rotateY: -168, opacity: [1, 1, 0], transition: { rotateY: { type: "spring", stiffness: 40, damping: 12, delay: 0.35 }, opacity: { duration: 1.6, times: [0, 0.8, 1], delay: 0.35 } } },
-        }}
-      >
-        {/* Tape that tears first. */}
-        <m.span
-          className="absolute top-1/2 -right-3 h-10 w-28 -translate-y-1/2 rotate-[-8deg] bg-white/70"
-          variants={{ closed: { scaleX: 1, opacity: 1 }, open: { scaleX: 0, opacity: 0, transition: { duration: 0.3 } } }}
-          style={{ transformOrigin: "right center" }}
-        />
-        <span className="absolute -top-5 left-8 h-8 w-36 rounded-t-xl border-[0.1875rem] border-b-0 border-ink bg-[#e3bf7c]" />
-        <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center text-ink">
-          <span className="font-display text-3xl tracking-widest">{code}</span>
-          <span className="-rotate-12 rounded-lg border-[0.3125rem] border-coral px-4 py-1 font-display text-4xl tracking-widest text-coral uppercase opacity-90">
-            Confidential
-          </span>
-        </div>
-      </m.div>
-    </m.div>
-  );
-}
-
 /** A prop that flies in from off to the side and lands with a bounce. */
 export function FlyIn({ children, from, className, delay = 0 }: { children: ReactNode; from: "left" | "right" | "top"; className?: string; delay?: number }) {
   const start = { left: { x: -260, y: -40, rotate: -40 }, right: { x: 260, y: -60, rotate: 50 }, top: { x: 0, y: -220, rotate: 30 } }[from];
@@ -60,23 +17,6 @@ export function FlyIn({ children, from, className, delay = 0 }: { children: Reac
     >
       {children}
     </m.div>
-  );
-}
-
-/** Evidence cards pinned to the file one by one, each at its own slight angle. */
-export function PinIn({ children, index, className }: { children: ReactNode; index: number; className?: string }) {
-  const tilt = [-3, 2, -1.5, 3, -2][index % 5];
-  return (
-    <m.li
-      className={cx("relative", className)}
-      initial={{ opacity: 0, y: -40, rotate: tilt * 4, scale: 1.1 }}
-      whileInView={{ opacity: 1, y: 0, rotate: tilt, scale: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ type: "spring", stiffness: 140, damping: 13, delay: 0.9 + index * 0.1 }}
-      whileHover={{ rotate: 0, y: -6, scale: 1.04 }}
-    >
-      {children}
-    </m.li>
   );
 }
 

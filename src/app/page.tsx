@@ -9,14 +9,17 @@ import { FinalCta } from "@/components/sections/FinalCta";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { Roles } from "@/components/sections/Roles";
 import { Scallop } from "@/components/ui/Scallop";
+import { gameOpen, playCta } from "@/lib/game-open";
 
 export default function Home() {
+  // The warm-up's win screen sends you straight into a room, like every other play button.
+  const play = { href: playCta().href, label: gameOpen() ? "Play Case 001 free" : playCta().label };
   return (
     <HomeEffects>
       <SiteHeader />
       <main data-home>
         <Hero />
-        <MiniCase />
+        <MiniCase play={play} />
         <Scallop top="var(--color-ink)" bottom="var(--color-dusk)" />
         <Roles />
         <Scallop top="var(--color-dusk)" bottom="var(--color-cream)" />

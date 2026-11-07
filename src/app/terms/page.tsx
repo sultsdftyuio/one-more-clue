@@ -98,7 +98,7 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>8. Refunds</h2>
+      <h2 id="refunds" className="scroll-mt-24">8. Refunds</h2>
       <ul>
         <li>
           If you change your mind, ask for a refund within <strong>14 days</strong> of buying a case you haven&apos;t

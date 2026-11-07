@@ -16,7 +16,7 @@ import { SuspectCard } from "./SuspectCard";
 import { useMiniCase } from "./useMiniCase";
 import { VerdictPanel } from "./VerdictPanel";
 
-export function MiniCase() {
+export function MiniCase({ play }: { play: { href: string; label: string } }) {
   const { verdicts, solved, wrongGuesses, lastWrong, accuse, reset } = useMiniCase(miniCase.liar);
   const { restoreLights } = useBlackout();
   const [scope, animate] = useAnimate<HTMLElement>();
@@ -80,7 +80,7 @@ export function MiniCase() {
       </div>
 
       {solved ? (
-        <VerdictPanel {...miniCase.reveal} wrongGuesses={wrongGuesses} onReset={reset} />
+        <VerdictPanel {...miniCase.reveal} play={play} wrongGuesses={wrongGuesses} onReset={reset} />
       ) : (
         <AnimatePresence mode="wait">
           <m.p

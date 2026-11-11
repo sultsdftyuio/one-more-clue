@@ -272,14 +272,15 @@ export type DecidedProposal = Omit<Proposal, "votes"> & { passed: boolean; decid
 
 export type Pin = { evidenceId: string; by: string; at: number };
 export type Discovery = { by: string; at: number };
-export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; at: number };
+/** `waits`: nothing came back, but only because the matching record is still waiting on a lead. */
+export type Search = { id: string; by: string; query: string; hit: string | null; note?: string; waits?: boolean; at: number };
 /** Something the Interviewer put in front of a suspect, and whether it cracked them. */
 export type Show = { id: string; by: string; suspect: string; evidenceId: string; crack: string | null; time: number };
 /** One press of the Photographer's shutter: where the frame was, and the detail it caught (or nothing). */
 export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access" | "mark";
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
@@ -321,6 +322,8 @@ export type RoomState = {
   spotlight?: Spotlight;
   /** Where the Archivist has put each pinned piece on the wall, in percent of the wall (missing pieces sit in the default grid). */
   wall?: Record<string, { x: number; y: number }>;
+  /** The one line of each piece someone has highlighted for the team, as an index into its lines (see lines.ts). */
+  marks?: Record<string, { line: number; by: string; at: number }>;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */
@@ -384,6 +387,8 @@ export type Action =
   | { type: "unlock"; evidenceId: string; password: string }
   /** Show a piece of evidence on every phone for a moment. */
   | { type: "spotlight"; evidenceId: string }
+  /** Highlight one line of a piece for everyone who can read it (see lines.ts); `null` clears it. */
+  | { type: "mark"; evidenceId: string; line: number | null }
   /** The Archivist moves a pinned piece on the wall (x and y in percent of the wall). */
   | { type: "arrange"; evidenceId: string; x: number; y: number }
   | { type: "pin"; evidenceId: string }

@@ -29,6 +29,7 @@ import type {
   ThemeId,
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
+import { linesOf } from "./lines.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -108,6 +109,52 @@ export function bestSearchHit(caseFile: CaseFile, chapter: number, term: string,
 }
 
 const termScore = (term: string, t: string) => (term === t ? 1000 + t.length : t.length >= 3 && term.includes(t) ? t.length : 0);
+
+/**
+ * A record the search would have found, if it weren't still waiting on a
+ * teammate's lead. The Tech had the right word: only the reason to pull the
+ * record is missing.
+ */
+export function sealedSearchHit(caseFile: CaseFile, state: Pick<RoomState, "found" | "chapter">, term: string) {
+  let best: { evidence: CaseEvidence; score: number } | null = null;
+  for (const e of caseFile.evidence) {
+    if (e.access.kind !== "search" || e.chapter > state.chapter || state.found[e.id] || opened(state, e)) continue;
+    for (const t of e.access.terms) {
+      const score = termScore(term, t);
+      if (score > (best?.score ?? 0)) best = { evidence: e, score };
+    }
+  }
+  return best?.evidence;
+}
+
+/** What the terminal says about a sealed record: that it's there, and whose move opens it. */
+export function sealedNote(caseFile: CaseFile, state: Pick<RoomState, "found">, record: CaseEvidence) {
+  const missing = (e: CaseEvidence) =>
+    waitsOn(e)
+      .map((id) => caseFile.evidence.find((x) => x.id === id))
+      .find((x) => x && !state.found[x.id]);
+  // The lead may be waiting on a lead of its own: follow the trail back to the move someone can make right now.
+  let lead = missing(record);
+  let direct = true;
+  for (let steps = 0; lead && !opened(state, lead) && steps < 8; steps++) {
+    const earlier = missing(lead);
+    if (!earlier) break;
+    lead = earlier;
+    direct = false;
+  }
+  const role = caseFile.roles.find((r) => r.id === lead?.role)?.name;
+  const access = lead?.access;
+  let move = "a teammate finds the lead to it";
+  if (access && role) {
+    if (access.kind === "interview") move = `the ${role} asks ${access.suspect} the right question`;
+    else if (access.kind === "press") move = `the ${role} gets ${access.suspect} to crack`;
+    else if (access.kind === "inspect") move = `the ${role} spots a detail in "${caseFile.evidence.find((e) => e.id === access.scene)?.title ?? "a photo"}"`;
+    else if (access.kind === "crosscheck") move = `the ${role} ties the right two pieces together`;
+    else if (access.kind === "search") move = "you find another record first";
+    else move = `the ${role} has what points to it`;
+  }
+  return `There is a record for that, but it's sealed for now. ${direct ? "It opens" : "The trail to it starts"} when ${move}.`;
+}
 
 /** What the terminal says to a search that found nothing, if the case has a pointer for it. */
 export function searchNote(caseFile: CaseFile, term: string) {
@@ -501,8 +548,10 @@ export function applyAction(
       const term = normalizeTerm(query);
       if (term.length < 2) return fail("Type a name, number or place to search for.");
       const hit = bestSearchHit(caseFile, state.chapter, term, state);
-      const note = hit ? undefined : searchNote(caseFile, term);
-      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), at: now });
+      // The right word for a record that's still waiting on a lead says so, and whose move opens it.
+      const sealed = hit ? undefined : sealedSearchHit(caseFile, state, term);
+      const note = hit ? undefined : sealed ? sealedNote(caseFile, state, sealed) : searchNote(caseFile, term);
+      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), ...(sealed ? { waits: true } : {}), at: now });
       next.searches = next.searches.slice(-SEARCHES_KEPT);
       if (hit?.lock && !next.found[hit.id]) {
         // A locked record turns up as its title and a hint; what's inside waits for the password.
@@ -515,7 +564,7 @@ export function applyAction(
         log(next, newId, now, "found", `${me.name} searched "${query}" and found: ${hit.title}`, me.id, hit.id);
         announceLeads(next, caseFile, hit.id, self, now, newId);
       } else if (!hit) {
-        log(next, newId, now, "miss", `${me.name} searched "${query}". No records.`, me.id);
+        log(next, newId, now, "miss", `${me.name} searched "${query}". ${sealed ? "A sealed record: it needs a lead first." : "No records."}`, me.id);
       }
       break;
     }
@@ -722,6 +771,23 @@ export function applyAction(
       if (state.spotlight?.by === me.id && now - state.spotlight.at < SPOTLIGHT_GAP_MS) return fail("Give them a moment to look.");
       next.spotlight = { id: newId(), by: me.id, evidenceId: evidence.id, at: now };
       log(next, newId, now, "spotlight", `${me.name} showed everyone ${evidence.title}`, me.id, evidence.id);
+      break;
+    }
+
+    case "mark": {
+      if (!investigating) return fail("Highlighting opens once the investigation starts.");
+      const evidence = evidenceById(action.evidenceId);
+      if (!evidence || !canSee(state, self, evidence)) return fail("You can't highlight that.");
+      if (action.line === null) {
+        if (!state.marks?.[evidence.id]) return fail("Nothing is highlighted there.");
+        next.marks = Object.fromEntries(Object.entries(next.marks ?? {}).filter(([id]) => id !== evidence.id));
+        break;
+      }
+      const line = Number(action.line);
+      if (!Number.isInteger(line) || line < 0 || line >= linesOf(evidence.body).length) return fail("That line isn't in this piece.");
+      if (state.marks?.[evidence.id]?.line === line) return fail("That line is already highlighted.");
+      next.marks = { ...next.marks, [evidence.id]: { line, by: me.id, at: now } };
+      log(next, newId, now, "mark", `${me.name} highlighted a line in ${evidence.title}`, me.id, evidence.id);
       break;
     }
 
@@ -1072,6 +1138,8 @@ export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
   foundAt?: number;
   /** On this player's own desk or found through their roles, as opposed to only on the board. */
   mine: boolean;
+  /** The line someone highlighted for the team, and who did. */
+  mark?: { line: number; text: string; by: string };
 };
 
 export type PlayerView = {
@@ -1133,7 +1201,8 @@ export type PlayerView = {
   questions: { id: string; suspect: string; question: string; asked: boolean; chapter: number; lead: boolean }[] | null;
   /** What teammates have found that opens something new for this player. */
   leads: { id: string; title: string; by: string }[];
-  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; locked?: boolean; at: number }[];
+  /** `waits`: the search had the right word, but the record is sealed until a teammate's lead opens it. */
+  searches: { id: string; by: string; query: string; hit: boolean; hitTitle?: string; note?: string; waits?: boolean; locked?: boolean; at: number }[];
   /** Locked files the Tech has found: title and hint only, for every phone, so anyone can spot the password. */
   locked: { id: string; title: string; hint: string; by: string; at: number }[];
   /** For the Tech: passwords tried, newest last. */
@@ -1232,6 +1301,8 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     const found = state.found[e.id];
     const ownDesk = access.kind === "desk" && me.roles.includes(e.role);
     const ownFind = Boolean(found) && (me.roles.includes(e.role) || found.by === me.id);
+    const marked = state.marks?.[e.id];
+    const markedText = marked ? linesOf(e.body)[marked.line] : undefined;
     return {
       ...e,
       source: access.kind,
@@ -1241,6 +1312,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       foundBy: found?.by,
       foundAt: found?.at,
       mine: ownDesk || ownFind,
+      mark: marked && markedText !== undefined ? { line: marked.line, text: markedText, by: marked.by } : undefined,
     };
   };
   const evidence: VisibleEvidence[] = caseFile.evidence.filter((e) => canSee(state, me, e)).map(toVisible);
@@ -1329,6 +1401,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       hit: Boolean(s.hit),
       hitTitle: s.hit && visibleIds.has(s.hit) ? evidence.find((e) => e.id === s.hit)?.title : undefined,
       note: s.note,
+      waits: s.waits,
       locked: Boolean(s.hit && state.locked?.[s.hit]),
       at: s.at,
     })),

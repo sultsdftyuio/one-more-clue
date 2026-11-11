@@ -31,6 +31,15 @@ export const roleNames = (view: PlayerView, roleIds: string[]) =>
 
 export const evidenceIn = (view: PlayerView, id: string): VisibleEvidence | undefined => view.evidence.find((e) => e.id === id);
 
+/** What the team is trying to answer right now: the chapter's question, the accusation, or the story to break. */
+export function goalOf(view: PlayerView): { label: string; question: string } {
+  const room = view.interrogation;
+  const suspect = room && view.case.suspects.find((s) => s.id === room.suspect);
+  if (suspect) return { label: "The confrontation", question: `Break ${suspect.name}'s story.` };
+  const question = view.chapter.checkpoint ? view.chapter.checkpoint.question : view.case.confrontation ? "Who did it? Name them." : "Who did it, why, and what proves it?";
+  return { label: `Chapter ${view.chapter.number}: ${view.chapter.title}`, question };
+}
+
 /** Around one table, phones a beat apart turn a film or a tune into an echo, so only the host's plays them. */
 export const carriesSound = (view: Pick<PlayerView, "mode" | "me">) => view.mode !== "together" || view.me.isHost;
 

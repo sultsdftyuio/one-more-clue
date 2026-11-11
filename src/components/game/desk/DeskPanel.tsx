@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { cx } from "@/lib/cx";
 import type { CaseRole } from "@/lib/game/types";
 import { nameOf, useGame } from "../context";
-import { EvidenceThumb } from "../evidence/EvidenceCard";
 import { Icon } from "../ui/Icon";
 import { ArchivistTool } from "./roles/Archivist";
 import { InterviewerTool } from "./roles/Interviewer";
@@ -97,17 +96,13 @@ function Leads() {
   );
 }
 
-/** Evidence counts as new for a little while after it arrives. */
-const NEW_MS = 45_000;
-
 const TOOL = { search: TechTool, interview: InterviewerTool, inspect: PhotographerTool, crosscheck: ArchivistTool };
 
+/** Your side of the table: your role and its tool. What you find goes to Evidence, in the bar at the bottom. */
 export function DeskPanel() {
-  const { view, open } = useGame();
+  const { view } = useGame();
   const myRoles = view.case.roles.filter((r) => view.me.roles.includes(r.id));
   const [picked, setPicked] = useState<string | null>(null);
-  const mine = view.evidence.filter((e) => e.mine).sort((a, b) => b.chapter - a.chapter || (b.foundAt ?? 0) - (a.foundAt ?? 0));
-  const now = Date.now();
   const active = myRoles.find((r) => r.id === picked) ?? myRoles.find((r) => r.ability !== "none") ?? myRoles[0];
   const Tool = active && active.ability !== "none" ? TOOL[active.ability] : null;
 
@@ -119,23 +114,6 @@ export function DeskPanel() {
       <Leads />
 
       {Tool && <Tool />}
-
-      <section className="evidence-mat relative rounded-3xl border-[3px] border-ink p-4 shadow-pop sm:p-5">
-        <h2 className="mb-3 flex items-center gap-2 font-display text-xl text-cream">
-          <Icon name="desk" /> Your evidence <span className="text-cream/50">{mine.length}</span>
-        </h2>
-        {mine.length ? (
-          <ul className="grid grid-cols-2 items-start gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
-            {mine.map((e, i) => (
-              <li key={e.id}>
-                <EvidenceThumb evidence={e} index={i} fresh={e.foundAt ? now - e.foundAt < NEW_MS : false} onOpen={() => open(e.id)} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm font-bold text-cream/65">Nothing yet. Use your tool, and what you find lands here.</p>
-        )}
-      </section>
     </div>
   );
 }

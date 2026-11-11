@@ -238,10 +238,10 @@ export function TechTool() {
                 {recent.length > 0 && (
                   <ul className="mt-3 space-y-2 text-sm">
                     {recent.map((s) => (
-                      <li key={s.id} className={cx("leading-snug", s.locked ? "text-[#ffb454]" : s.hit ? "text-teal" : "text-teal/70")}>
-                        <span className="font-bold">{s.locked ? "[ LOCKED ]" : s.hit ? "[ MATCH ]" : "[ EMPTY ]"}</span> &ldquo;{s.query}&rdquo;
+                      <li key={s.id} className={cx("leading-snug", s.locked || s.waits ? "text-[#ffb454]" : s.hit ? "text-teal" : "text-teal/70")}>
+                        <span className="font-bold">{s.locked ? "[ LOCKED ]" : s.hit ? "[ MATCH ]" : s.waits ? "[ SEALED ]" : "[ EMPTY ]"}</span> &ldquo;{s.query}&rdquo;
                         <span className="block truncate pl-4 text-xs opacity-75">
-                          {s.hit ? (s.hitTitle ?? (s.locked ? "a locked file" : "found something")) : "no records"} · {nameOf(view, s.by)}
+                          {s.hit ? (s.hitTitle ?? (s.locked ? "a locked file" : "found something")) : s.waits ? "right word, needs a lead" : "no records"} · {nameOf(view, s.by)}
                         </span>
                         {!s.hit && s.note && <span className="mt-0.5 block pl-4 font-printer text-[1.05rem] leading-tight text-cream/85">&rsaquo; {s.note}</span>}
                       </li>

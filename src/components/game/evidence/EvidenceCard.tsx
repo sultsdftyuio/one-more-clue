@@ -10,6 +10,7 @@ import { aimCamera } from "../camera-events";
 import { foundHotspots, nameOf, useGame } from "../context";
 import { Icon, type IconName } from "../ui/Icon";
 import { ChatPhone } from "./objects/ChatPhone";
+import { KeyLine } from "./KeyLine";
 import { ContradictionSlip, NotebookPage } from "./objects/FindingNote";
 import { LogPrintout } from "./objects/LogPrintout";
 import { StatementForm } from "./objects/StatementForm";
@@ -122,6 +123,7 @@ export function EvidenceCard({ evidence, footer, highlight }: { evidence: Visibl
     <article id={`evidence-${evidence.id}`} data-searchable className={cx("evidence-mat relative rounded-3xl border-[3px] border-ink p-3 text-ink shadow-pop sm:p-4", highlight && "game-glow")}>
       <EvidenceTag evidence={evidence} />
       <EvidenceObject evidence={evidence} />
+      <KeyLine evidence={evidence} />
       {view.phase === "investigation" && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <PinButton evidence={evidence} />
@@ -178,19 +180,6 @@ export function TileFace({ evidence }: { evidence: VisibleEvidence }) {
       <span className={cx("block leading-tight", note ? "font-hand text-[1.1rem]" : "font-typed text-[0.95rem]")}>{evidence.title}</span>
       <span className={cx("mt-1 line-clamp-3 leading-snug", note ? "font-hand text-base" : "text-xs font-semibold text-ink/75")}>{text}</span>
     </span>
-  );
-}
-
-/** A piece of evidence lying on your desk, small; tapping picks it up. */
-export function EvidenceThumb({ evidence, onOpen, fresh, index = 0 }: { evidence: VisibleEvidence; onOpen: () => void; fresh?: boolean; index?: number }) {
-  return (
-    <button type="button" onClick={onOpen} aria-label={`Pick up ${evidence.title}`} className={cx("relative block w-full text-left transition-transform hover:z-10 hover:scale-[1.04]", TILT[index % TILT.length])}>
-      {evidence.pinned && <Image src={propArt.pushpin} alt="On the board" sizes="24px" className="absolute top-[-0.6rem] left-1/2 z-10 w-6 -translate-x-1/2" />}
-      {fresh && <span className="absolute -top-2 -right-1 z-10 rotate-6 rounded-full border-2 border-ink bg-coral px-2 py-0.5 text-xs font-black text-cream">NEW</span>}
-      <span className="block drop-shadow-[0_3px_0_rgb(0_0_0/0.4)]">
-        <TileFace evidence={evidence} />
-      </span>
-    </button>
   );
 }
 

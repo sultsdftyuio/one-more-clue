@@ -75,7 +75,62 @@ test("a contradiction adds nothing: it only repeats the pieces it compares", () 
 });
 
 test("pieces without a time, and things that only look like times, stay off the line", () => {
-  assert.deepEqual(times([piece({ type: "document", text: "Badge V-117, ratio 3:1, room 25:99." }), piece({ type: "statement", speaker: "A", text: "Nine o'clock, more or less." })]), []);
+  assert.deepEqual(
+    times([
+      piece({ type: "document", text: "Badge V-117, ratio 3:1, room 25:99." }),
+      piece({ type: "statement", speaker: "A", text: "I saw nothing. We sat at nine tables, and at one point he left." }),
+    ]),
+    [],
+  );
+});
+
+test("times people say in words land on the line, in the half of the day their neighbours are in", () => {
+  const door = piece({ type: "log", source: "Door", rows: [{ time: "9:02 PM", text: "out" }] });
+  const line = timelineOf([
+    door,
+    piece({ type: "statement", speaker: "Squires", text: "Nine o'clock. Ms Voss and I walked out together." }),
+    piece({ type: "statement", speaker: "Priya", text: "I locked HALO in Cabinet B and left at quarter to nine." }),
+    piece({ type: "statement", speaker: "Olu", text: "Ruth, around quarter past nine. Said she was out of butter." }),
+    piece({ type: "statement", speaker: "Lord S", text: "Half past eight. As I have said." }),
+    piece({ type: "statement", speaker: "Rena", text: "Professor Squires and I left at nine. I drove straight home." }),
+  ]);
+  assert.deepEqual(
+    line.map((m) => [m.time, m.at, m.who]),
+    [
+      ["8:30", 20 * 60 + 30, "Lord S"],
+      ["8:45", 20 * 60 + 45, "Priya"],
+      ["9:00", 21 * 60, "Squires"],
+      ["9:00", 21 * 60, "Rena"],
+      ["9:02 PM", 21 * 60 + 2, undefined],
+      ["9:15", 21 * 60 + 15, "Olu"],
+    ],
+  );
+});
+
+test("a time in a sentence that sits hours from everything else is left off: it's a call timer, not a moment", () => {
+  const log = piece({ type: "log", source: "Door", rows: [{ time: "11:57 PM", text: "locked" }, { time: "9:00 AM", text: "payment due" }] });
+  const phone = piece({ type: "finding", text: "Darla's phone on the table, call screen open: 'Mo (agent) · 13:02'." }, "inspect");
+  const keypad = piece({ type: "finding", text: "The keypad's little screen still shows: LOCKED 23:59 · USER 0451." }, "inspect");
+  // The keypad's 23:59 is next to the door log, so it stays; a timestamp in a log stays however far off it is.
+  assert.deepEqual(times([log, phone, keypad]), ["11:57 PM", "23:59", "9:00 AM"]);
+  // On its own there's nothing to judge it against, so it's kept.
+  assert.deepEqual(times([phone]), ["13:02"]);
+});
+
+test("a piece with no time in its words takes the one in its title", () => {
+  const door = piece({ type: "log", source: "Door", rows: [{ time: "9:02 PM", text: "out" }] });
+  const round: VisibleEvidence = { ...piece({ type: "statement", speaker: "Ozzy Reyes", text: "The visitor lady, alone at the Lab 4 door." }, "interview"), title: "Ozzy: the 9:10 round" };
+  const line = timelineOf([round, door]);
+  assert.deepEqual(
+    line.map((m) => [m.time, m.at, m.text]),
+    [
+      ["9:02 PM", 21 * 60 + 2, "out"],
+      ["9:10", 21 * 60 + 10, "The visitor lady, alone at the Lab 4 door."],
+    ],
+  );
+  // A time in the words wins over the title's.
+  const both: VisibleEvidence = { ...piece({ type: "statement", speaker: "A", text: "I left at 9:30 sharp." }), title: "A: the 9:10 round" };
+  assert.deepEqual(times([both, door]), ["9:02 PM", "9:30"]);
 });
 
 test("every case's own evidence builds a line that fits inside one day", () => {

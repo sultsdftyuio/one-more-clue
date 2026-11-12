@@ -6,6 +6,7 @@
  * that can't both be true end up next to each other.
  */
 import type { VisibleEvidence } from "./engine";
+import { sentencesOf } from "./lines.ts";
 
 /** How a moment is known: a machine wrote it down, a person says so, or a camera or photo shows it. */
 export type MomentKind = "record" | "said" | "seen";
@@ -50,7 +51,32 @@ function read(match: RegExpMatchArray): Reading | null {
   return { time, minutes: (hours % 24) * 60 + minutes + seconds / 60, sure };
 }
 
-const timesIn = (text: string) => [...text.matchAll(CLOCK)].flatMap((m) => read(m) ?? []);
+const NUMBERS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+const NUMBER = `(${NUMBERS.join("|")})`;
+/** Times people say rather than write: "nine o'clock", "quarter to nine", "half past ten", "left at nine." */
+const SPOKEN = [
+  { pattern: new RegExp(`\\b(quarter|half)\\s+(past|to)\\s+${NUMBER}\\b`, "gi"), read: (m: RegExpMatchArray) => (m[1].toLowerCase() === "half" ? (m[2].toLowerCase() === "past" ? hour(m[3]) + 30 : null) : hour(m[3]) + (m[2].toLowerCase() === "past" ? 15 : -15)) },
+  { pattern: new RegExp(`\\b${NUMBER}\\s+o['’]clock\\b`, "gi"), read: (m: RegExpMatchArray) => hour(m[1]) },
+  // Only where the sentence stops after it, so "at nine tables" and "at one point" aren't times.
+  { pattern: new RegExp(`\\bat\\s+${NUMBER}(?=\\s*(?:[.,;!?]|$))`, "gi"), read: (m: RegExpMatchArray) => hour(m[1]) },
+];
+const hour = (word: string) => (NUMBERS.indexOf(word.toLowerCase()) + 1) * 60;
+const spell = (minutes: number) => `${Math.floor(minutes / 60) % 12 || 12}:${String(minutes % 60).padStart(2, "0")}`;
+
+/** Every time a text gives, written or said. A said time shows as figures ("8:45") and never says which half of the day. */
+function timesIn(text: string): (Reading & { raw: string })[] {
+  const written = [...text.matchAll(CLOCK)].flatMap((m) => {
+    const reading = read(m);
+    return reading ? [{ ...reading, raw: m[0] }] : [];
+  });
+  const said = SPOKEN.flatMap(({ pattern, read: minutesOf }) =>
+    [...text.matchAll(pattern)].flatMap((m) => {
+      const minutes = minutesOf(m);
+      return minutes === null ? [] : [{ time: spell(minutes), minutes: minutes % (DAY / 2), sure: false, raw: m[0] }];
+    }),
+  );
+  return [...written, ...said];
+}
 
 /** The shorter way round the clock between two times. */
 const apart = (a: number, b: number) => {
@@ -61,23 +87,35 @@ const apart = (a: number, b: number) => {
 /** The sentence around a time, for long texts; short ones are kept whole. */
 function around(text: string, time: string) {
   if (text.length <= 140) return text;
-  const sentences = text.split(/(?<=[.!?]["”']?)\s+(?=[A-Z"“'])/);
-  return sentences.find((s) => s.includes(time)) ?? text;
+  const sentences = sentencesOf(text);
+  return (time && sentences.find((s) => s.includes(time))) || sentences[0] || text;
 }
 
-type Draft = Omit<Moment, "id" | "at" | "time"> & Reading;
+/** `loose`: read out of a sentence, as opposed to a timestamp on a row, a message or a frame. */
+type Draft = Omit<Moment, "id" | "at" | "time"> & Reading & { loose?: boolean };
+
+/** A time in a sentence further than this from every other moment is left off the line. */
+const STRAY_MINUTES = 180;
 
 function draftsOf(e: VisibleEvidence): Draft[] {
   const b = e.body;
   const base = { evidenceId: e.id };
-  const stamped = (time: string, rest: Omit<Draft, keyof Reading | "evidenceId">): Draft[] => timesIn(time).slice(0, 1).map((r) => ({ ...base, ...rest, ...r, time }));
+  const stamped = (time: string, rest: Omit<Draft, keyof Reading | "evidenceId">): Draft[] =>
+    timesIn(time)
+      .slice(0, 1)
+      .map((r) => ({ ...base, ...rest, minutes: r.minutes, sure: r.sure, time }));
   const written = (text: string, rest: Omit<Draft, keyof Reading | "evidenceId" | "text">): Draft[] => {
     const seen = new Set<number>();
-    return timesIn(text).flatMap((r) => {
+    const inText = timesIn(text).flatMap((r) => {
       if (seen.has(r.minutes)) return [];
       seen.add(r.minutes);
-      return [{ ...base, ...rest, ...r, text: around(text, r.time) }];
+      return [{ ...base, ...rest, time: r.time, minutes: r.minutes, sure: r.sure, loose: true, text: around(text, r.raw) }];
     });
+    if (inText.length) return inText;
+    // Nothing in the words, but the title names the moment: "Ozzy: the 9:10 round".
+    return timesIn(e.title)
+      .slice(0, 1)
+      .map((r) => ({ ...base, ...rest, time: r.time, minutes: r.minutes, sure: r.sure, loose: true, text: around(text, "") }));
   };
 
   switch (b.type) {
@@ -88,7 +126,8 @@ function draftsOf(e: VisibleEvidence): Draft[] {
     case "recording":
       return b.segments.flatMap((s) => stamped(s.at, { text: s.text, kind: "record" }));
     case "footage":
-      return b.frames.flatMap((f) => stamped(f.time, { text: b.caption, kind: "seen" }));
+      // Every frame shares the tape's caption, so each says which frame it is.
+      return b.frames.flatMap((f, i) => stamped(f.time, { text: `Frame ${i + 1} of ${b.frames.length} · ${b.caption}`, kind: "seen" }));
     case "statement":
       return written(b.text, { kind: "said", who: b.speaker });
     case "document":
@@ -128,8 +167,15 @@ export function timelineOf(evidence: VisibleEvidence[], start?: number): Moment[
     return Math.max(...options);
   });
 
+  // A time in a sentence that sits hours from everything else is almost never part of the night:
+  // a call timer on a phone screen ("Mo · 13:02"), an opening hour. Timestamps always stay.
+  const stray = (i: number) => drafts[i].loose && drafts.length > 1 && !placed.some((at, j) => j !== i && apart(at, placed[i]) <= STRAY_MINUTES);
+  const moments = drafts.flatMap((d, i): Moment[] =>
+    stray(i) ? [] : [{ id: `${d.evidenceId}:${i}`, evidenceId: d.evidenceId, at: placed[i], time: d.time, text: d.text, kind: d.kind, who: d.who, edited: d.edited }],
+  );
+
   // Where the line begins: right after the widest gap round the clock.
-  const sorted = [...new Set(placed)].sort((a, b) => a - b);
+  const sorted = [...new Set(moments.map((m) => m.at))].sort((a, b) => a - b);
   let origin = sorted[0] ?? 0;
   let widest = -1;
   sorted.forEach((t, i) => {
@@ -142,9 +188,7 @@ export function timelineOf(evidence: VisibleEvidence[], start?: number): Moment[
   });
   const along = (t: number) => (t - origin + DAY) % DAY;
 
-  return drafts
-    .map((d, i): Moment => ({ id: `${d.evidenceId}:${i}`, evidenceId: d.evidenceId, at: placed[i], time: d.time, text: d.text, kind: d.kind, who: d.who, edited: d.edited }))
-    .sort((a, b) => along(a.at) - along(b.at));
+  return moments.sort((a, b) => along(a.at) - along(b.at));
 }
 
 /** Minutes from one moment to a later one, going forward round the clock. */

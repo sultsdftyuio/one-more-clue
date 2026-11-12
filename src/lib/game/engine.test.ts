@@ -545,3 +545,67 @@ test("joining: lobby only, no duplicate names, room limit", () => {
   for (let i = 2; i <= tipJar.maxPlayers; i++) state = must(addPlayer(state, tipJar, { id: `p${i}`, token: `t${i}`, name: `P${i}` }, 0));
   assert.equal(addPlayer(state, tipJar, { id: "px", token: "tx", name: "Late" }, 0).ok, false);
 });
+
+test("the right word for a record that's waiting on a lead says so, and whose move opens it", () => {
+  let state = createRoom({ code: "SEAL", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, case001, id, { type: "ready" }, 0, newId));
+  const holder = (ability: "search" | "interview") => ["p1", "p2"].find((id) => viewFor(state, case001, id, new Set()).me.abilities.includes(ability))!;
+  const lastSearch = () => viewFor(state, case001, holder("search"), new Set()).searches.at(-1)!;
+
+  // Priya's laptop log exists, but nobody has a reason to pull it until she's asked about her laptop,
+  // and nobody can ask until the laptop has been spotted in the photo. The note points at the first move.
+  state = must(applyAction(state, case001, holder("search"), { type: "search", query: "Priya" }, 0, newId));
+  assert.equal(lastSearch().hit, false);
+  assert.equal(lastSearch().waits, true);
+  assert.match(lastSearch().note!, /sealed for now/);
+  assert.match(lastSearch().note!, /trail to it starts when the Photographer spots a detail in "The professor's LinkedIn post"/);
+
+  // With the laptop spotted, the next move is the Interviewer's.
+  state = { ...state, found: { ...state.found, "detail-laptop": { by: "p1", at: 0 } } };
+  state = must(applyAction(state, case001, holder("search"), { type: "search", query: "Priya" }, 0, newId));
+  assert.match(lastSearch().note!, /It opens when the Interviewer asks Priya Tran the right question/);
+
+  // A word with no record behind it keeps the case's own pointer.
+  state = must(applyAction(state, case001, holder("search"), { type: "search", query: "Rena" }, 0, newId));
+  assert.equal(lastSearch().waits, undefined);
+  assert.match(lastSearch().note!, /signed in on paper/);
+
+  // Once the question is asked, the same word finds the record.
+  state = must(applyAction(state, case001, holder("interview"), { type: "ask", evidenceId: "question-priya-laptop" }, 0, newId));
+  state = must(applyAction(state, case001, holder("search"), { type: "search", query: "Priya" }, 0, newId));
+  assert.equal(lastSearch().hit, true);
+  assert.equal(lastSearch().waits, undefined);
+});
+
+test("anyone who can read a piece can highlight one line of it for the team", () => {
+  let state = createRoom({ code: "MARK", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  for (const [id, name] of [["p2", "Bo"], ["p3", "Cy"], ["p4", "Di"]]) state = must(addPlayer(state, case001, { id, token: `t-${id}`, name }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  const players = ["p1", "p2", "p3", "p4"];
+  for (const id of players) state = must(applyAction(state, case001, id, { type: "ready" }, 0, newId));
+  const seeing = (id: string) => viewFor(state, case001, id, new Set()).evidence.find((e) => e.id === "lab-chat");
+  const holder = players.find((id) => seeing(id))!;
+  const other = players.find((id) => !seeing(id))!;
+
+  // Someone who can't read the chat can't mark it; a line that isn't there can't be marked.
+  assert.equal(applyAction(state, case001, other, { type: "mark", evidenceId: "lab-chat", line: 1 }, 0, newId).ok, false);
+  assert.equal(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: 99 }, 0, newId).ok, false);
+  assert.equal(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: 1.5 }, 0, newId).ok, false);
+
+  state = must(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: 1 }, 0, newId));
+  assert.match(seeing(holder)!.mark!.text, /Taking HALO home/);
+  assert.equal(seeing(holder)!.mark!.by, holder);
+  assert.equal(seeing(other), undefined, "an unpinned piece stays private, highlight and all");
+
+  // Pinned, the highlight travels with the piece; a teammate can move it or clear it.
+  state = must(applyAction(state, case001, holder, { type: "pin", evidenceId: "lab-chat" }, 0, newId));
+  assert.match(seeing(other)!.mark!.text, /Taking HALO home/);
+  state = must(applyAction(state, case001, other, { type: "mark", evidenceId: "lab-chat", line: 0 }, 0, newId));
+  assert.equal(seeing(holder)!.mark!.by, other);
+  assert.equal(seeing(holder)!.mark!.line, 0);
+  state = must(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: null }, 0, newId));
+  assert.equal(seeing(holder)!.mark, undefined);
+  assert.equal(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: null }, 0, newId).ok, false);
+});

@@ -33,7 +33,8 @@ const PATHS = {
   sparkle: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18",
   arrow: "M5 12h14M13 6l6 6-6 6",
   back: "M19 12H5M11 6l-6 6 6 6",
-  robot: "M5 9h14v10H5V9Zm7-5v5M9 14h.01M15 14h.01M9 17h6",
+  marker: "M15 4l5 5L9 20H4v-5L15 4Zm-3 3 5 5",
+  robot:"M5 9h14v10H5V9Zm7-5v5M9 14h.01M15 14h.01M9 17h6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

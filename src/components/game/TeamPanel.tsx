@@ -19,6 +19,7 @@ const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   access: "check",
   pin: "pin",
   unpin: "pin",
+  mark: "marker",
   chapter: "flag",
   wrong: "x",
   hint: "bulb",

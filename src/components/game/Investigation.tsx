@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { formatSpan } from "@/lib/game/clock";
 import type { PlayerView } from "@/lib/game/engine";
@@ -10,10 +10,11 @@ import { AudioToggles } from "./audio/AudioToggles";
 import { CAMERA_EVENT } from "./camera-events";
 import { play } from "./audio/sound";
 import { BoardPanel, BoardPeek } from "./BoardPanel";
-import { evidenceIn, GameProvider, nameOf, type Act } from "./context";
+import { evidenceIn, GameProvider, goalOf, nameOf, type Act } from "./context";
 import { DeskPanel, Notebook } from "./desk/DeskPanel";
 import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
+import { EvidenceShelf, useSeenEvidence } from "./evidence/EvidenceShelf";
 import { SpotlightMoment } from "./evidence/ShowEveryone";
 import { useLiveRoom } from "./live/useLive";
 import { VoiceControl } from "./live/VoiceControl";
@@ -27,7 +28,7 @@ import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
 import { Sheet } from "./ui/Sheet";
 
-type Panel = "board" | "solve" | "team" | "notes";
+type Panel = "evidence" | "board" | "solve" | "team" | "notes";
 
 function useClock(startedAt: number | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -43,8 +44,21 @@ function useClock(startedAt: number | null) {
 }
 
 function ChapterSteps({ view }: { view: PlayerView }) {
+  const label = `Chapter ${view.chapter.number} of ${view.case.chapterTitles.length}`;
   return (
-    <ol className="flex items-center gap-1.5" aria-label={`Chapter ${view.chapter.number} of ${view.case.chapterTitles.length}`}>
+    <>
+      {/* On a phone the three circles squeezed the case title down to "The Las…", so the chapter is one small pill there. */}
+      <span className="shrink-0 rounded-full border-2 border-ink bg-mustard px-2 py-0.5 text-xs font-black whitespace-nowrap text-ink sm:hidden" aria-label={label}>
+        Ch. {view.chapter.number}/{view.case.chapterTitles.length}
+      </span>
+      <ChapterCircles view={view} label={label} />
+    </>
+  );
+}
+
+function ChapterCircles({ view, label }: { view: PlayerView; label: string }) {
+  return (
+    <ol className="hidden items-center gap-1.5 sm:flex" aria-label={label}>
       {view.case.chapterTitles.map((title, i) => {
         const n = i + 1;
         const done = n < view.chapter.number;
@@ -223,7 +237,8 @@ function ActivityToasts({ view }: { view: PlayerView }) {
   }, [view.activity, view.me.id]);
 
   return (
-    <div className="pointer-events-none fixed top-20 right-3 z-[51] grid w-[min(22rem,calc(100%-1.5rem))] gap-2" aria-live="polite">
+    // Below the chapter's question on a phone, so news from the team never hides what the team is trying to prove.
+    <div className="pointer-events-none fixed top-[12.75rem] right-3 z-[51] grid w-[min(22rem,calc(100%-1.5rem))] gap-2 lg:top-24" aria-live="polite">
       {toasts.map((a) => (
         <p key={a.id} className="animate-[toast-in_0.3s_ease-out] rounded-2xl border-[3px] border-ink bg-cream px-3 py-2 text-sm leading-snug font-bold text-ink shadow-pop-sm">
           {a.text}
@@ -234,19 +249,21 @@ function ActivityToasts({ view }: { view: PlayerView }) {
 }
 
 const DOCK: { id: Panel; label: string; icon: IconName }[] = [
+  { id: "evidence", label: "Evidence", icon: "desk" },
   { id: "board", label: "Board", icon: "board" },
   { id: "solve", label: "Solve", icon: "target" },
   { id: "team", label: "Team", icon: "users" },
   { id: "notes", label: "Notes", icon: "note" },
 ];
 
-const URGENT = ["vote", "live"];
+/** Badges that mean "this needs you": a vote, a live confrontation, unread evidence. */
+const urgent = (badge: string) => badge === "vote" || badge === "live" || badge.endsWith("new");
 
-/** Everything that isn't your own desk: one tap away, with a badge when something there needs you. */
+/** Everything that isn't your own tool: one tap away, with a badge when something there needs you. */
 function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Open a panel">
-      <div className="mx-auto grid max-w-2xl grid-cols-4">
+      <div className="mx-auto grid max-w-2xl grid-cols-5">
         {DOCK.map((d) => (
           <button key={d.id} type="button" onClick={() => onOpen(d.id)} className="relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-extrabold text-cream/70 transition-colors hover:text-mustard">
             <span className="grid h-8 w-14 place-items-center rounded-full">
@@ -254,7 +271,7 @@ function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOp
             </span>
             {d.label}
             {badges[d.id] && (
-              <span className={cx("absolute top-1 right-[calc(50%-2.4rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black", URGENT.includes(badges[d.id]!) || d.id === "team" ? "bg-coral text-cream" : "bg-cream text-ink")}>
+              <span className={cx("absolute top-1 right-[calc(50%-2.2rem)] rounded-full border-2 border-ink px-1.5 text-[0.65rem] font-black whitespace-nowrap", urgent(badges[d.id]!) || d.id === "team" ? "bg-coral text-cream" : "bg-cream text-ink")}>
                 {badges[d.id]}
               </span>
             )}
@@ -267,14 +284,12 @@ function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOp
 
 /** What the team is trying to answer right now, so nobody has to go looking for why they're here. */
 function ChapterGoal({ view, onOpen }: { view: PlayerView; onOpen: () => void }) {
-  const room = view.interrogation;
-  const suspect = room && view.case.suspects.find((s) => s.id === room.suspect);
-  const question = suspect ? `Break ${suspect.name}'s story.` : view.chapter.checkpoint ? view.chapter.checkpoint.question : view.case.confrontation ? "Who did it? Name them." : "Who did it, why, and what proves it?";
+  const { label, question } = goalOf(view);
   return (
     <button type="button" onClick={onOpen} className="mb-5 flex w-full items-center gap-3 rounded-2xl border-[3px] border-ink bg-dusk px-4 py-2.5 text-left shadow-pop-sm transition-transform hover:-translate-y-0.5">
       <Icon name="target" className="size-5 shrink-0 text-mustard" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.7rem] font-extrabold tracking-widest text-mustard uppercase">{suspect ? "The confrontation" : `Chapter ${view.chapter.number}: ${view.chapter.title}`}</span>
+        <span className="block truncate text-[0.7rem] font-extrabold tracking-widest text-mustard uppercase">{label}</span>
         <span className="line-clamp-2 leading-snug font-bold text-cream">{question}</span>
       </span>
       <Icon name="arrow" className="size-4 shrink-0 text-cream/60" />
@@ -343,16 +358,29 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
     return () => window.removeEventListener(CAMERA_EVENT, close);
   }, []);
 
-  const game = useMemo(() => ({ view, act, busy, open: setOpened }), [view, act, busy]);
+  // Opening a piece anywhere (the list, the board, a teammate's "show everyone") counts as having read it.
+  const { isNew, mark } = useSeenEvidence(view);
+  const openEvidence = useCallback(
+    (id: string) => {
+      mark(id);
+      setOpened(id);
+    },
+    [mark],
+  );
+
+  const game = useMemo(() => ({ view, act, busy, open: openEvidence }), [view, act, busy, openEvidence]);
   const openedEvidence = opened ? evidenceIn(view, opened) : undefined;
   const unread = heard - heardSeen;
+  const unreadEvidence = view.evidence.filter(isNew).length;
   const badges: Partial<Record<Panel, string>> = {
+    evidence: unreadEvidence ? `${unreadEvidence} new` : view.evidence.length ? String(view.evidence.length) : undefined,
     board: `${view.pins.length}/${view.pinLimit}`,
     solve: view.proposal ? "vote" : view.interrogation && !view.interrogation.over ? "live" : undefined,
     team: unread > 0 ? String(unread) : undefined,
   };
 
   const panels: Record<Panel, { title: string; body: React.ReactNode }> = {
+    evidence: { title: "Evidence", body: <EvidenceShelf isNew={isNew} onSolve={() => setPanel("solve")} /> },
     board: { title: "The board", body: <BoardPanel /> },
     solve: { title: "Solve", body: <SolvePanel /> },
     team: { title: "The team", body: <TeamPanel /> },

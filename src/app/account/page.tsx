@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AccountView } from "@/components/account/AccountView";
 import { AuthDisabled } from "@/components/auth/AuthDisabled";
@@ -10,6 +11,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { unlockedCases } from "@/lib/billing/access";
 import { paymentsEnabled } from "@/lib/billing/env";
 import { listMyPurchases } from "@/lib/billing/purchases";
+import { normalizeCode, roomsForSeats } from "@/lib/rooms";
 import { authEnabled } from "@/lib/supabase/env";
 
 export const metadata: Metadata = { title: "Your account", robots: { index: false, follow: false } };
@@ -28,6 +30,20 @@ async function loadPurchases() {
     return await listMyPurchases();
   } catch (error) {
     console.error("[account] purchases unavailable", error);
+    return [];
+  }
+}
+
+/** Rooms this device is still in, from the room cookies the game sets (they last a day, like a room). */
+async function loadRooms() {
+  try {
+    const seats = (await cookies())
+      .getAll()
+      .filter((c) => c.name.startsWith("omc_room_"))
+      .map((c) => ({ code: normalizeCode(c.name.slice("omc_room_".length)), token: c.value }));
+    return seats.length ? await roomsForSeats(seats) : [];
+  } catch (error) {
+    console.error("[account] rooms unavailable", error);
     return [];
   }
 }
@@ -54,7 +70,7 @@ export default async function AccountPage({ searchParams }: Props) {
   const { purchase, buy } = await searchParams;
   const notice = purchase && purchase in notices ? notices[purchase as keyof typeof notices] : null;
   const caseToBuy = buy ? paidCaseById(buy) : null;
-  const purchases = await loadPurchases();
+  const [purchases, rooms] = await Promise.all([loadPurchases(), loadRooms()]);
   const unlocked = unlockedCases(purchases, paidCases);
   const refunded = new Set(purchases.filter((p) => p.status === "refunded").map((p) => p.case_id));
   const selling = paymentsEnabled();
@@ -80,6 +96,7 @@ export default async function AccountPage({ searchParams }: Props) {
       total={mainCases.length}
       notice={notice}
       caseToBuy={caseToBuy && !unlocked.has(caseToBuy.id) ? caseToBuy : null}
+      rooms={rooms}
       shelf={shelf}
       selling={selling}
       bundle={bundle ?? null}

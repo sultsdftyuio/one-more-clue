@@ -198,6 +198,28 @@ export async function roomInvite(code: string) {
   }
 }
 
+/**
+ * Rooms this device still has a seat in, from its room cookies (they last as long as a
+ * room does), newest first: for a "back to your game" link. Rooms that are gone, or that
+ * the player left or was removed from, are skipped.
+ */
+export async function roomsForSeats(seats: { code: string; token: string }[]) {
+  const store = getRoomStore();
+  const found = await Promise.all(
+    seats.slice(0, 6).map(async ({ code, token }) => {
+      try {
+        const state = await store.get(code);
+        const caseFile = state && caseById(state.caseId);
+        if (!state || !caseFile || !playerByToken(state, token)) return null;
+        return { code: state.code, caseId: caseFile.id, caseTitle: caseFile.title, phase: state.phase, createdAt: state.createdAt };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return found.filter((room) => room !== null).sort((a, b) => b.createdAt - a.createdAt);
+}
+
 /** This player's pass into the room's live channel (instant updates and voice), when LiveKit is set up. */
 export async function getLivePass(code: string, token: string | undefined) {
   if (!liveConfigured()) return { enabled: false as const };

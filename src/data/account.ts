@@ -16,7 +16,20 @@ export const accountCopy = {
     soon: "Coming soon",
   },
   play: "Play",
+  unlock: "Unlock",
   trailer: (title: string) => `Watch the trailer for ${title}`,
+  rooms: {
+    heading: "Back to your game",
+    phase: { lobby: "Waiting in the lobby", briefing: "Just starting", investigation: "Case in progress", reveal: "Case closed" } as Record<string, string>,
+    rejoin: "Rejoin",
+    ended: "See how it ended",
+  },
+  join: {
+    heading: "Got a code from a friend?",
+    sub: "Joining is always free, whatever the case.",
+    label: "Room code",
+    button: "Join",
+  },
   bundle: {
     eyebrow: "Season 1",
     title: (count: number) => `All ${count} cases`,

@@ -181,6 +181,23 @@ export async function getGameView(code: string, token: string | undefined, poll:
   return viewOf(store, await moveBots(store, state), me.id, poll.known === undefined || Boolean(poll.heartbeat));
 }
 
+/**
+ * What a room's invite link shows in a chat before anyone joins: the case and who's hosting.
+ * Anyone with the code can join and see the same, so nothing here is secret. Null when there's no such room.
+ */
+export async function roomInvite(code: string) {
+  try {
+    const state = await getRoomStore().get(code);
+    const caseFile = state && caseById(state.caseId);
+    if (!state || !caseFile) return null;
+    const host = state.players.find((p) => p.id === state.hostId && !p.left)?.name ?? null;
+    return { caseId: caseFile.id, caseCode: caseFile.code, caseTitle: caseFile.title, host };
+  } catch {
+    // A preview is never worth an error page: fall back to the plain one.
+    return null;
+  }
+}
+
 /** This player's pass into the room's live channel (instant updates and voice), when LiveKit is set up. */
 export async function getLivePass(code: string, token: string | undefined) {
   if (!liveConfigured()) return { enabled: false as const };

@@ -80,7 +80,7 @@ export function Lobby({ view, act, busy }: { view: PlayerView; act: Act; busy: b
         <>
           <Audience view={view} act={act} onShare={share} nameSlot={name} />
           <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0b0d12]/95 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3">
+            <div className="mx-auto flex h-16 max-w-xl items-center justify-between gap-3 lg:max-w-6xl lg:px-4">
               <button type="button" onClick={() => act({ type: "leave" })} className="min-h-[44px] font-extrabold text-cream/60 hover:text-cream">
                 Leave
               </button>

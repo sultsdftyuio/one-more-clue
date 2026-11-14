@@ -162,8 +162,8 @@ export function GameRoom({ code }: { code: string }) {
       );
   }
 
-  // The investigation brings its own full-width layout and top bar.
-  const fullBleed = status.kind === "ready" && status.view.phase === "investigation";
+  // The lobby (a cinema) and the investigation bring their own full-width layouts.
+  const fullBleed = status.kind === "ready" && (status.view.phase === "investigation" || status.view.phase === "lobby");
 
   return (
     <LiveProvider value={live}>

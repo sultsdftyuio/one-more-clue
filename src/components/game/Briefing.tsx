@@ -11,6 +11,7 @@ import { useLiveRoom } from "./live/useLive";
 import { Avatar } from "./parts";
 import { Cinematic } from "./story/Cinematic";
 import { StoryPlayer } from "./story/StoryPlayer";
+import { CurtainUp } from "./theatre/CurtainUp";
 import { Icon, type IconName } from "./ui/Icon";
 
 const POWER: Record<string, { icon: IconName; text: string }> = {
@@ -24,10 +25,31 @@ const POWER: Record<string, { icon: IconName; text: string }> = {
 /** The whole rulebook, short enough to read while the cards land. */
 const HOW_TO_WIN = ["Use your power, and say what you find out loud.", "Pin what matters to the board so everyone sees it.", "Vote on each chapter's question. Then name who did it."];
 
-/** The opening: the case's film if it has one, its story beats if not. Plays once per device. */
+/**
+ * The opening: the case's film if it has one, its story beats if not. Plays once per device.
+ * A film gets a curtain-up first: a countdown on closed drapes, which part as it starts.
+ */
 function Opening({ view, onDone }: { view: PlayerView; onDone: () => void }) {
   const film = view.case.cinematic;
-  if (film) return <Cinematic video={film.video} poster={film.poster} muted={!carriesSound(view)} onDone={onDone} />;
+  const [stage, setStage] = useState<"leader" | "parting" | "film">("leader");
+  useEffect(() => {
+    if (!film) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setStage("film");
+    const part = window.setTimeout(() => setStage((s) => (s === "leader" ? "parting" : s)), 1200);
+    const gone = window.setTimeout(() => setStage("film"), 2700);
+    return () => {
+      window.clearTimeout(part);
+      window.clearTimeout(gone);
+    };
+  }, [film]);
+  if (film) {
+    return (
+      <>
+        {stage !== "leader" && <Cinematic video={film.video} poster={film.poster} muted={!carriesSound(view)} onDone={onDone} />}
+        {stage !== "film" && <CurtainUp onSkip={() => setStage("film")} />}
+      </>
+    );
+  }
   return <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={onDone} finishLabel="See your role" />;
 }
 

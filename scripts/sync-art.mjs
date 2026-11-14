@@ -29,4 +29,10 @@ for (const name of ["opengraph-image", "twitter-image"]) {
   writeFileSync(join(app, `${name}.alt.txt`), alt);
 }
 
-console.log(`Synced ${webp.length} images, ${Object.keys(icons).length} icons and the share card.`);
+// Invite cards: what a room's link shows in a chat, one per case (see src/app/r/[code]/page.tsx).
+const invites = join(root, "public", "invite");
+mkdirSync(invites, { recursive: true });
+const cards = readdirSync(join(out, "social")).filter((f) => /^invite-.+\.jpg$/.test(f));
+for (const file of cards) copyFileSync(join(out, "social", file), join(invites, file.replace(/^invite-/, "")));
+
+console.log(`Synced ${webp.length} images, ${Object.keys(icons).length} icons, the share card and ${cards.length} invite cards.`);

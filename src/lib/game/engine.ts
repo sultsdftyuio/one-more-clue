@@ -15,6 +15,8 @@ import type {
   CaseSuspect,
   ChainStep,
   ChatLine,
+  Cheer,
+  CheerKind,
   DecidedProposal,
   FinalReport,
   Interrogation,
@@ -42,6 +44,10 @@ export const OBJECTION_MS = 5000;
 /** One player can push something onto every phone this often, so it stays a moment and not a stream. */
 export const SPOTLIGHT_GAP_MS = 12_000;
 const CHAT_KEPT = 200;
+/** Lobby reactions: the last few are kept, and one player can throw one this often. */
+const CHEERS_KEPT = 12;
+export const CHEER_GAP_MS = 700;
+const CHEER_KINDS: CheerKind[] = ["popcorn", "shh", "ooh"];
 const ACTIVITY_KEPT = 120;
 const SEARCHES_KEPT = 60;
 const SHOTS_KEPT = 40;
@@ -221,6 +227,30 @@ export function addPlayer(
   next.players.push({ ...player, name, roles: [], joinedAt: now, left: false });
   next.version++;
   return { ok: true, state: next };
+}
+
+/**
+ * Who sits where in the lobby's row of seats. A seat someone picked is theirs; everyone
+ * else fills the free seats in the order they joined.
+ */
+export function seatsOf(state: RoomState, caseFile: CaseFile): Record<string, number> {
+  const seats: Record<string, number> = {};
+  const taken = new Set<number>();
+  const players = activePlayers(state);
+  for (const p of players) {
+    if (p.seat !== undefined && Number.isInteger(p.seat) && p.seat >= 0 && p.seat < caseFile.maxPlayers && !taken.has(p.seat)) {
+      seats[p.id] = p.seat;
+      taken.add(p.seat);
+    }
+  }
+  for (const p of players) {
+    if (seats[p.id] !== undefined) continue;
+    let seat = 0;
+    while (taken.has(seat)) seat++;
+    seats[p.id] = seat;
+    taken.add(seat);
+  }
+  return seats;
 }
 
 /**
@@ -517,6 +547,25 @@ export function applyAction(
       if (!name) return fail("Pick a name first.");
       if (activePlayers(state).some((p) => p.id !== me.id && p.name.toLowerCase() === name.toLowerCase())) return fail("Someone here already has that name.");
       self.name = name;
+      break;
+    }
+
+    case "sit": {
+      if (state.phase !== "lobby") return fail("Seats are set once the case starts.");
+      const seat = Number(action.seat);
+      if (!Number.isInteger(seat) || seat < 0 || seat >= caseFile.maxPlayers) return fail("There's no seat there.");
+      const seats = seatsOf(state, caseFile);
+      if (Object.entries(seats).some(([id, s]) => s === seat && id !== me.id)) return fail("Someone's already sitting there.");
+      self.seat = seat;
+      break;
+    }
+
+    case "cheer": {
+      if (state.phase !== "lobby") return fail("Save it for the lobby.");
+      if (!CHEER_KINDS.includes(action.kind)) return fail("Unknown reaction.");
+      const last = (state.cheers ?? []).findLast((c) => c.by === me.id);
+      if (last && now - last.at < CHEER_GAP_MS) return fail("Easy on the popcorn.");
+      next.cheers = [...(next.cheers ?? []), { id: newId(), by: me.id, kind: action.kind, at: now } satisfies Cheer].slice(-CHEERS_KEPT);
       break;
     }
 
@@ -1124,6 +1173,8 @@ export type PublicPlayer = {
   online: boolean;
   ready: boolean;
   bot: boolean;
+  /** Their seat in the lobby's row (0-based). */
+  seat: number;
 };
 
 export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
@@ -1242,6 +1293,8 @@ export type PlayerView = {
   } | null;
   activity: Activity[];
   chat: ChatLine[];
+  /** The latest lobby reactions, oldest first. */
+  cheers: Cheer[];
   hintsUsed: number;
   wrongAnswers: number;
   proposal: Proposal | null;
@@ -1281,6 +1334,7 @@ function interrogationView(state: RoomState, caseFile: CaseFile, me: Player): Pl
 }
 
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
+  const seats = seatsOf(state, caseFile);
   const toPublic = (p: Player): PublicPlayer => ({
     id: p.id,
     name: p.name,
@@ -1289,6 +1343,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     online: Boolean(p.bot) || online.has(p.id),
     ready: state.ready.includes(p.id),
     bot: Boolean(p.bot),
+    seat: seats[p.id] ?? -1,
   });
   const me = state.players.find((p) => p.id === playerId)!;
   const abilities = abilitiesOf(caseFile, me);
@@ -1426,6 +1481,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     interrogation: interrogationView(state, caseFile, me),
     activity: state.activity.slice(-60),
     chat: state.chat,
+    cheers: state.phase === "lobby" ? (state.cheers ?? []) : [],
     hintsUsed: state.hintsUsed,
     wrongAnswers: state.wrongAnswers,
     proposal: state.proposal,

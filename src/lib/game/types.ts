@@ -249,7 +249,13 @@ export type Player = {
   left: boolean;
   /** A computer player, for testing (see bots.ts). */
   bot?: boolean;
+  /** The lobby seat they picked (0-based, row A). Without one they get the first free seat. */
+  seat?: number;
 };
+
+/** A quick reaction thrown from a lobby seat while everyone waits. */
+export type CheerKind = "popcorn" | "shh" | "ooh";
+export type Cheer = { id: string; by: string; kind: CheerKind; at: number };
 
 export type FinalReport = { suspectId: string; motiveId: string; evidenceIds: string[] };
 
@@ -329,6 +335,8 @@ export type RoomState = {
   /** The report that named them, held until the confrontation ends. */
   accusation?: FinalReport;
   chat: ChatLine[];
+  /** The latest lobby reactions (missing in rooms made before them). */
+  cheers?: Cheer[];
   activity: Activity[];
   hintsUsed: number;
   /** Hints opened in each chapter, by chapter number. */
@@ -364,6 +372,10 @@ export type Action =
   | { type: "setMode"; mode: Mode }
   /** In the lobby: change your own detective name. */
   | { type: "rename"; name: string }
+  /** In the lobby: move to a free seat (0-based). */
+  | { type: "sit"; seat: number }
+  /** In the lobby: throw a reaction from your seat. */
+  | { type: "cheer"; kind: CheerKind }
   | { type: "start" }
   | { type: "ready" }
   | { type: "search"; query: string }

@@ -609,3 +609,34 @@ test("anyone who can read a piece can highlight one line of it for the team", ()
   assert.equal(seeing(holder)!.mark, undefined);
   assert.equal(applyAction(state, case001, holder, { type: "mark", evidenceId: "lab-chat", line: null }, 0, newId).ok, false);
 });
+
+test("lobby seats: everyone gets one, a picked seat sticks, and a taken seat can't be stolen", () => {
+  let state = createRoom({ code: "SEAT", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  const seats = () => Object.fromEntries(viewFor(state, case001, "p1", new Set()).players.map((p) => [p.name, p.seat]));
+  assert.deepEqual(seats(), { Ana: 0, Bo: 1 });
+  state = must(applyAction(state, case001, "p2", { type: "sit", seat: 3 }, 0, newId));
+  assert.deepEqual(seats(), { Ana: 0, Bo: 3 });
+  state = must(addPlayer(state, case001, { id: "p3", token: "t3", name: "Cy" }, 0));
+  assert.equal(seats().Cy, 1, "a newcomer takes the first free seat");
+  assert.equal(applyAction(state, case001, "p3", { type: "sit", seat: 3 }, 0, newId).ok, false, "Bo's seat is taken");
+  assert.equal(applyAction(state, case001, "p3", { type: "sit", seat: 9 }, 0, newId).ok, false, "there's no seat 9");
+  state = must(applyAction(state, case001, "p2", { type: "leave" }, 0, newId));
+  state = must(applyAction(state, case001, "p3", { type: "sit", seat: 3 }, 0, newId));
+  assert.equal(seats().Cy, 3, "a seat frees up when its owner leaves");
+});
+
+test("lobby reactions are kept briefly, rate-limited per player, and only in the lobby", () => {
+  let state = createRoom({ code: "CHER", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0 });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, case001, "p2", { type: "cheer", kind: "popcorn" }, 1000, newId));
+  assert.equal(applyAction(state, case001, "p2", { type: "cheer", kind: "shh" }, 1200, newId).ok, false, "too soon after the last one");
+  state = must(applyAction(state, case001, "p1", { type: "cheer", kind: "shh" }, 1200, newId));
+  assert.equal(applyAction(state, case001, "p1", { type: "cheer", kind: "boo" as never }, 5000, newId).ok, false);
+  for (let i = 0; i < 20; i++) state = must(applyAction(state, case001, "p2", { type: "cheer", kind: "ooh" }, 2000 + i * 1000, newId));
+  const view = viewFor(state, case001, "p1", new Set());
+  assert.equal(view.cheers.length, 12, "only the latest few are kept");
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 30_000, newId));
+  assert.equal(applyAction(state, case001, "p2", { type: "cheer", kind: "popcorn" }, 40_000, newId).ok, false);
+  assert.deepEqual(viewFor(state, case001, "p1", new Set()).cheers, []);
+});

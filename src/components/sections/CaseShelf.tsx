@@ -50,7 +50,7 @@ export function CaseShelf() {
             key={item.id}
             item={item}
             index={i}
-            href={href}
+            href={open ? `/host?case=${item.id}` : href}
             cta={open ? `Unlock for ${item.price}` : "Get notified"}
             bundleNote={bundle?.includes?.includes(item.id) && saves ? `Or get all three and save ${saves}` : undefined}
           />

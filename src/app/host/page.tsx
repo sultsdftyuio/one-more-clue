@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { HostForm, type BundleOffer, type CaseOption, type Notice } from "@/components/game/HostForm";
 import { bundleSaving, bundles, paidCaseById, productIdFor } from "@/data/catalog";
 import { cases } from "@/data/cases";
@@ -33,6 +32,8 @@ export default async function HostPage({ searchParams }: Props) {
       tagline: c.tagline,
       price: paidCase?.price ?? null,
       access: accessFor({ paidCase, purchasable: Boolean(paidCase && selling && productIdFor(paidCase)), unlocked }),
+      chapters: c.chapters.length,
+      video: c.cinematic?.video ?? null,
     };
   });
 
@@ -58,20 +59,11 @@ export default async function HostPage({ searchParams }: Props) {
       : one(params.purchase) === "failed"
         ? { kind: "failed" }
         : null;
-  const preselect = item?.includes?.[0] ?? item?.id;
+  // A poster's link (or sign-in coming back) names the case to show first: /host?case=case-002.
+  const preselect = item?.includes?.[0] ?? item?.id ?? one(params.case);
 
   return (
-    <div className="min-h-[100svh] px-4 pt-5 pb-16 sm:px-6">
-      <div className="mx-auto mb-6 flex max-w-2xl items-center justify-between gap-3">
-        <Link href="/" className="font-display text-xl text-cream text-pop">
-          One More Clue
-        </Link>
-        {selling && (
-          <Link href={user ? "/account" : "/login?next=%2Fhost"} className="text-sm font-extrabold text-cream/75 hover:text-mustard">
-            {user ? "My cases" : "Log in"}
-          </Link>
-        )}
-      </div>
+    <div className="min-h-[100svh] bg-black">
       <HostForm cases={options} bundles={offers} signedIn={Boolean(user)} notice={notice} preselect={preselect} />
     </div>
   );

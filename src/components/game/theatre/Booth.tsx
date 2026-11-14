@@ -74,7 +74,7 @@ function Lever({ enabled, needed, onRoll }: { enabled: boolean; needed: number; 
       {/* The house lights go down as the lever does. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-10 bg-black" style={{ opacity: progress * 0.5 }} />
       <div className="booth-plate fixed inset-x-0 bottom-0 z-20 border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto flex max-w-xl items-center gap-5 px-5 py-4">
+        <div className="mx-auto flex max-w-xl items-center gap-5 px-5 py-4 lg:max-w-6xl lg:px-8">
           <div className="relative h-[9.5rem] w-14 shrink-0">
             <div className="absolute inset-x-3 top-2 bottom-2 rounded-full bg-black/70 shadow-[inset_0_3px_8px_rgb(0_0_0_/_0.8)]" />
             <div
@@ -150,7 +150,7 @@ export function Booth({
 
   return (
     <div className="booth-steel min-h-[100svh]">
-      <div className="mx-auto grid max-w-xl gap-5 px-4 pt-4 pb-60">
+      <div className="mx-auto max-w-xl px-4 pt-4 pb-60 lg:max-w-6xl lg:px-8 lg:pt-8">
         <header className="flex items-baseline justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-extrabold tracking-[0.2em] text-cream/55 uppercase">Projection booth</p>
@@ -159,7 +159,10 @@ export function Booth({
           <p className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-sm font-extrabold">Room {view.code}</p>
         </header>
 
-        <section aria-label="Your audience" className="-mt-1 overflow-hidden rounded-2xl border-8 border-[#252b33] bg-black">
+        {/* One column on a phone; on a laptop the booth window sits left and the controls right. */}
+        <div className="mt-4 grid gap-5 lg:grid-cols-2 lg:gap-12">
+        <div className="grid content-start gap-5">
+        <section aria-label="Your audience" className="overflow-hidden rounded-2xl border-8 border-[#252b33] bg-black">
           <div className="relative mx-auto mt-3 aspect-video w-[78%] overflow-hidden rounded-md">
             <Trailer view={view} />
           </div>
@@ -189,6 +192,9 @@ export function Booth({
           </ul>
         )}
 
+        </div>
+
+        <div className="grid content-start gap-5">
         <section aria-label="Invite friends">
           <h2 className="font-display text-xl">Invite friends</h2>
           <p className="mt-0.5 text-sm font-bold text-cream/65">
@@ -270,6 +276,8 @@ export function Booth({
         <button type="button" onClick={() => act({ type: "leave" })} className="justify-self-center py-2 text-sm font-extrabold text-cream/55 hover:text-cream">
           Leave
         </button>
+        </div>
+        </div>
       </div>
 
       <Lever enabled={needed === 0 && !busy} needed={needed} onRoll={onStart} />

@@ -52,7 +52,7 @@ export function Audience({ view, act, onShare, nameSlot }: { view: PlayerView; a
   };
 
   return (
-    <div className="mx-auto grid max-w-xl gap-6 px-4 pt-4 pb-24">
+    <div className="mx-auto max-w-xl px-4 pt-4 pb-24 lg:max-w-6xl lg:px-8 lg:pt-8">
       <header className="flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-extrabold tracking-[0.2em] text-cream/55 uppercase">{view.case.code}</p>
@@ -61,7 +61,10 @@ export function Audience({ view, act, onShare, nameSlot }: { view: PlayerView; a
         <p className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-sm font-extrabold">Room {view.code}</p>
       </header>
 
-      <div className="relative -mt-2 aspect-video overflow-hidden rounded-2xl">
+      {/* One column on a phone; on a laptop the screen sits left and the seats right. */}
+      <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:gap-12">
+      <div className="grid content-start gap-6">
+      <div className="relative aspect-video overflow-hidden rounded-2xl">
         <Trailer view={view} />
         <span className="absolute top-2.5 left-2.5 rounded-full bg-black/55 px-2.5 py-0.5 text-xs font-extrabold text-cream/90">Trailer</span>
         <p className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-black/80 px-3 pt-6 pb-2 text-center text-sm font-extrabold">
@@ -70,7 +73,9 @@ export function Audience({ view, act, onShare, nameSlot }: { view: PlayerView; a
       </div>
 
       <HowTonight steps={nightSteps(view, host)} />
+      </div>
 
+      <div className="grid content-start gap-6">
       <section>
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-xl">Pick your seat</h2>
@@ -117,6 +122,8 @@ export function Audience({ view, act, onShare, nameSlot }: { view: PlayerView; a
       </section>
 
       <CastCards view={view} />
+      </div>
+      </div>
     </div>
   );
 }

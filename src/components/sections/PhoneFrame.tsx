@@ -182,7 +182,8 @@ function PhoneBody({ screen, turnX, turnY, metal, glare }: BodyProps) {
               </m.div>
             </AnimatePresence>
             <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0.35rem_rgba(0,0,0,0.55)]" />
-            <span aria-hidden className="absolute top-2.5 left-1/2 h-5 w-20 -translate-x-1/2 rounded-full bg-[#07081a]" />
+            {/* The camera cut-out, sized with the screen (10 x 80 x 20 of its 375 x 859), so it stays inside the status bar on small phones. */}
+            <span aria-hidden className="absolute top-[1.16%] left-1/2 h-[2.33%] w-[21.3%] -translate-x-1/2 rounded-full bg-[#07081a]" />
           </div>
         </div>
         {/* Reflection on the glass, sliding as the phone turns. */}

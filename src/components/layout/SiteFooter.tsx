@@ -5,6 +5,7 @@ import { SUPPORT_EMAIL } from "@/lib/site";
 
 const links = [
   { href: "/#mini-case", label: "30-second case" },
+  { href: "/#questions", label: "Questions" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   ...(SUPPORT_EMAIL ? [{ href: `mailto:${SUPPORT_EMAIL}`, label: "Contact" }] : []),

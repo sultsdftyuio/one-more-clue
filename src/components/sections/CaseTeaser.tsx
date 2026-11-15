@@ -80,7 +80,7 @@ export function CaseTeaser() {
                 </div>
                 {/* A light bar: the usual ink bar disappears on the night background. */}
                 <Redacted className="mt-2 bg-cream/80! text-xs sm:text-sm" />
-                <span className="mt-0.5 text-[0.7rem] leading-tight font-bold text-cream/60 sm:text-xs">{s.role}</span>
+                <span className="mt-0.5 text-xs leading-tight font-bold text-cream/65 sm:text-sm">{s.role}</span>
               </li>
             ))}
           </ul>

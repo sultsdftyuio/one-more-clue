@@ -12,7 +12,9 @@ import { SuspectLineup } from "./SuspectLineup";
 export function Hero() {
   const cta = playCta();
   return (
-    <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
+    // On short laptop screens the hero runs a little past the fold, so the street clock and the lineup
+    // (pinned to its bottom) never land on the buttons or the narrator button.
+    <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden md:min-h-[max(100svh,53rem)]">
       <CityScene />
 
       <div className="relative mx-auto grid w-full max-w-6xl items-start gap-x-10 px-4 pt-24 sm:px-6 sm:pt-28 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -21,13 +23,13 @@ export function Hero() {
           <HeroTitle />
 
           <PopIn delay={1.0}>
-            <p className="mt-5 max-w-xl font-display text-[clamp(1.6rem,3.2vw,2.5rem)] leading-[1.05] text-mustard [text-shadow:0_0.18rem_0_var(--color-ink)]">
+            <p className="mt-5 max-w-xl font-display text-[clamp(1.5rem,3.2vw,2.5rem)] leading-[1.05] text-mustard [text-shadow:0_0.18rem_0_var(--color-ink)]">
               {hero.hook}
             </p>
           </PopIn>
 
           <PopIn delay={1.15}>
-            <p className="mt-4 max-w-lg text-lg leading-relaxed font-semibold text-cream/90 [text-shadow:0_2px_8px_var(--color-night)]">
+            <p className="mt-4 max-w-lg text-base leading-relaxed font-semibold text-cream/90 sm:text-lg [text-shadow:0_2px_8px_var(--color-night)]">
               {hero.intro}
             </p>
           </PopIn>
@@ -45,14 +47,20 @@ export function Hero() {
             ))}
           </ul>
 
-          <PopIn delay={1.5} className="mt-7 flex flex-wrap items-start gap-4">
-            {/* The note sits under the play button itself, so on phones it can't read as the warm-up's. */}
-            <div className="flex flex-col items-start gap-2">
-              <Magnetic>
-                <ButtonLink href={cta.href}>{gameOpen() ? "Play Case 001 free" : cta.label}</ButtonLink>
-              </Magnetic>
-              {gameOpen() && <p className="pl-2 text-sm font-bold text-cream/75 [text-shadow:0_2px_8px_var(--color-night)]">{hero.ctaNote}</p>}
-            </div>
+          {/* Phones: play, its note, then the warm-up, one under another. Wider: the two buttons side by side
+              with the note on its own line below, so the note can't push the second button away. */}
+          <PopIn delay={1.5} className="mt-7 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+            <Magnetic>
+              <ButtonLink href={cta.href}>{gameOpen() ? "Play Case 001 free" : cta.label}</ButtonLink>
+            </Magnetic>
+            {gameOpen() && (
+              <div className="max-sm:-mt-1 max-sm:mb-1 sm:order-last sm:basis-full">
+                {/* Wider screens put the note over the street's clock and lit windows, so it gets a soft backdrop there. */}
+                <p className="pl-2 text-sm font-bold text-cream/85 [text-shadow:0_2px_8px_var(--color-night)] sm:inline-block sm:rounded-full sm:bg-night/60 sm:px-3 sm:py-1 sm:backdrop-blur-sm">
+                  {hero.ctaNote}
+                </p>
+              </div>
+            )}
             <Magnetic>
               <ButtonLink href="#mini-case" variant="secondary">
                 Try a 30-second case
@@ -61,7 +69,9 @@ export function Hero() {
           </PopIn>
         </ScrollAway>
 
-        <HeroFilm {...hero.film} className="mx-auto mt-12 w-[min(62vw,16.5rem)] md:mt-2 md:w-[clamp(13rem,21vw,17rem)]" />
+        {/* On laptops the phone is held to a quarter of the screen's height, so the narrator button under it
+            stays clear of the lineup's speech bubbles on short screens. */}
+        <HeroFilm {...hero.film} className="mx-auto mt-12 w-[min(62vw,16.5rem)] md:mt-2 md:w-[min(clamp(13rem,21vw,17rem),26svh)]" />
       </div>
 
       {/* On phones the clock sits between the copy and the lineup; wider, on the street left of the lineup. */}

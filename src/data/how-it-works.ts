@@ -1,7 +1,7 @@
 import type { PropName } from "@/lib/art";
 
 /** The small piece of evidence each step carries beside its words. */
-export type Clue = "film" | "roles" | "vote" | "objection" | "stars";
+export type Clue = "seats" | "film" | "roles" | "vote" | "objection" | "stars";
 
 export type Step = {
   prop: PropName;
@@ -13,15 +13,22 @@ export type Step = {
 };
 
 /**
- * How a night plays, in five moments. The screens are real game screens from
+ * How a night plays, in six moments. The screens are real game screens from
  * test rooms (the practice case and Case 001), with anything that would give
  * a case away hidden behind question marks or a CLASSIFIED stamp.
  */
 export const steps: Step[] = [
   {
+    prop: "phone",
+    title: "Take your seats",
+    text: "Pick a case and watch its trailer, then drop one link in your group chat: no app, no sign-up. Friends take a seat in the lobby, and the host pulls the lever to roll the film.",
+    clue: "seats",
+    screen: { src: "/screens/night-lobby.webp", alt: "The lobby's projection booth: Case 001's trailer playing over four friends in their seats, and a lever to pull down to start" },
+  },
+  {
     prop: "clock",
     title: "Watch it open",
-    text: "Drop one link in your group chat: no app, no sign-up. Every case starts with a short film about the night, the crime and the people who were there. In the same room it plays on the host's phone, so you watch it together.",
+    text: "Every case starts with a short film about the night, the crime and the people who were there. In the same room it plays on the host's phone, so you watch it together.",
     clue: "film",
     screen: { src: "/screens/night-film.webp", alt: "Case 001's opening film: a lab clock at 9:17 PM" },
   },

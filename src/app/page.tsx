@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { MiniCase } from "@/components/mini-case/MiniCase";
 import { CaseShelf } from "@/components/sections/CaseShelf";
 import { CaseTeaser } from "@/components/sections/CaseTeaser";
+import { Faq } from "@/components/sections/Faq";
 import { FinalCta } from "@/components/sections/FinalCta";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { Roles } from "@/components/sections/Roles";
@@ -27,6 +28,7 @@ export default function Home() {
         <Scallop top="var(--color-cream)" bottom="var(--color-night)" />
         <CaseTeaser />
         <CaseShelf />
+        <Faq />
         <Scallop top="var(--color-night)" bottom="var(--color-mustard)" />
         <FinalCta />
       </main>

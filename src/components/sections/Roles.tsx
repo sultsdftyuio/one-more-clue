@@ -75,7 +75,8 @@ export function Roles() {
       </Reveal>
 
       <div className="mx-auto mt-14 max-w-5xl">
-        <div role="tablist" aria-label="Roles" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Two across until there's room for four; on phones the icon sits over the name, so long names fit. */}
+        <div role="tablist" aria-label="Roles" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {roles.map((r, i) => (
             <button
               key={r.id}
@@ -86,14 +87,14 @@ export function Roles() {
               aria-controls="role-panel"
               onClick={() => setActive(r.id)}
               className={cx(
-                "relative flex items-center gap-3 rounded-2xl border-[0.1875rem] border-ink p-3 text-left transition-[translate,box-shadow,opacity] duration-200",
+                "relative flex items-center gap-3 rounded-2xl border-[0.1875rem] border-ink p-3 text-left transition-[translate,box-shadow,opacity] duration-200 max-sm:flex-col max-sm:items-start max-sm:gap-2",
                 r.tint,
                 active === r.id ? "-translate-y-1.5 shadow-card" : "opacity-75 shadow-pop-sm hover:-translate-y-0.5 hover:opacity-100",
               )}
             >
-              <Image src={propArt[r.prop]} alt="" sizes="56px" className={cx("w-11 shrink-0 sm:w-12", i % 2 ? "rotate-6" : "-rotate-6")} />
+              <Image src={propArt[r.prop]} alt="" sizes="56px" className={cx("w-9 shrink-0 sm:w-12", i % 2 ? "rotate-6" : "-rotate-6")} />
               <span className="min-w-0">
-                <span className="block font-display text-xl leading-none sm:text-2xl">{r.name}</span>
+                <span className="block font-display text-[clamp(1rem,4.6vw,1.25rem)] leading-none sm:text-2xl">{r.name}</span>
                 <span className="mt-1 block text-xs font-extrabold opacity-80 sm:text-sm">{r.verb}</span>
               </span>
               {done[r.id] && (

@@ -21,7 +21,8 @@ const TRAVEL = 96;
  * The start control: a lever you pull down. Half a pull springs back, so nobody rolls
  * the film by brushing the screen. Keyboards pull it with the arrow keys or Enter.
  */
-function Lever({ enabled, needed, onRoll }: { enabled: boolean; needed: number; onRoll: () => Promise<boolean> }) {
+/** `starts` says where the opening plays, which depends on the case and the room's mode. */
+function Lever({ enabled, needed, starts, onRoll }: { enabled: boolean; needed: number; starts: string; onRoll: () => Promise<boolean> }) {
   const [y, setY] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [rolling, setRolling] = useState(false);
@@ -103,7 +104,7 @@ function Lever({ enabled, needed, onRoll }: { enabled: boolean; needed: number; 
           <div className="min-w-0 flex-1">
             <p className="font-display text-2xl leading-tight">{rolling ? "Rolling…" : enabled ? "Pull down to start" : `Need ${needed} more`}</p>
             <p className="mt-1 text-sm leading-snug font-bold text-cream/70">
-              {enabled ? "The lights dim and the film starts on every phone." : `Invite ${needed === 1 ? "one more friend" : `${needed} more friends`} to start.`}
+              {enabled ? `The lights dim and ${starts}.` : `Invite ${needed === 1 ? "one more friend" : `${needed} more friends`} to start.`}
             </p>
             <div className="mt-2.5 flex items-center gap-2" aria-hidden>
               <span className="text-xs font-bold text-cream/50">Lights</span>
@@ -280,7 +281,12 @@ export function Booth({
         </div>
       </div>
 
-      <Lever enabled={needed === 0 && !busy} needed={needed} onRoll={onStart} />
+      <Lever
+        enabled={needed === 0 && !busy}
+        needed={needed}
+        starts={!view.case.cinematic ? "the story starts on every phone" : view.mode === "together" ? "the film starts on your phone" : "the film starts on every phone"}
+        onRoll={onStart}
+      />
     </div>
   );
 }

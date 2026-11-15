@@ -21,6 +21,14 @@ const turnFor = (i: number) => {
   return { y: -24 + t * 46, x: 10 - t * 14 };
 };
 
+/** The lobby's four seats, taken: the same initials and colours as the lobby screen on the phone. */
+const seatsFilled = [
+  { initial: "A", tint: "bg-coral" },
+  { initial: "M", tint: "bg-teal" },
+  { initial: "S", tint: "bg-mustard" },
+  { initial: "J", tint: "bg-lilac" },
+];
+
 /** Crime-scene tape across the section, sliding in from one side. */
 function Tape({ className, from, children }: { className: string; from: "left" | "right"; children: string }) {
   return (
@@ -45,6 +53,25 @@ function StepEvidence({ clue, active }: { clue: Clue; active: boolean }) {
     transition: { type: "spring" as const, stiffness: 380, damping: 18, delay: active ? 0.1 + i * 0.08 : 0 },
   });
 
+
+  if (clue === "seats")
+    return (
+      // A row of the lobby's velvet seats filling up, with a cheer from the back.
+      <div className="mt-5 flex items-end gap-2">
+        {seatsFilled.map(({ initial, tint }, i) => (
+          <m.div key={initial} {...pop(i)} className="flex w-12 flex-col items-center">
+            <span className={cx("relative z-[1] -mb-2 grid size-7 place-items-center rounded-full border-[0.1875rem] border-ink font-display text-sm text-ink", tint)}>{initial}</span>
+            <span
+              className="h-8 w-full rounded-t-[14px] rounded-b-md border-[0.1875rem] border-ink"
+              style={{ backgroundImage: "repeating-linear-gradient(90deg, rgb(0 0 0 / 0.22) 0 2px, transparent 2px 10px), linear-gradient(#1f6f6a, #12403f)" }}
+            />
+          </m.div>
+        ))}
+        <m.span {...pop(4)} className="mb-10 -ml-1 -rotate-6 rounded-[12px_12px_12px_3px] border-[0.1875rem] border-ink bg-cream px-2 py-0.5 text-sm font-extrabold text-ink shadow-pop-sm">
+          Ooh!
+        </m.span>
+      </div>
+    );
 
   if (clue === "film")
     return (

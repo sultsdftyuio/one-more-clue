@@ -7,7 +7,7 @@ import type { EvidenceBody } from "@/lib/game/types";
 import { useGame } from "../context";
 import { Icon } from "../ui/Icon";
 import { PinButton } from "./PinButton";
-import { SceneThumb } from "./SceneView";
+import { SceneThumb, ZoomedSpot } from "./SceneView";
 
 type Line = { label?: string; text: string };
 
@@ -59,6 +59,7 @@ function ReadOutView({ evidence, onClose }: { evidence: VisibleEvidence; onClose
       </header>
       <div className="mx-auto w-full max-w-2xl flex-1 space-y-5 overflow-y-auto px-5 py-6">
         {(body.type === "scene" || body.type === "footage") && <SceneThumb scene={body} />}
+        {evidence.crop && <ZoomedSpot scene={evidence.crop.scene} hotspot={evidence.crop.hotspot} className="rounded-xl border-[3px] border-ink" />}
         {linesOf(body).map((line, i) => (
           <p key={i}>
             {line.label && <span className="block text-base font-extrabold text-mustard">{line.label}</span>}

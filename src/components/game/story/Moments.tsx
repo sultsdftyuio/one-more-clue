@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { play } from "../audio/sound";
-import { evidenceIn, nameOf, useGame } from "../context";
+import { nameOf, useGame } from "../context";
 import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
 import { ContradictionSlip } from "../evidence/objects/FindingNote";
 import { PinButton } from "../evidence/PinButton";
@@ -28,9 +28,9 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   const speaks = evidence.source === "interview";
   const spoken = speaks && body.type === "statement" ? body.text : "";
   const typed = useTypewriter(spoken, Boolean(spoken));
-  const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
+  const crop = evidence.source === "inspect" ? evidence.crop : undefined;
   // A photo comes out blank and has to be developed before there's anything to do with it.
-  const [developed, setDeveloped] = useState(!(evidence.source === "inspect" && scene && evidence.spot));
+  const [developed, setDeveloped] = useState(!crop);
 
   useEffect(() => {
     // The stamp's sound lands with the stamp, once the two papers have met.
@@ -79,9 +79,12 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
         </div>
       </div>
     );
-  } else if (evidence.source === "inspect" && scene && evidence.spot) {
-    // The camera's catch comes out blank: shake or rub it up, then the note appears under it.
-    content = <DevelopPrint scene={scene.body} hotspot={evidence.spot.hotspot} title={evidence.title} note={snippet(body)} onDeveloped={() => setDeveloped(true)} />;
+  } else if (crop) {
+    // The camera's catch comes out blank: shake or rub it up, and it comes up with its few words under it.
+    content = <DevelopPrint scene={crop.scene} hotspot={crop.hotspot} title={evidence.title} note={snippet(body)} onDeveloped={() => setDeveloped(true)} />;
+  } else if (evidence.source === "crosscheck" && body.type === "finding" && evidence.sides) {
+    // The two pieces slide in from either side, and the stamp comes down between them.
+    content = <ContradictionSlip evidence={evidence} body={body} stampDelay={STAMP_AT} enter />;
   } else if (evidence.source === "crosscheck" && body.type === "finding") {
     // Two papers meet in the middle, and the stamp comes down.
     const [a, b] = evidence.compared ?? [];

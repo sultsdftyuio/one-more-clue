@@ -18,6 +18,7 @@ import type {
   Cheer,
   CheerKind,
   DecidedProposal,
+  EvidenceBody,
   FinalReport,
   Interrogation,
   InterrogationState,
@@ -1177,12 +1178,25 @@ export type PublicPlayer = {
   seat: number;
 };
 
+/**
+ * The part of a picture a find is about, ready to draw: the picture cut down to that one spot, so
+ * it can be shown to someone who doesn't have the whole photo. `from` is the photo's title.
+ */
+export type EvidenceCrop = { scene: EvidenceBody; hotspot: string; from: string };
+
+/** One side of a contradiction, as the slip shows it: the words that clash and who said them, or the picture. */
+export type MatchSide = { id: string; title: string; type: EvidenceBody["type"]; quote?: string; by?: string; crop?: EvidenceCrop; picture?: EvidenceBody };
+
 export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
   source: CaseEvidence["access"]["kind"];
   /** For a found detail: where in which scene it was spotted. */
   spot?: { scene: string; hotspot: string };
+  /** For a found detail: the spot itself, so the picture leads wherever the find goes. */
+  crop?: EvidenceCrop;
   /** For a contradiction: the titles of the two pieces that clash. */
   compared?: [string, string];
+  /** For a contradiction: the two pieces themselves, side by side. */
+  sides?: [MatchSide, MatchSide];
   pinned: boolean;
   /** Who found it, for evidence that had to be found. */
   foundBy?: string;
@@ -1333,6 +1347,41 @@ function interrogationView(state: RoomState, caseFile: CaseFile, me: Player): Pl
   };
 }
 
+/**
+ * The spot a find is about, cut out of its picture. A painted picture keeps only that spot's tap
+ * area (the clue is in the paint); a drawn one keeps every shape, because that's how it's drawn.
+ */
+export function cropOf(caseFile: CaseFile, sceneId: string, hotspot: string): EvidenceCrop | undefined {
+  const scene = caseFile.evidence.find((e) => e.id === sceneId);
+  const body = scene?.body;
+  if (!scene || !body || (body.type !== "scene" && body.type !== "footage")) return undefined;
+  const shot = body.type === "scene" ? body : body.frames.find((f) => f.items.some((i) => i.hotspot === hotspot));
+  if (!shot?.items.some((i) => i.hotspot === hotspot)) return undefined;
+  const items = shot.image ? shot.items.filter((i) => i.hotspot === hotspot) : shot.items;
+  return { scene: { type: "scene", caption: "", look: body.look, items, image: shot.image }, hotspot, from: scene.title };
+}
+
+/** A painted picture without its tap areas: enough to show it, nothing to give its details away. */
+function pictureOf(body: EvidenceBody): EvidenceBody | undefined {
+  if (body.type === "scene") return { ...body, items: body.image ? [] : body.items };
+  if (body.type === "footage") return { ...body, frames: body.frames.map((f) => ({ ...f, items: f.image ? [] : f.items })) };
+  return undefined;
+}
+
+/** One side of a contradiction: the words the case picked out of it, or else its picture. */
+function sideOf(caseFile: CaseFile, id: string, quote: string | null): MatchSide {
+  const e = caseFile.evidence.find((x) => x.id === id);
+  if (!e) return { id, title: "", type: "finding" };
+  if (quote) {
+    const body = e.body;
+    const message = body.type === "chat" ? body.messages.find((m) => `${m.from}, ${m.time}: ${m.text}`.includes(quote)) : undefined;
+    const by = message ? `${message.from}, ${message.time}` : body.type === "statement" ? body.speaker : undefined;
+    return { id, title: e.title, type: body.type, quote, by };
+  }
+  if (e.access.kind === "inspect") return { id, title: e.title, type: e.body.type, crop: cropOf(caseFile, e.access.scene, e.access.hotspot) };
+  return { id, title: e.title, type: e.body.type, picture: pictureOf(e.body) };
+}
+
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
   const seats = seatsOf(state, caseFile);
   const toPublic = (p: Player): PublicPlayer => ({
@@ -1362,7 +1411,12 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       ...e,
       source: access.kind,
       spot: access.kind === "inspect" ? { scene: access.scene, hotspot: access.hotspot } : undefined,
+      crop: access.kind === "inspect" ? cropOf(caseFile, access.scene, access.hotspot) : undefined,
       compared: access.kind === "crosscheck" ? ([titleOf(access.pair[0]), titleOf(access.pair[1])] as [string, string]) : undefined,
+      sides:
+        access.kind === "crosscheck" && access.quotes
+          ? [sideOf(caseFile, access.pair[0], access.quotes[0]), sideOf(caseFile, access.pair[1], access.quotes[1])]
+          : undefined,
       pinned: pinned.has(e.id),
       foundBy: found?.by,
       foundAt: found?.at,

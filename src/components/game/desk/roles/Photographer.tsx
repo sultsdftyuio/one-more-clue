@@ -100,7 +100,13 @@ function Scrubber({ frames, moment, onMoment }: { frames: { time: string; image?
 function PrintTile({ evidence, scene, onOpen }: { evidence: VisibleEvidence; scene?: VisibleEvidence; onOpen: () => void }) {
   return (
     <button type="button" onClick={onOpen} className="block w-full -rotate-1 border-[3px] border-ink bg-white p-1.5 pb-2 text-left shadow-pop-sm transition-transform hover:rotate-0">
-      {scene && evidence.spot ? <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} /> : <span className="block aspect-[4/3] bg-cream-dk" />}
+      {evidence.crop ? (
+        <ZoomedSpot scene={evidence.crop.scene} hotspot={evidence.crop.hotspot} />
+      ) : scene && evidence.spot ? (
+        <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} />
+      ) : (
+        <span className="block aspect-[4/3] bg-cream-dk" />
+      )}
       <span className="mt-1 block font-hand text-lg leading-tight text-ink">{evidence.title}</span>
     </button>
   );

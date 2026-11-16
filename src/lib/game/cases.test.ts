@@ -10,6 +10,7 @@ import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { framedHotspot, shotOf } from "./camera.ts";
+import { linesOf } from "./lines.ts";
 import { costMinutes, nightMinutes } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
@@ -456,4 +457,34 @@ test("every case suspect has their own character, drawn in all five moods", () =
       }
     }
   }
+});
+
+test("a contradiction's quotes are the pieces' own words, and a side without words is a picture", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    for (const e of c.evidence) {
+      if (e.access.kind !== "crosscheck" || !e.access.quotes) continue;
+      e.access.quotes.forEach((quote, i) => {
+        const side = c.evidence.find((x) => x.id === (e.access as { pair: [string, string] }).pair[i])!;
+        if (quote === null) {
+          const picture = side.access.kind === "inspect" || side.body.type === "scene" || side.body.type === "footage";
+          assert.ok(picture, `${c.id} ${e.id}: ${side.id} has no quote and no picture to show`);
+        } else {
+          assert.ok(linesOf(side.body).join(" ").includes(quote), `${c.id} ${e.id}: "${quote}" isn't in ${side.id}`);
+        }
+      });
+    }
+  }
+});
+
+test("Case 001 is picture-led: every contradiction quotes its pieces, and every find carries its own close-up", () => {
+  const matches = case001.evidence.filter((e) => e.access.kind === "crosscheck");
+  for (const e of matches) assert.ok(e.access.kind === "crosscheck" && e.access.quotes, `${e.id} has no quotes`);
+  // Everyone can see everything at the reveal, so every find's close-up and every slip's sides are there.
+  const room = play(case001);
+  const view = viewFor({ ...room.state, phase: "reveal" }, case001, ARCHIVIST, new Set());
+  for (const e of view.evidence.filter((x) => x.source === "inspect")) {
+    assert.ok(e.crop, `${e.id} has no close-up`);
+    assert.equal(e.crop!.scene.type === "scene" && e.crop!.scene.items.length, 1, `${e.id}'s close-up gives away more than its own spot`);
+  }
+  for (const e of view.evidence.filter((x) => x.source === "crosscheck")) assert.equal(e.sides?.length, 2, `${e.id} doesn't show both pieces`);
 });

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
+import { speakerOf } from "@/lib/game/voice";
 import { play } from "../audio/sound";
+import { recordingOf, useVoice, voiced } from "../audio/voices";
 import { nameOf, useGame } from "../context";
 import { EvidenceObject, snippet } from "../evidence/EvidenceCard";
 import { ContradictionSlip } from "../evidence/objects/FindingNote";
@@ -27,7 +29,10 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
   const body = evidence.body;
   const speaks = evidence.source === "interview";
   const spoken = speaks && body.type === "statement" ? body.text : "";
-  const typed = useTypewriter(spoken, Boolean(spoken));
+  const recording = spoken && body.type === "statement" ? recordingOf(view.case.id, speakerOf(view.case, body.speaker), spoken) : null;
+  const voice = voiced(recording, spoken);
+  const typed = useTypewriter(spoken, Boolean(spoken), voice.onLetter, voice.pace);
+  useVoice(recording, true);
   const crop = evidence.source === "inspect" ? evidence.crop : undefined;
   // A photo comes out blank and has to be developed before there's anything to do with it.
   const [developed, setDeveloped] = useState(!crop);
@@ -182,6 +187,10 @@ export function CrackMoment() {
     const timer = window.setTimeout(() => setShown(null), CRACK_MS);
     return () => window.clearTimeout(timer);
   }, [shown]);
+
+  // In one room the crack is heard from the Interviewer's phone; apart, every phone says it.
+  const recording = shown ? recordingOf(view.case.id, speakerOf(view.case, shown.suspect), shown.text) : null;
+  useVoice(recording, view.mode !== "together", shown?.id);
 
   if (!shown) return null;
   const suspect = view.case.suspects.find((s) => s.name === shown.suspect) ?? { id: shown.suspect, name: shown.suspect, blurb: "" };

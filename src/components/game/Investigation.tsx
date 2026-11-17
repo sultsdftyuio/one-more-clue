@@ -10,7 +10,7 @@ import { AudioToggles } from "./audio/AudioToggles";
 import { CAMERA_EVENT } from "./camera-events";
 import { play } from "./audio/sound";
 import { BoardPanel, BoardPeek } from "./BoardPanel";
-import { evidenceIn, GameProvider, goalOf, nameOf, type Act } from "./context";
+import { carriesSound, evidenceIn, GameProvider, goalOf, nameOf, type Act } from "./context";
 import { DeskPanel, Notebook } from "./desk/DeskPanel";
 import { LieCallBar, LieMoment } from "./Interrogation";
 import { EvidenceCard } from "./evidence/EvidenceCard";
@@ -206,7 +206,7 @@ function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void
   if (last?.replay && !replayed) {
     return <ProofReplay view={view} chapter={last.number} title={last.title} reveal={last.reveal} replay={last.replay} onDone={() => setReplayed(true)} />;
   }
-  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" />;
+  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" caseId={view.case.id} loud={carriesSound(view)} />;
 }
 
 /** The team has named the right person, and every phone goes into the room with them. */
@@ -220,7 +220,7 @@ function ConfrontationStory({ view, onClose }: { view: PlayerView; onClose: () =
   useEffect(() => {
     play("chapter");
   }, []);
-  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Break their story" />;
+  return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Break their story" caseId={view.case.id} loud={carriesSound(view)} />;
 }
 
 /** Brief pop-ups when teammates find, pin or unlock something. */

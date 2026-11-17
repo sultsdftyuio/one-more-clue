@@ -50,7 +50,7 @@ function Opening({ view, onDone }: { view: PlayerView; onDone: () => void }) {
       </>
     );
   }
-  return <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={onDone} finishLabel="See your role" />;
+  return <StoryPlayer beats={view.case.story} suspects={view.case.suspects} onDone={onDone} finishLabel="See your role" caseId={view.case.id} loud={carriesSound(view)} />;
 }
 
 /** Your role, dealt as a card, then one tap into the case. */

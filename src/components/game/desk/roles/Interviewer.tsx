@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatSpan } from "@/lib/game/clock";
 import type { CaseSuspect } from "@/lib/game/types";
+import { SHRUGS, speakerOf } from "@/lib/game/voice";
 import { cx } from "@/lib/cx";
 import { play, speak } from "../../audio/sound";
+import { recordingOf, useVoice, voiced } from "../../audio/voices";
 import { evidenceIn, useGame } from "../../context";
 import { EvidenceTile } from "../../evidence/EvidenceCard";
 import { buzz, BUZZ } from "../../haptics";
@@ -16,8 +18,6 @@ import { Sheet } from "../../ui/Sheet";
 import { Coach, useCoach, type CoachStep } from "../Coach";
 import { ActionBar, MainAction, Station } from "../Station";
 
-/** What a suspect says when the evidence doesn't land. Picked in turn, so the same line doesn't come twice running. */
-const SHRUGS = ["And?", "Is that supposed to mean something?", "I don't see what that has to do with me.", "Very nice. Next question.", "You'll have to do better than that."];
 
 /** Someone in the chair: a suspect with a portrait, or a witness drawn as their initial. */
 const personFor = (suspects: CaseSuspect[], name: string): CaseSuspect => suspects.find((s) => s.name === name) ?? { id: name, name, blurb: "" };
@@ -25,12 +25,19 @@ const firstName = (name: string) => (/^(Prof\.|Sir|Dame|Lord|Dr\.)\s/.test(name)
 
 type Line = { key: string; who: string; text: string; mood: "answer" | "crack" | "shrug" };
 
-/** The person in the chair, under the lamp, saying their line in their own voice. */
+/**
+ * The person in the chair, under the lamp, saying their line in their own voice: their recording
+ * when the line has one, played out loud on this phone so the room hears it, or their blips.
+ */
 function TheChair({ person, line }: { person: CaseSuspect; line: Line | null }) {
-  const voice = useCallback(() => {
+  const { view } = useGame();
+  const blip = useCallback(() => {
     if (line) speak(line.who);
   }, [line]);
-  const typed = useTypewriter(line?.text ?? "", Boolean(line), voice);
+  const recording = line ? recordingOf(view.case.id, speakerOf(view.case, line.who), line.text) : null;
+  const voice = voiced(recording, line?.text ?? "", blip);
+  const typed = useTypewriter(line?.text ?? "", Boolean(line), voice.onLetter, voice.pace);
+  useVoice(recording, true, line?.key);
   const cracked = line?.mood === "crack";
   const smug = line?.mood === "shrug";
 

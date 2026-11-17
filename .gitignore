@@ -51,6 +51,7 @@ __pycache__/
 # rendered films and narrator takes (the finished film is copied into public/)
 art/out/lab/
 art/out/photos/
+art/out/voices/
 
 
 # local waitlist signups (dev fallback when Redis isn't configured)

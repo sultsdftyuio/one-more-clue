@@ -482,6 +482,7 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
     if (proposal.kind === "answer" && chapter.checkpoint) {
       decided.correct = chapter.checkpoint.proves.includes(proposal.evidenceId ?? "");
       if (decided.correct) {
+        state.proofs = { ...state.proofs, [state.chapter]: { evidenceId: proposal.evidenceId!, by: proposal.by } };
         state.chapter++;
         const opened = caseFile.chapters[state.chapter - 1];
         log(state, newId, now, "chapter", `Chapter ${state.chapter} unlocked: ${opened.title}`);
@@ -1187,6 +1188,16 @@ export type EvidenceCrop = { scene: EvidenceBody; hotspot: string; from: string 
 /** One side of a contradiction, as the slip shows it: the words that clash and who said them, or the picture. */
 export type MatchSide = { id: string; title: string; type: EvidenceBody["type"]; quote?: string; by?: string; crop?: EvidenceCrop; picture?: EvidenceBody };
 
+/**
+ * One moment of a proved checkpoint, as it drops onto the night's timeline: the piece (its words or its picture),
+ * when it happened, who turned it up (`foundBy`) or whose desk it came from (`holder`), and whether it's what the
+ * team presented, or one of the two pieces of the contradiction they presented (`proof`).
+ */
+export type ReplayMoment = MatchSide & { at: string; foundBy?: string; holder?: string; proof: boolean };
+
+/** A proved checkpoint played back as the night: its moments in order, the closing line, and the piece that proved it. */
+export type ProofReplay = { moments: ReplayMoment[]; say?: string; proof?: { id: string; title: string; by: string } };
+
 export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
   source: CaseEvidence["access"]["kind"];
   /** For a found detail: where in which scene it was spotted. */
@@ -1256,8 +1267,8 @@ export type PlayerView = {
     low: boolean;
     lost: string | null;
   } | null;
-  /** Checkpoints already answered, with what they revealed. */
-  solved: { number: number; title: string; question: string; reveal: string }[];
+  /** Checkpoints already answered, with what they revealed, and the night played back when the case writes a replay. */
+  solved: { number: number; title: string; question: string; reveal: string; replay?: ProofReplay }[];
   players: PublicPlayer[];
   evidence: VisibleEvidence[];
   pins: Pin[];
@@ -1382,6 +1393,26 @@ function sideOf(caseFile: CaseFile, id: string, quote: string | null): MatchSide
   return { id, title: e.title, type: e.body.type, picture: pictureOf(e.body) };
 }
 
+/**
+ * A proved checkpoint's replay, for everyone: it only plays pieces the checkpoint's reveal already tells, so it can
+ * show pieces this player never saw. Pieces stamped as the proof are the one presented, or both sides of it if it was
+ * a contradiction.
+ */
+function replayOf(state: RoomState, caseFile: CaseFile, chapter: number): ProofReplay | undefined {
+  const replay = caseFile.chapters[chapter - 1]?.checkpoint?.replay;
+  if (!replay) return undefined;
+  const presented = state.proofs?.[chapter];
+  const shown = presented && caseFile.evidence.find((e) => e.id === presented.evidenceId);
+  const stamped = new Set(shown ? [shown.id, ...(shown.access.kind === "crosscheck" ? shown.access.pair : [])] : []);
+  const players = activePlayers(state);
+  const moments = replay.moments.map((m): ReplayMoment => {
+    const piece = caseFile.evidence.find((e) => e.id === m.evidence);
+    const holder = piece?.access.kind === "desk" ? players.find((p) => p.roles.includes(piece.role))?.id : undefined;
+    return { ...sideOf(caseFile, m.evidence, m.quote ?? null), at: m.at, foundBy: state.found[m.evidence]?.by, holder, proof: stamped.has(m.evidence) };
+  });
+  return { moments, say: replay.say, proof: shown && presented ? { id: shown.id, title: shown.title, by: presented.by } : undefined };
+}
+
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
   const seats = seatsOf(state, caseFile);
   const toPublic = (p: Player): PublicPlayer => ({
@@ -1496,6 +1527,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
       title: c.title,
       question: c.checkpoint!.question,
       reveal: c.checkpoint!.reveal,
+      replay: replayOf(state, caseFile, i + 1),
     })),
     players: activePlayers(state).map(toPublic),
     evidence,

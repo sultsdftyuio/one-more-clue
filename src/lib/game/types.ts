@@ -151,10 +151,18 @@ export type Chapter = {
   intro: string;
   /** Plays when the chapter opens (after the first, which opens with the case story). */
   story: Beat[];
-  /** Presenting pinned proof of it opens the next chapter. `proves` lists every piece that really does. The last chapter has none: it ends with the final report. */
-  checkpoint?: { question: string; proves: string[]; reveal: string };
+  /**
+   * Presenting pinned proof of it opens the next chapter. `proves` lists every piece that really does. The last chapter has none: it ends with the final report.
+   * `reveal` says what the proof showed. With a `replay`, the answer plays as the night instead of a paragraph: its moments drop onto a timeline in
+   * order, the piece the team presented is stamped, and `say` closes it in one short line. A moment shows words taken exactly from its piece (`quote`),
+   * or, without one, the piece's picture. Only use pieces the `reveal` already tells, since everyone sees them.
+   */
+  checkpoint?: { question: string; proves: string[]; reveal: string; replay?: { moments: ReplayStep[]; say?: string } };
   hints: string[];
 };
+
+/** One moment of a checkpoint's replay: when it happened, the piece that shows it, and what to quote from it (or nothing, for a picture). */
+export type ReplayStep = { at: string; evidence: string; quote?: string };
 
 /** One thing a suspect says under interrogation. A lie names the pinned evidence that breaks it. */
 export type InterrogationClaim = { id: string; text: string; lie?: { breaks: string[]; crack: string } };
@@ -334,6 +342,8 @@ export type RoomState = {
   wall?: Record<string, { x: number; y: number }>;
   /** The one line of each piece someone has highlighted for the team, as an index into its lines (see lines.ts). */
   marks?: Record<string, { line: number; by: string; at: number }>;
+  /** The piece each checkpoint was proved with, and who presented it, by chapter number (missing in rooms made before it). */
+  proofs?: Record<number, { evidenceId: string; by: string }>;
   /** The confrontation, once the team has named the right person. */
   interrogation?: InterrogationState;
   /** The report that named them, held until the confrontation ends. */

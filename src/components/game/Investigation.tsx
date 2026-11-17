@@ -23,6 +23,7 @@ import { ProposalBar } from "./ProposalBar";
 import { SolvePanel } from "./SolvePanel";
 import { WordTap } from "./desk/roles/WordTap";
 import { AccessMoment, CrackMoment, Moments, SoundCues } from "./story/Moments";
+import { ProofReplay } from "./story/ProofReplay";
 import { StoryPlayer } from "./story/StoryPlayer";
 import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
@@ -187,18 +188,24 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
 
 /**
  * Each new chapter opens as a short story: what the last answer proved, the
- * chapter's title, then its beats. A fanfare marks the moment.
+ * chapter's title, then its beats. A fanfare marks the moment. When the case
+ * writes a replay, the proof plays back as the night on a timeline instead of
+ * a paragraph saying what it proved.
  */
 function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
   const last = view.solved.at(-1);
+  const [replayed, setReplayed] = useState(!last?.replay);
   const beats: Beat[] = [
-    ...(last ? [{ kind: "narration" as const, text: `Correct. ${last.reveal}` }] : []),
+    ...(last && !last.replay ? [{ kind: "narration" as const, text: `Correct. ${last.reveal}` }] : []),
     { kind: "title", text: `Chapter ${view.chapter.number}`, sub: view.chapter.title },
     ...view.chapter.story,
   ];
   useEffect(() => {
     play("chapter");
   }, []);
+  if (last?.replay && !replayed) {
+    return <ProofReplay view={view} chapter={last.number} title={last.title} reveal={last.reveal} replay={last.replay} onDone={() => setReplayed(true)} />;
+  }
   return <StoryPlayer beats={beats} suspects={view.case.suspects} onDone={onClose} finishLabel="Open the chapter" />;
 }
 

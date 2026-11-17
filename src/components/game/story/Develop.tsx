@@ -7,13 +7,15 @@ import { ZoomedSpot } from "../evidence/SceneView";
 import { usePrefersReducedMotion } from "../evidence/Viewfinder";
 import { buzz, BUZZ } from "../haptics";
 import { askForMotion, listenForShake, motionNeedsAsking, motionReady } from "../motion";
+import { cx } from "@/lib/cx";
 import { Icon } from "../ui/Icon";
 
 /**
  * A catch comes out of the camera as a blank instant photo. Shake the phone,
- * or rub the print with a finger, and the picture comes up; then the note
- * appears under it. With reduced motion it develops by itself, and after a
- * few seconds anyone can just tap to finish it.
+ * or rub the print with a finger, and the picture comes up with its few words
+ * written under it: what's in the shot, never what it means. With reduced
+ * motion it develops by itself, and after a few seconds anyone can just tap to
+ * finish it.
  */
 export function DevelopPrint({ scene, hotspot, title, note, onDeveloped }: { scene: EvidenceBody; hotspot: string; title: string; note: string; onDeveloped: () => void }) {
   const reduced = usePrefersReducedMotion();
@@ -73,15 +75,14 @@ export function DevelopPrint({ scene, hotspot, title, note, onDeveloped }: { sce
         onPointerMove={rub}
         onPointerUp={() => (rubbed.current = null)}
         style={{ "--dev": progress } as CSSProperties}
-        className="mx-auto w-[min(19rem,88%)] -rotate-2 touch-none border-[3px] border-ink bg-white p-2 pb-3 shadow-card select-none"
+        aria-label={title}
+        className="mx-auto w-[min(21rem,92%)] -rotate-2 touch-none border-[3px] border-ink bg-white p-2 pb-3 shadow-card select-none"
       >
         <ZoomedSpot scene={scene} hotspot={hotspot} className="develop-image" />
-        <figcaption className="mt-2 min-h-7 font-hand text-xl leading-tight text-ink">{done ? title : ""}</figcaption>
+        <figcaption className={cx("mt-2 min-h-7 px-1 font-hand text-[1.45rem] leading-tight text-ink", done && "animate-[rise-in_0.4s_ease-out]")}>{done ? note : ""}</figcaption>
       </figure>
 
-      {done ? (
-        <p className="mx-auto mt-4 max-w-sm animate-[rise-in_0.4s_ease-out] border-2 border-ink bg-[#ffe98f] px-4 py-2 font-hand text-[1.3rem] leading-snug text-ink">{note}</p>
-      ) : (
+      {done ? null : (
         <div className="mx-auto mt-4 max-w-xs">
           <p className="font-display text-xl leading-tight text-cream">{shaking && !reduced ? "Shake it to bring it up" : "Rub the print to bring it up"}</p>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-cream/15" role="progressbar" aria-label="Developing" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>

@@ -112,8 +112,12 @@ export type Access =
   | { kind: "interview"; suspect: string; question: string }
   /** A hidden detail: a hotspot inside a scene. */
   | { kind: "inspect"; scene: string; hotspot: string }
-  /** A contradiction between two pieces of evidence. */
-  | { kind: "crosscheck"; pair: [string, string] }
+  /**
+   * A contradiction between two pieces of evidence. `quotes` picks what the slip shows of each side,
+   * so the two pieces speak for themselves: words taken exactly from that piece, or `null` for a
+   * side that is a picture (a photo find or a photo), which shows the picture instead.
+   */
+  | { kind: "crosscheck"; pair: [string, string]; quotes?: [string | null, string | null] }
   /**
    * A crack: the Interviewer shows a suspect something from the board that breaks what they said
    * (`against`, one of their statements), and they give part of their story up. The evidence is

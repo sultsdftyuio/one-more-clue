@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PlayerView, VisibleEvidence } from "@/lib/game/engine";
 import type { CaseSuspect, EvidenceBody } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
-import { evidenceIn, goalOf, nameOf, useGame } from "../context";
+import { goalOf, nameOf, useGame } from "../context";
 import { Icon, type IconName } from "../ui/Icon";
 import { EvidenceTimeline } from "./EvidenceTimeline";
 import { Face, kindOf, namedIn, shortName } from "./kinds";
+import { cropFor } from "./objects/FindingNote";
 import { SceneThumb, ZoomedSpot } from "./SceneView";
 
 /**
@@ -111,11 +112,11 @@ function Glyph({ evidence }: { evidence: VisibleEvidence }) {
   }
 
   if (body.type === "finding" && evidence.source === "inspect") {
-    const scene = evidence.spot && evidenceIn(view, evidence.spot.scene);
-    if (scene && evidence.spot) {
+    const crop = cropFor(view, evidence);
+    if (crop) {
       return (
         <span className={cx(frame, "bg-night")}>
-          <ZoomedSpot scene={scene.body} hotspot={evidence.spot.hotspot} className={WIDE} />
+          <ZoomedSpot scene={crop.scene} hotspot={crop.hotspot} className={WIDE} />
           <span className="absolute right-0.5 bottom-0.5 grid size-5 place-items-center rounded-full border-2 border-ink bg-mustard text-ink">
             <Icon name="eye" className="size-3" />
           </span>

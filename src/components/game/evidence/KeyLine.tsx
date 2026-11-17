@@ -18,8 +18,9 @@ export function KeyLine({ evidence }: { evidence: VisibleEvidence }) {
   const lines = linesOf(evidence.body);
   const mark = evidence.mark;
   const live = view.phase === "investigation";
-  // A piece that is one line long has nothing to choose between.
-  if (!mark && (!live || lines.length < 2)) return null;
+  // A piece that is one line long has nothing to choose between, and a contradiction that shows
+  // its two pieces side by side already points at the lines that matter.
+  if (evidence.sides || (!mark && (!live || lines.length < 2))) return null;
 
   return (
     <div className="mt-4">

@@ -15,7 +15,7 @@ Good checkpoints walk the group up the case: *when* did it happen → *whose sto
 | `search` | the computer | **Search** records; tap words in any evidence to search them; crack **locked** files | `access: { kind: "search", terms }`, plus `lock` |
 | `interview` | the interrogation room | **Ask** a question; **show** a suspect something from the board to crack them; play back | `access: { kind: "interview", suspect, question }` and `{ kind: "press", ... }` |
 | `inspect` | the camera | **Shoot** a framed detail; torch for dark scenes; scrub footage | `access: { kind: "inspect", scene, hotspot }` |
-| `crosscheck` | the evidence wall | **Tie** a string between two things that can't both be true; arrange the wall | `access: { kind: "crosscheck", pair: [a, b] }` |
+| `crosscheck` | the evidence wall | **Tie** a string between two things that can't both be true; arrange the wall | `access: { kind: "crosscheck", pair: [a, b], quotes }` |
 
 Every piece of evidence can also be pinned, read out, and shown on everyone's phone for a few seconds (**Show everyone**: one player can do it once every 12 seconds).
 
@@ -30,6 +30,8 @@ Players should be tapping through moments, not reading paragraphs. `npm test` en
 - **The story comes in beats.** `story` (the opening), each chapter's `story` (from chapter 2) and `solution.confession` are short pop-up beats: a `title` card, a `narration` caption, a phone `message`, or a character's `line` (with their portrait when `who` is a suspect id). At least 3 beats to open, 2 per later chapter, 2 for the confession, and the culprit must speak in it.
 - **One or two sentences per beat** (170 characters at most). The `briefing` paragraph (420 max) is kept only as a reference on the case file.
 - **No walls of text in evidence.** Statements 280 characters, documents 340, findings 210, chat messages 170, log rows 95, hints 160. If something is longer, split it into two pieces or two rows.
+- **Let the picture say it.** A photo find is shown as its close-up, cut from the painting, with its text as the one-line caption under the print. So the caption says what's in the shot ("Lab clock: 8:58."), never what it means ("taken seven minutes before it was posted"): working that out is the team's moment. Keep the words another role needs (a badge number, a name to search).
+- **Let both sides of a contradiction speak.** Give every cross-check `quotes`: for each side, words taken exactly from that piece (a chat message, a log row, a sentence someone said), or `null` for a side that is a picture, which then shows its close-up. The slip puts the two side by side, so its own `text` is only the short version for small cards: "Chat, 8:40: Priya took HALO home. Dock: HALO lifted off at 9:13." `npm test` checks that every quote really is in its piece. Case 001 is written this way; the other cases still explain on the slip until they're rewritten.
 - **Give every suspect a `role`** ("Lab director") and a voice. They speak in the story and in their answers, so write how they'd talk.
 - **End with a payoff.** The confession plays at the reveal, before the scores: the culprit's reason in their own words, plus a last line from someone else for a laugh or a sting.
 - **Sound and music are automatic.** Every find, stamp, vote and chapter has its sound, and the music grows tenser chapter by chapter. Nothing to write.

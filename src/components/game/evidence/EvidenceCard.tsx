@@ -19,7 +19,7 @@ import { PinButton } from "./PinButton";
 import { ReadOutButton } from "./ReadOut";
 import { RecordingPlayer } from "./RecordingPlayer";
 import { ShowEveryoneButton } from "./ShowEveryone";
-import { FootageView, SceneThumb, SceneView, type Tints } from "./SceneView";
+import { FootageView, SceneThumb, SceneView, ZoomedSpot, type Tints } from "./SceneView";
 
 const SOURCE: Record<VisibleEvidence["source"], { icon: IconName; label: string; tone: string }> = {
   desk: { icon: "file", label: "Case file", tone: "bg-cream-dk" },
@@ -151,6 +151,15 @@ export function TileFace({ evidence }: { evidence: VisibleEvidence }) {
     return (
       <span className="block border-2 border-ink bg-white p-1 pb-1.5">
         <SceneThumb scene={body} />
+        <span className="mt-1 block font-hand text-[1.05rem] leading-tight text-ink">{evidence.title}</span>
+      </span>
+    );
+  }
+  if (body.type === "finding" && evidence.crop) {
+    // A photo find is its picture, from across the room too.
+    return (
+      <span className="block border-2 border-ink bg-white p-1 pb-1.5">
+        <ZoomedSpot scene={evidence.crop.scene} hotspot={evidence.crop.hotspot} />
         <span className="mt-1 block font-hand text-[1.05rem] leading-tight text-ink">{evidence.title}</span>
       </span>
     );

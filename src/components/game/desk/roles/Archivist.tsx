@@ -227,7 +227,7 @@ export function ArchivistTool() {
               </button>
             </div>
             <button type="button" onClick={() => open(caughtEvidence.id)} className="block w-full text-left">
-              <ContradictionSlip evidence={caughtEvidence} body={caughtEvidence.body} stampDelay={0.45} />
+              <ContradictionSlip evidence={caughtEvidence} body={caughtEvidence.body} stampDelay={0.45} enter />
             </button>
           </div>
         )}

@@ -9,7 +9,8 @@ import { SceneThumb, ZoomedSpot } from "../SceneView";
 
 type Finding = Extract<EvidenceBody, { type: "finding" }>;
 
-const SIDE_ICON: Partial<Record<EvidenceBody["type"], IconName>> = {
+/** What kind of paper a piece is, as a small icon: a phone for a chat, a clock for a log, a mic for words someone said. */
+export const PIECE_ICON: Partial<Record<EvidenceBody["type"], IconName>> = {
   chat: "chat",
   log: "clock",
   statement: "mic",
@@ -26,7 +27,7 @@ function SideCard({ side }: { side: MatchSide }) {
   return (
     <figure className="flex h-full min-w-0 flex-col rounded-sm border-2 border-ink/70 bg-white/70 p-1.5">
       <figcaption className="mb-1.5 flex items-start gap-1 text-xs leading-tight font-extrabold text-ink/70">
-        <Icon name={SIDE_ICON[side.type] ?? "file"} className="mt-px size-3.5 shrink-0" />
+        <Icon name={PIECE_ICON[side.type] ?? "file"} className="mt-px size-3.5 shrink-0" />
         <span>{side.title}</span>
       </figcaption>
       {side.crop ? (

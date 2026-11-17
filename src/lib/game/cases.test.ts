@@ -11,7 +11,7 @@ import { case004 } from "../../data/cases/case-004.ts";
 import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { framedHotspot, shotOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
-import { costMinutes, nightMinutes } from "./clock.ts";
+import { costMinutes, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
@@ -487,4 +487,50 @@ test("Case 001 is picture-led: every contradiction quotes its pieces, and every 
     assert.equal(e.crop!.scene.type === "scene" && e.crop!.scene.items.length, 1, `${e.id}'s close-up gives away more than its own spot`);
   }
   for (const e of view.evidence.filter((x) => x.source === "crosscheck")) assert.equal(e.sides?.length, 2, `${e.id} doesn't show both pieces`);
+});
+
+test("a checkpoint's replay plays pieces that exist by then, in order, in their own words or their picture", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    c.chapters.forEach((chapter, i) => {
+      const replay = chapter.checkpoint?.replay;
+      if (!replay) return;
+      assert.ok(replay.moments.length >= 2, `${c.id} chapter ${i + 1}: a replay needs at least two moments`);
+      if (replay.say) assert.ok(replay.say.length <= 170, `${c.id} chapter ${i + 1}: the closing line is too long`);
+      let last: number | null = null;
+      for (const m of replay.moments) {
+        const piece = c.evidence.find((e) => e.id === m.evidence);
+        assert.ok(piece, `${c.id} chapter ${i + 1}: "${m.evidence}" isn't a piece of evidence`);
+        assert.ok(piece!.chapter <= i + 1, `${c.id} chapter ${i + 1}: "${m.evidence}" doesn't exist until chapter ${piece!.chapter}`);
+        if (m.quote) assert.ok(linesOf(piece!.body).join(" ").includes(m.quote), `${c.id} chapter ${i + 1}: "${m.quote}" isn't in ${m.evidence}`);
+        else assert.ok(piece!.access.kind === "inspect" || piece!.body.type === "scene" || piece!.body.type === "footage", `${c.id} chapter ${i + 1}: ${m.evidence} has no quote and no picture`);
+        const at = parseTime(m.at);
+        // A night can run past midnight, so "later" means less than half a day on.
+        if (last !== null) assert.ok((at - last + 1440) % 1440 < 720, `${c.id} chapter ${i + 1}: ${m.at} comes before the moment above it`);
+        last = at;
+      }
+    });
+  }
+});
+
+test("Case 001's first proof plays back as the night: credited to whoever turned each piece up, the proof stamped", () => {
+  const g = play(case001);
+  g.inspect("photo-linkedin", "halo");
+  g.search("HALO", "asset-register");
+  g.search("battery", "dock-log");
+  g.pin(TECH, "dock-log");
+  g.crosscheck("lab-chat", "dock-log", "insight-dock");
+  g.answer("insight-dock");
+  const replay = g.view(INTERVIEWER).solved[0].replay!;
+  assert.deepEqual(replay.moments.map((m) => m.at), ["8:40 PM", "8:45 PM", "8:58 PM", "9:12 PM", "9:13 PM"]);
+  const moment = (id: string) => replay.moments.find((m) => m.id === id)!;
+  assert.equal(moment("lab-chat").holder, ARCHIVIST, "the chat came from the Archivist's desk");
+  assert.equal(moment("badge-log").holder, TECH);
+  assert.equal(moment("detail-halo").foundBy, PHOTOGRAPHER);
+  assert.ok(moment("detail-halo").crop, "a photo find plays as its picture");
+  assert.equal(moment("dock-log").foundBy, TECH);
+  assert.ok(!moment("device-log").foundBy && !moment("device-log").holder, "nobody turned up the laptop log on this route");
+  // The team presented the contradiction between the chat and the dock, so both of its sides are stamped.
+  assert.deepEqual(replay.moments.filter((m) => m.proof).map((m) => m.id), ["lab-chat", "dock-log"]);
+  assert.deepEqual(replay.proof, { id: "insight-dock", title: "It never left", by: "p1" });
+  assert.equal(replay.say, "Priya was gone. HALO wasn't.");
 });

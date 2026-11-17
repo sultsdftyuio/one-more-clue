@@ -102,6 +102,16 @@ export const case001: CaseFile = {
         question: "Priya's message says she took HALO home. What proves it isn't true?",
         proves: ["detail-halo", "photo-linkedin", "device-log", "insight-message", "dock-log", "insight-dock"],
         reveal: "Priya badged out at 8:45, but HALO sat on its dock in Cabinet B until 9:13. And the message was edited on her laptop, in the lab, at 9:12.",
+        replay: {
+          moments: [
+            { at: "8:40 PM", evidence: "lab-chat", quote: "Taking HALO home tonight to fix the battery" },
+            { at: "8:45 PM", evidence: "badge-log", quote: "8:45 PM · P. Tran · out · main door" },
+            { at: "8:58 PM", evidence: "detail-halo" },
+            { at: "9:12 PM", evidence: "device-log", quote: "9:12 PM · Lab chat: message edited" },
+            { at: "9:13 PM", evidence: "dock-log", quote: "9:13 PM · HALO lifted off dock" },
+          ],
+          say: "Priya was gone. HALO wasn't.",
+        },
       },
       hints: [
         "Check when Priya left the building, then look at what the photos show after that.",
@@ -121,6 +131,15 @@ export const case001: CaseFile = {
         question: "The professor says he and Rena left together at nine. What breaks that?",
         proves: ["badge-log", "question-ozzy-round", "insight-sheet", "insight-together", "crack-squires-dean", "crack-rena-waited"],
         reveal: "The professor's badge left at 9:02, but the sheet says he signed his visitor out at 9:20. He filled it in later. So who was still in the building?",
+        replay: {
+          moments: [
+            { at: "9:00 PM", evidence: "question-squires-left", quote: "Nine o'clock. Ms Voss and I walked out together, naturally." },
+            { at: "9:02 PM", evidence: "badge-log", quote: "9:02 PM · E. Squires · out · main door" },
+            { at: "9:10 PM", evidence: "question-ozzy-round", quote: "The visitor lady, alone at the Lab 4 door." },
+            { at: "9:20 PM", evidence: "visitor-sheet", quote: "9:20 PM · Signed out (signed: E. Squires)" },
+          ],
+          say: "He left alone at 9:02. She was still inside.",
+        },
       },
       hints: [
         "Compare when the professor's badge left with when he 'signed' his visitor out.",

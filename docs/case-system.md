@@ -95,6 +95,15 @@ When the night runs out, the case ends with `lost`. Make the night at least an h
 
 **The wall.** Nothing extra to write: the pins are the wall, and every cross-check pair is a string waiting to be tied.
 
+## Voices
+
+Suspects and the narrator are heard, not only read. Every line a case speaks gets a recording: interview answers and cracks, the confrontation (opening, claims, caught lies, walkout), the chapter openings' `line` and `narration` beats, the confession (with "It was me."), each replay's `say`, and five stock shrugs per suspect. The briefing beats are only voiced for a case without an opening film. `scripts/voice-lines.ts <case>` lists them.
+
+- **Recording.** `art/voices.py` records them: suspects in Chatterbox voices copied from a reference clip (made on Kaggle's GPU), the narrator in Kokoro, as in the films. Cast each suspect by ear first (`audition`, `wait`, `sheet`), put the picks in `CAST`, then `act`, `wait`, `reel` to listen, `keep`. `draft` makes a plain Kokoro stand-in on this PC to build and test with.
+- **Feeling.** Flat reads were the first complaint, so lines are acted. Each character first reads a short speech in character (`WARMUPS`), and that read becomes the reference their lines copy, since Chatterbox copies delivery as well as voice. Every line has a mood (`MOOD_BY_PLACE`, with `LINE_MOODS` for the lines that need their own: smug claims, a rattled crack, a broken confession), which sets how hard it's played. Each line is recorded a few times, and the take kept is the one that moves most while Whisper still hears the right words. Clock times are read as words ("nine seventeen"), because voices stumble on "9:17".
+- **Files.** Each take is `public/voices/<case>/<key>.mp3`, listed with its length in `src/lib/voice-lines.ts`. The key comes from who speaks and their exact words, so **changing a line's words means recording it again**. Until then that line falls back to the blips, and `npm test` fails on a recording whose line no longer exists.
+- **Which phone speaks.** The suspect in the interrogation room, and the claims in the confrontation, are heard on the Interviewer's phone, so a table hears them at once. Story beats, the replay's closing line and a caught lie play on the phone that carries the sound: the host's in Same room, every phone when Apart. A crack plays on the other phones only when Apart. The words always type at the recording's pace, and the music dips while someone speaks.
+
 ## Scoring
 
 Out of 5 stars: naming the culprit is worth 2, the motive 1, breaking their story 1 (catching every lie before they walk out), and 1 for being sharp (no wrong checkpoint answers, at most one hint, no walkout). Naming the wrong culprit scores 0.

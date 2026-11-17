@@ -63,6 +63,9 @@ let sfxBus: GainNode;
 /** The synthesised music is written quietly; this brings it up under the effects. */
 const MUSIC_TRIM = 2.4;
 let musicBus: GainNode;
+/** Recorded lines: their own bus, straight into the master, so a voice sits above the music. */
+let voiceBus: GainNode;
+const VOICE_LEVEL = 0.85;
 let noise: AudioBuffer;
 
 function load() {
@@ -130,6 +133,9 @@ export function unlock() {
     const musicTrim = ctx.createGain();
     musicTrim.gain.value = MUSIC_TRIM;
     musicBus.connect(musicTrim).connect(master);
+    voiceBus = ctx.createGain();
+    voiceBus.gain.value = VOICE_LEVEL;
+    voiceBus.connect(master);
     noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
@@ -374,6 +380,71 @@ export function speak(who: string) {
   osc.connect(formant).connect(gain).connect(sfxBus);
   osc.start(now);
   osc.stop(now + 0.1);
+}
+
+// ---------------------------------------------------------------------------
+// Recorded lines
+
+const voices = new Map<string, Promise<AudioBuffer | null>>();
+let speakingNow: { source: AudioBufferSourceNode; src: string } | null = null;
+
+/** Fetches and decodes a recorded line once. Null if it can't be had, and then the caller falls back to the blips. */
+function voiceBuffer(src: string) {
+  let pending = voices.get(src);
+  if (!pending && ctx) {
+    const engine = ctx;
+    pending = fetch(src)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((data) => engine.decodeAudioData(data))
+      .catch(() => {
+        voices.delete(src);
+        return null;
+      });
+    voices.set(src, pending);
+  }
+  return pending ?? Promise.resolve(null);
+}
+
+/** Starts fetching a recorded line, so it plays the moment it's needed. */
+export function preloadVoice(src: string) {
+  load();
+  if (settings.sound && ctx) void voiceBuffer(src);
+}
+
+/**
+ * Plays a recorded line in place of the blips, stopping any line already playing, and dips the
+ * music under it. `isCurrent` is asked again once the file has loaded, so a line that's been
+ * skipped meanwhile stays quiet. Resolves true if it plays.
+ */
+export async function playVoice(src: string, isCurrent: () => boolean = () => true): Promise<boolean> {
+  load();
+  if (!settings.sound || !ctx || ctx.state !== "running") return false;
+  const buffer = await voiceBuffer(src);
+  if (!buffer || !ctx || !isCurrent()) return false;
+  stopVoice();
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(voiceBus);
+  source.onended = () => {
+    if (speakingNow?.source !== source) return;
+    speakingNow = null;
+    music.speaking(false);
+  };
+  speakingNow = { source, src };
+  music.speaking(true);
+  source.start();
+  return true;
+}
+
+/** Stops the line that's playing, or only `src` if it's the one playing. */
+export function stopVoice(src?: string) {
+  const now = speakingNow;
+  if (!now || (src && now.src !== src)) return;
+  speakingNow = null;
+  try {
+    now.source.stop();
+  } catch {}
+  music.speaking(false);
 }
 
 /** One moment of a tape recording, synthesised. Plays for about `seconds`. */
@@ -802,6 +873,7 @@ const music = (() => {
   let intensity = 1;
   let tension = 0;
   let ducked = false;
+  let speaking = false;
   let timer = 0;
   let switching = 0;
   let nextBeat = 0;
@@ -812,7 +884,7 @@ const music = (() => {
     const [set, track] = parse(key);
     return TRACKS[set][track];
   };
-  const level = () => (current ? defOf(current).level * (ducked ? 0.35 : 1) : 0);
+  const level = () => (current ? defOf(current).level * (ducked || speaking ? 0.35 : 1) : 0);
 
   function fade(to: number, seconds: number) {
     if (!ctx) return;
@@ -886,6 +958,11 @@ const music = (() => {
     duck(on: boolean) {
       ducked = on;
       if (current) fade(level(), 0.6);
+    },
+    speaking(on: boolean) {
+      if (speaking === on) return;
+      speaking = on;
+      if (current) fade(level(), on ? 0.25 : 0.8);
     },
     apply,
   };

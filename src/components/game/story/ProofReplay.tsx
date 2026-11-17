@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PlayerView, ProofReplay as Replay, ReplayMoment } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
+import { NARRATOR } from "@/lib/game/voice";
 import { play } from "../audio/sound";
-import { nameOf } from "../context";
+import { recordingOf, useVoice } from "../audio/voices";
+import { carriesSound, nameOf } from "../context";
 import { PIECE_ICON } from "../evidence/objects/FindingNote";
 import { SceneThumb, ZoomedSpot } from "../evidence/SceneView";
 import { usePrefersReducedMotion } from "../evidence/Viewfinder";
@@ -112,6 +114,8 @@ export function ProofReplay({
   const list = useRef<HTMLOListElement>(null);
   const closing = useRef<HTMLDivElement>(null);
   const looseProof = replay.proof && !replay.moments.some((m) => m.proof) ? replay.proof : null;
+  // The narrator closes it, once the stamp is down.
+  useVoice(done && replay.say ? recordingOf(view.case.id, NARRATOR, replay.say) : null, carriesSound(view));
 
   useEffect(() => {
     if (done) return;

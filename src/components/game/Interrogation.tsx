@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { OBJECTION_MS, type PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { play } from "./audio/sound";
-import { evidenceIn, nameOf, useGame } from "./context";
+import { recordingOf, useVoice } from "./audio/voices";
+import { carriesSound, evidenceIn, nameOf, useGame } from "./context";
 import { SuspectPortrait } from "./parts";
 import { Icon } from "./ui/Icon";
 
@@ -22,10 +23,12 @@ function Strikes({ room }: { room: Room }) {
   );
 }
 
-/** What the suspect is saying right now: the words for the lead, a closed mouth for everyone else. */
+/** What the suspect is saying right now: the words for the lead, out loud on their phone, and a closed mouth for everyone else. */
 function Claim({ room }: { room: Room }) {
-  const { act, busy } = useGame();
+  const { view, act, busy } = useGame();
   const counter = `Claim ${room.index + 1} of ${room.total}`;
+  const recording = room.claim && !room.currentBroken ? recordingOf(view.case.id, room.suspect, room.claim) : null;
+  useVoice(recording, Boolean(room.leads), room.index);
   return (
     <div className="flex-1">
       <div className="relative rounded-3xl rounded-bl-md border-[3px] border-ink bg-cream px-4 py-3 text-ink shadow-card">
@@ -237,6 +240,8 @@ export function LieMoment() {
 
   const room = view.interrogation;
   const crack = room?.broken.at(-1);
+  const recording = shown && room && crack ? recordingOf(view.case.id, room.suspect, crack.crack) : null;
+  useVoice(recording, carriesSound(view), shown?.id);
   if (!shown || !room || !crack) return null;
   const suspect = view.case.suspects.find((s) => s.id === room.suspect)!;
   return (

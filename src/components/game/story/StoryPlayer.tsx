@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Beat, CaseSuspect } from "@/lib/game/types";
+import { beatVoice } from "@/lib/game/voice";
 import { cx } from "@/lib/cx";
-import { play } from "../audio/sound";
+import { play, preloadVoice } from "../audio/sound";
+import { recordingOf, useVoice, voiced } from "../audio/voices";
 import { SuspectPortrait } from "../parts";
 import { Icon } from "../ui/Icon";
 
@@ -13,9 +15,10 @@ const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("
 
 /**
  * Reveals `text` a letter at a time, ticking like a typewriter, or with `onLetter`
- * making some other sound (a character's voice). `finish` completes it at once.
+ * making some other sound (a character's voice). `pace` is milliseconds a letter,
+ * so the words can keep up with a recording of them. `finish` completes it at once.
  */
-export function useTypewriter(text: string, enabled = true, onLetter?: () => void) {
+export function useTypewriter(text: string, enabled = true, onLetter?: () => void, pace = TYPE_MS) {
   const letter = useRef(onLetter);
   useEffect(() => {
     letter.current = onLetter;
@@ -38,9 +41,9 @@ export function useTypewriter(text: string, enabled = true, onLetter?: () => voi
       }
       n++;
       setShown(n);
-    }, TYPE_MS);
+    }, pace);
     return () => window.clearInterval(timer);
-  }, [enabled, text]);
+  }, [enabled, text, pace]);
   const finish = () => {
     finished.current = true;
     setShown(text.length);
@@ -129,14 +132,45 @@ function EffectLayer({ effect }: { effect: Extract<Beat, { kind: "effect" }>["ef
 /**
  * Plays a story as a sequence of pop-ups. Tap (or Enter/Space/→) to finish the
  * line or move on; Skip ends it. Used for the briefing, each new chapter and
- * the culprit's confession.
+ * the culprit's confession. With a `caseId`, lines that have a recording are
+ * heard as well as typed, on the phone that's `loud` (see carriesSound), and
+ * the words keep pace with the voice on every phone.
  */
-export function StoryPlayer({ beats, suspects, onDone, finishLabel = "Let's go" }: { beats: Beat[]; suspects: CaseSuspect[]; onDone: () => void; finishLabel?: string }) {
+export function StoryPlayer({
+  beats,
+  suspects,
+  onDone,
+  finishLabel = "Let's go",
+  caseId,
+  loud = false,
+}: {
+  beats: Beat[];
+  suspects: CaseSuspect[];
+  onDone: () => void;
+  finishLabel?: string;
+  caseId?: string;
+  loud?: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const beat = beats[index];
   const typing = beat && (beat.kind === "narration" || beat.kind === "line");
-  const typed = useTypewriter((beat && beat.kind !== "effect" ? beat.text : "") ?? "", Boolean(typing));
+  const text = (beat && beat.kind !== "effect" ? beat.text : "") ?? "";
+  const spoken = beat ? beatVoice({ suspects }, beat) : null;
+  const recording = caseId && spoken ? recordingOf(caseId, spoken.speaker, spoken.text) : null;
+  const voice = voiced(recording, text);
+  const typed = useTypewriter(text, Boolean(typing), voice.onLetter, voice.pace);
+  useVoice(recording, loud, index);
   const last = index >= beats.length - 1;
+
+  // Every line of the story starts loading at once, so none waits for its file.
+  useEffect(() => {
+    if (!caseId || !loud) return;
+    for (const b of beats) {
+      const line = beatVoice({ suspects }, b);
+      const r = line && recordingOf(caseId, line.speaker, line.text);
+      if (r) preloadVoice(r.src);
+    }
+  }, [beats, caseId, loud, suspects]);
 
   useEffect(() => {
     if (!beat) return;

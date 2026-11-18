@@ -95,6 +95,15 @@ When the night runs out, the case ends with `lost`. Make the night at least an h
 
 **The wall.** Nothing extra to write: the pins are the wall, and every cross-check pair is a string waiting to be tied.
 
+## The map of the night
+
+Give a case a `nightMap` and the Archivist can switch the wall to a map: the place as a plan, with everyone in it minute by minute, as the team's pinned pieces put them.
+
+- **The plan.** `rooms` sit on a plan 100 wide and `height` tall, each with a short `note`. `outdoor` is open air on the plan (a car park); `away` is somewhere off it (gone home, across town). `things` move like people do (a stolen prototype).
+- **Sightings.** Each says where one piece puts someone (`who` is a suspect id or a thing) from `at` until `until`. Without an `until` it's a moment, shown five minutes either side. Mark a story with `says: true`; records, cameras and witnesses count as seen. One piece can place several people, several times (the badge log does).
+- **Clashes.** The map only shows what the Archivist's visible pieces say, so it fills in as the team pins things. When two pieces put one person in two rooms at once and those two are a cross-check in the case, a red line joins them, and tying it is that cross-check, exactly as on the wall. So every lie about where someone was should be a cross-check. Any other overlap just shows the surer place: seen beats a crack, a crack beats a story.
+- `npm test` checks every sighting's piece, room, person and time, and Case 001's clashes are exactly its five lies about place.
+
 ## Voices
 
 Suspects and the narrator are heard, not only read. Every line a case speaks gets a recording: interview answers and cracks, the confrontation (opening, claims, caught lies, walkout), the chapter openings' `line` and `narration` beats, the confession (with "It was me."), each replay's `say`, and five stock shrugs per suspect. The briefing beats are only voiced for a case without an opening film. `scripts/voice-lines.ts <case>` lists them.

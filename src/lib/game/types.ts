@@ -186,6 +186,33 @@ export type Interrogation = {
 };
 
 /**
+ * The map of the night: the place as a plan of rooms, and where each piece of evidence puts someone (or
+ * something) and when. The Archivist slides through the night and watches everyone move. When two pieces put
+ * the same person in two places at once and those two pieces are a contradiction the case has (a crosscheck),
+ * the map draws the clash, and tying it is the same as tying those two pieces on the wall.
+ */
+export type NightMap = {
+  /** When the slider starts and ends, written the way the case writes times. */
+  from: string;
+  to: string;
+  /**
+   * Rooms on a plan 100 wide and `height` tall, with a small `note` (what's in there). `outdoor` is open air on the
+   * plan (a car park); `away` is somewhere off it entirely (gone home, across town), drawn as its own dashed card.
+   */
+  height: number;
+  rooms: { id: string; name: string; x: number; y: number; w: number; h: number; outdoor?: boolean; away?: boolean; note?: string }[];
+  /** Things that move about the night like people do (a stolen prototype, a missing ring), besides the suspects. */
+  things?: { id: string; name: string }[];
+  sightings: Sighting[];
+};
+
+/**
+ * Where one piece of evidence puts a suspect (by id) or a thing, from `at` until `until` (a moment if left out).
+ * `says` is someone's story (drawn as an outline); a record, a camera or a witness counts as seen (solid).
+ */
+export type Sighting = { evidence: string; who: string; room: string; at: string; until?: string; says?: boolean };
+
+/**
  * The story's clock: the night the team has to solve the case in. Wrong
  * answers, questions and wasted moves each spend some of it (see clock.ts),
  * and when it runs out the case is lost.
@@ -228,6 +255,8 @@ export type CaseFile = {
   /** The ending: name the culprit and they're confronted, their lies broken with pinned evidence. Without one, a report closes the case. */
   interrogation?: Interrogation;
   deadline?: Deadline;
+  /** The map of the night, for the Archivist. Without one the wall is their only view. */
+  nightMap?: NightMap;
   /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
   cinematic?: { video: string; poster?: string };
   evidence: CaseEvidence[];

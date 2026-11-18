@@ -33,7 +33,7 @@ import type {
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
-import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, spentMinutes, type Spend } from "./clock.ts";
+import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
 export const MAX_CHAT = 300;
@@ -1198,6 +1198,27 @@ export type ReplayMoment = MatchSide & { at: string; foundBy?: string; holder?: 
 /** A proved checkpoint played back as the night: its moments in order, the closing line, and the piece that proved it. */
 export type ProofReplay = { moments: ReplayMoment[]; say?: string; proof?: { id: string; title: string; by: string } };
 
+/** One place someone was, as the map draws it: minutes into the night, how sure (a record beats a crack beats a story), and the piece behind it. */
+export type MapSighting = { id: string; who: string; room: string; from: number; to: number; says: boolean; weight: number; evidence: string; title: string };
+
+/**
+ * Two pieces putting the same person in two places at once, `from` to `to` minutes into the night: sightings `x`
+ * (from piece `a`) and `y` (from piece `b`). Tying it ties `a` and `b`, as on the wall.
+ */
+export type MapClash = { a: string; b: string; who: string; x: string; y: string; from: number; to: number; caught: boolean };
+
+/** The map of the night as this player can see it: only the places their visible pieces put people. */
+export type NightMapView = {
+  from: string;
+  to: string;
+  span: number;
+  height: number;
+  rooms: NonNullable<CaseFile["nightMap"]>["rooms"];
+  things: { id: string; name: string }[];
+  sightings: MapSighting[];
+  clashes: MapClash[];
+};
+
 export type VisibleEvidence = Omit<CaseEvidence, "access"> & {
   source: CaseEvidence["access"]["kind"];
   /** For a found detail: where in which scene it was spotted. */
@@ -1291,6 +1312,8 @@ export type PlayerView = {
   shots: { id: string; scene: string; at?: number; hit: string | null; time: number }[];
   /** For the Archivist: pairs already compared without a result. */
   checked: string[];
+  /** For the Archivist: the map of the night, when the case has one. */
+  nightMap: NightMapView | null;
   /** The last piece someone showed on every phone. */
   spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
   /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
@@ -1411,6 +1434,46 @@ function replayOf(state: RoomState, caseFile: CaseFile, chapter: number): ProofR
     return { ...sideOf(caseFile, m.evidence, m.quote ?? null), at: m.at, foundBy: state.found[m.evidence]?.by, holder, proof: stamped.has(m.evidence) };
   });
   return { moments, say: replay.say, proof: shown && presented ? { id: shown.id, title: shown.title, by: presented.by } : undefined };
+}
+
+/** How long a moment (a sighting with no end) stays on the map either side of its minute. */
+export const MOMENT_MINUTES = 5;
+
+/**
+ * The map of the night for one player: the places their visible pieces put people, and the clashes among
+ * them that are real contradictions in the case (a crosscheck whose two pieces put one person in two rooms
+ * at once). A clash shows once both pieces are in view, which is the point: the map makes a lie visible.
+ */
+export function mapFor(state: RoomState, caseFile: CaseFile, me: Pick<Player, "id" | "roles">): NightMapView | null {
+  const map = caseFile.nightMap;
+  if (!map) return null;
+  const start = parseTime(map.from);
+  const minute = (time: string) => (parseTime(time) - start + 24 * 60) % (24 * 60);
+  const span = minute(map.to);
+  const pieces = new Map(caseFile.evidence.map((e) => [e.id, e]));
+  const sightings: MapSighting[] = [];
+  map.sightings.forEach((s, i) => {
+    const piece = pieces.get(s.evidence);
+    if (!piece || !canSee(state, me, piece)) return;
+    const at = minute(s.at);
+    const from = s.until ? at : Math.max(0, at - MOMENT_MINUTES);
+    const to = s.until ? minute(s.until) : Math.min(span, at + MOMENT_MINUTES);
+    const weight = !s.says ? 3 : piece.access.kind === "press" ? 2 : 1;
+    sightings.push({ id: `${s.evidence}#${i}`, who: s.who, room: s.room, from, to, says: Boolean(s.says), weight, evidence: s.evidence, title: piece.title });
+  });
+  const clashes: MapClash[] = [];
+  for (const e of caseFile.evidence) {
+    if (e.access.kind !== "crosscheck" || e.chapter > state.chapter || !opened(state, e)) continue;
+    const [a, b] = e.access.pair;
+    for (const x of sightings.filter((s) => s.evidence === a)) {
+      for (const y of sightings.filter((s) => s.evidence === b && s.who === x.who && s.room !== x.room)) {
+        const from = Math.max(x.from, y.from);
+        const to = Math.min(x.to, y.to);
+        if (from <= to) clashes.push({ a, b, who: x.who, x: x.id, y: y.id, from, to, caught: Boolean(state.found[e.id]) });
+      }
+    }
+  }
+  return { from: map.from, to: map.to, span, height: map.height, rooms: map.rooms, things: map.things ?? [], sightings, clashes };
 }
 
 export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, online: Set<string>): PlayerView {
@@ -1561,6 +1624,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     ),
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
+    nightMap: abilities.includes("crosscheck") ? mapFor(state, caseFile, me) : null,
     wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
     strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,

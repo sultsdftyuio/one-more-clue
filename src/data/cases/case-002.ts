@@ -34,6 +34,70 @@ export const case002: CaseFile = {
     end: "6:00 AM",
     lost: "6:00 AM. The breakfast show reads out the story, the trail goes cold, and the £5,000 is never seen again.",
   },
+  // The map of the night, for the Archivist: where each piece puts everyone, the jackpot, and the masked man
+  // Vince describes, from 11:30 to 12:40. The masked man is only ever in Vince's story; the door log says he
+  // never came in. And the jackpot Vince says was taken turns up in his own hand in the car park.
+  nightMap: {
+    from: "11:30 PM",
+    to: "12:40 AM",
+    moment: 2,
+    height: 66,
+    rooms: [
+      { id: "studioA", name: "Studio A", x: 3, y: 4, w: 32, h: 26, note: "The booth" },
+      { id: "control", name: "Control room", x: 37, y: 4, w: 20, h: 26, note: "Behind the glass" },
+      { id: "corridor", name: "Corridor", x: 3, y: 32, w: 54, h: 9, note: "Keypad" },
+      { id: "green", name: "Green room", x: 3, y: 43, w: 26, h: 21 },
+      { id: "studioB", name: "Studio B", x: 31, y: 43, w: 26, h: 21 },
+      { id: "back", name: "Out back", x: 59, y: 4, w: 17, h: 27, outdoor: true, note: "Fire door" },
+      { id: "carpark", name: "Car park", x: 59, y: 33, w: 17, h: 31, outdoor: true, note: "Camera 4" },
+      { id: "never", name: "Never came in", x: 79, y: 4, w: 19, h: 29, away: true },
+      { id: "taken", name: "Taken away", x: 79, y: 35, w: 19, h: 29, away: true },
+    ],
+    things: [
+      { id: "masked", name: "The masked man", icon: "mask" },
+      { id: "jackpot", name: "The jackpot", icon: "envelope" },
+    ],
+    sightings: [
+      // Vince: in and out of Studio A, the green room at quarter to, locked out in the corridor at 11:59, his car at 12:31.
+      { evidence: "door-log", who: "square", room: "studioA", at: "11:31 PM" },
+      { evidence: "door-log", who: "square", room: "corridor", at: "11:38 PM" },
+      { evidence: "question-gus-greenroom", who: "square", room: "green", at: "11:45 PM" },
+      { evidence: "door-log", who: "square", room: "studioA", at: "11:47 PM", until: "11:59 PM" },
+      { evidence: "transmitter-log", who: "square", room: "studioA", at: "11:55 PM" },
+      { evidence: "statement-vince", who: "square", room: "studioA", at: "11:47 PM", until: "11:58 PM", says: true },
+      { evidence: "statement-vince", who: "square", room: "corridor", at: "12:00 AM", until: "12:02 AM", says: true },
+      { evidence: "door-log", who: "square", room: "corridor", at: "11:59 PM", until: "12:01 AM" },
+      { evidence: "detail-vince-floor", who: "square", room: "corridor", at: "12:02 AM" },
+      { evidence: "question-gus-after", who: "square", room: "carpark", at: "12:30 AM" },
+      { evidence: "detail-alone-car", who: "square", room: "carpark", at: "12:31 AM" },
+      // The masked man: in Studio A by Vince's story, but nobody went in after Vince until Gus's key at 12:02.
+      { evidence: "statement-vince", who: "masked", room: "studioA", at: "11:57 PM", until: "11:59 PM", says: true },
+      { evidence: "crack-vince-door", who: "masked", room: "studioA", at: "11:58 PM", says: true },
+      { evidence: "door-log", who: "masked", room: "never", at: "11:47 PM", until: "12:02 AM" },
+      // The jackpot: signed out for the giveaway, "taken by the attacker", then in Vince's hand at his car at 12:31.
+      { evidence: "jackpot-sheet", who: "jackpot", room: "studioA", at: "11:47 PM", until: "11:58 PM", says: true },
+      { evidence: "question-vince-envelope", who: "jackpot", room: "studioA", at: "11:57 PM", says: true },
+      { evidence: "question-vince-envelope", who: "jackpot", room: "taken", at: "11:59 PM", until: "12:40 AM", says: true },
+      { evidence: "statement-vince", who: "jackpot", room: "taken", at: "11:59 PM", until: "12:40 AM", says: true },
+      { evidence: "detail-envelope", who: "jackpot", room: "carpark", at: "12:31 AM" },
+      { evidence: "detail-boot", who: "jackpot", room: "carpark", at: "12:31 AM" },
+      // Darla: on the phone in the green room, the vending machine at 11:56, on air from Studio B at 12:07.
+      { evidence: "question-darla-where", who: "rectangle", room: "green", at: "11:50 PM", until: "12:03 AM", says: true },
+      { evidence: "darla-phone", who: "rectangle", room: "green", at: "11:56 PM" },
+      { evidence: "staff-radio", who: "rectangle", room: "studioB", at: "12:06 AM", says: true },
+      { evidence: "transmitter-log", who: "rectangle", room: "studioB", at: "12:07 AM" },
+      // Gus: out of the fire door for a smoke at 11:56, back in at 12:01, opening Studio A with his key at 12:02.
+      { evidence: "question-gus-where", who: "circle", room: "back", at: "11:56 PM", until: "12:00 AM", says: true },
+      { evidence: "fire-door", who: "circle", room: "back", at: "11:56 PM", until: "12:01 AM" },
+      { evidence: "staff-radio", who: "circle", room: "back", at: "12:00 AM", says: true },
+      { evidence: "door-log", who: "circle", room: "corridor", at: "12:02 AM" },
+      { evidence: "photo-booth", who: "circle", room: "studioA", at: "12:03 AM" },
+      // Tess: at the glass in the control room, then taking the green room photo at 12:05.
+      { evidence: "question-tess-glass", who: "triangle", room: "control", at: "11:50 PM", until: "12:00 AM", says: true },
+      { evidence: "staff-radio", who: "triangle", room: "control", at: "12:00 AM", says: true },
+      { evidence: "photo-greenroom", who: "triangle", room: "green", at: "12:05 AM" },
+    ],
+  },
   minPlayers: 2,
   maxPlayers: 4,
   story: [
@@ -69,6 +133,16 @@ export const case002: CaseFile = {
         question: "Vince says the attacker ripped the cables out. What shows that's not what stopped the show?",
         proves: ["detail-rack", "detail-fader", "transmitter-log", "booth-log", "safety-tape", "question-gus-cables", "insight-cables", "rack-monitor"],
         reveal: "Every cable was still plugged in and the transmitter was fine. Someone inside the booth pulled MIC 1 down at 11:58:02.",
+        replay: {
+          moments: [
+            { at: "11:57 PM", evidence: "booth-log", quote: "11:57:12 · Booth blind lowered · host switch" },
+            { at: "11:58 PM", evidence: "transmitter-log", quote: "11:58:02 · Studio A desk · MIC 1 fader down" },
+            { at: "11:58 PM", evidence: "rack-monitor", quote: "11:58:02 · Signal fine at the rack · lost after the desk" },
+            { at: "12:03 AM", evidence: "detail-rack" },
+            { at: "12:03 AM", evidence: "detail-fader" },
+          ],
+          say: "Nothing was ripped out. Someone pulled the fader.",
+        },
       },
       hints: [
         "Find out what actually stopped the sound: the cables, the transmitter, or the desk.",
@@ -89,6 +163,16 @@ export const case002: CaseFile = {
         question: "How did the masked attacker get into Studio A? Show what settles it.",
         proves: ["door-log", "safety-tape", "insight-nobody"],
         reveal: "The door log shows nobody went in between Vince at 11:47 and Gus's master key at 12:02, and the safety recorder caught no struggle. There was no attacker in Studio A.",
+        replay: {
+          moments: [
+            { at: "11:47 PM", evidence: "door-log", quote: "11:47:05 · Entry · code 0451 (V. Valentine)" },
+            { at: "11:58 PM", evidence: "safety-tape", quote: "11:58:04 · No voices. No struggle. No door. Nothing." },
+            { at: "11:59 PM", evidence: "door-log", quote: "11:59:10 · Exit · from inside" },
+            { at: "11:59 PM", evidence: "door-log", quote: "11:59:30 · Locked from corridor · code 0451 (V. Valentine)" },
+            { at: "12:02 AM", evidence: "door-log", quote: "12:02:50 · Opened · master key (G. Marley)" },
+          ],
+          say: "Nobody burst in. The only one inside was Vince.",
+        },
       },
       hints: [
         "Check who the door let in, not just who it locked.",
@@ -251,7 +335,7 @@ export const case002: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-booth", hotspot: "fader" },
       title: "The MIC 1 fader",
-      body: { type: "finding", text: "MIC 1 is pulled all the way down, neatly. Every other fader is exactly where it was." },
+      body: { type: "finding", text: "MIC 1 pulled right down, every other fader untouched." },
     },
     {
       id: "detail-rack",
@@ -259,7 +343,7 @@ export const case002: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-booth", hotspot: "rack" },
       title: "The rack",
-      body: { type: "finding", text: "Every cable in the rack is plugged in. Nothing ripped, nothing loose, nothing bent." },
+      body: { type: "finding", text: "The rack: every cable plugged in, nothing loose." },
     },
     {
       id: "detail-mug",
@@ -267,7 +351,7 @@ export const case002: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-booth", hotspot: "mug" },
       title: "A full mug",
-      body: { type: "finding", text: "A full mug of coffee, upright on the very edge of the desk. Some struggle." },
+      body: { type: "finding", text: "A full mug of coffee, upright on the edge of the desk." },
     },
     {
       id: "detail-tray",
@@ -275,7 +359,7 @@ export const case002: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-booth", hotspot: "tray" },
       title: "The jackpot tray",
-      body: { type: "finding", text: "The tray marked JACKPOT is empty. No envelope anywhere in the booth." },
+      body: { type: "finding", text: "The JACKPOT tray, empty." },
     },
     {
       id: "booth-log",
@@ -330,9 +414,9 @@ export const case002: CaseFile = {
       id: "insight-cables",
       role: "archivist",
       chapter: 1,
-      access: { kind: "crosscheck", pair: ["statement-vince", "detail-rack"] },
+      access: { kind: "crosscheck", pair: ["statement-vince", "detail-rack"], quotes: ["ripped the cables out of the rack", null] },
       title: "The cables that weren't ripped",
-      body: { type: "finding", text: "Vince says the cables were ripped out. Every cable in the rack is still plugged in." },
+      body: { type: "finding", text: "Vince: the cables were ripped out. Photo: every cable plugged in." },
     },
     {
       id: "crack-vince-cables",
@@ -395,7 +479,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-corridor", hotspot: "keypad" },
       title: "The keypad",
-      body: { type: "finding", text: "The keypad's little screen still shows: LOCKED 23:59 · USER 0451." },
+      body: { type: "finding", text: "The keypad screen: LOCKED 23:59 · USER 0451." },
     },
     {
       id: "detail-vince-floor",
@@ -403,7 +487,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-corridor", hotspot: "vince" },
       title: "Vince on the floor",
-      body: { type: "finding", text: "Vince on the corridor floor. Bow tie dead straight, not a scratch on him." },
+      body: { type: "finding", text: "Vince on the corridor floor: bow tie straight, not a scratch." },
     },
     {
       id: "photo-greenroom",
@@ -430,7 +514,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-greenroom", hotspot: "bag" },
       title: "Darla's bag",
-      body: { type: "finding", text: "A black balaclava stuffed into the top of Darla's bag. The price tag is still on it." },
+      body: { type: "finding", text: "A black balaclava in Darla's bag, the price tag still on." },
     },
     {
       id: "detail-phone-call",
@@ -438,7 +522,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-greenroom", hotspot: "phone" },
       title: "Darla's phone",
-      body: { type: "finding", text: "Darla's phone on the table, call screen open: 'Mo (agent) · 13:02'." },
+      body: { type: "finding", text: "Darla's phone: call ended, Mo (agent), 13:02." },
     },
     {
       id: "detail-biscuits",
@@ -446,7 +530,7 @@ export const case002: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "photo-greenroom", hotspot: "biscuits" },
       title: "The biscuit tin",
-      body: { type: "finding", text: "The biscuit tin is open, and not a single biscuit is missing." },
+      body: { type: "finding", text: "The biscuit tin: open, and full." },
     },
     {
       id: "door-log",
@@ -551,9 +635,9 @@ export const case002: CaseFile = {
       id: "insight-nobody",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["statement-vince", "door-log"] },
+      access: { kind: "crosscheck", pair: ["statement-vince", "door-log"], quotes: ["A man in a balaclava burst in", "11:47:05 · Entry · code 0451 (V. Valentine)"] },
       title: "Nobody burst in",
-      body: { type: "finding", text: "Vince says an attacker burst in. The door log shows nobody went in after Vince at 11:47, until Gus opened it at 12:02." },
+      body: { type: "finding", text: "Vince: a man burst in. Door log: nobody went in after Vince at 11:47, until Gus at 12:02." },
     },
     {
       id: "crack-vince-door",
@@ -614,7 +698,7 @@ export const case002: CaseFile = {
       chapter: 3,
       access: { kind: "inspect", scene: "cctv-carpark", hotspot: "envelope" },
       title: "In his hand",
-      body: { type: "finding", text: "An envelope in Vince's hand, the size of the jackpot envelope. In colour it would be red." },
+      body: { type: "finding", text: "The envelope in Vince's hand." },
     },
     {
       id: "detail-boot",
@@ -622,7 +706,7 @@ export const case002: CaseFile = {
       chapter: 3,
       access: { kind: "inspect", scene: "cctv-carpark", hotspot: "boot" },
       title: "The open boot",
-      body: { type: "finding", text: "He's putting something into the boot, not taking anything out." },
+      body: { type: "finding", text: "His car boot open, an envelope going in." },
     },
     {
       id: "detail-alone-car",
@@ -630,7 +714,7 @@ export const case002: CaseFile = {
       chapter: 3,
       access: { kind: "inspect", scene: "cctv-carpark", hotspot: "vince" },
       title: "Vince at his car",
-      body: { type: "finding", text: "Vince at his car at 12:31, alone, half an hour before the police arrived." },
+      body: { type: "finding", text: "Vince at his car, 12:31, alone." },
     },
     {
       id: "winner-message",
@@ -692,9 +776,9 @@ export const case002: CaseFile = {
       id: "insight-planted",
       role: "archivist",
       chapter: 3,
-      access: { kind: "crosscheck", pair: ["detail-balaclava", "balaclava-receipt"] },
+      access: { kind: "crosscheck", pair: ["detail-balaclava", "balaclava-receipt"], quotes: [null, "Paid by card ****8812 · V. Valentine"] },
       title: "A planted balaclava",
-      body: { type: "finding", text: "The balaclava in Darla's bag was bought at 11:12 PM, with Vince's own card." },
+      body: { type: "finding", text: "Photo: a balaclava in Darla's bag. Receipt: bought with Vince's card at 11:12 PM." },
     },
     {
       id: "question-vince-envelope",
@@ -734,9 +818,9 @@ export const case002: CaseFile = {
       id: "insight-envelope",
       role: "archivist",
       chapter: 3,
-      access: { kind: "crosscheck", pair: ["question-vince-envelope", "detail-envelope"] },
+      access: { kind: "crosscheck", pair: ["question-vince-envelope", "detail-envelope"], quotes: ["The attacker took it, obviously!", null] },
       title: "The envelope he still had",
-      body: { type: "finding", text: "Vince says the attacker took the envelope. At 12:31 it's in his hand in the car park." },
+      body: { type: "finding", text: "Vince: the attacker took the envelope. Camera, 12:31: it's in his hand." },
     },
   ],
   solution: {

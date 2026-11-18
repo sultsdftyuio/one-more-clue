@@ -12,7 +12,7 @@ import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { framedHotspot, shotOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
 import { costMinutes, nightMinutes, parseTime } from "./clock.ts";
-import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
+import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, mapFor, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
 
 // With four players the core roles go round in order:
@@ -533,4 +533,74 @@ test("Case 001's first proof plays back as the night: credited to whoever turned
   assert.deepEqual(replay.moments.filter((m) => m.proof).map((m) => m.id), ["lab-chat", "dock-log"]);
   assert.deepEqual(replay.proof, { id: "insight-dock", title: "It never left", by: "p1" });
   assert.equal(replay.say, "Priya was gone. HALO wasn't.");
+});
+
+test("a case's map of the night only names rooms, people, things and pieces it has, inside its night", () => {
+  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+    const map = c.nightMap;
+    if (!map) continue;
+    const rooms = new Set(map.rooms.map((r) => r.id));
+    const who = new Set([...c.suspects.map((s) => s.id), ...(map.things ?? []).map((t) => t.id)]);
+    const start = parseTime(map.from);
+    const minute = (t: string) => (parseTime(t) - start + 1440) % 1440;
+    const span = minute(map.to);
+    for (const r of map.rooms) assert.ok(r.x >= 0 && r.y >= 0 && r.x + r.w <= 100 && r.y + r.h <= map.height, `${c.id}: ${r.id} spills off the plan`);
+    for (const s of map.sightings) {
+      const where = `${c.id} map: ${s.evidence} puts ${s.who} in ${s.room}`;
+      assert.ok(c.evidence.some((e) => e.id === s.evidence), `${where}, but there's no such piece`);
+      assert.ok(rooms.has(s.room), `${where}, but there's no such room`);
+      assert.ok(who.has(s.who), `${where}, but there's no such person or thing`);
+      assert.ok(minute(s.at) <= span && (!s.until || (minute(s.until) <= span && minute(s.until) >= minute(s.at))), `${where} outside the night`);
+    }
+  }
+});
+
+test("Case 001's map shows exactly its contradictions about place, and tying one catches it", () => {
+  const room = play(case001);
+  const everything = { ...room.state, phase: "reveal" as const, chapter: 3 };
+  const map = mapFor(everything, case001, { id: ARCHIVIST, roles: ["archivist"] })!;
+  const pairs = new Set(map.clashes.map((c) => `${c.a}+${c.b}`));
+  assert.deepEqual([...pairs].sort(), ["lab-chat+detail-halo", "lab-chat+dock-log", "question-rena-after+anpr", "question-squires-left+question-ozzy-round", "visitor-sheet+badge-log"]);
+  for (const c of map.clashes) {
+    const crosscheck = case001.evidence.find((e) => e.access.kind === "crosscheck" && e.access.pair[0] === c.a && e.access.pair[1] === c.b);
+    assert.ok(crosscheck, `${c.a} and ${c.b} clash on the map but aren't a contradiction the Archivist can tie`);
+  }
+
+  // At the start the Archivist only has the lab chat: HALO "taken home", and nothing to clash with yet.
+  const early = room.view(ARCHIVIST).nightMap!;
+  assert.deepEqual(early.sightings.map((s) => s.evidence), ["lab-chat"]);
+  assert.equal(early.clashes.length, 0);
+  // Once the photo of HALO is pinned, HALO is in two places at once, and tying the clash catches the lie.
+  room.inspect("photo-linkedin", "halo");
+  room.pin(PHOTOGRAPHER, "detail-halo");
+  const clash = room.view(ARCHIVIST).nightMap!.clashes[0];
+  assert.deepEqual([clash.a, clash.b, clash.who, clash.caught], ["lab-chat", "detail-halo", "halo", false]);
+  room.crosscheck(clash.a, clash.b, "insight-message");
+  assert.equal(room.view(ARCHIVIST).nightMap!.clashes[0].caught, true);
+  // The map is the Archivist's: nobody else is sent it.
+  assert.equal(room.view(TECH).nightMap, null);
+});
+
+test("every case's map shows exactly its contradictions about where someone (or something) was", () => {
+  const expected: Record<string, string[]> = {
+    "case-001": ["lab-chat+detail-halo", "lab-chat+dock-log", "question-rena-after+anpr", "question-squires-left+question-ozzy-round", "visitor-sheet+badge-log"],
+    "case-002": ["question-vince-envelope+detail-envelope", "statement-vince+door-log"],
+    "case-003": ["detail-plate-gold+house-rules", "question-ruth-nuts+storeroom-log"],
+    "case-004": ["crack-otto-boiler+boiler-log", "door-log+detail-greta-counting", "door-log+front-desk", "question-lily-missing+boiler-log", "question-otto-midnight+detail-chair"],
+  };
+  for (const c of [case001, case002, case003, case004]) {
+    assert.ok(c.nightMap, `${c.id} has no map of the night`);
+    const room = createRoom({ code: "MAP", caseFile: c, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+    const map = mapFor({ ...room, phase: "reveal", chapter: c.chapters.length }, c, { id: "p1", roles: ["archivist"] })!;
+    assert.deepEqual([...new Set(map.clashes.map((k) => `${k.a}+${k.b}`))].sort(), [...expected[c.id]].sort(), `${c.id}'s map shows the wrong clashes`);
+  }
+});
+
+test("every case is written picture-first: quoted contradictions, and a replay for every chapter proof", () => {
+  for (const c of [case001, case002, case003, case004]) {
+    for (const e of c.evidence) if (e.access.kind === "crosscheck") assert.ok(e.access.quotes, `${c.id}: ${e.id} doesn't quote its two pieces`);
+    c.chapters.forEach((chapter, i) => {
+      if (chapter.checkpoint) assert.ok(chapter.checkpoint.replay, `${c.id}: chapter ${i + 1}'s proof has no replay`);
+    });
+  }
 });

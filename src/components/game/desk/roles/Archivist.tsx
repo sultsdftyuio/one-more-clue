@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatSpan } from "@/lib/game/clock";
+import { cx } from "@/lib/cx";
 import { play } from "../../audio/sound";
 import { evidenceIn, useGame } from "../../context";
 import { ContradictionSlip } from "../../evidence/objects/FindingNote";
 import { buzz, BUZZ } from "../../haptics";
 import { quietFinds } from "../../story/Moments";
 import { Icon } from "../../ui/Icon";
+import { NightMap } from "../../wall/NightMap";
 import { Wall, type TieOutcome } from "../../wall/Wall";
 import { Coach, useCoach, type CoachStep } from "../Coach";
 import { ActionBar, MainAction, Station } from "../Station";
@@ -19,7 +21,9 @@ const pairKey = (a: string, b: string) => [a, b].sort().join("+");
  * dragging from one to the other or tapping both: if they can't both be true,
  * the string snaps tight and the lie is caught; if they agree, it drops and
  * the night pays a little. Arrange the wall, pin papers up from the tray, and
- * present a piece when the team is ready to answer.
+ * present a piece when the team is ready to answer. When the case has a map of
+ * the night, the same pieces can be laid out by where and when they put people:
+ * someone in two places at once is a red line, and tying it ties its two pieces.
  */
 export function ArchivistTool() {
   const { view, act, busy, open } = useGame();
@@ -28,6 +32,8 @@ export function ArchivistTool() {
   const [arranging, setArranging] = useState(false);
   const [outcome, setOutcome] = useState<TieOutcome | null>(null);
   const [caught, setCaught] = useState<string | null>(null);
+  const [stage, setStage] = useState<"wall" | "map">("wall");
+  const onMap = stage === "map" && Boolean(view.nightMap);
   const tried = useRef<[string, string] | null>(null);
   const missPrice = view.deadline ? formatSpan(view.deadline.costs.miss) : null;
   const pieces = view.pins.flatMap((p) => {
@@ -113,7 +119,13 @@ export function ArchivistTool() {
           : false;
   const caughtEvidence = caught ? evidenceIn(view, caught) : undefined;
 
-  const now = arranging
+  const now = onMap
+    ? picked.length === 2
+      ? pairTied
+        ? "Those two are already tied."
+        : "Tie them, and the lie is caught."
+      : "Slide through the night. Someone in two places at once is a lie."
+    : arranging
     ? "Drag pieces to lay out the wall. Tap Done when it's how you want it."
     : picked.length === 0
       ? "Tap a piece, or drag a string from it to another."
@@ -139,6 +151,16 @@ export function ArchivistTool() {
       title: "Pull it tight",
       text: missPrice ? `Press Tie to test it. If the two agree after all, the string drops and it costs ${missPrice} of the night.` : "Press Tie to test it. If the two agree after all, the string drops.",
     },
+    ...(view.nightMap
+      ? [
+          {
+            target: "map-toggle",
+            gesture: "tap" as const,
+            title: "The map of the night",
+            text: "The same pieces, laid out by where and when they put people. Slide through the night: someone in two places at once is a red line. Tap it, then Tie.",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -160,7 +182,7 @@ export function ArchivistTool() {
                   setArranging((a) => !a);
                   setSelected([]);
                 },
-                disabled: pieces.length ? false : "Pin something to the wall first.",
+                disabled: onMap ? "Switch to the wall to arrange it." : pieces.length ? false : "Pin something to the wall first.",
               },
               {
                 id: "present",
@@ -177,30 +199,55 @@ export function ArchivistTool() {
                 icon="scale"
                 onClick={tie}
                 disabled={picked.length !== 2 || pairTried || pairTied || busy || arranging}
-                note={picked.length !== 2 ? "Pick two pieces" : missPrice ? `A slack string costs ${missPrice}` : "Tie them together"}
+                note={picked.length !== 2 ? (onMap ? "Tap a red line" : "Pick two pieces") : missPrice && !onMap ? `A slack string costs ${missPrice}` : "Tie them together"}
               />
             }
           />
         }
       >
-        <Wall
-          pieces={pieces}
-          places={view.wall}
-          strings={view.strings}
-          tray={tray}
-          selected={picked}
-          editable
-          arranging={arranging}
-          outcome={outcome}
-          onTap={select}
-          onMove={(id, place) => act({ type: "arrange", evidenceId: id, x: place.x, y: place.y }, { quiet: true })}
-          onDragTie={(from, to) => {
-            play("tap");
-            setSelected([from, to]);
-          }}
-        />
+        {view.nightMap && (
+          <div data-coach="map-toggle" role="group" aria-label="View" className="mb-3 grid grid-cols-2 gap-1 rounded-full border-2 border-ink bg-black/30 p-1 text-sm font-extrabold">
+            {(["wall", "map"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={stage === s}
+                onClick={() => {
+                  play("tap");
+                  setStage(s);
+                  setSelected([]);
+                  setArranging(false);
+                }}
+                className={cx("rounded-full py-1.5 transition-colors", stage === s ? "bg-cream text-ink" : "text-cream/80 hover:bg-cream/10")}
+              >
+                {s === "wall" ? "The wall" : "Map of the night"}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {single && (
+        {onMap && view.nightMap ? (
+          <NightMap map={view.nightMap} suspects={view.case.suspects} selected={picked} onPick={(a, b) => setSelected([a, b])} />
+        ) : (
+          <Wall
+            pieces={pieces}
+            places={view.wall}
+            strings={view.strings}
+            tray={tray}
+            selected={picked}
+            editable
+            arranging={arranging}
+            outcome={outcome}
+            onTap={select}
+            onMove={(id, place) => act({ type: "arrange", evidenceId: id, x: place.x, y: place.y }, { quiet: true })}
+            onDragTie={(from, to) => {
+              play("tap");
+              setSelected([from, to]);
+            }}
+          />
+        )}
+
+        {single && !onMap && (
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             <button type="button" onClick={() => open(single)} className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-cream px-3.5 py-1.5 text-sm font-extrabold text-ink">
               <Icon name="eye" className="size-4" /> Read it

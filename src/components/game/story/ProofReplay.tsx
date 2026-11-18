@@ -162,7 +162,7 @@ export function ProofReplay({
             <span aria-hidden className="absolute top-2 bottom-2 left-[4.5rem] w-1 rounded-full bg-mustard/25" />
             <ol ref={list} className="relative space-y-3">
               {replay.moments.map((moment, i) => (
-                <MomentRow key={`${moment.id}-${moment.at}`} view={view} moment={moment} shown={i < shownCount} reduced={reduced} />
+                <MomentRow key={`${i}-${moment.id}`} view={view} moment={moment} shown={i < shownCount} reduced={reduced} />
               ))}
             </ol>
           </div>

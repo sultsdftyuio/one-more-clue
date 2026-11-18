@@ -35,6 +35,59 @@ export const case003: CaseFile = {
     end: "12:00 AM",
     lost: "Midnight. The kitchen is scrubbed and the pass is spotless. Whatever was on that plate is gone, and so is your case.",
   },
+  // The map of the night, for the Archivist: the two desserts and the peanut oil, and everyone around them, from
+  // 9:10 to 11:30. The house rules send the gold-leaf plate to the owner, yet it's the plate on Celeste's table.
+  // And Ruth's "no nuts near my section" sits against the oil she signed out of the storeroom.
+  nightMap: {
+    from: "9:10 PM",
+    to: "11:30 PM",
+    moment: 3,
+    height: 56,
+    rooms: [
+      { id: "pastry", name: "Pastry", x: 3, y: 4, w: 28, h: 26, note: "Gold leaf" },
+      { id: "store", name: "Storeroom", x: 3, y: 32, w: 28, h: 20, note: "Staff canteen stock" },
+      { id: "pass", name: "The pass", x: 33, y: 4, w: 20, h: 48, note: "Camera 1" },
+      { id: "table9", name: "Table 9", x: 55, y: 4, w: 24, h: 23, note: "The owner" },
+      { id: "table1", name: "Table 1", x: 55, y: 29, w: 24, h: 23, note: "The critic" },
+      { id: "never", name: "No nuts, ever", x: 81, y: 4, w: 17, h: 48, away: true, note: "Ruth's word" },
+    ],
+    things: [
+      { id: "gold", name: "The gold-leaf plate", icon: "gold-plate" },
+      { id: "smudge", name: "The smudged plate", icon: "plate" },
+      { id: "oil", name: "The peanut oil", icon: "bottle" },
+    ],
+    sightings: [
+      // The gold-leaf plate: ready on the pass at 9:46, the owner's by the house rules, carried to Table 1 by Jo.
+      { evidence: "pass-log", who: "gold", room: "pass", at: "9:46 PM" },
+      { evidence: "detail-gold", who: "gold", room: "pass", at: "9:46 PM" },
+      { evidence: "house-rules", who: "gold", room: "table9", at: "9:47 PM", until: "11:30 PM", says: true },
+      { evidence: "question-olu-swap", who: "gold", room: "table1", at: "9:47 PM", says: true },
+      { evidence: "question-jo-plate", who: "gold", room: "table1", at: "9:47 PM" },
+      { evidence: "detail-plate-gold", who: "gold", room: "table1", at: "10:05 PM" },
+      // The smudged plate: Table 1's ticket on the pass, still waiting at 9:47, wiped and sent to the owner.
+      { evidence: "pass-log", who: "smudge", room: "pass", at: "9:46 PM" },
+      { evidence: "detail-smudge", who: "smudge", room: "pass", at: "9:46 PM" },
+      { evidence: "detail-gone", who: "smudge", room: "pass", at: "9:47 PM" },
+      { evidence: "question-olu-swap", who: "smudge", room: "table9", at: "9:48 PM", says: true },
+      { evidence: "detail-clean-plate", who: "smudge", room: "table9", at: "10:10 PM" },
+      // The peanut oil: out of the storeroom at 9:15 on Ruth's signature, behind the flour in pastry by 11:20.
+      { evidence: "question-ruth-nuts", who: "oil", room: "never", at: "9:10 PM", until: "11:30 PM", says: true },
+      { evidence: "storeroom-log", who: "oil", room: "store", at: "9:15 PM" },
+      { evidence: "detail-bottle", who: "oil", room: "pastry", at: "11:20 PM" },
+      // Ruth: the storeroom at quarter past nine, plating the owner's dessert herself.
+      { evidence: "question-olu-storeroom", who: "rectangle", room: "store", at: "9:15 PM" },
+      { evidence: "question-amelie-gold", who: "rectangle", room: "pastry", at: "9:44 PM", says: true },
+      // Olu: at the pass, pointing the runner at the left plate.
+      { evidence: "detail-olu-points", who: "circle", room: "pass", at: "9:46 PM" },
+      { evidence: "question-olu-swap", who: "circle", room: "pass", at: "9:47 PM", says: true },
+      // Amélie: checking plates at the pass, then photographing Table 9 at 10:10.
+      { evidence: "question-amelie-who", who: "triangle", room: "pass", at: "9:46 PM", says: true },
+      { evidence: "photo-table9", who: "triangle", room: "table9", at: "10:10 PM" },
+      // Bertrand: at Table 9 for his tasting, as every night.
+      { evidence: "bertrand-calendar", who: "square", room: "table9", at: "9:45 PM", says: true },
+      { evidence: "detail-bracelet", who: "square", room: "table9", at: "10:10 PM" },
+    ],
+  },
   minPlayers: 2,
   maxPlayers: 4,
   story: [
@@ -71,6 +124,15 @@ export const case003: CaseFile = {
         question: "The kitchen swears the chocolate course was nut-free. What proves something got through?",
         proves: ["paramedic-note", "insight-nutfree", "insight-allergens"],
         reveal: "The paramedics found peanut, within minutes of course seven. The wine was barely touched. The 'nut-free' kitchen wasn't.",
+        replay: {
+          moments: [
+            { at: "9:44 PM", evidence: "ticket-log", quote: "9:44 PM · Table 1 · course 7 fired · pastry" },
+            { at: "9:52 PM", evidence: "paramedic-note", quote: "Trigger: PEANUT." },
+            { at: "10:05 PM", evidence: "detail-wine" },
+            { at: "10:05 PM", evidence: "detail-menu" },
+          ],
+          say: "Peanut, in a nut-free kitchen.",
+        },
       },
       hints: [
         "The paramedics wrote down exactly what she reacted to.",
@@ -89,6 +151,17 @@ export const case003: CaseFile = {
         question: "Whose plate did Celeste actually eat? Show what proves it.",
         proves: ["detail-gone", "question-jo-plate", "question-olu-swap", "insight-gold"],
         reveal: "Olu sent the clean gold-leaf plate, the owner's, to Table 1, and wiped the smudged one for Bertrand. Celeste ate the owner's dessert.",
+        replay: {
+          moments: [
+            { at: "9:46 PM", evidence: "pass-log", quote: "9:46 PM · Course 7 · TABLE 9 (owner) · ready · gold leaf" },
+            { at: "9:46 PM", evidence: "detail-gold" },
+            { at: "9:46 PM", evidence: "detail-smudge" },
+            { at: "9:46 PM", evidence: "detail-olu-points" },
+            { at: "9:47 PM", evidence: "question-jo-plate", quote: "The one with the little gold leaf." },
+            { at: "10:05 PM", evidence: "detail-plate-gold" },
+          ],
+          say: "Celeste ate the owner's dessert.",
+        },
       },
       hints: [
         "Look for gold leaf. Who is it meant for?",
@@ -106,6 +179,13 @@ export const case003: CaseFile = {
         question: "Who was the peanut really meant for? Show what proves it.",
         proves: ["detail-bracelet", "staff-medical", "question-bertrand-allergy", "insight-target", "first-aid"],
         reveal: "The poisoned plate was the owner's gold-leaf plate, and Bertrand is deadly allergic to peanuts. Celeste was an accident.",
+        replay: {
+          moments: [
+            { at: "9:46 PM", evidence: "detail-gold" },
+            { at: "10:10 PM", evidence: "detail-bracelet" },
+          ],
+          say: "The peanut was meant for the owner.",
+        },
       },
       hints: [
         "Someone at this restaurant shares the critic's allergy.",
@@ -239,7 +319,7 @@ export const case003: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-table1", hotspot: "plate" },
       title: "Celeste's dessert",
-      body: { type: "finding", text: "A half-eaten chocolate dome. On top: a flake of gold leaf." },
+      body: { type: "finding", text: "A half-eaten chocolate dome, a flake of gold leaf on top." },
     },
     {
       id: "detail-wine",
@@ -247,7 +327,7 @@ export const case003: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-table1", hotspot: "wine" },
       title: "The wine glass",
-      body: { type: "finding", text: "The glass of Pinot is still almost full. She barely drank." },
+      body: { type: "finding", text: "Her glass of Pinot, still almost full." },
     },
     {
       id: "detail-menu",
@@ -255,7 +335,7 @@ export const case003: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-table1", hotspot: "card" },
       title: "The menu card",
-      body: { type: "finding", text: "The menu card: 'VII. Midnight chocolate. Nut-free, as ever.'" },
+      body: { type: "finding", text: "The menu card: VII, Midnight chocolate, 'nut-free, as ever'." },
     },
     {
       id: "booking",
@@ -287,9 +367,9 @@ export const case003: CaseFile = {
       id: "insight-allergens",
       role: "archivist",
       chapter: 1,
-      access: { kind: "crosscheck", pair: ["allergen-sheet", "paramedic-note"] },
+      access: { kind: "crosscheck", pair: ["allergen-sheet", "paramedic-note"], quotes: ["Nuts: NONE.", "Trigger: PEANUT."] },
       title: "Not on the sheet",
-      body: { type: "finding", text: "The kitchen's own allergen sheet says course seven has no nuts. The paramedics found peanut." },
+      body: { type: "finding", text: "Allergen sheet: no nuts in course seven. Paramedics: peanut." },
     },
     {
       id: "question-olu-wine",
@@ -312,9 +392,9 @@ export const case003: CaseFile = {
       id: "insight-nutfree",
       role: "archivist",
       chapter: 1,
-      access: { kind: "crosscheck", pair: ["detail-menu", "paramedic-note"] },
+      access: { kind: "crosscheck", pair: ["detail-menu", "paramedic-note"], quotes: [null, "Trigger: PEANUT."] },
       title: "Not so nut-free",
-      body: { type: "finding", text: "The menu swears it's nut-free, as ever. The paramedics say peanut." },
+      body: { type: "finding", text: "Menu: nut-free, as ever. Paramedics: peanut." },
     },
     {
       id: "crack-amelie-outside",
@@ -376,7 +456,7 @@ export const case003: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "pass-camera", hotspot: "gold" },
       title: "The left plate",
-      body: { type: "finding", text: "The left plate has a gold leaf. Its ticket reads TABLE 9 · OWNER." },
+      body: { type: "finding", text: "The left plate: a gold leaf, and the ticket TABLE 9 · OWNER." },
     },
     {
       id: "detail-smudge",
@@ -384,7 +464,7 @@ export const case003: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "pass-camera", hotspot: "smudge" },
       title: "The right plate",
-      body: { type: "finding", text: "The right plate, ticket TABLE 1, has a chocolate smudge on the rim. No gold leaf." },
+      body: { type: "finding", text: "The right plate: ticket TABLE 1, a smudge on the rim, no gold leaf." },
     },
     {
       id: "detail-olu-points",
@@ -392,7 +472,7 @@ export const case003: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "pass-camera", hotspot: "olu" },
       title: "Olu at the pass",
-      body: { type: "finding", text: "Olu is pointing the runner at the LEFT plate." },
+      body: { type: "finding", text: "Olu, pointing at the left plate." },
     },
     {
       id: "detail-gone",
@@ -401,7 +481,7 @@ export const case003: CaseFile = {
       after: ["pass-log"],
       access: { kind: "inspect", scene: "pass-camera", hotspot: "gone" },
       title: "21:47:05",
-      body: { type: "finding", text: "The gold-leaf plate is gone first, to Table 1. The smudged plate is left for Table 9." },
+      body: { type: "finding", text: "21:47:05: the gold-leaf plate gone, the smudged one still waiting." },
     },
     {
       id: "house-rules",
@@ -455,9 +535,9 @@ export const case003: CaseFile = {
       id: "insight-gold",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["detail-plate-gold", "house-rules"] },
+      access: { kind: "crosscheck", pair: ["detail-plate-gold", "house-rules"], quotes: [null, "His plate carries a gold leaf, so nobody mixes it up."] },
       title: "The wrong plate",
-      body: { type: "finding", text: "Celeste's dessert had gold leaf, and only the owner's plate gets gold leaf." },
+      body: { type: "finding", text: "Celeste's dessert: gold leaf. House rules: the gold leaf marks the owner's plate." },
     },
     {
       id: "diner-message",
@@ -508,7 +588,7 @@ export const case003: CaseFile = {
       chapter: 3,
       access: { kind: "inspect", scene: "photo-table9", hotspot: "bracelet" },
       title: "Bertrand's wrist",
-      body: { type: "finding", text: "A medical bracelet on Bertrand's wrist: PEANUT ALLERGY. CARRIES EPIPEN." },
+      body: { type: "finding", text: "Bertrand's medical bracelet: PEANUT ALLERGY, CARRIES EPIPEN." },
     },
     {
       id: "detail-clean-plate",
@@ -517,7 +597,7 @@ export const case003: CaseFile = {
       after: ["bertrand-calendar"],
       access: { kind: "inspect", scene: "photo-table9", hotspot: "plate" },
       title: "Bertrand's plate",
-      body: { type: "finding", text: "Bertrand's plate, scraped clean. He ate the critic's smudged dessert and felt fine." },
+      body: { type: "finding", text: "Bertrand's plate, scraped clean." },
     },
     {
       id: "bertrand-calendar",
@@ -586,9 +666,9 @@ export const case003: CaseFile = {
       id: "insight-target",
       role: "archivist",
       chapter: 3,
-      access: { kind: "crosscheck", pair: ["insight-gold", "detail-bracelet"] },
+      access: { kind: "crosscheck", pair: ["insight-gold", "detail-bracelet"], quotes: ["House rules: the gold leaf marks the owner's plate.", null] },
       title: "Meant for the owner",
-      body: { type: "finding", text: "The poisoned plate was the owner's, and the owner is deadly allergic to peanuts." },
+      body: { type: "finding", text: "The poisoned plate: the owner's. The owner: deadly allergic to peanuts." },
     },
 
     // ----- Chapter 4: sweet revenge -------------------------------------------
@@ -617,7 +697,7 @@ export const case003: CaseFile = {
       chapter: 4,
       access: { kind: "inspect", scene: "photo-pastry", hotspot: "bottle" },
       title: "Behind the flour",
-      body: { type: "finding", text: "Hidden behind the flour bins: a small bottle of peanut oil, a quarter gone." },
+      body: { type: "finding", text: "Behind the flour bins: a bottle of peanut oil, a quarter gone." },
     },
     {
       id: "detail-leaf",
@@ -625,7 +705,7 @@ export const case003: CaseFile = {
       chapter: 4,
       access: { kind: "inspect", scene: "photo-pastry", hotspot: "leaf" },
       title: "Gold leaf",
-      body: { type: "finding", text: "Booklets of gold leaf. The only ones in the whole kitchen." },
+      body: { type: "finding", text: "Booklets of 24K gold leaf." },
     },
     {
       id: "detail-note",
@@ -722,9 +802,9 @@ export const case003: CaseFile = {
       id: "insight-oil",
       role: "archivist",
       chapter: 4,
-      access: { kind: "crosscheck", pair: ["question-ruth-nuts", "storeroom-log"] },
+      access: { kind: "crosscheck", pair: ["question-ruth-nuts", "storeroom-log"], quotes: ["I would never take that risk.", "9:15 PM · Peanut oil, 250 ml · out · signed R. Vale"] },
       title: "Nut-free, apart from the oil",
-      body: { type: "finding", text: "Ruth says no nuts ever come near her section. She signed out peanut oil at 9:15." },
+      body: { type: "finding", text: "Ruth: no nuts near her section, ever. Storeroom: peanut oil signed out by her at 9:15." },
     },
   ],
   solution: {

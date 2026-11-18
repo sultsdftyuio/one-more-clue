@@ -36,6 +36,56 @@ export const case004: CaseFile = {
     end: "9:00 AM",
     lost: "9:00 AM. The plough clears the road and everyone goes home. Whoever took the Aurora only has to wait for the thaw.",
   },
+  // The map of the night, for the Archivist: the lounge around midnight, minute by minute, from 23:50 to 00:25.
+  // Otto says he never left his armchair, or went to the boiler; the video and the boiler room say he was neither
+  // place. Greta's card is at the breaker room while Greta is at the mic, and while the card is reported missing.
+  nightMap: {
+    from: "23:50",
+    to: "00:25",
+    moment: 1,
+    height: 66,
+    rooms: [
+      { id: "lounge", name: "Lounge", x: 3, y: 4, w: 46, h: 34, note: "Fire, armchair, the Aurora" },
+      { id: "breaker", name: "Breaker room", x: 51, y: 4, w: 24, h: 23, note: "Main switch" },
+      { id: "boot", name: "Boot room", x: 51, y: 29, w: 24, h: 9, note: "Back door" },
+      { id: "boiler", name: "Boiler room", x: 3, y: 40, w: 30, h: 23 },
+      { id: "garden", name: "Back garden", x: 35, y: 40, w: 40, h: 23, outdoor: true, note: "The snowman" },
+      { id: "unaccounted", name: "Unaccounted for", x: 78, y: 4, w: 20, h: 29, away: true },
+      { id: "missing", name: "Reported missing", x: 78, y: 35, w: 20, h: 28, away: true },
+    ],
+    things: [
+      { id: "aurora", name: "The Aurora", icon: "gem" },
+      { id: "card", name: "Greta's keycard", icon: "card" },
+    ],
+    sightings: [
+      // Otto: in his armchair at 23:58, gone at 23:59:55 (not in the boiler room either), back with snowy slippers at 00:02.
+      { evidence: "detail-seated", who: "circle", room: "lounge", at: "23:58" },
+      { evidence: "question-otto-midnight", who: "circle", room: "lounge", at: "23:55", until: "00:05", says: true },
+      { evidence: "detail-chair", who: "circle", room: "unaccounted", at: "00:00" },
+      { evidence: "question-lily-missing", who: "circle", room: "boiler", at: "23:59", until: "00:02", says: true },
+      { evidence: "crack-otto-boiler", who: "circle", room: "boiler", at: "23:59", until: "00:02", says: true },
+      { evidence: "boiler-log", who: "circle", room: "unaccounted", at: "23:59", until: "00:02" },
+      { evidence: "crack-otto-snowman", who: "circle", room: "garden", at: "00:01", says: true },
+      { evidence: "detail-snowy-slippers", who: "circle", room: "lounge", at: "00:02" },
+      // Greta: at the mic for the countdown, while the door log names her card at the breaker room.
+      { evidence: "detail-greta-mic", who: "rectangle", room: "lounge", at: "23:58" },
+      { evidence: "door-log", who: "rectangle", room: "breaker", at: "23:59", says: true },
+      { evidence: "detail-greta-counting", who: "rectangle", room: "lounge", at: "00:00" },
+      // Greta's keycard: reported missing since 20:30, and opening the breaker room at 23:59:40.
+      { evidence: "front-desk", who: "card", room: "missing", at: "23:50", until: "00:25" },
+      { evidence: "door-log", who: "card", room: "breaker", at: "23:59" },
+      // The Aurora: on display in the lounge, its case unlocked with a key at 00:00:15, gone by 00:02.
+      { evidence: "front-desk", who: "aurora", room: "lounge", at: "23:50", until: "00:00" },
+      { evidence: "detail-case", who: "aurora", room: "lounge", at: "23:58" },
+      { evidence: "case-alarm", who: "aurora", room: "lounge", at: "00:00" },
+      { evidence: "statement-agatha", who: "aurora", room: "unaccounted", at: "00:02", until: "00:25", says: true },
+      { evidence: "detail-empty-case", who: "aurora", room: "unaccounted", at: "00:02" },
+      // Lily and Sir Reginald: in the lounge for the countdown, on Lily's own video.
+      { evidence: "photo-countdown", who: "triangle", room: "lounge", at: "23:58" },
+      { evidence: "video-still", who: "triangle", room: "lounge", at: "23:58", until: "00:02" },
+      { evidence: "video-still", who: "square", room: "lounge", at: "23:58", until: "00:02" },
+    ],
+  },
   minPlayers: 2,
   maxPlayers: 4,
   story: [
@@ -72,6 +122,14 @@ export const case004: CaseFile = {
         question: "What caused the blackout at midnight? Show what settles it.",
         proves: ["power-log", "grid-report", "insight-storm"],
         reveal: "The power company had no outages tonight. The lodge's main breaker was switched off by hand at 23:59:58, and on again two minutes later.",
+        replay: {
+          moments: [
+            { at: "22:00", evidence: "grid-report", quote: "Lines inspected 22:00: undamaged" },
+            { at: "23:59", evidence: "power-log", quote: "23:59:58 · Main breaker OFF · switched by hand" },
+            { at: "00:02", evidence: "power-log", quote: "00:02:05 · Main breaker ON · switched by hand (night porter)" },
+          ],
+          say: "No storm. Someone switched the lodge off by hand.",
+        },
       },
       hints: [
         "Check whether the storm actually cut anyone else's power.",
@@ -87,8 +145,16 @@ export const case004: CaseFile = {
       ],
       checkpoint: {
         question: "Whose keycard opened the breaker room at 23:59:40? Show what proves it.",
-        proves: ["door-log", "insight-stolen-card"],
+        proves: ["door-log", "insight-stolen-card", "insight-not-greta"],
         reveal: "Greta's card opened the breaker room. But she reported it stolen at 8:30, and at 23:59:55 she was on the microphone upstairs.",
+        replay: {
+          moments: [
+            { at: "20:30", evidence: "front-desk", quote: "20:30 · G. Holm reports MASTER-2 keycard missing" },
+            { at: "23:59", evidence: "door-log", quote: "23:59:40 · Breaker room · keycard MASTER-2 (G. Holm)" },
+            { at: "23:59", evidence: "detail-greta-counting" },
+          ],
+          say: "Greta's card, but not Greta's hand.",
+        },
       },
       hints: [
         "The Tech can pull the lodge's door log.",
@@ -140,7 +206,7 @@ export const case004: CaseFile = {
       {
         id: "card",
         text: "The log says Greta's card. I'd start with Greta.",
-        lie: { breaks: ["front-desk", "insight-stolen-card", "detail-greta-counting"], crack: "Stolen, was it? There's a lot of that going around." },
+        lie: { breaks: ["front-desk", "insight-stolen-card", "detail-greta-counting", "insight-not-greta"], crack: "Stolen, was it? There's a lot of that going around." },
       },
       { id: "knee", text: "I've walked with a cane since my fall in '19." },
       {
@@ -227,7 +293,7 @@ export const case004: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-countdown", hotspot: "case" },
       title: "The Aurora at 23:58",
-      body: { type: "finding", text: "The Aurora necklace sits in its glass case at 23:58, two minutes before the blackout." },
+      body: { type: "finding", text: "The Aurora in its glass case, 23:58." },
     },
     {
       id: "detail-greta-mic",
@@ -235,7 +301,7 @@ export const case004: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-countdown", hotspot: "greta" },
       title: "Greta at the mic",
-      body: { type: "finding", text: "Greta at the microphone, ready to lead the countdown." },
+      body: { type: "finding", text: "Greta at the microphone." },
     },
     {
       id: "detail-countdown-clock",
@@ -243,7 +309,7 @@ export const case004: CaseFile = {
       chapter: 1,
       access: { kind: "inspect", scene: "photo-countdown", hotspot: "clock" },
       title: "The lounge clock",
-      body: { type: "finding", text: "The lounge clock reads 23:58. It matches Lily's phone exactly." },
+      body: { type: "finding", text: "The lounge clock: 23:58." },
     },
     {
       id: "grid-report",
@@ -298,9 +364,9 @@ export const case004: CaseFile = {
       id: "insight-storm",
       role: "archivist",
       chapter: 1,
-      access: { kind: "crosscheck", pair: ["question-otto-power", "grid-report"] },
+      access: { kind: "crosscheck", pair: ["question-otto-power", "grid-report"], quotes: ["The storm, surely.", "All night · Pinecrest valley: no outages"] },
       title: "No storm damage",
-      body: { type: "finding", text: "Otto blames the storm. The power company had no outages in the valley tonight." },
+      body: { type: "finding", text: "Otto: the storm. Alpine Power: no outages in the valley all night." },
     },
     {
       id: "crack-otto-fusebox",
@@ -401,7 +467,7 @@ export const case004: CaseFile = {
       after: ["door-log"],
       access: { kind: "inspect", scene: "video-still", hotspot: "greta" },
       title: "Greta, counting down",
-      body: { type: "finding", text: "23:59:55: Greta is at the mic, counting down from five. The breaker room is out past the boot room, at the back of the lodge." },
+      body: { type: "finding", text: "23:59:55: Greta at the mic, counting down." },
     },
     {
       id: "detail-chair",
@@ -409,7 +475,7 @@ export const case004: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "video-still", hotspot: "chair" },
       title: "The armchair by the fire",
-      body: { type: "finding", text: "Otto's armchair by the fire is empty. His cane is gone from the armrest too." },
+      body: { type: "finding", text: "Otto's armchair by the fire: empty, no cane on the armrest." },
     },
     {
       id: "detail-seated",
@@ -417,7 +483,7 @@ export const case004: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "video-still", hotspot: "seated" },
       title: "23:58:40",
-      body: { type: "finding", text: "Otto in his armchair by the fire, cane on the armrest, eighty seconds to midnight." },
+      body: { type: "finding", text: "Otto in his armchair by the fire, cane on the armrest." },
     },
     {
       id: "detail-snowy-slippers",
@@ -426,7 +492,7 @@ export const case004: CaseFile = {
       after: ["question-lily-missing"],
       access: { kind: "inspect", scene: "video-still", hotspot: "back" },
       title: "00:02:10",
-      body: { type: "finding", text: "Otto is back in his armchair, out of breath. There's snow melting on his slippers." },
+      body: { type: "finding", text: "Otto in his armchair, out of breath, snow melting on his slippers." },
     },
     {
       id: "detail-empty-case",
@@ -434,7 +500,7 @@ export const case004: CaseFile = {
       chapter: 2,
       access: { kind: "inspect", scene: "video-still", hotspot: "empty-case" },
       title: "The empty case",
-      body: { type: "finding", text: "The display case is empty. Its little door is open, the lock unbroken." },
+      body: { type: "finding", text: "The display case: empty, door open, lock unbroken." },
     },
     {
       id: "question-greta-card",
@@ -482,9 +548,9 @@ export const case004: CaseFile = {
       id: "insight-boiler",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["question-lily-missing", "boiler-log"] },
+      access: { kind: "crosscheck", pair: ["question-lily-missing", "boiler-log"], quotes: ["He said he had to check the boiler.", "No other entries tonight"] },
       title: "Nobody checked the boiler",
-      body: { type: "finding", text: "Otto told Lily he went to check the boiler at midnight. Nobody opened the boiler room after 18:10." },
+      body: { type: "finding", text: "Lily: Otto went to check the boiler. Boiler room: nobody in after 18:10." },
     },
     {
       id: "crack-otto-boiler",
@@ -498,25 +564,33 @@ export const case004: CaseFile = {
       id: "insight-boiler-otto",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["crack-otto-boiler", "boiler-log"] },
+      access: { kind: "crosscheck", pair: ["crack-otto-boiler", "boiler-log"], quotes: ["The boiler was making that noise again.", "No other entries tonight"] },
       title: "No boiler, no noise",
-      body: { type: "finding", text: "Otto says he stepped out to see to the boiler. Nobody opened the boiler room after 18:10." },
+      body: { type: "finding", text: "Otto: he went to see to the boiler. Boiler room: nobody in after 18:10." },
     },
     {
       id: "insight-armchair",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["question-otto-midnight", "detail-chair"] },
+      access: { kind: "crosscheck", pair: ["question-otto-midnight", "detail-chair"], quotes: ["Right there in my armchair by the fire, counting down with everyone else.", null] },
       title: "The empty armchair",
-      body: { type: "finding", text: "Otto says he was in his armchair at midnight. At 23:59:55 it's empty, and so is his cane's armrest." },
+      body: { type: "finding", text: "Otto: in his armchair at midnight. Video, 23:59:55: the armchair's empty." },
     },
     {
       id: "insight-stolen-card",
       role: "archivist",
       chapter: 2,
-      access: { kind: "crosscheck", pair: ["door-log", "front-desk"] },
+      access: { kind: "crosscheck", pair: ["door-log", "front-desk"], quotes: ["23:59:40 · Breaker room · keycard MASTER-2 (G. Holm)", "20:30 · G. Holm reports MASTER-2 keycard missing"] },
       title: "A stolen card",
-      body: { type: "finding", text: "The breaker room opened with MASTER-2, the card Greta reported stolen at 20:30." },
+      body: { type: "finding", text: "Door log: Greta's card at the breaker room, 23:59:40. Front desk: reported missing at 20:30." },
+    },
+    {
+      id: "insight-not-greta",
+      role: "archivist",
+      chapter: 2,
+      access: { kind: "crosscheck", pair: ["door-log", "detail-greta-counting"], quotes: ["23:59:40 · Breaker room · keycard MASTER-2 (G. Holm)", null] },
+      title: "Not Greta's hand",
+      body: { type: "finding", text: "Door log: Greta's card at the breaker room, 23:59:40. Video, 23:59:55: Greta at the mic." },
     },
     {
       id: "porter-message",
@@ -565,7 +639,7 @@ export const case004: CaseFile = {
       after: ["weather-station"],
       access: { kind: "inspect", scene: "photo-garden", hotspot: "prints" },
       title: "Fresh footprints",
-      body: { type: "finding", text: "One set of footprints from the back door to the snowman, and back. Fresh: no snow inside them." },
+      body: { type: "finding", text: "One set of footprints, back door to the snowman and back, no snow inside them." },
     },
     {
       id: "detail-holes",
@@ -573,7 +647,7 @@ export const case004: CaseFile = {
       chapter: 3,
       access: { kind: "inspect", scene: "photo-garden", hotspot: "holes" },
       title: "Small round holes",
-      body: { type: "finding", text: "A small round hole beside every left footprint, like the tip of a walking cane." },
+      body: { type: "finding", text: "A small round hole beside every left footprint." },
     },
     {
       id: "detail-snowman",
@@ -582,7 +656,7 @@ export const case004: CaseFile = {
       after: ["question-lily-snowman"],
       access: { kind: "inspect", scene: "photo-garden", hotspot: "snowman" },
       title: "The snowman's head",
-      body: { type: "finding", text: "The snowman's head sits crooked, freshly patted smooth, with a dark patch of wet snow." },
+      body: { type: "finding", text: "The snowman's head: crooked, patted smooth, a dark patch of wet snow." },
     },
     {
       id: "weather-station",
@@ -665,9 +739,9 @@ export const case004: CaseFile = {
       id: "insight-cane",
       role: "archivist",
       chapter: 3,
-      access: { kind: "crosscheck", pair: ["question-otto-cane", "detail-holes"] },
+      access: { kind: "crosscheck", pair: ["question-otto-cane", "detail-holes"], quotes: ["Since my fall in '19.", null] },
       title: "The cane in the snow",
-      body: { type: "finding", text: "Otto walks with a cane, and a cane-tip hole sits beside every left footprint in the snow." },
+      body: { type: "finding", text: "Otto: a cane since '19. The snow: a small hole by every left footprint." },
     },
   ],
   solution: {

@@ -1214,7 +1214,7 @@ export type NightMapView = {
   span: number;
   height: number;
   rooms: NonNullable<CaseFile["nightMap"]>["rooms"];
-  things: { id: string; name: string }[];
+  things: NonNullable<NonNullable<CaseFile["nightMap"]>["things"]>;
   sightings: MapSighting[];
   clashes: MapClash[];
 };
@@ -1450,14 +1450,15 @@ export function mapFor(state: RoomState, caseFile: CaseFile, me: Pick<Player, "i
   const start = parseTime(map.from);
   const minute = (time: string) => (parseTime(time) - start + 24 * 60) % (24 * 60);
   const span = minute(map.to);
+  const moment = map.moment ?? MOMENT_MINUTES;
   const pieces = new Map(caseFile.evidence.map((e) => [e.id, e]));
   const sightings: MapSighting[] = [];
   map.sightings.forEach((s, i) => {
     const piece = pieces.get(s.evidence);
     if (!piece || !canSee(state, me, piece)) return;
     const at = minute(s.at);
-    const from = s.until ? at : Math.max(0, at - MOMENT_MINUTES);
-    const to = s.until ? minute(s.until) : Math.min(span, at + MOMENT_MINUTES);
+    const from = s.until ? at : Math.max(0, at - moment);
+    const to = s.until ? minute(s.until) : Math.min(span, at + moment);
     const weight = !s.says ? 3 : piece.access.kind === "press" ? 2 : 1;
     sightings.push({ id: `${s.evidence}#${i}`, who: s.who, room: s.room, from, to, says: Boolean(s.says), weight, evidence: s.evidence, title: piece.title });
   });

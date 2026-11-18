@@ -195,16 +195,21 @@ export type NightMap = {
   /** When the slider starts and ends, written the way the case writes times. */
   from: string;
   to: string;
+  /** How many minutes either side of its minute a moment (a sighting with no `until`) stays on the map: 5 if left out. */
+  moment?: number;
   /**
    * Rooms on a plan 100 wide and `height` tall, with a small `note` (what's in there). `outdoor` is open air on the
    * plan (a car park); `away` is somewhere off it entirely (gone home, across town), drawn as its own dashed card.
    */
   height: number;
   rooms: { id: string; name: string; x: number; y: number; w: number; h: number; outdoor?: boolean; away?: boolean; note?: string }[];
-  /** Things that move about the night like people do (a stolen prototype, a missing ring), besides the suspects. */
-  things?: { id: string; name: string }[];
+  /** Things that move about the night like people do (a stolen prototype, a missing ring), besides the suspects, each with a small picture. */
+  things?: { id: string; name: string; icon?: ThingIcon }[];
   sightings: Sighting[];
 };
+
+/** How a thing looks on the map of the night. */
+export type ThingIcon = "glasses" | "mask" | "envelope" | "plate" | "gold-plate" | "bottle" | "gem" | "card";
 
 /**
  * Where one piece of evidence puts a suspect (by id) or a thing, from `at` until `until` (a moment if left out).

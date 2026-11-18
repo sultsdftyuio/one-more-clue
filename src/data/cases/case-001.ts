@@ -56,7 +56,7 @@ export const case001: CaseFile = {
       { id: "home", name: "Gone home", x: 76, y: 4, w: 22, h: 31, away: true },
       { id: "kestrel", name: "Kestrel HQ", x: 76, y: 37, w: 22, h: 30, away: true, note: "Across town" },
     ],
-    things: [{ id: "halo", name: "HALO" }],
+    things: [{ id: "halo", name: "HALO", icon: "glasses" }],
     sightings: [
       // Priya: in the lab until quarter to nine, out of the main door at 8:45, then home.
       { evidence: "statement-priya", who: "triangle", room: "lab4", at: "8:30 PM", until: "8:44 PM", says: true },

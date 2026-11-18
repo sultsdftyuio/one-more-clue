@@ -77,6 +77,10 @@ SAMPLES = {
 # 2026-11-17: the user heard the casting sheet and chose Voice 1 for everyone, played with far more feeling.
 CAST: dict[str, dict[str, str]] = {
     "case-001": {"triangle": "af_heart", "circle": "take:qwen-ozzy-ba8435f7f774", "square": "bm_fable", "rectangle": "bf_alice"},
+    # 2026-11-18: "do the same for the other 3 cases". Film voices kept (Vince, Tess, Amélie, Sir Reginald); the rest chosen here.
+    "case-002": {"square": "bm_lewis", "triangle": "bf_emma", "circle": "bm_daniel", "rectangle": "af_nicole"},
+    "case-003": {"triangle": "take:qwen-amelie-895acca67094", "square": "am_michael", "circle": "am_echo", "rectangle": "af_sarah", "jo-runner": "am_puck"},
+    "case-004": {"circle": "am_santa", "triangle": "af_sky", "square": "take:qwen-reginald-fd8f29ae9b83", "rectangle": "bf_lily"},
 }
 
 # How hard a line is played: Chatterbox's exaggeration (how much feeling) and cfg_weight (lower is slower and
@@ -96,6 +100,8 @@ MOODS = {
     "dazed": (0.65, 0.3),
     "dismissive": (0.85, 0.33),
     "cruel": (0.95, 0.3),
+    "theatrical": (1.25, 0.3),
+    "warm": (0.75, 0.35),
 }
 # Each line's mood, by where it's heard, then by the line itself where it needs its own.
 MOOD_BY_PLACE = {"asked": "steady", "cracking": "defensive", "the confrontation": "smug", "the confrontation, caught": "rattled",
@@ -129,6 +135,24 @@ LINE_MOODS = {
         "c6474e78": "broken",  # Priya: "Three years of my life. In a tote bag."
         "8f97a593": "dazed",  # Squires: "a new visitor policy"
     },
+    "case-002": {
+        "8c059e6f": "theatrical", "0018006c": "theatrical", "ba269602": "exasperated", "ec83078e": "exasperated", "663dd86b": "theatrical",
+        "161419eb": "exasperated", "9844978c": "rattled", "3d34b6b6": "indignant", "746559df": "nervous", "c2252fd2": "theatrical",
+        "a13381e2": "broken", "87e46a1f": "broken", "c1653b81": "cruel", "227388c1": "smug", "b74d59d3": "upset", "4fe92c82": "defensive",
+        "84422d9a": "smug", "374f088b": "smug", "65f48f32": "indignant", "735770ad": "smug",
+    },
+    "case-003": {
+        "ca6110f9": "smug", "5e515573": "smug", "df90089e": "smug", "9b80e140": "indignant", "1dad2ef5": "furious", "1f406602": "cold",
+        "93396a3c": "dismissive", "b79e6c30": "rattled", "d6dcb4cf": "indignant", "f37e8ada": "nervous", "93ace5cf": "cold", "e8e7944e": "cold",
+        "7797ba66": "defensive", "fe7665c9": "rattled", "1a1b1884": "cold", "8abc7489": "cold", "94671612": "cold", "259aa974": "cold",
+        "07368df9": "cold", "2aec1b9b": "cold", "0ee3ea2d": "cold", "1593b505": "broken", "a9c1fb48": "cold", "3088dfba": "broken",
+        "5d8edf9d": "broken", "2121e4e8": "broken",
+    },
+    "case-004": {
+        "2fbd9711": "smug", "8e485688": "warm", "48c6b880": "defensive", "6c7f3ba6": "warm", "7bb3a7ba": "nervous", "8027692e": "indignant",
+        "581abd50": "nervous", "2794b236": "cold", "0a197743": "broken", "e7c3e352": "broken", "4e9dce0a": "smug", "8fdbc9ce": "upset",
+        "3705b6c0": "defensive", "9a244fb7": "indignant", "a0426fc4": "dismissive", "1e654821": "smug", "b9a3030d": "nervous",
+    },
 }
 # The speech each character's voice reads first, in character, to become the reference their lines copy.
 WARMUPS = {
@@ -141,6 +165,38 @@ WARMUPS = {
                    "Not tonight, and certainly not in front of our investors.", "indignant"),
         "rectangle": ("Oh, please. You have a photograph and a hunch. I came here as a guest, I was perfectly charming, and frankly, "
                       "I expected rather better manners from all of you.", "smug"),
+    },
+    "case-002": {
+        "square": ("Ladies and gentlemen, I have been attacked! On my own show! A man in a balaclava, built like a wardrobe, and I held him off "
+                   "with nothing but my voice. Nothing but my voice!", "theatrical"),
+        "triangle": ("I couldn't see a thing! The blind came down, the sound went, and I just froze. I thought he'd fainted. "
+                     "I've never had dead air on my watch. Never!", "upset"),
+        "circle": ("Look, I was out back having a smoke, same as every hour. Tess shouted, I ran. The cables were fine, the rack was fine. "
+                   "Whatever stopped that show, it wasn't my kit.", "defensive"),
+        "rectangle": ("Oh, please. If I wanted Vince's slot, I'd take it on air, in front of everyone. I don't need a balaclava, darling. "
+                      "I need a microphone and five minutes.", "smug"),
+    },
+    "case-003": {
+        "triangle": ("This kitchen is nut-free. Completely! Five years, not one nut. Every plate passes my eyes, every single one. "
+                     "And tonight of all nights, with her at Table One? No. Impossible.", "indignant"),
+        "square": ("Do you know who I am? I own this restaurant. I taste that chocolate course every single night, at Table Nine, "
+                   "and now I'm told someone wanted me dead? In my own dining room?", "indignant"),
+        "circle": ("Darling, I keep that pass immaculate. A smudge on a plate for Celeste Hart? Never. I sent her the clean one. "
+                   "Frankly, you should be thanking me.", "smug"),
+        "rectangle": ("Twelve years. Twelve years of desserts in that kitchen, and nobody even knows my name. I make the chocolate course, "
+                      "every night, start to finish. Nobody else touches it.", "cold"),
+        "jo-runner": ("I just carry the plates! Olu said the left one, so I took the left one, the one with the little gold leaf. "
+                      "I didn't know. I swear I didn't know!", "nervous"),
+    },
+    "case-004": {
+        "circle": ("Welcome, welcome! A blizzard, a roaring fire, and the finest lodge in the valley. I've made you all very comfortable, "
+                   "haven't I? Now, more cocoa? I insist. Nobody goes cold on my watch.", "warm"),
+        "triangle": ("I film everything, all right? It's just what I do! I had my phone up for the countdown, and then the lights went out, "
+                     "and when they came back, Aunt Agatha's necklace was gone. Just gone!", "upset"),
+        "square": ("Lot one, the Aurora. One hundred and eighty thousand pounds, and it vanished in the dark like a cheap conjuring trick. "
+                   "Thirty years of auctions, and this has never, ever happened.", "indignant"),
+        "rectangle": ("My card was stolen at half past eight. I reported it at the desk. And at midnight I was on that microphone, "
+                      "counting down, with the whole room watching me. Ask anyone.", "defensive"),
     },
 }
 SEEDS = (7, 21)
@@ -170,7 +226,13 @@ def speakable(text: str) -> str:
         hour, minute = int(m[1]), int(m[2])
         said = "o'clock" if minute == 0 else f"oh {ONES[minute]}" if minute < 10 else _number(minute)
         return f"{_number(hour)} {said}"
+    # Capitals on screen are emphasis ("poison ME?"), but a voice spells them out ("em ee"): read them as words.
+    text = re.sub(r"\b[A-Z]{2,}\b", lambda m: m[0] if m[0] in SPELLED else m[0].lower(), text)
     return re.sub(r"\b(\d{1,2}):(\d{2})\b", clock, text)
+
+
+# Initialisms that really are read letter by letter.
+SPELLED = {"AM", "PM", "ANPR", "CCTV", "DJ", "DNA", "GPS", "HQ", "ID", "OK", "TV", "UK", "USA", "VIP"}
 
 
 def lines(case: str) -> dict:
@@ -358,6 +420,9 @@ REEL = {
         "square": ["d0fb7394", "ca8775f8", "8f97a593"],
         "rectangle": ["1ef4e9b3", "2ce71778", "e6f74638", "3088dfba", "a7e993b4"],
     },
+    "case-002": {"square": ["c2252fd2", "0018006c", "6b689c35", "87e46a1f"], "triangle": ["b74d59d3"], "circle": ["84422d9a"], "rectangle": ["65f48f32", "227388c1"]},
+    "case-003": {"rectangle": ["1a1b1884", "65d8adbc", "1593b505", "5d8edf9d"], "square": ["1dad2ef5"], "circle": ["5e515573"], "triangle": ["d6dcb4cf"], "jo-runner": ["f37e8ada"]},
+    "case-004": {"circle": ["4d214de6", "9ce008d1", "e2d45d82", "4e9dce0a"], "rectangle": ["8fdbc9ce"], "square": ["1e654821"], "triangle": ["b9a3030d"]},
 }
 
 
@@ -404,13 +469,14 @@ def reel(case: str) -> None:
         print(f"  {take.name:<22} match {r.get('match', '?')}  pitch {r.get('pitch', '?')}  heard: {r.get('heard', '')}")
 
     for speaker, keys in REEL[case].items():
-        s = who[speaker]
+        s = who.get(speaker) or {"name": speaker.replace("-", " ").title(), "role": "Witness"}
         print(s["name"])
         speech, mood = WARMUPS[case][speaker]
-        if (LAB / "takes" / f"ref-{speaker}.wav").exists():
-            add(LAB / "takes" / f"ref-{speaker}.wav", card(s["name"], s["role"], "In character", speech))
+        ref = next((p for p in (LAB / "takes" / f"ref-{case}.{speaker}.wav", LAB / "takes" / f"ref-{speaker}.wav") if p.exists()), None)
+        if ref:
+            add(ref, card(s["name"], s["role"], "In character", speech))
         for key in keys:
-            take = LAB / "takes" / f"{key}.wav"
+            take = take_for(case, key)
             if take.exists():
                 add(take, card(s["name"], s["role"], mood_of(case, by_key[key]).capitalize(), by_key[key]["text"]))
             else:
@@ -427,6 +493,12 @@ def chosen(case: str, speaker: str) -> str:
     return CAST.get(case, {}).get(speaker) or CANDIDATES[case][speaker][0]
 
 
+def take_for(case: str, key: str) -> Path:
+    """A line's kept take from the lab: named by case since jobs could carry several, or by key alone in older jobs."""
+    named = LAB / "takes" / f"{case}-{key}.wav"
+    return named if named.exists() else LAB / "takes" / f"{key}.wav"
+
+
 def record(case: str) -> None:
     """Every suspect line in its cast voice, sent to Kaggle. The narrator's lines are spoken here by Kokoro."""
     data = lines(case)
@@ -436,29 +508,33 @@ def record(case: str) -> None:
     push(jobs, sorted({chosen(case, line["speaker"]) for line in data["lines"] if line["speaker"] != "narrator"}))
 
 
-def act(case: str) -> None:
-    """Every suspect line played in its mood, from a reference each character reads in character first. See kaggle_act.py."""
-    data = lines(case)
-    voices = {speaker: chosen(case, speaker) for speaker in CANDIDATES[case]}
-    make_references(list(voices.values()))
+def act(*cases: str) -> None:
+    """Every suspect line of these cases played in its mood, from a reference each character reads in character first.
+    Several cases go in one job; files are named <case>-<key>, and references ref-<case>.<speaker>. See kaggle_act.py."""
+    warmups, jobs, refs = {}, [], set()
+    for case in cases:
+        data = lines(case)
+        speakers = sorted({line["speaker"] for line in data["lines"] if line["speaker"] != "narrator"})
+        voices = {speaker: chosen(case, speaker) for speaker in speakers}
+        refs |= set(voices.values())
+        for speaker in speakers:
+            words, mood = WARMUPS[case][speaker]
+            exaggeration, cfg = MOODS[mood]
+            warmups[f"{case}.{speaker}"] = {"say": words, "voice": ref_name(voices[speaker]), "exaggeration": exaggeration, "cfg": cfg, "seeds": list(SEEDS)}
+        for line in data["lines"]:
+            if line["speaker"] == "narrator":
+                continue
+            exaggeration, cfg = MOODS[mood_of(case, line)]
+            short = len(line["text"].split()) <= 2
+            jobs.append({"key": f"{case}-{line['key']}", "speaker": f"{case}.{line['speaker']}", "say": speakable(line["text"]), "exaggeration": exaggeration,
+                         "cfg": cfg, "seeds": list(SHORT_SEEDS if short else SEEDS)})
+        narrate(case, data)
+    make_references(sorted(refs))
     assets = {}
-    for v in sorted(set(voices.values())):
+    for v in sorted(refs):
         packed = REFS / f"{ref_name(v)}.ogg"
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(reference(v)), "-ac", "1", "-c:a", "libopus", "-b:a", "32k", str(packed)], check=True)
         assets[ref_name(v)] = base64.b64encode(packed.read_bytes()).decode()
-    warmups = {}
-    for speaker, (words, mood) in WARMUPS[case].items():
-        exaggeration, cfg = MOODS[mood]
-        warmups[speaker] = {"say": words, "voice": ref_name(voices[speaker]), "exaggeration": exaggeration, "cfg": cfg, "seeds": list(SEEDS)}
-    jobs = []
-    for line in data["lines"]:
-        if line["speaker"] == "narrator":
-            continue
-        exaggeration, cfg = MOODS[mood_of(case, line)]
-        short = len(line["text"].split()) <= 2
-        jobs.append({"key": line["key"], "speaker": line["speaker"], "say": speakable(line["text"]), "exaggeration": exaggeration, "cfg": cfg,
-                     "seeds": list(SHORT_SEEDS if short else SEEDS)})
-    narrate(case, data)
     template = (ART / "omc_art" / "voices" / "kaggle_act.py").read_text(encoding="utf-8")
     code = (template.replace("__ASSETS__", repr(assets)).replace("__WARMUPS__", pprint.pformat(warmups, width=160))
             .replace("__LINES__", pprint.pformat(jobs, width=160)))
@@ -514,7 +590,7 @@ def keep(case: str) -> None:
     data = json.loads((OUT / case / "lines.json").read_text(encoding="utf-8"))
     takes, missing = {}, []
     for line in data["lines"]:
-        path = (OUT / case / "narrator" / f"{line['key']}.wav") if line["speaker"] == "narrator" else (LAB / "takes" / f"{line['key']}.wav")
+        path = (OUT / case / "narrator" / f"{line['key']}.wav") if line["speaker"] == "narrator" else take_for(case, line["key"])
         (takes.__setitem__(line["key"], path) if path.exists() else missing.append(line["key"]))
     if missing:
         print(f"{len(missing)} lines have no take yet: {', '.join(missing[:8])}")

@@ -580,3 +580,27 @@ test("Case 001's map shows exactly its contradictions about place, and tying one
   // The map is the Archivist's: nobody else is sent it.
   assert.equal(room.view(TECH).nightMap, null);
 });
+
+test("every case's map shows exactly its contradictions about where someone (or something) was", () => {
+  const expected: Record<string, string[]> = {
+    "case-001": ["lab-chat+detail-halo", "lab-chat+dock-log", "question-rena-after+anpr", "question-squires-left+question-ozzy-round", "visitor-sheet+badge-log"],
+    "case-002": ["question-vince-envelope+detail-envelope", "statement-vince+door-log"],
+    "case-003": ["detail-plate-gold+house-rules", "question-ruth-nuts+storeroom-log"],
+    "case-004": ["crack-otto-boiler+boiler-log", "door-log+detail-greta-counting", "door-log+front-desk", "question-lily-missing+boiler-log", "question-otto-midnight+detail-chair"],
+  };
+  for (const c of [case001, case002, case003, case004]) {
+    assert.ok(c.nightMap, `${c.id} has no map of the night`);
+    const room = createRoom({ code: "MAP", caseFile: c, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+    const map = mapFor({ ...room, phase: "reveal", chapter: c.chapters.length }, c, { id: "p1", roles: ["archivist"] })!;
+    assert.deepEqual([...new Set(map.clashes.map((k) => `${k.a}+${k.b}`))].sort(), [...expected[c.id]].sort(), `${c.id}'s map shows the wrong clashes`);
+  }
+});
+
+test("every case is written picture-first: quoted contradictions, and a replay for every chapter proof", () => {
+  for (const c of [case001, case002, case003, case004]) {
+    for (const e of c.evidence) if (e.access.kind === "crosscheck") assert.ok(e.access.quotes, `${c.id}: ${e.id} doesn't quote its two pieces`);
+    c.chapters.forEach((chapter, i) => {
+      if (chapter.checkpoint) assert.ok(chapter.checkpoint.replay, `${c.id}: chapter ${i + 1}'s proof has no replay`);
+    });
+  }
+});

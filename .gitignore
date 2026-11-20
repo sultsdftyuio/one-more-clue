@@ -52,6 +52,8 @@ __pycache__/
 art/out/lab/
 art/out/photos/
 art/out/voices/
+# the world painter's lossless check copies (world.webp and world.json are committed)
+art/world/*.png
 
 
 # local waitlist signups (dev fallback when Redis isn't configured)

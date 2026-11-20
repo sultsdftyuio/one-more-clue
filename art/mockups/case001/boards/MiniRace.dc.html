@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mini · Race Rena</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&amp;family=Nunito:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+.spr{position:absolute;background-image:url(/_blob/9ea35634ea41062688808ca47a3e2036);background-size:1200% 100%;background-repeat:no-repeat}
+.board{background:radial-gradient(circle at 6px 6px, #C9C2B0 2px, rgba(0,0,0,0) 2.5px) 0 0 / 12px 12px, #F2EFE6}
+@keyframes wireD{0%,10%{stroke-dashoffset:528}40%,96%{stroke-dashoffset:0}100%{stroke-dashoffset:528}}
+@keyframes touchD{0%,9.9%{transform:translate(48px,378px);opacity:0}10%{transform:translate(48px,378px);opacity:1}12.05%{transform:translate(84px,378px)}15.68%{transform:translate(84px,314px)}19.09%{transform:translate(144px,314px)}29.32%{transform:translate(144px,494px)}32.5%{transform:translate(200px,494px)}38.18%{transform:translate(200px,394px)}40%{transform:translate(232px,394px);opacity:1}42%,100%{transform:translate(232px,394px);opacity:0}}
+@keyframes youD{0%,10%{transform:translateX(0)}40%,96%{transform:translateX(292px)}100%{transform:translateX(0)}}
+@keyframes renaD{0%,10%{transform:translateX(0)}45%,96%{transform:translateX(292px)}100%{transform:translateX(0)}}
+@keyframes ledD{0%,39.9%{opacity:0}40%,96%{opacity:1}100%{opacity:0}}
+@keyframes winD{0%,40.9%{transform:translateX(-50%) scale(.4);opacity:0}43%{transform:translateX(-50%) scale(1.15);opacity:1}44.5%,52%{transform:translateX(-50%) scale(1);opacity:1}55%,100%{transform:translateX(-50%) scale(1);opacity:0}}
+@keyframes idleD{0%,45.9%{opacity:1}47%,98%{opacity:0}100%{opacity:1}}
+@keyframes smugD{0%,45.9%{opacity:0}47%,96%{opacity:1}100%{opacity:0}}
+@keyframes badD{0%,46.9%{opacity:0;transform:scale(.6)}49%{opacity:1;transform:scale(1.08)}50%,62%{opacity:1;transform:scale(1)}65%,100%{opacity:0;transform:scale(1)}}
+@keyframes promptD{0%,100%{opacity:0}2%,38%{opacity:1}20%{opacity:.55}40%{opacity:0}}
+@keyframes cardD{0%,57.9%{transform:translateY(220px)}62%{transform:translateY(-6px)}63.5%,96%{transform:translateY(0)}100%{transform:translateY(220px)}}
+.wire{animation:wireD 10s linear infinite}
+.touch{animation:touchD 10s linear infinite}
+.you{animation:youD 10s linear infinite}
+.rena{animation:renaD 10s linear infinite}
+.led{animation:ledD 10s steps(1) infinite}
+.win{animation:winD 10s cubic-bezier(.2,.9,.3,1.3) infinite}
+.idle{animation:idleD 10s steps(1) infinite}
+.smug{animation:smugD 10s ease-out infinite}
+.bad{transform-origin:100% 100%;animation:badD 10s ease-out infinite}
+.prompt{animation:promptD 10s ease-in-out infinite}
+.card{animation:cardD 10s cubic-bezier(.2,.9,.3,1.1) infinite}
+@keyframes flyD{0%,52.9%{transform:translate(249px,374px) scale(1.4);opacity:0}53.4%{opacity:1}57.4%{transform:translate(319px,18px) scale(.7);opacity:1}57.9%,100%{transform:translate(319px,18px) scale(.7);opacity:0}}@keyframes chipD{0%,57.3%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,179,61,0)}58.9%{transform:scale(1.18);box-shadow:0 0 0 7px rgba(242,179,61,.5)}60.9%,100%{transform:scale(1);box-shadow:0 0 0 14px rgba(242,179,61,0)}}@keyframes st0D{0%,61.9%{transform:scale(0) rotate(-40deg)}63.5%{transform:scale(1.35) rotate(12deg)}64.5%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st0{transform-box:fill-box;transform-origin:center;animation:st0D 10s ease-out infinite}@keyframes st1D{0%,63.5%{transform:scale(0) rotate(-40deg)}65.1%{transform:scale(1.35) rotate(12deg)}66.1%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st1{transform-box:fill-box;transform-origin:center;animation:st1D 10s ease-out infinite}@keyframes st2D{0%,65.1%{transform:scale(0) rotate(-40deg)}66.7%{transform:scale(1.35) rotate(12deg)}67.7%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st2{transform-box:fill-box;transform-origin:center;animation:st2D 10s ease-out infinite}.fly{animation:flyD 10s cubic-bezier(.5,0,.3,1) infinite}.chip{animation:chipD 10s ease-out infinite}@keyframes cf2D{0%,39.9%{translate:0 0;rotate:0deg;opacity:0}40.5%{opacity:1}52%{translate:var(--dx) var(--dy);rotate:var(--r);opacity:1}55%,100%{translate:var(--dx) var(--dy);rotate:var(--r);opacity:0}}
+.cf2{animation:cf2D 10s cubic-bezier(.1,.7,.3,1) infinite}
+.cg1{--dx:-60px;--dy:-56px;--r:220deg}.cg2{--dx:-20px;--dy:-80px;--r:-180deg}.cg3{--dx:30px;--dy:-74px;--r:300deg}.cg4{--dx:58px;--dy:-30px;--r:-240deg}
+.cg5{--dx:-76px;--dy:10px;--r:160deg}.cg6{--dx:62px;--dy:26px;--r:-200deg}.cg7{--dx:-40px;--dy:52px;--r:260deg}.cg8{--dx:24px;--dy:60px;--r:-120deg}
+@keyframes lspkD{0%,39.9%{transform:scale(0) rotate(0deg);opacity:0}42%{transform:scale(1.3) rotate(25deg);opacity:1}50%,100%{transform:scale(0) rotate(60deg);opacity:0}}
+.lspk{transform-box:fill-box;transform-origin:center;animation:lspkD 10s ease-out infinite}
+
+@media (prefers-reduced-motion: reduce){.fly,.chip,.st0,.st1,.st2,.det{animation:none!important}.wire,.touch,.you,.rena,.led,.win,.idle,.smug,.bad,.prompt,.card{animation:none}.card{transform:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #1F2438; color: #fff4e0; font-family: 'Nunito', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(#2E3656, #262D48)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 262px; bottom: 0; background: #4A5168; border-top: 4px solid #1b1f3b"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 262px; height: 10px; background: #59617D"></div>
+  <div aria-hidden="true" style="position: absolute; left: 10px; top: 290px; width: 300px; height: 292px; border-radius: 10px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0) 0 23px, rgba(255, 255, 255, 0.18) 23px 24px), repeating-linear-gradient(rgba(0, 0, 0, 0) 0 23px, rgba(255, 255, 255, 0.18) 23px 24px), #2E8A5E; border: 3px solid #1b1f3b; box-sizing: border-box"></div>
+
+  <div aria-hidden="true" style="position: absolute; left: 286px; top: 214px; width: 84px; height: 30px; box-sizing: border-box; border-radius: 6px; background: #2C3266; border: 2.5px solid #1b1f3b; display: grid; place-items: center; font: 900 15px/1 'Nunito', sans-serif; color: #fff4e0; letter-spacing: 3px">LAB 4</div>
+  <svg viewBox="0 0 40 40" aria-hidden="true" style="position: absolute; left: 22px; top: 208px; width: 40px; height: 40px"><circle cx="20" cy="20" r="17" fill="#F2EFE6" stroke="#1B1F3B" stroke-width="3"/><path d="M20 20 L21.2 10.5 M20 20 L12.5 24.5" stroke="#1B1F3B" stroke-width="2.6" stroke-linecap="round"/></svg>
+  <svg viewBox="0 0 390 90" aria-hidden="true" style="position: absolute; left: 0; top: 612px; width: 390px; height: 90px">
+    <g stroke="#1B1F3B" stroke-width="2.5" stroke-linejoin="round">
+      <circle cx="44" cy="40" r="20" fill="#C9CDD6"/><circle cx="44" cy="40" r="8" fill="#1B1F3B"/><path d="M62 46 Q80 52 92 44" fill="none" stroke="#9AA3B8"/>
+      <rect x="104" y="18" width="46" height="58" rx="8" fill="#F2B33D"/><rect x="112" y="26" width="30" height="16" rx="3" fill="#2A3A30"/><circle cx="127" cy="58" r="9" fill="#1B1F3B"/><path d="M127 58 L132 52" stroke="#F2EFE6" stroke-width="2"/>
+      <path d="M186 30 L218 56 M196 26 L226 52" stroke="#3A3E4A" stroke-width="5" stroke-linecap="round"/><circle cx="182" cy="26" r="6" fill="#EF5B5B"/><circle cx="192" cy="22" r="6" fill="#EF5B5B"/>
+    </g>
+    <text x="127" y="39" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="10" fill="#7DFFB0">9.0</text>
+  </svg>
+  <div style="position: absolute; left: 22px; top: 126px; width: 346px; height: 76px; box-sizing: border-box; border-radius: 16px; background: rgba(22, 14, 34, 0.75); border: 2px solid #3a2340">
+    <div aria-hidden="true" style="position: absolute; left: 22px; right: 30px; top: 22px; height: 6px; border-radius: 3px; background: rgba(255, 244, 224, 0.2)"></div>
+    <div aria-hidden="true" style="position: absolute; left: 22px; right: 30px; top: 50px; height: 6px; border-radius: 3px; background: rgba(255, 244, 224, 0.2)"></div>
+    <div aria-hidden="true" style="position: absolute; right: 14px; top: 12px; width: 14px; height: 52px; background: repeating-conic-gradient(#fff4e0 0 25%, #1b1f3b 0 50%) 0 0 / 14px 14px; border: 2px solid #1b1f3b"></div>
+    <div class="you" style="position: absolute; left: 8px; top: 10px; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #F2B33D; border: 2.5px solid #1b1f3b; display: grid; place-items: center; font: 900 9px/1 'Nunito', sans-serif; color: #1b1f3b">You</div>
+    <div class="rena" aria-hidden="true" style="position: absolute; left: 8px; top: 38px; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #EF5B5B; border: 2.5px solid #1b1f3b; overflow: hidden">
+      <div class="spr" style="left: -6px; top: -4px; width: 38px; height: 53px; background-position: 54.55% 0"></div>
+    </div>
+  </div>
+
+  <div class="board" style="position: absolute; left: 26px; top: 306px; width: 268px; height: 260px; box-sizing: border-box; border-radius: 10px; border: 3px solid #1b1f3b; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3)">
+    <div aria-hidden="true" style="position: absolute; left: 10px; right: 10px; top: 8px; height: 3px; background: #EF5B5B"></div>
+    <div aria-hidden="true" style="position: absolute; left: 10px; right: 10px; top: 16px; height: 3px; background: #3F6FA0"></div>
+    <div aria-hidden="true" style="position: absolute; left: 10px; right: 10px; bottom: 16px; height: 3px; background: #EF5B5B"></div>
+    <div aria-hidden="true" style="position: absolute; left: 10px; right: 10px; bottom: 8px; height: 3px; background: #3F6FA0"></div>
+  </div>
+
+  <svg viewBox="0 0 390 844" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px">
+    <g stroke="#1B1F3B" stroke-width="2">
+      <path d="M44 352 H52 M88 352 H96" stroke="#9AA3B8" stroke-width="2.5"/><rect x="52" y="346" width="36" height="12" rx="5" fill="#EAD9B4"/>
+      <rect x="60" y="346" width="4" height="12" fill="#B8302F" stroke="none"/><rect x="68" y="346" width="4" height="12" fill="#3F6FA0" stroke="none"/><rect x="76" y="346" width="4" height="12" fill="#F2B33D" stroke="none"/>
+      <rect x="54" y="468" width="64" height="26" rx="3" fill="#1B1F3B"/><path d="M62 468 v-6 M74 468 v-6 M86 468 v-6 M98 468 v-6 M110 468 v-6 M62 494 v6 M74 494 v6 M86 494 v6 M98 494 v6 M110 494 v6" stroke="#9AA3B8" stroke-width="2.5"/><circle cx="62" cy="481" r="3" fill="#59617D" stroke="none"/>
+      <rect x="188" y="372" width="18" height="26" rx="6" fill="#3F6FA0"/><path d="M193 398 v10 M201 398 v10" stroke="#9AA3B8" stroke-width="2.5"/><rect x="188" y="376" width="18" height="4" fill="#BFE3FF" stroke="none"/>
+      <path d="M188 452 Q200 432 212 452" fill="none" stroke="#F2B33D" stroke-width="4"/><path d="M244 470 Q262 448 280 470" fill="none" stroke="#9B87F5" stroke-width="4"/>
+      <path d="M50 528 Q98 508 148 528" fill="none" stroke="#3DD68C" stroke-width="4"/>
+      <path d="M240 500 H248 M276 500 H284" stroke="#9AA3B8" stroke-width="2.5"/><rect x="248" y="494" width="28" height="12" rx="5" fill="#EAD9B4"/><rect x="254" y="494" width="4" height="12" fill="#3DD68C" stroke="none"/><rect x="262" y="494" width="4" height="12" fill="#1B1F3B" stroke="none"/>
+    </g>
+    <g stroke="#1B1F3B" stroke-width="3">
+      <rect x="32" y="378" width="42" height="56" rx="6" fill="#1B1F3B"/>
+      <rect x="32" y="378" width="42" height="28" rx="6" fill="#EF5B5B"/>
+    </g>
+    <text x="53" y="398" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="16" fill="#FFF4E0">+</text>
+    <text x="53" y="426" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="16" fill="#FFF4E0">−</text>
+    <path d="M74 404 L110 404 L110 340 L170 340 L170 520 L226 520 L226 420 L258 420" fill="none" stroke="#1B1F3B" stroke-width="3" stroke-dasharray="3 9" stroke-linecap="round" opacity="0.55"/>
+    <path class="wire" d="M74 404 L110 404 L110 340 L170 340 L170 520 L226 520 L226 420 L258 420" fill="none" stroke="#1B1F3B" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="528"/>
+    <path class="wire" d="M74 404 L110 404 L110 340 L170 340 L170 520 L226 520 L226 420 L258 420" fill="none" stroke="#3FB8AF" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="528"/>
+    <path d="M262 400 L262 432 M272 400 L272 432" stroke="#9AA3B8" stroke-width="3"/>
+    <path d="M254 404 A13 13 0 0 1 280 404 L280 406 L254 406 Z" fill="#B8302F" stroke="#1B1F3B" stroke-width="3"/>
+    <path d="M253 392 Q267 370 281 392 L281 404 L253 404 Z" fill="#E86060" stroke="#1B1F3B" stroke-width="3"/>
+    <g class="led">
+      <circle cx="267" cy="392" r="34" fill="#FF6B6B" opacity="0.35"/>
+      <path d="M253 392 Q267 370 281 392 L281 404 L253 404 Z" fill="#FFB3B3" stroke="#1B1F3B" stroke-width="3"/>
+    </g>
+  </svg>
+  <div aria-hidden="true" style="position: absolute; left: 267px; top: 392px; width: 0; height: 0"><i class="cf2 cg1 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #F2B33D"></i><i class="cf2 cg2 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #3FB8AF"></i><i class="cf2 cg3 det" style="position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #FFF4E0"></i><i class="cf2 cg4 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #9B87F5"></i><i class="cf2 cg5 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #EF5B5B"></i><i class="cf2 cg6 det" style="position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #F2B33D"></i><i class="cf2 cg7 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #3FB8AF"></i><i class="cf2 cg8 det" style="position: absolute; width: 10px; height: 5px; border-radius: 1px; background: #FFF4E0"></i></div>
+  <svg class="lspk det" viewBox="-10 -10 20 20" aria-hidden="true" style="position: absolute; left: 280px; top: 356px; width: 24px; height: 24px"><path d="M0 -9 L2.4 -2.4 L9 0 L2.4 2.4 L0 9 L-2.4 2.4 L-9 0 L-2.4 -2.4 Z" fill="#FFF4E0"/></svg>
+  <div class="touch" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 52px; height: 52px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(27, 31, 59, 0.85); background: rgba(63, 184, 175, 0.28); box-shadow: 0 0 0 3px rgba(255, 244, 224, 0.8)"></div>
+
+  <div class="idle" aria-hidden="true" style="position: absolute; left: 262px; top: 418px; width: 128px; height: 180px"><div class="spr" style="left: 0; top: 0; width: 128px; height: 180px; background-position: 63.64% 0"></div></div>
+  <div class="smug" aria-hidden="true" style="position: absolute; left: 262px; top: 418px; width: 128px; height: 180px"><div class="spr" style="left: 0; top: 0; width: 128px; height: 180px; background-position: 54.55% 0"></div></div>
+  <p class="bad" style="position: absolute; right: 70px; top: 418px; margin: 0; font: 800 14px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #c63f3f; border-radius: 12px; padding: 6px 10px; white-space: nowrap"><b style="color: #c63f3f">Rena</b> Not bad.</p>
+
+  <p class="win" style="position: absolute; left: 50%; top: 236px; margin: 0; font: 900 32px/1 'Nunito', sans-serif; color: #F2B33D; -webkit-text-stroke: 2px #1b1f3b; text-shadow: 0 4px 0 #1b1f3b; white-space: nowrap">You win!</p>
+  <p class="prompt" style="position: absolute; left: 26px; width: 268px; top: 600px; margin: 0; text-align: center; font: 900 15px/1 'Nunito', sans-serif; color: #fff4e0">Trace the wire, fast</p>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 110px; background: linear-gradient(rgba(12, 8, 22, 0.92), rgba(12, 8, 22, 0))"></div>
+  <div class="fly" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; background: #fff4e0; border: 2.5px solid #1b1f3b; box-sizing: border-box; display: grid; place-items: center; box-shadow: 0 0 14px rgba(242, 179, 61, 0.9)"><svg viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 2 C10 2 4 9 4 13 A6 6 0 0 0 16 13 C16 9 10 2 10 2 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="1.8"/></svg></div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; align-items: center; gap: 12px">
+    <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 244, 224, 0.12); border: 1.5px solid rgba(255, 244, 224, 0.35); display: grid; place-items: center; font: 900 20px/1 'Nunito', sans-serif">‹</span>
+    <div style="flex: 1">
+      <p style="margin: 0; font: italic 600 24px/1 'Fraunces', Georgia, serif">Race Rena</p>
+      <p style="margin: 5px 0 0; font: 800 11px/1 'Nunito', sans-serif; color: #f2b33d">Favour · Rena Voss</p>
+    </div>
+    <span class="chip" style="display: flex; align-items: center; gap: 6px; background: #fff4e0; color: #1b1f3b; border-radius: 999px; padding: 6px 10px 6px 8px; font: 900 12px/1 'Nunito', sans-serif">
+      <svg viewBox="0 0 20 20" aria-hidden="true" style="width: 15px; height: 15px"><path d="M10 2 C10 2 4 9 4 13 A6 6 0 0 0 16 13 C16 9 10 2 10 2 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="1.8"/></svg>Sore spot</span>
+  </div>
+
+  <div class="card" style="position: absolute; left: 16px; right: 16px; bottom: 18px; height: 150px; box-sizing: border-box; background: #fff4e0; color: #1b1f3b; border: 3px solid #1b1f3b; border-radius: 20px; box-shadow: 0 6px 0 #1b1f3b; display: flex; align-items: center; gap: 14px; padding: 0 16px">
+    <div aria-hidden="true" style="position: relative; width: 80px; height: 80px; flex: none">
+      <div style="position: absolute; inset: 0; border-radius: 50%; background: #EF5B5B; border: 3px solid #1b1f3b; overflow: hidden">
+        <div class="spr" style="left: -12px; top: -8px; width: 98px; height: 137px; background-position: 54.55% 0"></div>
+      </div>
+      <svg viewBox="0 0 34 34" style="position: absolute; right: -8px; bottom: -6px; width: 34px; height: 34px"><circle cx="17" cy="17" r="15" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="2.5"/><circle cx="17" cy="17" r="9" fill="#F2EFE6" stroke="#1B1F3B" stroke-width="2"/><path d="M17 12 V17 L21 19" stroke="#1B1F3B" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <p style="margin: 0; font: italic 600 26px/1 'Fraunces', Georgia, serif">Sore spot</p>
+      <p style="margin: 6px 0 0; font: 800 14px/1.25 'Nunito', sans-serif">Rena gets twitchy about leaving at nine</p>
+      <span style="display: inline-block; margin-top: 8px; font: 900 11px/1 'Nunito', sans-serif; background: #1b1f3b; color: #fff4e0; border-radius: 999px; padding: 4px 9px">A nudge, not proof</span>
+    </div>
+    <div aria-hidden="true" style="position: absolute; right: 14px; bottom: 12px; display: flex; gap: 2px"><svg class="st0" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st1" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st2" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

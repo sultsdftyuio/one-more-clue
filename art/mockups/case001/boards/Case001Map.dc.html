@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>001 · Whole building</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&amp;family=Nunito:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+.spr{position:absolute;background-image:url(/_blob/9ea35634ea41062688808ca47a3e2036);background-size:1200% 100%;background-repeat:no-repeat}
+.say{position:absolute}
+.tail{position:absolute;bottom:-7px;width:9px;height:9px;background:#fff4e0;border-style:solid;border-width:0 2px 2px 0;transform:rotate(45deg)}
+@keyframes bobD{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes flickD{0%,38%,46%,100%{opacity:.85}40%{opacity:.2}43%{opacity:.6}}
+@keyframes blinkD{0%,48%{opacity:1}50%,100%{opacity:.15}}
+@keyframes pulseD{0%,100%{opacity:.18}50%{opacity:.42}}
+@keyframes ccD{0%,100%{opacity:.28}20%{opacity:.5}45%{opacity:.22}70%{opacity:.46}}
+@keyframes haloD{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes dashD{to{stroke-dashoffset:-22}}
+@keyframes rainD{to{background-position:-34px 120px}}
+.bob{animation:bobD 2.8s ease-in-out infinite}
+.flick{animation:flickD 3.4s infinite}
+.blink{animation:blinkD 1.3s steps(1) infinite}
+.pulse{animation:pulseD 2.6s ease-in-out infinite}
+.cc{animation:ccD 1.9s steps(1) infinite}
+.halo{transform-box:fill-box;transform-origin:center;animation:haloD 1.8s ease-in-out infinite}
+.dash{animation:dashD 1.2s linear infinite}
+.rain{animation:rainD .6s linear infinite}
+.rainm{animation:rainD .6s linear infinite}
+@media (prefers-reduced-motion: reduce){.bob,.flick,.blink,.pulse,.cc,.halo,.dash,.rain,.cam,.mmv,.ghost,.gwalk,.ph,.say,.lbl{animation:none!important}}
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #160e22; color: #fff4e0; font-family: 'Nunito', system-ui, sans-serif">
+  <img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="" style="position: absolute; left: -620px; top: -78px; width: 1620px; height: 850px; filter: brightness(0.38) blur(1.5px)">
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 128px; background: linear-gradient(rgba(12, 8, 22, 0.92), rgba(12, 8, 22, 0.62) 62%, rgba(12, 8, 22, 0)); pointer-events: none"></div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 14px; display: flex; justify-content: space-between; align-items: flex-start">
+    <div>
+      <p style="margin: 0; font: italic 600 24px/1.05 'Fraunces', Georgia, serif; color: #fff4e0">The Last Message</p>
+      <p style="margin: 5px 0 0; font: 600 12px/1 'Fraunces', Georgia, serif; color: #f2b33d">Halden Innovation Building · 12:40 AM</p>
+    </div>
+    <div style="display: flex"><span style="width: 24px; height: 24px; margin-left: 0; border-radius: 50%; background: #F2B33D; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">S</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #EF5B5B; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #fff4e0">M</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #9B87F5; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">A</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #3FB8AF; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">J</span></div>
+  </div>
+  <p style="position: absolute; left: 16px; top: 64px; width: 222px; margin: 0; font: 800 11px/1.3 'Nunito', sans-serif; color: #fff4e0; background: rgba(22, 14, 34, 0.86); border: 1.5px solid #f2b33d; border-radius: 12px; padding: 6px 10px"><span style="color: #f2b33d">Chapter 1</span> · What proves Priya didn't take HALO home?</p>
+
+  <div style="position: absolute; left: 0; right: 0; top: 150px; bottom: 0; background: #1f1229; border-top-left-radius: 22px; border-top-right-radius: 22px; border-top: 1.5px solid #3a2340; box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45)"></div>
+  <span style="position: absolute; left: 175px; top: 159px; width: 40px; height: 4px; border-radius: 4px; background: #4a3250"></span>
+  <p style="position: absolute; left: 16px; top: 172px; margin: 0; font: italic 600 19px/1 'Fraunces', Georgia, serif; color: #fff4e0">The whole building</p>
+  <p style="position: absolute; right: 16px; top: 177px; margin: 0; font: 800 11px/1 'Nunito', sans-serif; color: #cdb8d6">Tap a room to go there</p>
+  <div style="position: absolute; left: 16px; top: 206px; width: 358px; height: 187.8px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1.5px #3a2340">
+    <img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="Halden Innovation Building, small: Lab 4 and the maker space on the left, the corridor and the lobby in the middle, the car park and the North Gate on the right." style="position: absolute; left: 0; top: 0; width: 358px; height: 187.8px; display: block">
+    <div class="rainm" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 358px; height: 187.8px; opacity: 0.3; clip-path: polygon(0 0, 358px 0, 358px 187.8px, 0 187.8px, 0 173.7px, 8.8px 173.7px, 229.8px 173.7px, 229.8px 28.7px, 8.8px 28.7px, 8.8px 173.7px, 0 173.7px); background-image: repeating-linear-gradient(105deg, rgba(200, 210, 255, 0) 0px, rgba(200, 210, 255, 0) 14px, rgba(200, 210, 255, 0.55) 14px, rgba(200, 210, 255, 0.55) 15px, rgba(200, 210, 255, 0) 15px, rgba(200, 210, 255, 0) 26px); background-size: 120px 120px"></div>
+  </div>
+  <div class="bob" style="position: absolute; left: 48.4px; top: 265.7px; width: 34.7px; height: 48.6px"><div class="spr" style="left: 0; top: 0; width: 34.7px; height: 48.6px; background-position: 81.8% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 77px; top: 262.6px; width: 37.2px; height: 52px"><div class="spr" style="left: 0; top: 0; width: 37.2px; height: 52px; background-position: 0% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 97.6px; top: 265.7px; width: 34.7px; height: 48.6px"><div class="spr" style="left: 0; top: 0; width: 34.7px; height: 48.6px; background-position: 100% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 151.1px; top: 265.7px; width: 34.7px; height: 48.6px"><div class="spr" style="left: 0; top: 0; width: 34.7px; height: 48.6px; background-position: 72.7% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 187.5px; top: 262.6px; width: 37.2px; height: 52px"><div class="spr" style="left: 0; top: 0; width: 37.2px; height: 52px; background-position: 54.5% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 176px; top: 321.3px; width: 37.2px; height: 52px"><div class="spr" style="left: 0; top: 0; width: 37.2px; height: 52px; background-position: 36.4% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 144.5px; top: 332px; width: 34.7px; height: 48.6px"><div class="spr" style="left: 0; top: 0; width: 34.7px; height: 48.6px; background-position: 90.9% 0"></div></div>
+  <div class="bob" style="position: absolute; left: 206.5px; top: 328.9px; width: 37.2px; height: 52px"><div class="spr" style="left: 0; top: 0; width: 37.2px; height: 52px; background-position: 18.2% 0"></div></div>
+  <span style="position: absolute; left: 95.6px; top: 312.7px; transform: translateX(-50%); font: 900 8px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border-radius: 4px; padding: 1px 3px">Priya</span>
+  <span style="position: absolute; left: 206px; top: 312.7px; transform: translateX(-50%); font: 900 8px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border-radius: 4px; padding: 1px 3px">Rena</span>
+  <span style="position: absolute; left: 194.6px; top: 363.5px; transform: translateX(-50%); font: 900 8px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border-radius: 4px; padding: 1px 3px">Ozzy</span>
+  <span style="position: absolute; left: 225.1px; top: 379px; transform: translateX(-50%); font: 900 8px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border-radius: 4px; padding: 1px 3px">Squires</span>
+  <span style="position: absolute; left: 33.2px; top: 251.5px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">Lab 4</span>
+  <span style="position: absolute; left: 159.6px; top: 251.5px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">Corridor</span>
+  <span style="position: absolute; left: 33.2px; top: 317.8px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">Maker space</span>
+  <span style="position: absolute; left: 212.7px; top: 317.8px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">Lobby</span>
+  <span style="position: absolute; left: 252.5px; top: 327.5px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">Car park</span>
+  <span style="position: absolute; left: 325.4px; top: 305.4px; font: italic 600 9px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 3px; padding: 1px 4px; white-space: nowrap">North Gate</span>
+  <div style="position: absolute; left: 153px; top: 244.5px; width: 86.2px; height: 136.1px; box-sizing: border-box; border: 2px solid #f2b33d; border-radius: 6px"></div>
+  <span style="position: absolute; left: 155px; top: 229.5px; font: 900 9px/1 'Nunito', sans-serif; background: #f2b33d; color: #1b1f3b; border-radius: 5px; padding: 2px 5px">You are here</span>
+  <p style="position: absolute; left: 16px; right: 16px; top: 401.8px; margin: 0; font: 800 10px/1.3 'Nunito', sans-serif; color: #cdb8d6">Off the map, through the North Gate: <span style="color: #fff4e0">Gone home</span> · <span style="color: #fff4e0">Kestrel HQ, across town</span></p>
+  <p style="position: absolute; left: 16px; top: 433.8px; margin: 0; font: italic 600 15px/1 'Fraunces', Georgia, serif; color: #fff4e0">The night so far</p>
+  <p style="position: absolute; right: 16px; top: 435.8px; margin: 0; font: 800 10px/1 'Nunito', sans-serif; color: #cdb8d6">8:30 – 10:00 PM</p>
+  <span style="position: absolute; left: 92px; top: 459.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98">8:30</span>
+  <span style="position: absolute; left: 92px; top: 471.8px; width: 1px; height: 150px; background: #3a2340"></span>
+  <span style="position: absolute; left: 186px; top: 459.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98">9:00</span>
+  <span style="position: absolute; left: 186px; top: 471.8px; width: 1px; height: 150px; background: #3a2340"></span>
+  <span style="position: absolute; left: 280px; top: 459.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98">9:30</span>
+  <span style="position: absolute; left: 280px; top: 471.8px; width: 1px; height: 150px; background: #3a2340"></span>
+  <span style="position: absolute; left: 374px; top: 459.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98">10:00</span>
+  <span style="position: absolute; left: 374px; top: 471.8px; width: 1px; height: 150px; background: #3a2340"></span>
+  <span style="position: absolute; left: 16px; top: 478.8px; font: 900 11px/1 'Nunito', sans-serif; color: #fff4e0">Priya</span>
+  <span style="position: absolute; left: 92px; top: 477.8px; width: 43.9px; height: 12px; border-radius: 4px; background: repeating-linear-gradient(135deg, #6E7FB8 0 4px, rgba(0,0,0,0) 4px 8px); border: 1.5px solid #6E7FB8; box-sizing: border-box;"></span>
+  <span style="position: absolute; left: 139px; top: 477.8px; width: 4px; height: 12px; border-radius: 4px; background: #F2B33D; "></span>
+  <span style="position: absolute; left: 142.1px; top: 477.8px; width: 231.9px; height: 12px; border-radius: 4px; background: repeating-linear-gradient(135deg, #8E8A9A 0 4px, rgba(0,0,0,0) 4px 8px); border: 1.5px solid #8E8A9A; box-sizing: border-box;"></span>
+  <span style="position: absolute; left: 16px; top: 523.8px; font: 900 11px/1 'Nunito', sans-serif; color: #7fe9dd">HALO</span>
+  <span style="position: absolute; left: 117.1px; top: 517.8px; width: 109.7px; height: 10px; border-radius: 4px; background: #6E7FB8; "></span>
+  <span style="position: absolute; left: 123.3px; top: 531.8px; width: 250.7px; height: 10px; border-radius: 4px; background: repeating-linear-gradient(135deg, #8E8A9A 0 4px, rgba(0,0,0,0) 4px 8px); border: 1.5px solid #8E8A9A; box-sizing: border-box;"></span>
+  <span style="position: absolute; left: 123.3px; top: 513.8px; width: 103.4px; height: 32px; box-sizing: border-box; border: 2px solid #ff7a7a; border-radius: 6px"></span>
+  <span style="position: absolute; left: 123.3px; top: 495.8px; font: 900 9px/1 'Nunito', sans-serif; color: #fff4e0; background: #c63f3f; border-radius: 6px; padding: 3px 6px; white-space: nowrap">In two places at once</span>
+  <span style="position: absolute; left: 16px; top: 564.8px; font: 900 11px/1 'Nunito', sans-serif; color: #8e7a98">Squires</span>
+  <span style="position: absolute; left: 92px; top: 563.8px; width: 282px; height: 12px; border-radius: 4px; border: 1.5px dashed #4a3250; box-sizing: border-box"></span>
+  <span style="position: absolute; left: 233px; top: 564.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98; background: #1f1229; padding: 0 5px">find evidence to fill this in</span>
+  <span style="position: absolute; left: 16px; top: 588.8px; font: 900 11px/1 'Nunito', sans-serif; color: #8e7a98">Rena</span>
+  <span style="position: absolute; left: 92px; top: 587.8px; width: 282px; height: 12px; border-radius: 4px; border: 1.5px dashed #4a3250; box-sizing: border-box"></span>
+  <span style="position: absolute; left: 233px; top: 588.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98; background: #1f1229; padding: 0 5px">find evidence to fill this in</span>
+  <span style="position: absolute; left: 16px; top: 612.8px; font: 900 11px/1 'Nunito', sans-serif; color: #8e7a98">Ozzy</span>
+  <span style="position: absolute; left: 92px; top: 611.8px; width: 282px; height: 12px; border-radius: 4px; border: 1.5px dashed #4a3250; box-sizing: border-box"></span>
+  <span style="position: absolute; left: 233px; top: 612.8px; transform: translateX(-50%); font: 800 9px/1 'Nunito', sans-serif; color: #8e7a98; background: #1f1229; padding: 0 5px">find evidence to fill this in</span>
+  <div style="position: absolute; left: 16px; right: 16px; top: 641.8px; display: flex; flex-wrap: wrap; gap: 6px 12px; font: 800 9.5px/1 'Nunito', sans-serif; color: #cdb8d6"><span><i style="display: inline-block; width: 16px; height: 9px; border-radius: 3px; background: #6E7FB8; vertical-align: -1px"></i> proof: logs, photos</span><span><i style="display: inline-block; width: 16px; height: 9px; border-radius: 3px; border: 1.5px solid #6E7FB8; box-sizing: border-box; background: repeating-linear-gradient(135deg, #6E7FB8 0 4px, rgba(0,0,0,0) 4px 8px); vertical-align: -1px"></i> someone's word</span><span><i style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #6E7FB8; vertical-align: -1px"></i> Lab 4</span><span><i style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #F2B33D; vertical-align: -1px"></i> Lobby</span><span><i style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #8E8A9A; vertical-align: -1px"></i> Home</span></div>
+  <span style="position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font: 900 12px/1 'Nunito', sans-serif; color: #1b1f3b; background: #f2b33d; border-radius: 999px; padding: 9px 16px; white-space: nowrap">Back to the close-up</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ghosts":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ghosts = this.props.ghosts ?? true;
+    return { ghosts: ghosts, live: !ghosts };
+  }
+}
+</script>
+</body>
+</html>

@@ -60,9 +60,9 @@ export function Roles() {
   const has = (id: string) => pins.some((p) => p.id === id);
   const pin = (p: Pin) => setPins((all) => (all.some((x) => x.id === p.id) ? all : [...all, p]));
   const done: Record<RoleId, boolean> = {
-    photographer: has("jar") || has("reader"),
-    interviewer: has("ollie"),
-    tech: has("scanner"),
+    photographer: has("cabinet"),
+    interviewer: has("ozzy"),
+    tech: has("rounds"),
     archivist: has("checked"),
   };
 
@@ -70,7 +70,7 @@ export function Roles() {
     <section className="relative overflow-hidden bg-dusk px-4 py-20 sm:px-6 sm:py-28">
       <Reveal>
         <SectionHeading eyebrow="Pick a role" title="Who are you tonight?">
-          Everyone gets their own tool and their own evidence. Try all four with one lead from the practice case, and watch it travel round the table.
+          Everyone gets their own tool and their own evidence. Try all four with one lead from Case 001, and watch it travel round the table.
         </SectionHeading>
       </Reveal>
 
@@ -124,32 +124,32 @@ export function Roles() {
                   )}
                   {active === "interviewer" && (
                     <RoomDemo
-                      asked={has("ollie")}
-                      onAsk={() => pin({ id: "ollie", role: "interviewer", title: "Ollie: next door" })}
+                      asked={has("ozzy")}
+                      onAsk={() => pin({ id: "ozzy", role: "interviewer", title: "Ozzy: found it at 9:17" })}
                       next={() => {
-                        setAutoType(!has("scanner"));
+                        setAutoType(!has("rounds"));
                         setActive("tech");
                       }}
                     />
                   )}
                   {active === "tech" && (
                     <ComputerDemo
-                      asked={has("ollie")}
+                      asked={has("ozzy")}
                       autoType={autoType}
                       onTyped={() => setAutoType(false)}
                       unlocked={pins.map((p) => p.id)}
-                      onFound={(id) => pin({ id, role: "tech", title: id === "scanner" ? "Ollie's scanner" : "Tri's call log" })}
+                      onFound={(id) => pin({ id, role: "tech", title: id === "rounds" ? "Ozzy's patrol log" : "HALO's asset register" })}
                       go={() => setActive("interviewer")}
                       next={() => setActive("archivist")}
                     />
                   )}
                   {active === "archivist" && (
                     <WallDemo
-                      statement={has("ollie")}
-                      record={has("scanner")}
-                      jar={has("jar")}
+                      statement={has("ozzy")}
+                      record={has("rounds")}
+                      photo={has("cabinet")}
                       tied={has("checked")}
-                      onTie={() => pin({ id: "checked", role: "archivist", title: "Ollie checks out" })}
+                      onTie={() => pin({ id: "checked", role: "archivist", title: "Ozzy's 9:17 checks out" })}
                       go={setActive}
                     />
                   )}

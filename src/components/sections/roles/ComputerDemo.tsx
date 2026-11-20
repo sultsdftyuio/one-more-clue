@@ -35,7 +35,7 @@ function TapPaper({ text, onWord }: { text: string; onWord: (word: string) => vo
 
 /**
  * Tech: the computer. Search by typing or by tapping words in a teammate's
- * evidence. Ollie's scanner turns up locked, and the password is in what he
+ * evidence. Ozzy's patrol log turns up locked, and the password is in what he
  * told the Interviewer.
  */
 export function ComputerDemo({
@@ -156,7 +156,7 @@ export function ComputerDemo({
           <AnimatePresence mode="wait">
             {!result ? (
               <m.p key="hint" className="mt-3 text-xs text-teal/70" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                Try &ldquo;Tri&rdquo;, or follow the Interviewer&rsquo;s lead.
+                Try &ldquo;HALO&rdquo;, or follow the Interviewer&rsquo;s lead.
               </m.p>
             ) : !record ? (
               <m.p key="none" className="mt-3 text-xs text-teal/70" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -233,12 +233,12 @@ export function ComputerDemo({
           onClick={go}
           className="mt-3 w-full rounded-xl border-[0.1875rem] border-dashed border-cream/40 p-3 text-left text-sm font-bold text-cream/70 transition-colors hover:border-cream hover:text-cream"
         >
-          A teammate&rsquo;s evidence shows up here once it&rsquo;s pinned. Ask Ollie something first →
+          A teammate&rsquo;s evidence shows up here once it&rsquo;s pinned. Ask {rolesDemo.interview.name} something first →
         </button>
       )}
       <Cost>Searching is always free. Locked files need a password that&rsquo;s on a teammate&rsquo;s desk.</Cost>
 
-      {unlocked.includes("scanner") && (
+      {unlocked.includes("rounds") && (
         <Handoff to="archivist" onClick={next}>
           Hand it to the Archivist
         </Handoff>

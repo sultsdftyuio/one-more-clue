@@ -77,12 +77,8 @@ export default async function AccountPage({ searchParams }: Props) {
 
   const name = displayName(user);
   const joined = new Date(user.created_at).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-  // Real cases first, the practice case last.
-  const shelf = [...cases]
-    .sort((a, b) => Number(a.id.startsWith("practice")) - Number(b.id.startsWith("practice")))
-    .map((caseFile) => ({ caseFile, owned: unlocked.has(caseFile.id), refunded: refunded.has(caseFile.id) }));
-  const mainCases = shelf.filter(({ caseFile }) => !caseFile.id.startsWith("practice"));
-  const playable = mainCases.filter(({ caseFile, owned }) => owned || !paidCaseById(caseFile.id)).length;
+  const shelf = cases.map((caseFile) => ({ caseFile, owned: unlocked.has(caseFile.id), refunded: refunded.has(caseFile.id) }));
+  const playable = shelf.filter(({ caseFile, owned }) => owned || !paidCaseById(caseFile.id)).length;
 
   const bundle = bundles.find((b) => selling && productIdFor(b) && !(b.includes ?? []).every((id) => unlocked.has(id)));
   const saving = bundle ? bundleSaving(bundle) : null;
@@ -93,7 +89,7 @@ export default async function AccountPage({ searchParams }: Props) {
       email={user.email}
       joined={joined}
       playable={playable}
-      total={mainCases.length}
+      total={shelf.length}
       notice={notice}
       caseToBuy={caseToBuy && !unlocked.has(caseToBuy.id) ? caseToBuy : null}
       rooms={rooms}

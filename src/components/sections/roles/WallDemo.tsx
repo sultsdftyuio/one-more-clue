@@ -22,31 +22,31 @@ const pinOf = (c: Card) => ({ x: c.at.x + 22, y: c.at.y + 1 });
  * between them. Two things that can't both be true pull it tight; two that
  * agree leave it slack, which clears someone.
  */
-export function WallDemo({ statement, record, jar, tied, onTie, go }: { statement: boolean; record: boolean; jar: boolean; tied: boolean; onTie: () => void; go: (role: RoleId) => void }) {
+export function WallDemo({ statement, record, photo, tied, onTie, go }: { statement: boolean; record: boolean; photo: boolean; tied: boolean; onTie: () => void; go: (role: RoleId) => void }) {
   const { interview, search, wall } = rolesDemo;
-  const scanner = search.records.find((r) => r.id === "scanner")!;
+  const rounds = search.records.find((r) => r.id === "rounds")!;
   const cards: Card[] = [
-    { id: "ollie", title: `${interview.name}: 8:41 to 8:44`, text: `“${interview.answer.split(".")[0]}.”`, have: statement, from: "interviewer", missing: `Get ${interview.name}'s story from the Interviewer`, at: { x: 3, y: 7 }, tilt: "-rotate-2" },
+    { id: "ozzy", title: `${interview.name}: found it at 9:17`, text: `“${interview.answer.split(".")[0]}.”`, have: statement, from: "interviewer", missing: `Get ${interview.name}'s story from the Interviewer`, at: { x: 3, y: 7 }, tilt: "-rotate-2" },
     {
-      id: "scanner",
-      title: "QuickParcel scanner",
-      text: scanner.rows.slice(0, 2).map((r) => `${r.time} · next door`).join("\n"),
+      id: "rounds",
+      title: "Ozzy's patrol log",
+      text: rounds.rows.slice(-1).map((r) => `${r.time} · ${r.text.replace("Checkpoint: ", "")}`).join("\n"),
       have: record,
       from: "tech",
-      missing: "Get his scanner from the Tech",
+      missing: "Get his patrol log from the Tech",
       at: { x: 53, y: 15 },
       tilt: "rotate-2",
     },
-    { id: "jar", title: "The jar at 8:38", text: "Stuffed with notes, by the card reader.", have: jar, from: "photographer", missing: "Get a photo from the Photographer", at: { x: 28, y: 56 }, tilt: "rotate-1" },
+    { id: "cabinet", title: "The empty cabinet", text: "Not forced. The spare key in the lock.", have: photo, from: "photographer", missing: "Get a photo from the Photographer", at: { x: 28, y: 56 }, tilt: "rotate-1" },
   ];
   const [picked, setPicked] = useState<string | null>(null);
-  const [string, setString] = useState<{ a: string; b: string; ok: boolean; key: number } | null>(tied ? { a: "ollie", b: "scanner", ok: true, key: 0 } : null);
+  const [string, setString] = useState<{ a: string; b: string; ok: boolean; key: number } | null>(tied ? { a: "ozzy", b: "rounds", ok: true, key: 0 } : null);
 
   const tap = (id: string) => {
     if (!picked) return setPicked(id);
     if (picked === id) return setPicked(null);
     const pair = [picked, id].sort().join("+");
-    const ok = pair === "ollie+scanner";
+    const ok = pair === "ozzy+rounds";
     sfx.string();
     setString({ a: picked, b: id, ok, key: Date.now() });
     setPicked(null);
@@ -133,10 +133,10 @@ export function WallDemo({ statement, record, jar, tied, onTie, go }: { statemen
           </Note>
         ) : string ? (
           <Note key={string.key} tone="text-coral">
-            Nothing to tie there: the jar says nothing about where {interview.name} was. The string drops.
+            Nothing to tie there: the photo doesn&rsquo;t say when {interview.name} got to the lab. The string drops.
           </Note>
         ) : (
-          <Note key="hint">{statement && record ? `Tap ${interview.name}'s story, then his scanner, to tie them together.` : "Your wall fills up as your teammates pin what they find."}</Note>
+          <Note key="hint">{statement && record ? `Tap ${interview.name}'s story, then his patrol log, to tie them together.` : "Your wall fills up as your teammates pin what they find."}</Note>
         )}
       </AnimatePresence>
       <Cost>In the game you can drag the string too, and one that drops costs a few minutes of the night.</Cost>

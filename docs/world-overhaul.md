@@ -99,7 +99,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 - [ ] **W0.2** Put the world behind a flag: a per-room `world` flag and a hidden route, so the current game stays the default.
 - [ ] **W0.3** Phaser spike: Phaser 4 inside Next 15 and React 19, client only. Show the Case 001 plate with swipe, pinch and DPR handling, holding 60 fps with 8 sprites on a mid-range phone. Measure the bundle size.
 - [ ] **W0.4** The `WorldCanvas` shell and the client store bridging Phaser and React.
-- [ ] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7.
+- [x] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7. *(Done 2026-11-20, measured from a laptop: Supabase falls short and LiveKit is recommended instead, see section 7. The real-phone run still needs the owner.)*
 - [ ] **W0.6** Run the real-player playtest of today's Case 001 (decision 5), using [playtest.md](playtest.md). The owner runs this with friends. It runs alongside phase 0 and must finish before phase 8.
 - [ ] **W0.7** Move the world painter into this repo's `art/` (scripts that import `omc_cinema` read it from `../one-more-clue-videos`).
 
@@ -205,12 +205,87 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 ## 7. Decisions (approved by the owner on 2026-11-20)
 
 1. **World engine: Phaser 4.** It has the camera, scenes, input and tweens built in. PixiJS was the alternative.
-2. **Presence channel: Supabase Realtime.** It's already a dependency and has presence built in. LiveKit data messages stay the fallback if the W0.5 spike shows Supabase falls short.
+2. **Presence channel: Supabase Realtime.** It's already a dependency and has presence built in. LiveKit data messages stay the fallback if the W0.5 spike shows Supabase falls short. **W0.5 found that it does fall short. The recommendation below swaps the two; it waits for the owner's OK.**
 3. **Mini-games: DOM, SVG and CSS, like the mockups.** They're quicker to build, the text stays crisp and they're easy to reuse. They are not Phaser scenes.
 4. **Rollout: hidden route first.** Today's game stays the default until the phase 8 playtest says otherwise.
 5. **Playtest order: today's Case 001 gets its real-player playtest first** (W0.6), while phase 0 is built.
 6. **Money: stay on free plans** until presence or traffic needs more. Then move the service that runs short (Supabase, Upstash or LiveKit) to a paid plan, and tell the owner first.
 7. **Painter location: move the world painter into this repo's `art/`** (W0.7).
+
+### W0.5 · What the presence spike measured (2026-11-20)
+
+**Recommendation: carry presence on LiveKit data messages, not Supabase Realtime.** Supabase stays for accounts and purchases. This swaps decision 2's pick and its fallback, so it needs the owner's OK before W3.1 builds on it.
+
+1. **Speed.** From here, a position reached the other phone in about 15–30 ms over LiveKit and about 140–150 ms over Supabase (half the measured round trip). Add the smoothing delay, and teammates show under 0.2 s behind on LiveKit and about 0.45 s behind on Supabase.
+2. **Supabase's free plan can't take 10 updates a second.** Any phone sending about 8 or more messages a second was throttled within 5–10 s. Deliveries fell to 0–40%, then the service dropped the connections. At 5 a second it held in Node, but browser tabs still lost 4–31% of messages to heartbeat timeouts and bursts.
+3. **What breaks when a limit runs out.** Supabase's quota covers the whole organisation. On the free plan, going over can restrict every project in it, and that includes accounts and purchases. LiveKit's free plan just refuses new connections: voice and presence stop, and the game carries on.
+4. **Cost as it grows.** Supabase charges per message delivered, LiveKit per connected minute. At 5 updates a second, Supabase Pro works out at about $0.23 per 20-minute game past its included 5 million messages. LiveKit Ship works out at about $0.04 per game past its included 150,000 minutes.
+
+The catch: every phone in the world stays connected to LiveKit for the whole game (today only players in voice connect). So the free 5,000 minutes a month cover about 60 four-player games of 20 minutes, voice included. That's plenty while the world is on a hidden route. Before it goes public, moving LiveKit to Ship ($50 a month) is the paid change that decision 6 says to raise with the owner first.
+
+#### How it was measured
+
+- **Built:** a presence library with both services behind one interface ([src/lib/presence/](../src/lib/presence/)), plus a hidden test page, `/lab/presence`. It shows dots on a strip of Case 001's rooms: tap to walk, hold to ping, pick a status, and read the live numbers. It returns 404 on the live site. Two benches drive it: [presence-bench.ts](../scripts/presence-bench.ts) runs simulated players in Node (Supabase only), and [presence-browser-bench.mjs](../scripts/presence-browser-bench.mjs) runs headless Chrome tabs on the test page (either service).
+- **Round trips without synced clocks:** each position message also says, for every teammate, the last message it got from them and how long it held it. The sender can then time phone → service → phone → service → phone on its own clock, with no extra messages.
+- **Where:** one laptop on home Wi-Fi in the UAE, against the live Supabase project (free plan) and LiveKit Cloud (Build plan). Every player walked nonstop, the worst case, for 40–90 s per run. The Supabase project's region wasn't checked; 140 ms one way from the UAE points to Europe or further.
+- **Cost of measuring:** about 70,000 Supabase messages (3.5% of the month's 2 million) and about 50 LiveKit minutes (1% of 5,000).
+
+#### Results
+
+| Run (updates a second per player) | Round trip, median | 95th percentile | Delivered |
+|---|---|---|---|
+| LiveKit, 4 browser tabs, 10/s | 32 ms | 66 ms | 100% |
+| LiveKit, 4 browser tabs, 10/s, production build | 54 ms | 241 ms\* | 97.8% |
+| LiveKit, 4 browser tabs, 5/s, production build | 52 ms | 347 ms\* | 99.9% |
+| Supabase, 4 players in Node, 5/s (two runs) | 276–282 ms | 296–297 ms | 99.7% |
+| Supabase, 4 browser tabs, 5/s (three runs) | 292–296 ms | 332–649 ms | 69–96% |
+| Supabase, 8 players in one room, 2/s | 287 ms | 325 ms | 99.7% |
+| Supabase, two rooms of 4 at once, 5/s | 284 ms | 313 ms | 99.8% |
+| Supabase, 2 players, 7/s (6.6 actually sent a second) | 281 ms | 328 ms | 99.6% |
+| Supabase, 2 players, 8/s (7.7 actually sent a second) | 300 ms | 1,021 ms | 38% |
+| Supabase, 2 players, 10/s | 278 ms | 1,015 ms | 25% |
+| Supabase, 4 players, 10/s (two runs) | 281–283 ms | 298–329 ms | 16–17% |
+
+\* Other work was running on the laptop during these runs, and the tabs froze for up to 0.4 s, which stretches the 95th percentile. The medians hold.
+
+What it shows:
+
+- **Supabase's limit is per phone, not per room.** Its docs give the free plan 100 messages a second per project, counting every delivery, but that wasn't what bit: 154 a second across two rooms, and 127 a second in one room, ran clean. What failed was any single connection sending 7.7 or more a second; 6.6 was fine. When it failed, delivery fell to about 3% after the first 5 seconds and connections were dropped (code 1006, heartbeat timeouts).
+- **Supabase Presence is tight too:** 5 calls per client per 30 seconds. Going over closes the channel ("Client presence rate limit exceeded"), and supabase-js doesn't rejoin by itself. The bench tripped it even at 4 calls per 30 s, so the spike now makes at most 2 and keeps positions out of Presence.
+- **Browsers did worse on Supabase than Node did at the same rate,** with heartbeat timeouts and bursts up to a second. LiveKit in the same tabs was clean.
+- **Smoothing works at 5 and 10 a second.** Each teammate is drawn about 1.5 messages in the past, between the two positions either side of that moment: 150 ms behind at 10/s, 300 ms at 5/s. At 2/s it looks floaty.
+
+#### Messages per minute for a 4-player room, against the free plans
+
+| | 10/s, walking nonstop | 5/s, walking nonstop | 5/s, walking a third of the time |
+|---|---|---|---|
+| Messages sent (all four phones) | ~2,400 | ~1,170 | ~390 |
+| Supabase-billed (each send plus each delivery) | ~9,600, and throttled | ~4,650 | ~1,550 |
+| LiveKit minutes | 4 a minute at any rate | 4 a minute | 4 a minute |
+
+- **Supabase free:** 2 million messages a month for the whole organisation and 200 connections at once. The docs give 100 messages a second per project; the bench found about 7 per phone. At 5/s that's roughly 20 twenty-minute games a month walking nonstop, or about 65 if people walk a third of the time.
+- **LiveKit free (Build):** 5,000 connected minutes a month, shared with voice and with the owner's other free projects; 100 connections at once (25 rooms); 50 GB of downloads. A 20-minute game on 4 phones uses 80 minutes, so about 60 games a month. Positions at 10/s are about 1 MB a minute per room before packet overhead, so the 50 GB isn't the limit.
+- **Paid, if needed:** Supabase Pro is $25 a month with 5 million messages, then $2.50 a million. LiveKit Ship is $50 a month with 150,000 minutes, then $0.0005 a minute.
+
+#### Against today's LiveKit nudge
+
+Today the server sends one "room changed" packet per saved action, only to phones in voice. Those phones then fetch their view again over the REST API; everyone else waits for the 2-second poll (a second on average, plus the fetch). That's a few hundred packets a game, and never positions. The packet travels the same LiveKit path measured here (about 20 ms one way); the fetch after it is the slow part. Presence on LiveKit would reuse that connection: one connection per phone for voice and presence, so a player already in voice costs no extra minutes. Game state keeps going through REST and the nudge, as section 4 says.
+
+For W3.1, if the owner agrees:
+
+- Give players a data-publish grant (today's pass has `canPublishData: false`). Keep checking that each packet's sender matches the id inside it, as the spike does, and ignore "room" packets that don't come from the server.
+- Send positions as lossy packets at up to 10/s while moving, and nothing while standing still. Send statuses, pings and hellos reliably.
+- If LiveKit drops or runs out of minutes, show each player in their last known room from the engine (W3.2). The game itself doesn't need presence.
+
+#### Still to measure: real phones
+
+Real-phone numbers need the owner:
+
+1. Push this branch to get a preview link.
+2. Open `/lab/presence?transport=livekit` on 2–4 phones, ideally with some on mobile data.
+3. Tap "Run 60 s test (all phones)" on one of them.
+
+Each phone shows its numbers and can copy a report, and reports also go to the server log as `[presence-lab]` lines. LiveKit works on previews as it is. The Supabase option needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` added to Vercel's Preview environment; today they're only in Production and Development.
 
 ## 8. How future sessions should work from this
 
@@ -224,3 +299,4 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 - 2026-11-20: plan written from the design discussions and the Case 001 mockups.
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
+- 2026-11-20: W0.5 done on its branch (not pushed yet): a presence spike with both services, a hidden `/lab/presence` page and two benches. Supabase's free plan throttles any phone sending about 8 or more messages a second, and was about 140 ms one way from the UAE. LiveKit data messages took about 15–30 ms and lost nothing at 10/s. Recommends swapping decision 2 (LiveKit for presence), waiting for the owner's OK. The real-phone run is still to do (section 7).

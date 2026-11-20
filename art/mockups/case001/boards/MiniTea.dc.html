@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mini · Tea for Squires</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&amp;family=Nunito:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+.spr{position:absolute;background-image:url(/_blob/9ea35634ea41062688808ca47a3e2036);background-size:1200% 100%;background-repeat:no-repeat}
+@keyframes bagD{0%,9.9%{transform:translate(62px,623px) scale(1);opacity:0}10%{opacity:1;transform:translate(62px,623px) scale(1)}12%{transform:translate(78.6px,544.9px) scale(1)}14%{transform:translate(102.2px,485.5px) scale(.95)}16%{transform:translate(133.1px,444.9px) scale(.85)}18%{transform:translate(171px,423px) scale(.6);opacity:1}19%,100%{transform:translate(171px,423px) scale(.5);opacity:0}}
+@keyframes dropD{0%,25.9%{transform:translate(173px,623px) scale(1);opacity:0}26%{opacity:1;transform:translate(173px,623px) scale(1)}28%{transform:translate(180.4px,563.6px) scale(1)}30%{transform:translate(182.5px,510.5px) scale(.95)}32%{transform:translate(179.4px,463.6px) scale(.85)}34%{transform:translate(171px,423px) scale(.6);opacity:1}35%,100%{transform:translate(171px,423px) scale(.5);opacity:0}}
+@keyframes milkD{0%,41.9%{transform:translate(284px,623px) scale(1);opacity:0}42%{opacity:1;transform:translate(284px,623px) scale(1)}44%{transform:translate(271px,544.9px) scale(1)}46%{transform:translate(247.8px,485.5px) scale(.95)}48%{transform:translate(214.4px,444.9px) scale(.85)}50%{transform:translate(171px,423px) scale(.6);opacity:1}51%,100%{transform:translate(171px,423px) scale(.5);opacity:0}}
+@keyframes usedBagD{0%,17.9%{opacity:1}18%,96%{opacity:.35}100%{opacity:1}}
+@keyframes usedDropD{0%,33.9%{opacity:1}34%,96%{opacity:.35}100%{opacity:1}}
+@keyframes usedMilkD{0%,49.9%{opacity:1}50%,96%{opacity:.35}100%{opacity:1}}
+@keyframes tagD{0%,17.9%{opacity:0}18%,96%{opacity:1}100%{opacity:0}}
+@keyframes teaD{0%,29.9%{opacity:0}35%,96%{opacity:1}100%{opacity:0}}
+@keyframes milkyD{0%,47.9%{opacity:0}53%,96%{opacity:1}100%{opacity:0}}
+@keyframes ck1D{0%,17.9%{transform:scale(0)}19%{transform:scale(1.25)}20%,96%{transform:scale(1)}100%{transform:scale(0)}}
+@keyframes ck2D{0%,33.9%{transform:scale(0)}35%{transform:scale(1.25)}36%,96%{transform:scale(1)}100%{transform:scale(0)}}
+@keyframes ck3D{0%,49.9%{transform:scale(0)}51%{transform:scale(1.25)}52%,96%{transform:scale(1)}100%{transform:scale(0)}}
+@keyframes thermoD{0%,5%{transform:scaleY(1)}56%,96%{transform:scaleY(.45)}100%{transform:scaleY(1)}}
+@keyframes steamD{0%{transform:translateY(0) scaleX(1);opacity:0}30%{opacity:.85}100%{transform:translateY(-24px) scaleX(1.5);opacity:0}}
+@keyframes mugSteamD{0%,33.9%{opacity:0}36%,96%{opacity:1}100%{opacity:0}}
+@keyframes nervD{0%,59.9%{opacity:1}61%,98%{opacity:0}100%{opacity:1}}
+@keyframes calmD{0%,59.9%{opacity:0;transform:translateY(0)}61%{opacity:1;transform:translateY(-8px)}63%,96%{opacity:1;transform:translateY(0)}100%{opacity:0}}
+@keyframes ahD{0%,61.9%{opacity:0;transform:scale(.6)}64%{opacity:1;transform:scale(1.08)}65%,88%{opacity:1;transform:scale(1)}91%,100%{opacity:0;transform:scale(1)}}
+@keyframes perfD{0%,53.9%{transform:translateX(-50%) scale(.5);opacity:0}56%{transform:translateX(-50%) scale(1.15);opacity:1}57.5%,63%{transform:translateX(-50%) scale(1);opacity:1}66%,100%{transform:translateX(-50%) scale(1);opacity:0}}
+@keyframes promptD{0%,100%{opacity:0}2%,50%{opacity:1}26%{opacity:.55}52%{opacity:0}}
+@keyframes cardD{0%,65.9%{transform:translateY(220px)}70%{transform:translateY(-6px)}71.5%,96%{transform:translateY(0)}100%{transform:translateY(220px)}}
+.bag{animation:bagD 10s linear infinite}.drop{animation:dropD 10s linear infinite}.milk{animation:milkD 10s linear infinite}
+.ub{animation:usedBagD 10s steps(1) infinite}.ud{animation:usedDropD 10s steps(1) infinite}.um{animation:usedMilkD 10s steps(1) infinite}
+.tag{animation:tagD 10s steps(1) infinite}
+.tea{animation:teaD 10s ease-out infinite}.milky{animation:milkyD 10s ease-out infinite}
+.ck1,.ck2,.ck3{transform-box:fill-box;transform-origin:center}
+.ck1{animation:ck1D 10s ease-out infinite}.ck2{animation:ck2D 10s ease-out infinite}.ck3{animation:ck3D 10s ease-out infinite}
+.thermo{transform-origin:50% 100%;animation:thermoD 10s linear infinite}
+.steam{transform-box:fill-box;transform-origin:50% 100%;animation:steamD 1.8s ease-out infinite}
+.mugsteam{animation:mugSteamD 10s steps(1) infinite}
+.nerv{animation:nervD 10s steps(1) infinite}
+.calm{animation:calmD 10s ease-out infinite}
+.ah{transform-origin:0 100%;animation:ahD 10s ease-out infinite}
+.perf{animation:perfD 10s cubic-bezier(.2,.9,.3,1.3) infinite}
+.prompt{animation:promptD 10s ease-in-out infinite}
+.card{animation:cardD 10s cubic-bezier(.2,.9,.3,1.1) infinite}
+@keyframes flyD{0%,60.9%{transform:translate(175px,422px) scale(1.4);opacity:0}61.4%{opacity:1}65.4%{transform:translate(319px,18px) scale(.7);opacity:1}65.9%,100%{transform:translate(319px,18px) scale(.7);opacity:0}}@keyframes chipD{0%,65.3%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,179,61,0)}66.9%{transform:scale(1.18);box-shadow:0 0 0 7px rgba(242,179,61,.5)}68.9%,100%{transform:scale(1);box-shadow:0 0 0 14px rgba(242,179,61,0)}}@keyframes st0D{0%,69.9%{transform:scale(0) rotate(-40deg)}71.5%{transform:scale(1.35) rotate(12deg)}72.5%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st0{transform-box:fill-box;transform-origin:center;animation:st0D 10s ease-out infinite}@keyframes st1D{0%,71.5%{transform:scale(0) rotate(-40deg)}73.1%{transform:scale(1.35) rotate(12deg)}74.1%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st1{transform-box:fill-box;transform-origin:center;animation:st1D 10s ease-out infinite}@keyframes st2D{0%,73.1%{transform:scale(0) rotate(-40deg)}74.7%{transform:scale(1.35) rotate(12deg)}75.7%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st2{transform-box:fill-box;transform-origin:center;animation:st2D 10s ease-out infinite}.fly{animation:flyD 10s cubic-bezier(.5,0,.3,1) infinite}.chip{animation:chipD 10s ease-out infinite}@keyframes splD{0%{translate:0 0;opacity:0}.3%{opacity:1}5%{translate:var(--dx) var(--dy);opacity:0}100%{opacity:0}}
+.spl{animation:splD 10s ease-out infinite both}.sl1{--dx:-24px;--dy:-26px}.sl2{--dx:-8px;--dy:-34px}.sl3{--dx:10px;--dy:-32px}.sl4{--dx:26px;--dy:-22px}.sl5{--dx:0px;--dy:-40px}
+@keyframes swirlD{0%,49.9%{opacity:0;transform:rotate(0deg)}52%{opacity:1}96%{opacity:1;transform:rotate(720deg)}100%{opacity:0;transform:rotate(720deg)}}
+.swirl{transform-box:fill-box;transform-origin:center;animation:swirlD 10s linear infinite}
+@keyframes rainTD{to{background-position:-20px 80px}}.raint{animation:rainTD .8s linear infinite}
+
+@media (prefers-reduced-motion: reduce){.fly,.chip,.st0,.st1,.st2,.det{animation:none!important}.bag,.drop,.milk,.ub,.ud,.um,.tag,.tea,.milky,.ck1,.ck2,.ck3,.thermo,.steam,.mugsteam,.nerv,.calm,.ah,.perf,.prompt,.card{animation:none}.card{transform:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #2A1E18; color: #fff4e0; font-family: 'Nunito', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(#D9C29A, #B89A6A)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 300px; height: 222px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0) 0 38px, #C9B48A 38px 40px), repeating-linear-gradient(rgba(0, 0, 0, 0) 0 38px, #C9B48A 38px 40px), #EFE4CC"></div>
+  <div aria-hidden="true" style="position: absolute; left: 16px; top: 116px; width: 190px; height: 112px; box-sizing: border-box; border-radius: 8px; background: #8A6A4A; border: 3px solid #1b1f3b; display: flex">
+    <div style="flex: 1; border-right: 2.5px solid #1b1f3b; position: relative"><i style="position: absolute; right: 8px; top: 48px; width: 7px; height: 7px; border-radius: 50%; background: #F2B33D; border: 1.5px solid #1b1f3b"></i></div>
+    <div style="flex: 1; position: relative"><i style="position: absolute; left: 8px; top: 48px; width: 7px; height: 7px; border-radius: 50%; background: #F2B33D; border: 1.5px solid #1b1f3b"></i></div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 228px; top: 118px; width: 144px; height: 118px; box-sizing: border-box; border-radius: 6px; background: linear-gradient(#0B1024, #26305E); border: 6px solid #F2EFE6; box-shadow: 0 0 0 3px #1b1f3b"></div>
+  <div aria-hidden="true" style="position: absolute; left: 298px; top: 118px; width: 4px; height: 118px; background: #F2EFE6"></div>
+  <i aria-hidden="true" style="position: absolute; left: 334px; top: 136px; width: 18px; height: 18px; border-radius: 50%; background: #F2EBD8; box-shadow: 0 0 14px 4px rgba(242, 235, 216, 0.5)"></i>
+  <div class="raint det" aria-hidden="true" style="position: absolute; left: 234px; top: 124px; width: 132px; height: 106px; opacity: 0.4; background-image: repeating-linear-gradient(105deg, rgba(200, 210, 255, 0) 0 9px, rgba(200, 210, 255, 0.7) 9px 10px, rgba(200, 210, 255, 0) 10px 18px); background-size: 60px 80px"></div>
+  <div aria-hidden="true" style="position: absolute; left: 222px; top: 236px; width: 156px; height: 8px; border-radius: 2px; background: #E8DCC4; box-shadow: 0 0 0 2.5px #1b1f3b"></div>
+  <svg viewBox="0 0 40 50" aria-hidden="true" style="position: absolute; left: 236px; top: 196px; width: 34px; height: 42px"><path d="M20 30 Q8 22 10 8 Q16 18 20 26 Q24 14 32 6 Q32 22 20 30" fill="#4FA066" stroke="#1B1F3B" stroke-width="2"/><path d="M10 30 H30 L27 46 H13 Z" fill="#C0563F" stroke="#1B1F3B" stroke-width="2.5"/></svg>
+  <div aria-hidden="true" style="position: absolute; left: 192px; top: 96px; width: 2px; height: 150px; background: #1b1f3b"></div>
+  <div aria-hidden="true" style="position: absolute; left: 167px; top: 242px; width: 52px; height: 26px; box-sizing: border-box; border-radius: 26px 26px 4px 4px; background: #3F6FA0; border: 2.5px solid #1b1f3b"></div>
+  <div aria-hidden="true" style="position: absolute; left: 182px; top: 264px; width: 22px; height: 8px; border-radius: 0 0 11px 11px; background: #FFE9B0; box-shadow: 0 4px 18px 6px rgba(255, 220, 150, 0.7)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 70px; top: 268px; width: 246px; height: 256px; background: linear-gradient(rgba(255, 220, 150, 0.32), rgba(255, 220, 150, 0)); clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%)"></div>
+  <div aria-hidden="true" style="position: absolute; left: 58px; top: 292px; width: 108px; height: 6px; border-radius: 2px; background: #8A6A4A; box-shadow: 0 0 0 2px #1b1f3b"></div>
+  <svg viewBox="0 0 108 30" aria-hidden="true" style="position: absolute; left: 58px; top: 264px; width: 108px; height: 30px">
+    <g stroke="#1B1F3B" stroke-width="2"><rect x="6" y="6" width="22" height="22" rx="4" fill="#EFE4CC"/><rect x="5" y="2" width="24" height="6" rx="2" fill="#6B4A2E"/><rect x="42" y="4" width="22" height="24" rx="4" fill="#EFE4CC"/><rect x="41" y="0" width="24" height="6" rx="2" fill="#3F6FA0"/><rect x="78" y="8" width="22" height="20" rx="4" fill="#EFE4CC"/><rect x="77" y="4" width="24" height="6" rx="2" fill="#EF5B5B"/></g>
+    <path d="M12 18 q5 -7 10 0 q-5 5 -10 0" fill="#4FA066"/><ellipse cx="53" cy="18" rx="4" ry="5.5" fill="#6B4A2E"/><rect x="85" y="15" width="8" height="8" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="1.5"/>
+  </svg>
+  <div aria-hidden="true" style="position: absolute; left: 70px; top: 456px; width: 22px; height: 26px; box-sizing: border-box; border-radius: 4px; background: #F2EFE6; border: 2px solid #1b1f3b"></div>
+  <i aria-hidden="true" style="position: absolute; left: 76px; top: 464px; width: 3px; height: 7px; background: #1b1f3b"></i><i aria-hidden="true" style="position: absolute; left: 83px; top: 464px; width: 3px; height: 7px; background: #1b1f3b"></i>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 520px; height: 16px; background: #7A5A3E; border-top: 3px solid #1b1f3b; border-bottom: 3px solid #1b1f3b"></div>
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 536px; bottom: 0; background: #5A3A26"></div>
+
+  <div aria-hidden="true" style="position: absolute; left: 26px; top: 238px; width: 18px; height: 96px; box-sizing: border-box; border-radius: 9px; background: #F2EFE6; border: 2.5px solid #1b1f3b; overflow: hidden">
+    <div class="thermo" style="position: absolute; left: 0; right: 0; bottom: 0; height: 100%; background: linear-gradient(#EF5B5B, #F2B33D)"></div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 20px; top: 330px; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; background: #EF5B5B; border: 2.5px solid #1b1f3b"></div>
+
+  <svg viewBox="0 0 390 844" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px">
+    <path class="steam" d="M118 414 Q110 400 118 388 Q126 376 118 364" fill="none" stroke="#fff4e0" stroke-width="4" stroke-linecap="round"/>
+    <path class="steam" d="M128 414 Q136 402 128 390 Q120 378 128 368" fill="none" stroke="#fff4e0" stroke-width="3" stroke-linecap="round" style="animation-delay: .7s"/>
+    <path d="M46 520 L52 452 Q54 434 80 434 Q106 434 108 452 L114 520 Z" fill="#C9CDD6" stroke="#1B1F3B" stroke-width="3.5"/>
+    <path d="M108 462 L124 420 L130 424 L116 470" fill="#C9CDD6" stroke="#1B1F3B" stroke-width="3"/>
+    <path d="M50 462 Q30 466 34 490 Q38 506 50 504" fill="none" stroke="#1B1F3B" stroke-width="5"/>
+    <rect x="62" y="426" width="36" height="10" rx="4" fill="#9AA3B8" stroke="#1B1F3B" stroke-width="2.5"/>
+    <circle cx="80" cy="422" r="5" fill="#1B1F3B"/>
+    <rect x="58" y="488" width="44" height="6" rx="3" fill="#fff" opacity="0.35"/>
+    <path d="M152 446 L158 516 Q160 522 170 522 L216 522 Q226 522 228 516 L234 446 Z" fill="#F2EFE6" stroke="#1B1F3B" stroke-width="3.5"/>
+    <path d="M232 462 Q254 462 252 484 Q250 504 228 504" fill="none" stroke="#1B1F3B" stroke-width="5"/>
+    <ellipse cx="193" cy="446" rx="41" ry="9" fill="#3A2A22" stroke="#1B1F3B" stroke-width="3"/>
+    <ellipse class="tea" cx="193" cy="447" rx="37" ry="7" fill="#7A4A2A"/>
+    <ellipse class="milky" cx="193" cy="447" rx="37" ry="7" fill="#B98A5E"/>
+    <text x="193" y="490" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="20" fill="#D6312F">No.1</text>
+    <text x="193" y="508" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="10" fill="#1B1F3B">PROF</text>
+    <g class="tag"><path d="M162 446 L150 470" stroke="#1B1F3B" stroke-width="1.5"/><rect x="142" y="468" width="16" height="14" rx="2" fill="#F2B33D" stroke="#1B1F3B" stroke-width="2"/></g>
+    <g class="mugsteam">
+      <path class="steam" d="M182 436 Q174 422 182 410 Q190 398 182 386" fill="none" stroke="#fff4e0" stroke-width="4" stroke-linecap="round"/>
+      <path class="steam" d="M204 436 Q212 422 204 410 Q196 398 204 386" fill="none" stroke="#fff4e0" stroke-width="4" stroke-linecap="round" style="animation-delay: .6s"/>
+    </g>
+    <g stroke="#1B1F3B" stroke-width="3">
+      <circle cx="120" cy="364" r="24" fill="#FFF4E0"/><circle cx="193" cy="364" r="24" fill="#FFF4E0"/><circle cx="266" cy="364" r="24" fill="#FFF4E0"/>
+    </g>
+    <g stroke="#1B1F3B" stroke-width="2">
+      <rect x="111" y="356" width="18" height="20" rx="3" fill="#C9A877"/><path d="M120 356 L120 346" stroke-width="1.5"/><rect x="115" y="341" width="10" height="7" fill="#F2B33D"/>
+      <path d="M193 350 C193 350 183 362 183 368 A10 10 0 0 0 203 368 C203 362 193 350 193 350 Z" fill="#7FC8FF"/>
+      <path d="M257 354 L263 348 H271 L275 354 V378 H257 Z" fill="#F2EFE6"/><rect x="257" y="362" width="18" height="8" fill="#3F6FA0"/>
+    </g>
+    <g font-family="Nunito, sans-serif" font-weight="900" font-size="11" text-anchor="middle">
+      <circle cx="102" cy="344" r="9" fill="#1B1F3B"/><text x="102" y="348" fill="#FFF4E0">1</text>
+      <circle cx="175" cy="344" r="9" fill="#1B1F3B"/><text x="175" y="348" fill="#FFF4E0">2</text>
+      <circle cx="248" cy="344" r="9" fill="#1B1F3B"/><text x="248" y="348" fill="#FFF4E0">3</text>
+    </g>
+    <g class="ck1"><circle cx="140" cy="382" r="10" fill="#3DD68C" stroke="#1B1F3B" stroke-width="2"/><path d="M135 382 L139 386 L145 378" fill="none" stroke="#1B1F3B" stroke-width="2.6"/></g>
+    <g class="ck2"><circle cx="213" cy="382" r="10" fill="#3DD68C" stroke="#1B1F3B" stroke-width="2"/><path d="M208 382 L212 386 L218 378" fill="none" stroke="#1B1F3B" stroke-width="2.6"/></g>
+    <g class="ck3"><circle cx="286" cy="382" r="10" fill="#3DD68C" stroke="#1B1F3B" stroke-width="2"/><path d="M281 382 L285 386 L291 378" fill="none" stroke="#1B1F3B" stroke-width="2.6"/></g>
+    <path d="M60 518 Q40 512 50 492 Q58 480 80 478" fill="none" stroke="#1B1F3B" stroke-width="3"/>
+    <g class="swirl det"><path d="M193 447 m-20 0 a20 4 0 1 0 40 0 a14 2.8 0 1 0 -28 0 a8 1.6 0 1 0 16 0" fill="none" stroke="#EFE4CC" stroke-width="1.8" opacity="0.85"/></g>
+    <rect x="244" y="512" width="34" height="5" rx="2.5" fill="#C9CDD6" stroke="#1B1F3B" stroke-width="1.5"/><ellipse cx="282" cy="514" rx="6" ry="4" fill="#C9CDD6" stroke="#1B1F3B" stroke-width="1.5"/>
+  </svg>
+
+  <div class="nerv" aria-hidden="true" style="position: absolute; left: 248px; top: 340px; width: 150px; height: 210px"><div class="spr" style="left: 0; top: 0; width: 150px; height: 210px; background-position: 18.18% 0"></div></div>
+  <div class="calm" aria-hidden="true" style="position: absolute; left: 248px; top: 340px; width: 150px; height: 210px"><div class="spr" style="left: 0; top: 0; width: 150px; height: 210px; background-position: 27.27% 0"></div></div>
+  <p class="ah" style="position: absolute; left: 266px; top: 298px; margin: 0; font: 800 14px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #1b1f3b; border-radius: 12px; padding: 6px 10px"><b>Squires</b> Ah.</p>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px">
+    <div class="ub" style="position: absolute; left: 46px; top: 606px; width: 76px; height: 72px; box-sizing: border-box; border-radius: 16px; background: #FFF4E0; border: 3px solid #1b1f3b; box-shadow: 0 4px 0 #1b1f3b"></div>
+    <div class="ud" style="position: absolute; left: 157px; top: 606px; width: 76px; height: 72px; box-sizing: border-box; border-radius: 16px; background: #FFF4E0; border: 3px solid #1b1f3b; box-shadow: 0 4px 0 #1b1f3b"></div>
+    <div class="um" style="position: absolute; left: 268px; top: 606px; width: 76px; height: 72px; box-sizing: border-box; border-radius: 16px; background: #FFF4E0; border: 3px solid #1b1f3b; box-shadow: 0 4px 0 #1b1f3b"></div>
+    <svg viewBox="0 0 390 844" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px">
+      <g class="ub" stroke="#1B1F3B" stroke-width="2.5"><rect x="72" y="630" width="24" height="28" rx="4" fill="#C9A877"/><path d="M84 630 L84 618" stroke-width="2"/><rect x="77" y="612" width="14" height="9" fill="#F2B33D"/></g>
+      <path class="ud" d="M195 620 C195 620 182 637 182 645 A13 13 0 0 0 208 645 C208 637 195 620 195 620 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="2.5"/>
+      <g class="um" stroke="#1B1F3B" stroke-width="2.5"><path d="M294 624 L301 616 H311 L316 624 V662 H294 Z" fill="#F2EFE6"/><rect x="294" y="636" width="22" height="11" fill="#3F6FA0"/></g>
+    </svg>
+    <div class="bag" style="position: absolute; left: 0; top: 0; width: 44px; height: 44px">
+      <svg viewBox="0 0 44 44" style="width: 44px; height: 44px"><rect x="10" y="14" width="24" height="26" rx="4" fill="#C9A877" stroke="#1B1F3B" stroke-width="2.5"/><path d="M22 14 L22 4" stroke="#1B1F3B" stroke-width="2"/><rect x="16" y="0" width="12" height="7" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.5"/></svg>
+      <i style="position: absolute; left: -9px; top: -9px; width: 62px; height: 62px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(255, 244, 224, 0.9)"></i>
+    </div>
+    <div class="drop" style="position: absolute; left: 0; top: 0; width: 44px; height: 44px">
+      <svg viewBox="0 0 44 44" style="width: 44px; height: 44px"><path d="M22 4 C22 4 9 21 9 29 A13 13 0 0 0 35 29 C35 21 22 4 22 4 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="2.5"/></svg>
+      <i style="position: absolute; left: -9px; top: -9px; width: 62px; height: 62px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(255, 244, 224, 0.9)"></i>
+    </div>
+    <div class="milk" style="position: absolute; left: 0; top: 0; width: 44px; height: 44px">
+      <svg viewBox="0 0 44 44" style="width: 44px; height: 44px"><path d="M12 10 L18 3 H28 L32 10 V42 H12 Z" fill="#F2EFE6" stroke="#1B1F3B" stroke-width="2.5"/><rect x="12" y="20" width="20" height="10" fill="#3F6FA0"/></svg>
+      <i style="position: absolute; left: -9px; top: -9px; width: 62px; height: 62px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(255, 244, 224, 0.9)"></i>
+    </div>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; left: 190px; top: 438px; width: 0; height: 0"><i class="spl sl1 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #7FC8FF; border: 1px solid #1b1f3b; animation-delay: 3.4s"></i><i class="spl sl2 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #7FC8FF; border: 1px solid #1b1f3b; animation-delay: 3.4s"></i><i class="spl sl3 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #7FC8FF; border: 1px solid #1b1f3b; animation-delay: 3.4s"></i><i class="spl sl4 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #7FC8FF; border: 1px solid #1b1f3b; animation-delay: 3.4s"></i><i class="spl sl5 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #7FC8FF; border: 1px solid #1b1f3b; animation-delay: 3.4s"></i></div>
+  <div aria-hidden="true" style="position: absolute; left: 190px; top: 438px; width: 0; height: 0"><i class="spl sl1 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #FFF4E0; border: 1px solid #1b1f3b; animation-delay: 5.0s"></i><i class="spl sl2 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #FFF4E0; border: 1px solid #1b1f3b; animation-delay: 5.0s"></i><i class="spl sl3 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #FFF4E0; border: 1px solid #1b1f3b; animation-delay: 5.0s"></i><i class="spl sl4 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #FFF4E0; border: 1px solid #1b1f3b; animation-delay: 5.0s"></i><i class="spl sl5 det" style="position: absolute; left: 0; top: 0; width: 6px; height: 6px; border-radius: 50%; background: #FFF4E0; border: 1px solid #1b1f3b; animation-delay: 5.0s"></i></div>
+  <p class="prompt" style="position: absolute; left: 0; right: 0; top: 566px; margin: 0; text-align: center; font: 900 15px/1 'Nunito', sans-serif; color: #fff4e0; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6)">Drag them in, in order</p>
+  <p class="perf" style="position: absolute; left: 50%; top: 560px; margin: 0; font: 900 28px/1 'Nunito', sans-serif; color: #7dffb0; -webkit-text-stroke: 1.5px #1b1f3b; text-shadow: 0 3px 0 #1b1f3b; white-space: nowrap">Perfect brew!</p>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 110px; background: linear-gradient(rgba(12, 8, 22, 0.92), rgba(12, 8, 22, 0))"></div>
+  <div class="fly" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; background: #fff4e0; border: 2.5px solid #1b1f3b; box-sizing: border-box; display: grid; place-items: center; box-shadow: 0 0 14px rgba(242, 179, 61, 0.9)"><svg viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 2 C10 2 4 9 4 13 A6 6 0 0 0 16 13 C16 9 10 2 10 2 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="1.8"/></svg></div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; align-items: center; gap: 12px">
+    <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 244, 224, 0.12); border: 1.5px solid rgba(255, 244, 224, 0.35); display: grid; place-items: center; font: 900 20px/1 'Nunito', sans-serif">‹</span>
+    <div style="flex: 1">
+      <p style="margin: 0; font: italic 600 24px/1 'Fraunces', Georgia, serif">Tea for Squires</p>
+      <p style="margin: 5px 0 0; font: 800 11px/1 'Nunito', sans-serif; color: #f2b33d">Favour · Prof. Squires</p>
+    </div>
+    <span class="chip" style="display: flex; align-items: center; gap: 6px; background: #fff4e0; color: #1b1f3b; border-radius: 999px; padding: 6px 10px 6px 8px; font: 900 12px/1 'Nunito', sans-serif">
+      <svg viewBox="0 0 20 20" aria-hidden="true" style="width: 15px; height: 15px"><path d="M10 2 C10 2 4 9 4 13 A6 6 0 0 0 16 13 C16 9 10 2 10 2 Z" fill="#7FC8FF" stroke="#1B1F3B" stroke-width="1.8"/></svg>Sore spot</span>
+  </div>
+
+  <div class="card" style="position: absolute; left: 16px; right: 16px; bottom: 18px; height: 150px; box-sizing: border-box; background: #fff4e0; color: #1b1f3b; border: 3px solid #1b1f3b; border-radius: 20px; box-shadow: 0 6px 0 #1b1f3b; display: flex; align-items: center; gap: 14px; padding: 0 16px">
+    <div aria-hidden="true" style="position: relative; width: 80px; height: 80px; flex: none">
+      <div style="position: absolute; inset: 0; border-radius: 50%; background: #8E98B8; border: 3px solid #1b1f3b; overflow: hidden">
+        <div class="spr" style="left: -12px; top: -16px; width: 98px; height: 137px; background-position: 27.27% 0"></div>
+      </div>
+      <svg viewBox="0 0 34 34" style="position: absolute; right: -8px; bottom: -6px; width: 34px; height: 34px"><circle cx="17" cy="17" r="15" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="2.5"/><rect x="10" y="8" width="14" height="18" rx="2" fill="#F2EFE6" stroke="#1B1F3B" stroke-width="2"/><path d="M13 13 H21 M13 17 H21 M13 21 H18" stroke="#1B1F3B" stroke-width="1.6"/></svg>
+    </div>
+    <div>
+      <p style="margin: 0; font: italic 600 26px/1 'Fraunces', Georgia, serif">Sore spot</p>
+      <p style="margin: 6px 0 0; font: 800 14px/1.25 'Nunito', sans-serif">Squires gets twitchy about the visitor sheet</p>
+      <span style="display: inline-block; margin-top: 8px; font: 900 11px/1 'Nunito', sans-serif; background: #1b1f3b; color: #fff4e0; border-radius: 999px; padding: 4px 9px">A nudge, not proof</span>
+    </div>
+    <div aria-hidden="true" style="position: absolute; right: 14px; bottom: 12px; display: flex; gap: 2px"><svg class="st0" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st1" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st2" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

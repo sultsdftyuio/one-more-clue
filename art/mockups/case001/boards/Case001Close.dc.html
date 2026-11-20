@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>001 · Close-up</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&amp;family=Nunito:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+.spr{position:absolute;background-image:url(/_blob/9ea35634ea41062688808ca47a3e2036);background-size:1200% 100%;background-repeat:no-repeat}
+.say{position:absolute}
+.tail{position:absolute;bottom:-7px;width:9px;height:9px;background:#fff4e0;border-style:solid;border-width:0 2px 2px 0;transform:rotate(45deg)}
+@keyframes bobD{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes flickD{0%,38%,46%,100%{opacity:.85}40%{opacity:.2}43%{opacity:.6}}
+@keyframes blinkD{0%,48%{opacity:1}50%,100%{opacity:.15}}
+@keyframes pulseD{0%,100%{opacity:.18}50%{opacity:.42}}
+@keyframes ccD{0%,100%{opacity:.28}20%{opacity:.5}45%{opacity:.22}70%{opacity:.46}}
+@keyframes haloD{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes dashD{to{stroke-dashoffset:-22}}
+@keyframes rainD{to{background-position:-34px 120px}}
+.bob{animation:bobD 2.8s ease-in-out infinite}
+.flick{animation:flickD 3.4s infinite}
+.blink{animation:blinkD 1.3s steps(1) infinite}
+.pulse{animation:pulseD 2.6s ease-in-out infinite}
+.cc{animation:ccD 1.9s steps(1) infinite}
+.halo{transform-box:fill-box;transform-origin:center;animation:haloD 1.8s ease-in-out infinite}
+.dash{animation:dashD 1.2s linear infinite}
+.rain{animation:rainD .6s linear infinite}
+@keyframes camD{0.00%{transform:translateX(-87px)} 25.00%{transform:translateX(-87px)} 37.50%{transform:translateX(-470px)} 50.00%{transform:translateX(-620px)} 70.83%{transform:translateX(-620px)} 83.33%{transform:translateX(-87px)} 100.00%{transform:translateX(-87px)}}
+.cam{animation:camD 24.0s ease-in-out infinite}
+@keyframes mmD{0.00%{transform:translateX(6px)} 25.00%{transform:translateX(6px)} 37.50%{transform:translateX(32.5px)} 50.00%{transform:translateX(42.9px)} 70.83%{transform:translateX(42.9px)} 83.33%{transform:translateX(6px)} 100.00%{transform:translateX(6px)}}
+.mmv{animation:mmD 24.0s ease-in-out infinite}
+@keyframes ghostD{0.00%{translate:0px 0px;opacity:0} 12.50%{translate:0px 0px;opacity:0} 15.00%{translate:0px 0px;opacity:1} 16.67%{translate:0px 0px;opacity:1} 25.00%{translate:212px 0px;opacity:1} 27.50%{translate:228px 0px;opacity:1} 32.50%{translate:320px 150px;opacity:1} 37.50%{translate:228px 300px;opacity:1} 47.92%{translate:707px 300px;opacity:1} 52.08%{translate:762px 300px;opacity:1} 53.33%{translate:772px 300px;opacity:0} 100.00%{translate:0px 0px;opacity:0}}
+.ghost{animation:ghostD 24.0s linear infinite}
+@keyframes gwalkD{0%,100%{rotate:-3deg}50%{rotate:3deg}}
+.gwalk{transform-origin:50% 92%;animation:gwalkD .5s ease-in-out infinite}
+@keyframes sayC{0%{opacity:0;transform:translateY(5px) scale(.94)}1.6%{opacity:1;transform:none}11%{opacity:1;transform:none}12.5%,100%{opacity:0;transform:translateY(-3px)}}
+.say{animation:sayC 24.0s ease-in-out infinite both}
+@keyframes phD{0.00%{transform:translateX(39.8px)} 16.67%{transform:translateX(39.8px)} 37.50%{transform:translateX(55.7px)} 47.92%{transform:translateX(59.7px)} 54.17%{transform:translateX(59.7px)} 60.42%{transform:translateX(358px)} 85.42%{transform:translateX(358px)} 89.58%{transform:translateX(39.8px)} 100.00%{transform:translateX(39.8px)}}
+.ph{animation:phD 24.0s ease-in-out infinite}
+@keyframes l840{0%,0.00%{opacity:0}0.00%,22.92%{opacity:1}22.93%,100%{opacity:0}}.l840{animation:l840 24.0s steps(1) infinite}
+@keyframes l844{0%,22.91%{opacity:0}22.92%,43.75%{opacity:1}43.76%,100%{opacity:0}}.l844{animation:l844 24.0s steps(1) infinite}
+@keyframes l845{0%,43.74%{opacity:0}43.75%,59.17%{opacity:1}59.18%,100%{opacity:0}}.l845{animation:l845 24.0s steps(1) infinite}
+@keyframes llive{0%,59.16%{opacity:0}59.17%,88.33%{opacity:1}88.34%,100%{opacity:0}}.llive{animation:llive 24.0s steps(1) infinite}
+@keyframes l840b{0%,88.32%{opacity:0}88.33%,100.00%{opacity:1}100.00%,100%{opacity:0}}.l840b{animation:l840b 24.0s steps(1) infinite}
+@keyframes beep{0%,47.49%{opacity:0}47.50%,55.83%{opacity:1}55.84%,100%{opacity:0}}.beep{animation:beep 24.0s steps(1) infinite}
+@media (prefers-reduced-motion: reduce){.bob,.flick,.blink,.pulse,.cc,.halo,.dash,.rain,.cam,.mmv,.ghost,.gwalk,.ph,.say,.lbl{animation:none!important}}
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #160e22; color: #fff4e0; font-family: 'Nunito', system-ui, sans-serif">
+  <div class="cam" style="position: absolute; left: 0; top: -78px; width: 1620px; height: 850px">
+    <img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="The Halden Innovation Building at 12:40 AM, cut open: Lab 4 above the dark maker space, the corridor above the lobby and its stairs, and the car park and North Gate outside in the rain." style="position: absolute; left: 0; top: 0; width: 1620px; height: 850px; display: block">
+    <div class="pulse" aria-hidden="true" style="position: absolute; left: 260.5px; top: 331px; width: 56.5px; height: 34.5px; background: #7f9cff; mix-blend-mode: screen"></div>
+    <div class="cc" aria-hidden="true" style="position: absolute; left: 666.4px; top: 626.8px; width: 60px; height: 43.2px; background: #cfe0ff; mix-blend-mode: screen"></div>
+    <div class="flick" aria-hidden="true" style="position: absolute; left: 310px; top: 202px; width: 140px; height: 70px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 253, 242, 0.55), rgba(255, 253, 242, 0)); mix-blend-mode: screen"></div>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 140px; top: 694px; width: 6px; height: 6px; border-radius: 50%; background: #9fc6ff; box-shadow: 0 0 10px #7fb2ff; animation-delay: 0.0s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 188px; top: 694px; width: 6px; height: 6px; border-radius: 50%; background: #9fc6ff; box-shadow: 0 0 10px #7fb2ff; animation-delay: 0.4s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 236px; top: 694px; width: 6px; height: 6px; border-radius: 50%; background: #9fc6ff; box-shadow: 0 0 10px #7fb2ff; animation-delay: 0.8s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 378.5px; top: 366.5px; width: 5px; height: 5px; border-radius: 50%; background: #3dd68c; box-shadow: 0 0 8px #3dd68c; animation-delay: 0.2s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 586.5px; top: 343.5px; width: 5px; height: 5px; border-radius: 50%; background: #3dd68c; box-shadow: 0 0 8px #3dd68c; animation-delay: 0.7s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 1002.5px; top: 647.5px; width: 5px; height: 5px; border-radius: 50%; background: #3dd68c; box-shadow: 0 0 8px #3dd68c; animation-delay: 0.4s"></i>
+    <i class="blink" aria-hidden="true" style="position: absolute; left: 351.5px; top: 715.5px; width: 5px; height: 5px; border-radius: 50%; background: #ff6b6b; box-shadow: 0 0 8px #ff6b6b; animation-delay: 0.9s"></i>
+    <span style="position: absolute; left: 96px; top: 224px; font: italic 600 11px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 4px; padding: 2px 6px; white-space: nowrap">Lab 4</span>
+    <span style="position: absolute; left: 760px; top: 224px; font: italic 600 11px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 4px; padding: 2px 6px; white-space: nowrap">Corridor</span>
+    <span style="position: absolute; left: 96px; top: 522px; font: italic 600 11px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 4px; padding: 2px 6px; white-space: nowrap">Maker space · closed</span>
+    <span style="position: absolute; left: 634px; top: 522px; font: italic 600 11px/1 'Fraunces', Georgia, serif; color: #2a1a14; background: #fff4e0; border: 1px solid #2a1a14; border-radius: 4px; padding: 2px 6px; white-space: nowrap">Lobby</span>
+    <div class="bob " style="position: absolute; left: 146.5px; top: 270.3px; width: 157.1px; height: 220px; animation-delay: 0.2s"><div class="spr " style="left: 0; top: 0; width: 157.1px; height: 220px; background-position: 81.8% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 275.9px; top: 255.9px; width: 168.1px; height: 235.5px; animation-delay: 0.9s"><div class="spr " style="left: 0; top: 0; width: 168.1px; height: 235.5px; background-position: 0% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 369.5px; top: 270.3px; width: 157.1px; height: 220px; animation-delay: 1.4s"><div class="spr " style="left: 0; top: 0; width: 157.1px; height: 220px; background-position: 100% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 611.5px; top: 270.3px; width: 157.1px; height: 220px; animation-delay: 0.5s"><div class="spr " style="left: 0; top: 0; width: 157.1px; height: 220px; background-position: 72.7% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 775.9px; top: 255.9px; width: 168.1px; height: 235.5px; animation-delay: 1.1s"><div class="spr " style="left: 0; top: 0; width: 168.1px; height: 235.5px; background-position: 54.5% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 723.9px; top: 521.9px; width: 168.1px; height: 235.5px; animation-delay: 1.7s"><div class="spr " style="left: 0; top: 0; width: 168.1px; height: 235.5px; background-position: 36.4% 0"></div></div>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1620px; height: 850px; clip-path: polygon(628px 774px, 857.6px 774px, 857.6px 685.2px, 844px 666.8px, 790.4px 666.8px, 790.4px 646.8px, 771.2px 646.8px, 769.6px 666.8px, 769.6px 635.6px, 766.4px 629.2px, 755.2px 629.2px, 752px 635.6px, 752px 666.8px, 726.4px 666.8px, 726.4px 626.8px, 666.4px 626.8px, 666.4px 666.8px, 637.6px 666.8px, 628px 685.2px); pointer-events: none"><img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="" style="position: absolute; left: 0; top: 0; width: 1620px; height: 850px"></div>
+    <div class="bob " style="position: absolute; left: 581.5px; top: 570.3px; width: 157.1px; height: 220px; animation-delay: 0.3s"><div class="spr " style="left: 0; top: 0; width: 157.1px; height: 220px; background-position: 90.9% 0"></div></div>
+    <div class="bob " style="position: absolute; left: 861.9px; top: 555.9px; width: 168.1px; height: 235.5px; animation-delay: 1.0s"><div class="spr " style="left: 0; top: 0; width: 168.1px; height: 235.5px; background-position: 18.2% 0"></div></div>
+    <sc-if value="{{ ghosts }}" hint-placeholder-val="{{ true }}">
+      <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1620px; height: 850px; pointer-events: none">
+        <svg viewBox="-30 -10 60 20" style="position: absolute; left: 106.8px; top: 296.1px; width: 63.8px; height: 21.5px; overflow: visible"><g class="halo"><circle cx="-12" cy="0" r="9" fill="rgba(127, 233, 221, 0.25)" stroke="#7fe9dd" stroke-width="2.4"/><circle cx="12" cy="0" r="9" fill="rgba(127, 233, 221, 0.25)" stroke="#7fe9dd" stroke-width="2.4"/><path d="M-3 -1 Q0 -4 3 -1" fill="none" stroke="#7fe9dd" stroke-width="2.4"/><path d="M-21 -2 L-28 -5 M21 -2 L28 -5" stroke="#7fe9dd" stroke-width="2.4" stroke-linecap="round"/></g></svg>
+        <svg viewBox="0 0 1620 850" style="position: absolute; left: 0; top: 0; width: 1620px; height: 850px"><path class="dash" d="M138.7 260 L138.7 297.1" fill="none" stroke="#ff7a7a" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/></svg>
+        <div style="position: absolute; left: 97px; top: 198px; width: 172px; box-sizing: border-box; background: #fff4e0; border: 2px solid #c63f3f; border-radius: 10px; padding: 5px 8px 6px; color: #1b1f3b; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35)"><p style="margin: 0; font: 900 9px/1.2 'Nunito', sans-serif; color: #c63f3f; letter-spacing: 0.04em">CAN'T BOTH BE TRUE</p><p style="margin: 3px 0 0; font: 900 11px/1.2 'Nunito', sans-serif; background: #f2b33d; border-radius: 6px; padding: 3px 6px">Priya, 8:40: “Taking HALO home”</p><p style="margin: 3px 0 0; font: 900 10px/1.2 'Nunito', sans-serif; color: #1f7f78">HALO's dock: still charging till 9:13</p><span style="position: absolute; right: -12px; top: -12px; transform: rotate(8deg); font: 900 9px/1 'Nunito', sans-serif; color: #d6312f; background: #fff4e0; border: 2px solid #d6312f; border-radius: 4px; padding: 3px 5px">EDITED 9:12</span></div>
+        <div class="ghost" style="position: absolute; left: 203.9px; top: 255.9px; width: 168.1px; height: 235.5px"><div class="spr gwalk" style="left: 0; top: 0; width: 168.1px; height: 235.5px; background-position: 9.1% 0; opacity: 0.62; filter: grayscale(1) brightness(1.7) sepia(0.3) hue-rotate(160deg) drop-shadow(0 0 8px rgba(140, 225, 255, 0.9))"></div><span style="position: absolute; left: 50%; top: 18px; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; color: #0d2633; background: #9fe3ff; border-radius: 999px; padding: 3px 8px; white-space: nowrap">Priya · 8:44 PM</span></div>
+        <span class="beep" style="position: absolute; left: 860px; top: 605px; font: 900 11px/1.2 'Nunito', sans-serif; color: #0d2633; background: #9fe3ff; border: 2px solid #1b1f3b; border-radius: 10px; padding: 4px 8px; white-space: nowrap">8:45 · Priya badges out</span>
+      </div>
+    </sc-if>
+<p class="say" style="position: absolute; left: 268px; top: 269px; margin: 0; max-width: 172px; font: 800 11px/1.25 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #2f9f93; border-radius: 12px; padding: 5px 8px; animation-delay: 0.5s"><b style="color: #2f9f93">Priya</b> I didn't write that. I swear I didn't!<i class="tail" style="left: 88px; border-color: #2f9f93"></i></p>
+<p class="say" style="position: absolute; left: 143px; top: 261px; margin: 0; max-width: 172px; font: 800 11px/1.25 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #d6312f; border-radius: 12px; padding: 5px 8px; animation-delay: 3.6s"><b style="color: #d6312f">Mei</b> Cabinet B. The key's still in the lock.<i class="tail" style="left: 78px; border-color: #d6312f"></i></p>
+<p class="say" style="position: absolute; left: 626px; top: 561px; margin: 0; max-width: 172px; font: 800 11px/1.25 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #6a55d6; border-radius: 12px; padding: 5px 8px; animation-delay: 10.0s"><b style="color: #6a55d6">Ali</b> Did anyone go into Lab 4 after Priya left?<i class="tail" style="left: 30px; border-color: #6a55d6"></i></p>
+<p class="say" style="position: absolute; left: 704px; top: 535px; margin: 0; max-width: 172px; font: 800 11px/1.25 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #3f6fd8; border-radius: 12px; padding: 5px 8px; animation-delay: 13.0s"><b style="color: #3f6fd8">Ozzy</b> Nobody. I walk that corridor every ten minutes.<i class="tail" style="left: 100px; border-color: #3f6fd8"></i></p>
+<p class="say" style="position: absolute; left: 278px; top: 261px; margin: 0; max-width: 172px; font: 800 11px/1.25 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #1f7f78; border-radius: 12px; padding: 5px 8px; animation-delay: 20.2s"><b style="color: #1f7f78">Jo</b> Chat log: that message was edited at 9:12.<i class="tail" style="left: 166px; border-color: #1f7f78"></i></p>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 128px; background: linear-gradient(rgba(12, 8, 22, 0.92), rgba(12, 8, 22, 0.62) 62%, rgba(12, 8, 22, 0)); pointer-events: none"></div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 14px; display: flex; justify-content: space-between; align-items: flex-start">
+    <div>
+      <p style="margin: 0; font: italic 600 24px/1.05 'Fraunces', Georgia, serif; color: #fff4e0">The Last Message</p>
+      <p style="margin: 5px 0 0; font: 600 12px/1 'Fraunces', Georgia, serif; color: #f2b33d">Halden Innovation Building · 12:40 AM</p>
+    </div>
+    <div style="display: flex"><span style="width: 24px; height: 24px; margin-left: 0; border-radius: 50%; background: #F2B33D; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">S</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #EF5B5B; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #fff4e0">M</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #9B87F5; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">A</span><span style="width: 24px; height: 24px; margin-left: -7px; border-radius: 50%; background: #3FB8AF; border: 2px solid #160e22; display: grid; place-items: center; font: 900 10px/1 'Nunito', sans-serif; color: #1b1f3b">J</span></div>
+  </div>
+  <p style="position: absolute; left: 16px; top: 64px; width: 222px; margin: 0; font: 800 11px/1.3 'Nunito', sans-serif; color: #fff4e0; background: rgba(22, 14, 34, 0.86); border: 1.5px solid #f2b33d; border-radius: 12px; padding: 6px 10px"><span style="color: #f2b33d">Chapter 1</span> · What proves Priya didn't take HALO home?</p>
+  <div style="position: absolute; right: 16px; top: 46px; width: 112px; height: 74.8px"><span style="position: absolute; left: 0; top: 0; font: 900 9px/1 'Nunito', sans-serif; color: #cdb8d6; letter-spacing: 0.06em">MAP</span><div style="position: absolute; left: 0; top: 13px; width: 112px; height: 58.8px; border-radius: 6px; overflow: hidden; border: 1.5px solid rgba(255, 244, 224, 0.55); box-sizing: content-box"><img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="" style="position: absolute; left: 0; top: 0; width: 112px; height: 58.8px"><div class="mmv" style="position: absolute; left: 0; top: 5.4px; width: 27px; height: 49.2px; box-sizing: border-box; border: 2px solid #f2b33d; border-radius: 3px; box-shadow: 0 0 0 999px rgba(10, 6, 20, 0.35)"></div></div></div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 132px; box-sizing: border-box; background: #1f1229; border-top: 1.5px solid #3a2340; padding: 12px 16px 12px">
+    <div style="display: flex; justify-content: space-between; align-items: center"><p style="margin: 0; font: italic 600 17px/1 'Fraunces', Georgia, serif; color: #fff4e0">Rewind the night</p><span style="font: 900 11px/1 'Nunito', sans-serif; background: #f2b33d; color: #1b1f3b; border-radius: 999px; padding: 5px 10px">You · Archivist</span></div>
+    <div style="position: relative; height: 46px; margin-top: 8px">
+      <div style="position: absolute; left: 0; right: 0; top: 28px; height: 8px; border-radius: 9px; background: #3a2340"></div>
+      <span title="8:40 the message" style="position: absolute; left: 154.1px; top: 14px; width: 10px; height: 10px; border-radius: 3px; background: #ef5b5b; border: 2px solid #1b1f3b; box-sizing: border-box"></span>
+      <span title="8:45 Priya badges out" style="position: absolute; left: 174px; top: 14px; width: 10px; height: 10px; border-radius: 3px; background: #3fb8af; border: 2px solid #1b1f3b; box-sizing: border-box"></span>
+      <span title="9:12 edited" style="position: absolute; left: 281.4px; top: 14px; width: 10px; height: 10px; border-radius: 3px; background: #ef5b5b; border: 2px solid #1b1f3b; box-sizing: border-box"></span>
+      <span title="9:13 HALO leaves its dock" style="position: absolute; left: 301.3px; top: 14px; width: 10px; height: 10px; border-radius: 3px; background: #f2b33d; border: 2px solid #1b1f3b; box-sizing: border-box"></span>
+      <span title="9:17 Ozzy finds the cabinet open" style="position: absolute; left: 341.1px; top: 14px; width: 10px; height: 10px; border-radius: 3px; background: #9b87f5; border: 2px solid #1b1f3b; box-sizing: border-box"></span>
+      <sc-if value="{{ ghosts }}" hint-placeholder-val="{{ true }}">
+        <div class="ph" style="position: absolute; left: -15px; top: 0; width: 30px; height: 46px">
+          <span class="l840 lbl" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #ef5b5b; color: #1b1f3b; border-radius: 6px; padding: 3px 5px; white-space: nowrap">8:40</span>
+          <span class="l844 lbl" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #3fb8af; color: #1b1f3b; border-radius: 6px; padding: 3px 5px; white-space: nowrap">8:44</span>
+          <span class="l845 lbl" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #3fb8af; color: #1b1f3b; border-radius: 6px; padding: 3px 5px; white-space: nowrap">8:45</span>
+          <span class="llive lbl" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #f2b33d; color: #1b1f3b; border-radius: 6px; padding: 3px 5px; white-space: nowrap">LIVE</span>
+          <span class="l840b lbl" style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #ef5b5b; color: #1b1f3b; border-radius: 6px; padding: 3px 5px; white-space: nowrap">8:40</span>
+          <span style="position: absolute; left: 4px; top: 22px; width: 22px; height: 22px; border-radius: 50%; background: #f2b33d; border: 3px solid #1b1f3b; box-sizing: border-box"></span></div>
+      </sc-if>
+      <sc-if value="{{ live }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; left: 343px; top: 0; width: 30px; height: 46px"><span style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); font: 900 10px/1 'Nunito', sans-serif; background: #f2b33d; color: #1b1f3b; border-radius: 6px; padding: 3px 5px">LIVE</span><span style="position: absolute; left: 4px; top: 22px; width: 22px; height: 22px; border-radius: 50%; background: #f2b33d; border: 3px solid #1b1f3b; box-sizing: border-box"></span></div>
+      </sc-if>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 2px; font: 800 10px/1 'Nunito', sans-serif; color: #cdb8d6"><span>8:30 PM</span><span>9:00</span><span>9:30</span><span>10:00</span></div>
+    <p style="margin: 8px 0 0; font: 700 11px/1.3 'Nunito', sans-serif; color: #cdb8d6">Swipe to walk the building · drag the night and ghosts walk where the evidence puts them</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ghosts":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ghosts = this.props.ghosts ?? true;
+    return { ghosts: ghosts, live: !ghosts };
+  }
+}
+</script>
+</body>
+</html>

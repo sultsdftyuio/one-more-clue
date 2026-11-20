@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mini · Lights out</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&amp;family=Nunito:wght@700;800;900&amp;display=swap">
+<style>
+body{margin:0}
+@keyframes flashD{0%{opacity:0}1%{opacity:.92}3%{opacity:0}4%{opacity:.5}5%,100%{opacity:0}}
+@keyframes boltD{0%,.4%{opacity:0}.5%,3.5%{opacity:1}4%,100%{opacity:0}}
+@keyframes darkD{0%,2.5%{opacity:0}3.5%,59%{opacity:.86}62%,100%{opacity:0}}
+@keyframes warmD{0%,59%,70%,100%{opacity:0}62%{opacity:.6}}
+@keyframes outD{0%,3.5%{transform:translateX(-50%) scale(.4);opacity:0}6%{transform:translateX(-50%) scale(1.15);opacity:1}7%{transform:translateX(calc(-50% - 6px)) scale(1)}8%{transform:translateX(calc(-50% + 6px))}9%,18%{transform:translateX(-50%) scale(1);opacity:1}21%,100%{transform:translateX(-50%) scale(1);opacity:0}}
+@keyframes onD{0%,59%{transform:translateX(-50%) scale(.4);opacity:0}62%{transform:translateX(-50%) scale(1.15);opacity:1}64%,72%{transform:translateX(-50%) scale(1);opacity:1}75%,100%{transform:translateX(-50%) scale(1);opacity:0}}
+@keyframes askD{0%,9%,100%{opacity:0}11%,43%{opacity:1}45%{opacity:0}}
+@keyframes ringD{0%,10%{stroke-dashoffset:0}60%,100%{stroke-dashoffset:96}}
+@keyframes panelD{0%,4%{transform:translateY(60px);opacity:0}9%,100%{transform:translateY(0);opacity:1}}
+@keyframes lv1D{0%,19.9%{transform:rotate(0deg)}22%{transform:rotate(-196deg)}23.5%,100%{transform:rotate(-180deg)}}
+@keyframes lv2D{0%,43.9%{transform:rotate(0deg)}46%{transform:rotate(-196deg)}47.5%,100%{transform:rotate(-180deg)}}
+@keyframes lv3D{0%,31.9%{transform:rotate(0deg)}34%{transform:rotate(-196deg)}35.5%,100%{transform:rotate(-180deg)}}
+@keyframes lv4D{0%,53.9%{transform:rotate(0deg)}56%{transform:rotate(-196deg)}57.5%,100%{transform:rotate(-180deg)}}
+@keyframes lp1D{0%,21%{opacity:0}22%,100%{opacity:1}}
+@keyframes lp2D{0%,45%{opacity:0}46%,100%{opacity:1}}
+@keyframes lp3D{0%,33%{opacity:0}34%,100%{opacity:1}}
+@keyframes lp4D{0%,55%{opacity:0}56%,100%{opacity:1}}
+@keyframes youD{0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.35;transform:scale(1.12)}}
+@keyframes youOffD{0%,45%{opacity:1}46%,100%{opacity:0}}
+@keyframes tapD{0%,43.9%{transform:scale(.3);opacity:0}44%{transform:scale(.3);opacity:.9}50%,100%{transform:scale(2.2);opacity:0}}
+@keyframes rainD{to{background-position:-34px 120px}}
+@keyframes cardD{0%,65.9%{transform:translateY(220px)}70%{transform:translateY(-6px)}71.5%,96%{transform:translateY(0)}100%{transform:translateY(220px)}}
+@keyframes bulbD{0%,100%{filter:drop-shadow(0 0 6px rgba(242, 179, 61, 0.6))}50%{filter:drop-shadow(0 0 16px rgba(242, 179, 61, 1))}}
+.flash{animation:flashD 10s linear infinite}
+.bolt{animation:boltD 10s linear infinite}
+.dark{animation:darkD 10s ease-in-out infinite}
+.warm{animation:warmD 10s ease-out infinite}
+.out{animation:outD 10s ease-out infinite}
+.on{animation:onD 10s cubic-bezier(.2,.9,.3,1.3) infinite}
+.ask{animation:askD 10s ease-in-out infinite}
+.ring{animation:ringD 10s linear infinite}
+.panel{animation:panelD 10s cubic-bezier(.2,.9,.3,1.1) infinite}
+.lv1{transform-box:view-box;transform-origin:62px 150px;animation:lv1D 10s ease-out infinite}
+.lv2{transform-box:view-box;transform-origin:137px 150px;animation:lv2D 10s ease-out infinite}
+.lv3{transform-box:view-box;transform-origin:212px 150px;animation:lv3D 10s ease-out infinite}
+.lv4{transform-box:view-box;transform-origin:287px 150px;animation:lv4D 10s ease-out infinite}
+.lp1,.ck1{animation:lp1D 10s steps(1) infinite}.lp2,.ck2{animation:lp2D 10s steps(1) infinite}.lp3,.ck3{animation:lp3D 10s steps(1) infinite}.lp4,.ck4{animation:lp4D 10s steps(1) infinite}
+.you{transform-box:fill-box;transform-origin:center;animation:youD 1.2s ease-in-out infinite}
+.youoff{animation:youOffD 10s steps(1) infinite}
+.tap{animation:tapD 10s ease-out infinite}
+.rain{animation:rainD .55s linear infinite}
+.card{animation:cardD 10s cubic-bezier(.2,.9,.3,1.1) infinite}
+.bulb{animation:bulbD 1.6s ease-in-out infinite}
+@keyframes flyD{0%,60.9%{transform:translate(177px,502px) scale(1.4);opacity:0}61.4%{opacity:1}65.4%{transform:translate(319px,18px) scale(.7);opacity:1}65.9%,100%{transform:translate(319px,18px) scale(.7);opacity:0}}@keyframes chipD{0%,65.3%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,179,61,0)}66.9%{transform:scale(1.18);box-shadow:0 0 0 7px rgba(242,179,61,.5)}68.9%,100%{transform:scale(1);box-shadow:0 0 0 14px rgba(242,179,61,0)}}@keyframes st0D{0%,69.9%{transform:scale(0) rotate(-40deg)}71.5%{transform:scale(1.35) rotate(12deg)}72.5%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st0{transform-box:fill-box;transform-origin:center;animation:st0D 10s ease-out infinite}@keyframes st1D{0%,71.5%{transform:scale(0) rotate(-40deg)}73.1%{transform:scale(1.35) rotate(12deg)}74.1%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st1{transform-box:fill-box;transform-origin:center;animation:st1D 10s ease-out infinite}@keyframes st2D{0%,73.1%{transform:scale(0) rotate(-40deg)}74.7%{transform:scale(1.35) rotate(12deg)}75.7%,95%{transform:scale(1) rotate(0deg)}100%{transform:scale(0)}}.st2{transform-box:fill-box;transform-origin:center;animation:st2D 10s ease-out infinite}.fly{animation:flyD 10s cubic-bezier(.5,0,.3,1) infinite}.chip{animation:chipD 10s ease-out infinite}@keyframes cloudD{0%,100%{transform:translateX(0)}50%{transform:translateX(18px)}}
+@keyframes fl2D{0%,39%,43.5%,100%{opacity:0}40%{opacity:.85}41%{opacity:.2}42%{opacity:.6}}
+@keyframes torchD{0%,3%{opacity:0;transform:translate(-465px,-315px)}9%{opacity:1;transform:translate(-465px,-315px)}25%{transform:translate(-325px,-265px)}40%,46%{transform:translate(-388px,-285px)}56%{transform:translate(-245px,-295px);opacity:1}61%,100%{transform:translate(-245px,-295px);opacity:0}}
+@keyframes pg1D{0%,21.5%{opacity:0;transform:translate(-50%,6px) scale(.6)}23%{opacity:1;transform:translate(-50%,0) scale(1.12)}24%,29%{opacity:1;transform:translate(-50%,0) scale(1)}31%,100%{opacity:0;transform:translate(-50%,0)}}
+@keyframes pg3D{0%,33.5%{opacity:0;transform:translate(-50%,6px) scale(.6)}35%{opacity:1;transform:translate(-50%,0) scale(1.12)}36%,41%{opacity:1;transform:translate(-50%,0) scale(1)}43%,100%{opacity:0;transform:translate(-50%,0)}}
+@keyframes pg4D{0%,55.5%{opacity:0;transform:translate(-50%,6px) scale(.6)}57%{opacity:1;transform:translate(-50%,0) scale(1.12)}58%,62%{opacity:1;transform:translate(-50%,0) scale(1)}64%,100%{opacity:0;transform:translate(-50%,0)}}
+.cl1{animation:cloudD 9s ease-in-out infinite}.cl2{animation:cloudD 12s ease-in-out infinite reverse}.fl2{animation:fl2D 10s linear infinite}.torch{animation:torchD 10s ease-in-out infinite}
+.pg1{animation:pg1D 10s ease-out infinite}.pg3{animation:pg3D 10s ease-out infinite}.pg4{animation:pg4D 10s ease-out infinite}
+
+@media (prefers-reduced-motion: reduce){.fly,.chip,.st0,.st1,.st2,.det{animation:none!important}.flash,.bolt,.dark,.warm,.out,.on,.ask,.ring,.panel,.lv1,.lv2,.lv3,.lv4,.lp1,.lp2,.lp3,.lp4,.ck1,.ck2,.ck3,.ck4,.you,.youoff,.tap,.rain,.card,.bulb{animation:none}.card,.panel{transform:none;opacity:1}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #0B0814; color: #fff4e0; font-family: 'Nunito', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(120% 60% at 50% 20%, #1A1838, #0B0814 70%)"></div>
+  <div class="cl1 det" aria-hidden="true" style="position: absolute; left: -70px; top: 50px; width: 270px; height: 74px; border-radius: 50%; background: radial-gradient(closest-side, rgba(44, 40, 76, 0.95), rgba(44, 40, 76, 0))"></div>
+  <div class="cl2 det" aria-hidden="true" style="position: absolute; left: 170px; top: 36px; width: 290px; height: 84px; border-radius: 50%; background: radial-gradient(closest-side, rgba(52, 46, 88, 0.92), rgba(52, 46, 88, 0))"></div>
+  <div class="fl2 det" aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 320px; background: radial-gradient(60% 50% at 72% 18%, rgba(190, 210, 255, 0.55), rgba(190, 210, 255, 0))"></div>
+  <div style="position: absolute; left: 16px; top: 98px; width: 358px; height: 188px; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1.5px #3a2340, 0 10px 30px rgba(0, 0, 0, 0.5)">
+    <img src="/_blob/cd1b32e64963fc8e3133ab9576af4d1f" alt="The Halden Innovation Building and its car park in the rain, as the storm knocks the power out." style="position: absolute; left: 0; top: 0; width: 358px; height: 188px; display: block">
+    <div class="dark" aria-hidden="true" style="position: absolute; inset: 0; background: #05040C"></div>
+    <div class="warm" aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(closest-side, rgba(255, 214, 140, 0.9), rgba(255, 214, 140, 0)); mix-blend-mode: screen"></div>
+  </div>
+  <div class="rain" aria-hidden="true" style="position: absolute; inset: 0; opacity: 0.3; background-image: repeating-linear-gradient(105deg, rgba(200, 210, 255, 0) 0px, rgba(200, 210, 255, 0) 16px, rgba(200, 210, 255, 0.6) 16px, rgba(200, 210, 255, 0.6) 17px, rgba(200, 210, 255, 0) 17px, rgba(200, 210, 255, 0) 30px); background-size: 120px 120px"></div>
+  <svg class="bolt" viewBox="0 0 390 300" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 300px">
+    <path d="M300 0 L286 54 L304 60 L278 120 L296 124 L262 196" fill="none" stroke="#E8F0FF" stroke-width="5" stroke-linejoin="round" style="filter: drop-shadow(0 0 8px #BFD8FF)"/>
+  </svg>
+
+  <p class="out" style="position: absolute; left: 50%; top: 300px; margin: 0; font: 900 34px/1 'Nunito', sans-serif; color: #fff4e0; -webkit-text-stroke: 2px #1b1f3b; text-shadow: 0 4px 0 #1b1f3b; white-space: nowrap">LIGHTS OUT!</p>
+  <p class="on" style="position: absolute; left: 50%; top: 300px; margin: 0; font: 900 34px/1 'Nunito', sans-serif; color: #F2B33D; -webkit-text-stroke: 2px #1b1f3b; text-shadow: 0 4px 0 #1b1f3b; white-space: nowrap">LIGHTS ON!</p>
+  <p class="ask" style="position: absolute; left: 22px; top: 352px; margin: 0; font: 900 16px/1 'Nunito', sans-serif; color: #fff4e0">Flip your fuse</p>
+  <svg viewBox="0 0 40 40" aria-hidden="true" style="position: absolute; right: 22px; top: 336px; width: 46px; height: 46px">
+    <circle cx="20" cy="20" r="16" fill="rgba(255, 244, 224, 0.08)" stroke="rgba(255, 244, 224, 0.2)" stroke-width="4"/>
+    <circle class="ring" cx="20" cy="20" r="16" fill="none" stroke="#F2B33D" stroke-width="4" stroke-linecap="round" stroke-dasharray="100.5" transform="rotate(-90 20 20)"/>
+    <text x="20" y="25" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="13" fill="#FFF4E0">20</text>
+  </svg>
+
+  <div class="panel" style="position: absolute; left: 20px; top: 392px; width: 350px; height: 290px">
+    <svg viewBox="0 0 350 290" role="img" aria-label="The fuse box: four switches, one for each detective. Yours is the yellow one." style="position: absolute; left: 0; top: 0; width: 350px; height: 290px">
+      <defs>
+        <pattern id="haz" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="16" fill="#F2B33D"/><rect x="8" width="8" height="16" fill="#1B1F3B"/></pattern>
+        <filter id="glow" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="4"/></filter>
+      </defs>
+      <rect x="2" y="2" width="346" height="286" rx="16" fill="#4A5068" stroke="#1B1F3B" stroke-width="4"/>
+      <rect x="14" y="14" width="322" height="262" rx="10" fill="#5E6680"/>
+      <rect x="14" y="14" width="322" height="26" rx="10" fill="url(#haz)" stroke="#1B1F3B" stroke-width="2.5"/>
+      <g fill="#8E95A8" stroke="#1B1F3B" stroke-width="1.5"><circle cx="24" cy="54" r="4"/><circle cx="326" cy="54" r="4"/><circle cx="24" cy="266" r="4"/><circle cx="326" cy="266" r="4"/></g>
+      <g stroke="#1B1F3B" stroke-width="2.5">
+        <circle cx="62" cy="64" r="9" fill="#2A2E38"/><circle cx="137" cy="64" r="9" fill="#2A2E38"/><circle cx="212" cy="64" r="9" fill="#2A2E38"/><circle cx="287" cy="64" r="9" fill="#2A2E38"/>
+      </g>
+      <circle class="lp1" cx="62" cy="64" r="14" fill="#3FB8AF" filter="url(#glow)"/><circle class="lp1" cx="62" cy="64" r="7.5" fill="#BFFFF5"/>
+      <circle class="lp2" cx="137" cy="64" r="14" fill="#F2B33D" filter="url(#glow)"/><circle class="lp2" cx="137" cy="64" r="7.5" fill="#FFF0C2"/>
+      <circle class="lp3" cx="212" cy="64" r="14" fill="#EF5B5B" filter="url(#glow)"/><circle class="lp3" cx="212" cy="64" r="7.5" fill="#FFD6D6"/>
+      <circle class="lp4" cx="287" cy="64" r="14" fill="#9B87F5" filter="url(#glow)"/><circle class="lp4" cx="287" cy="64" r="7.5" fill="#E6DEFF"/>
+      <g stroke="#1B1F3B" stroke-width="3">
+        <rect x="34" y="84" width="56" height="132" rx="10" fill="#3FB8AF"/><rect x="109" y="84" width="56" height="132" rx="10" fill="#F2B33D"/>
+        <rect x="184" y="84" width="56" height="132" rx="10" fill="#EF5B5B"/><rect x="259" y="84" width="56" height="132" rx="10" fill="#9B87F5"/>
+      </g>
+      <g fill="#1B1F3B"><rect x="56" y="98" width="12" height="104" rx="6"/><rect x="131" y="98" width="12" height="104" rx="6"/><rect x="206" y="98" width="12" height="104" rx="6"/><rect x="281" y="98" width="12" height="104" rx="6"/></g>
+      <circle class="you youoff" cx="137" cy="150" r="46" fill="none" stroke="#FFF4E0" stroke-width="3" stroke-dasharray="6 6"/>
+      <g class="lv1"><rect x="54" y="146" width="16" height="44" rx="8" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/><circle cx="62" cy="192" r="12" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/></g>
+      <g class="lv2"><rect x="129" y="146" width="16" height="44" rx="8" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/><circle cx="137" cy="192" r="12" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/></g>
+      <g class="lv3"><rect x="204" y="146" width="16" height="44" rx="8" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/><circle cx="212" cy="192" r="12" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/></g>
+      <g class="lv4"><rect x="279" y="146" width="16" height="44" rx="8" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/><circle cx="287" cy="192" r="12" fill="#FFF4E0" stroke="#1B1F3B" stroke-width="3"/></g>
+      <g stroke="#1B1F3B" stroke-width="3">
+        <circle cx="62" cy="248" r="17" fill="#3FB8AF"/><circle cx="137" cy="248" r="19" fill="#F2B33D"/><circle cx="212" cy="248" r="17" fill="#EF5B5B"/><circle cx="287" cy="248" r="17" fill="#9B87F5"/>
+      </g>
+      <g font-family="Nunito, sans-serif" font-weight="900" text-anchor="middle" fill="#1B1F3B">
+        <text x="62" y="253" font-size="14">J</text><text x="137" y="252" font-size="11">You</text><text x="212" y="253" font-size="14" fill="#FFF4E0">M</text><text x="287" y="253" font-size="14">A</text>
+      </g>
+      <g stroke="#1B1F3B" stroke-width="2">
+        <g class="ck1"><circle cx="76" cy="234" r="8" fill="#3DD68C"/><path d="M72 234 L75 237 L80 231" fill="none" stroke="#1B1F3B" stroke-width="2.4"/></g>
+        <g class="ck2"><circle cx="153" cy="232" r="8" fill="#3DD68C"/><path d="M149 232 L152 235 L157 229" fill="none" stroke="#1B1F3B" stroke-width="2.4"/></g>
+        <g class="ck3"><circle cx="226" cy="234" r="8" fill="#3DD68C"/><path d="M222 234 L225 237 L230 231" fill="none" stroke="#1B1F3B" stroke-width="2.4"/></g>
+        <g class="ck4"><circle cx="301" cy="234" r="8" fill="#3DD68C"/><path d="M297 234 L300 237 L305 231" fill="none" stroke="#1B1F3B" stroke-width="2.4"/></g>
+      </g>
+      <g fill="none" stroke="#FFF4E0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95">
+        <path d="M42 92 a5 5 0 0 1 3.5 8.6 l-0.4 2 h-6.2 l-0.4 -2 a5 5 0 0 1 3.5 -8.6 z M39.5 105 h5"/>
+        <path d="M114 92 v4 M120 92 v4 M111 96 h12 v3 a6 6 0 0 1 -12 0 z M117 105 v3"/>
+        <path d="M190 98 m-6 0 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0 M190 92 v12 M184 98 h12"/>
+        <path d="M268 90 l-5 8 h4 l-1.5 7 l6 -9 h-4 l1.5 -6 z"/>
+      </g>
+      <g fill="#8E95A8" stroke="#1B1F3B" stroke-width="1.5">
+        <circle cx="42" cy="208" r="3.5"/><circle cx="82" cy="208" r="3.5"/><circle cx="117" cy="208" r="3.5"/><circle cx="157" cy="208" r="3.5"/>
+        <circle cx="192" cy="208" r="3.5"/><circle cx="232" cy="208" r="3.5"/><circle cx="267" cy="208" r="3.5"/><circle cx="307" cy="208" r="3.5"/>
+      </g>
+    </svg>
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 350px; height: 290px; border-radius: 16px; overflow: hidden; pointer-events: none">
+      <div class="torch det" style="position: absolute; left: 0; top: 0; width: 1050px; height: 870px; background: radial-gradient(circle at 525px 435px, rgba(255, 246, 220, 0.12) 0, rgba(5, 4, 12, 0) 70px, rgba(5, 4, 12, 0.8) 122px)"></div>
+    </div>
+    <div class="tap" aria-hidden="true" style="position: absolute; left: 97px; top: 110px; width: 80px; height: 80px; box-sizing: border-box; border-radius: 50%; border: 4px solid #fff4e0"></div>
+  </div>
+
+  <p class="pg1 det" style="position: absolute; left: 82px; top: 606px; margin: 0; font: 900 11px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #3FB8AF; border-radius: 999px; padding: 4px 8px; white-space: nowrap">Got it!</p>
+  <p class="pg3 det" style="position: absolute; left: 232px; top: 606px; margin: 0; font: 900 11px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #EF5B5B; border-radius: 999px; padding: 4px 8px; white-space: nowrap">Got it!</p>
+  <p class="pg4 det" style="position: absolute; left: 307px; top: 606px; margin: 0; font: 900 11px/1 'Nunito', sans-serif; color: #1b1f3b; background: #fff4e0; border: 2px solid #9B87F5; border-radius: 999px; padding: 4px 8px; white-space: nowrap">Got it!</p>
+  <div class="flash" aria-hidden="true" style="position: absolute; inset: 0; background: #E8F0FF"></div>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 96px; background: linear-gradient(rgba(6, 4, 14, 0.95), rgba(6, 4, 14, 0))"></div>
+  <div class="fly" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; background: #fff4e0; border: 2.5px solid #1b1f3b; box-sizing: border-box; display: grid; place-items: center; box-shadow: 0 0 14px rgba(242, 179, 61, 0.9)"><svg viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 2 A6 6 0 0 1 14 12.5 L13.4 15 H6.6 L6 12.5 A6 6 0 0 1 10 2 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6"/><rect x="7" y="15.5" width="6" height="3" rx="1" fill="#1B1F3B"/></svg></div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; align-items: center; gap: 12px">
+    <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 244, 224, 0.12); border: 1.5px solid rgba(255, 244, 224, 0.35); display: grid; place-items: center; font: 900 20px/1 'Nunito', sans-serif">‹</span>
+    <div style="flex: 1">
+      <p style="margin: 0; font: italic 600 24px/1 'Fraunces', Georgia, serif">Lights out</p>
+      <p style="margin: 5px 0 0; font: 800 11px/1 'Nunito', sans-serif; color: #f2b33d">Team event · the storm</p>
+    </div>
+    <span class="chip" style="display: flex; align-items: center; gap: 6px; background: #fff4e0; color: #1b1f3b; border-radius: 999px; padding: 6px 10px 6px 8px; font: 900 12px/1 'Nunito', sans-serif">
+      <svg viewBox="0 0 20 20" aria-hidden="true" style="width: 15px; height: 15px"><path d="M10 2 A6 6 0 0 1 14 12.5 L13.4 15 H6.6 L6 12.5 A6 6 0 0 1 10 2 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6"/><rect x="7" y="15.5" width="6" height="3" rx="1" fill="#1B1F3B"/></svg>Lightbulb</span>
+  </div>
+
+  <div class="card" style="position: absolute; left: 16px; right: 16px; bottom: 18px; height: 140px; box-sizing: border-box; background: #fff4e0; color: #1b1f3b; border: 3px solid #1b1f3b; border-radius: 20px; box-shadow: 0 6px 0 #1b1f3b; display: flex; align-items: center; gap: 14px; padding: 0 16px">
+    <div aria-hidden="true" style="position: relative; width: 80px; height: 80px; flex: none">
+      <svg class="bulb" viewBox="0 0 80 80" style="width: 80px; height: 80px"><circle cx="40" cy="40" r="38" fill="#1b1f3b"/><path d="M40 14 A17 17 0 0 1 51 44 L49.5 52 H30.5 L29 44 A17 17 0 0 1 40 14 Z" fill="#F2B33D" stroke="#FFF4E0" stroke-width="3"/><rect x="31" y="54" width="18" height="5" rx="2" fill="#FFF4E0"/><rect x="33" y="61" width="14" height="5" rx="2" fill="#FFF4E0"/><path d="M36 30 Q40 24 44 30" fill="none" stroke="#FFF4E0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <span style="position: absolute; right: -10px; top: -6px; font: 900 13px/1 'Nunito', sans-serif; background: #EF5B5B; color: #fff4e0; border: 2.5px solid #1b1f3b; border-radius: 999px; padding: 4px 7px">×4</span>
+    </div>
+    <div>
+      <p style="margin: 0; font: italic 600 24px/1.05 'Fraunces', Georgia, serif">Lightbulb for everyone</p>
+      <p style="margin: 6px 0 0; font: 800 14px/1.25 'Nunito', sans-serif">A glow on a room worth a look</p>
+      <span style="display: inline-block; margin-top: 8px; font: 900 11px/1 'Nunito', sans-serif; background: #1b1f3b; color: #fff4e0; border-radius: 999px; padding: 4px 9px">Team bonus</span>
+    </div>
+    <div aria-hidden="true" style="position: absolute; right: 14px; bottom: 12px; display: flex; gap: 2px"><svg class="st0" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st1" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg><svg class="st2" viewBox="0 0 20 20" style="width: 22px; height: 22px"><path d="M10 1.5 L12.6 7 L18.5 7.6 L14 11.6 L15.3 17.6 L10 14.5 L4.7 17.6 L6 11.6 L1.5 7.6 L7.4 7 Z" fill="#F2B33D" stroke="#1B1F3B" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/game/timeline.test.ts src/lib/game/lines.test.ts src/lib/game/voice.test.ts src/lib/billing/access.test.ts",
+    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/game/timeline.test.ts src/lib/game/lines.test.ts src/lib/game/voice.test.ts src/lib/billing/access.test.ts src/lib/world/flag.test.ts src/lib/world/camera.test.ts src/lib/world/gestures.test.ts src/lib/world/geometry.test.ts src/lib/world/store.test.ts",
     "art:sync": "node scripts/sync-art.mjs",
     "setup:payments": "node scripts/setup-payments.mjs",
     "setup:dodo-products": "node scripts/create-dodo-products.mjs",
@@ -29,9 +29,11 @@
     "livekit-server-sdk": "^2.19.2",
     "motion": "^14.6.0",
     "next": "^15.5.28",
+    "phaser": "^4.2.1",
     "react": "^19.1.10",
     "react-dom": "^19.1.10",
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,6 +1,6 @@
 # Writing a case
 
-A case is one data file in `src/data/cases/`, typed by `CaseFile` in `src/lib/game/types.ts` and listed in `src/data/cases/index.ts`. The engine runs it; you don't write code. `npm test` checks every case for authoring mistakes (missing hotspots, impossible chapters, a culprit who isn't a suspect, and so on). Case 001 (`case-001.ts`) and the practice case (`practice-tip-jar.ts`) are worked examples: its header comment explains the truth and the intended route.
+A case is one data file in `src/data/cases/`, typed by `CaseFile` in `src/lib/game/types.ts` and listed in `src/data/cases/index.ts`. The engine runs it; you don't write code. `npm test` checks every case for authoring mistakes (missing hotspots, impossible chapters, a culprit who isn't a suspect, and so on). Case 001 (`case-001.ts`) is the worked example: its header comment explains the truth and the intended route.
 
 ## The shape of a case
 
@@ -65,7 +65,7 @@ Each case should look, sound and play differently from the others.
 - **Scenes**: 4:3 frames built from the house art (`suspect:<id>`, `prop:<name>`), coloured boxes and labels, positioned in percentages. Looks: `cafe`, `street`, `lab`, `office`, `cctv` (greyscale with scanlines). Put a `hotspot` on things worth a closer look, and keep hotspot items clear of decorations. Make sure a detail is *visible* in the picture (the clock reading 8:31) so sharp players can spot it before tapping.
 - **Painted photos** (`image` on a scene): a 4:3 picture from `public/evidence`, seen through the Photographer's camera, with invisible `kind: "area"` items as the clue areas. Draw every clue into the painting among harmless clutter, and check it against the case's timeline. Export a double-size copy to `public/evidence/hd/` with the same name: the camera loads it past 2× zoom, so close-ups stay sharp. `one-more-clue-videos/omc_cinema/case001_photos.py` is the worked example.
 - **Cross-checks**: name the exact pair that contradicts. Make sure both halves can end up visible to the Archivist (usually one is theirs, the other is pinned by someone else). On the wall, a found pair stays tied with red string for the whole team.
-- **A red herring with a reason.** Someone should look guilty and lie, for a reason that has nothing to do with the crime. The practice case's Lord Squarington lies about when he left because he was secretly paying an old tab.
+- **A red herring with a reason.** Someone should look guilty and lie, for a reason that has nothing to do with the crime. Case 001's Professor Squires lies about leaving with his visitor because he broke the rules and left her alone in the lab.
 - **Key evidence** (`solution.keyEvidence`): list every piece that genuinely proves the culprit.
 - **Keep the clock honest**: nothing a team reads may be timed after the moment the story clock can show, and nobody may mention a morning that hasn't happened yet.
 - **Hints**: 2–3 per chapter, from gentle to blunt. The first hint of the whole case is free; after that they cost the "sharp" star.

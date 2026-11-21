@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cases } from "../../data/cases/index.ts";
 import { case001 } from "../../data/cases/case-001.ts";
-import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
+import { tipJar } from "./fixtures/tip-jar.ts";
 import { shotOf } from "./camera.ts";
 import { clockTime, costMinutes, formatTime, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, checkCase, createRoom, dealRoles, OBJECTION_MS, PIN_LIMIT, scoreReport, SPOTLIGHT_GAP_MS, viewFor } from "./engine.ts";

@@ -14,7 +14,7 @@ export type Step = {
 
 /**
  * How a night plays, in six moments. The screens are real game screens from
- * test rooms (the practice case and Case 001), with anything that would give
+ * test rooms of Case 001, with anything that would give
  * a case away hidden behind question marks or a CLASSIFIED stamp.
  */
 export const steps: Step[] = [
@@ -37,14 +37,14 @@ export const steps: Step[] = [
     title: "Work your role",
     text: "Every phone becomes a different tool: a camera, an interrogation room, an evidence wall, a hacked computer. Your find opens a teammate's next move.",
     clue: "roles",
-    screen: { src: "/screens/night-camera.webp", alt: "The Photographer's camera, zoomed in on the café counter, with a Shoot button" },
+    screen: { src: "/screens/night-camera.webp", alt: "The Photographer's camera, zoomed in on a workbench in Case 001's lab, with a Shoot button" },
   },
   {
     prop: "folder",
     title: "Show your proof",
     text: "Each chapter ends with a question. Pin your best evidence and put it to a vote. Real proof opens the next chapter; a wrong answer costs time on the night's clock.",
     clue: "vote",
-    screen: { src: "/screens/night-proof.webp", alt: "Mei presents a piece from the board and the team votes on it, over the interrogation room. The piece is blurred." },
+    screen: { src: "/screens/night-proof.webp", alt: "A player presents a piece from the board and the team votes on it, over the Tech's computer. The piece is blurred." },
   },
   {
     prop: "fingerprint",

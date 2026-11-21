@@ -91,12 +91,12 @@ export function CameraDemo({ found, onFind, next }: { found: string[]; onFind: (
           className="relative aspect-[4/3] cursor-crosshair touch-manipulation overflow-hidden rounded-xl bg-black select-none"
           role="button"
           tabIndex={0}
-          aria-label="The café photo. Tap where you want to zoom in."
+          aria-label="Ozzy's photo of Lab 4. Tap where you want to zoom in."
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              const jar = spots[0];
-              setAim({ x: jar.x + jar.w / 2, y: jar.y + jar.h / 2 });
+              const first = spots[0];
+              setAim({ x: first.x + first.w / 2, y: first.y + first.h / 2 });
             }
           }}
         >
@@ -105,7 +105,7 @@ export function CameraDemo({ found, onFind, next }: { found: string[]; onFind: (
             animate={{ scale: aim ? ZOOM : 1, x: `${move.x}%`, y: `${move.y}%` }}
             transition={{ type: "spring", stiffness: 110, damping: 20 }}
           >
-            <Image src={image} alt="A busy café counter on a Thursday night, posted to the café's Instagram" fill sizes="(min-width: 1024px) 760px, 100vw" className="object-cover" draggable={false} />
+            <Image src={image} alt="Lab 4 at night, photographed by the guard for his incident report: Cabinet B open, a laptop on the bench" fill sizes="(min-width: 1024px) 760px, 100vw" className="object-cover" draggable={false} />
             {spots
               .filter((s) => !aim && !found.includes(s.id))
               .map((s) => (
@@ -169,7 +169,7 @@ export function CameraDemo({ found, onFind, next }: { found: string[]; onFind: (
             Nothing sharp in that shot. Aim the middle of the frame at something odd.
           </Note>
         ) : (
-          <Note key="hint">Something on the counter is glowing. Tap the photo near it to zoom in, then shoot.</Note>
+          <Note key="hint">Something in the lab is glowing. Tap the photo near it to zoom in, then shoot.</Note>
         )}
       </AnimatePresence>
       <Cost>In the game you pinch to zoom, and a shot of nothing costs a few minutes of the night.</Cost>

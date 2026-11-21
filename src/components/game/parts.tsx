@@ -9,7 +9,7 @@ import { cx } from "@/lib/cx";
 
 /**
  * A suspect's portrait. A suspect with their own `look` shows that character
- * in the mood asked for; the house characters (the practice case) only have a
+ * in the mood asked for; the plain house characters only have a
  * calm and a shocked face, so the other moods fall back to those.
  */
 export function SuspectPortrait({ suspect, shocked, mood, className }: { suspect: CaseSuspect; shocked?: boolean; mood?: Mood; className?: string }) {

@@ -8,7 +8,6 @@ import { case001 } from "../../data/cases/case-001.ts";
 import { case002 } from "../../data/cases/case-002.ts";
 import { case003 } from "../../data/cases/case-003.ts";
 import { case004 } from "../../data/cases/case-004.ts";
-import { practiceTipJar } from "../../data/cases/practice-tip-jar.ts";
 import { framedHotspot, shotOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
 import { costMinutes, nightMinutes, parseTime } from "./clock.ts";
@@ -333,7 +332,7 @@ test("every case has chains that cross roles, in both directions", () => {
 });
 
 test("no motive gives itself away by its length", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     const length = (id: string) => c.solution.motives.find((m) => m.id === id)!.label.length;
     const all = c.solution.motives.map((m) => m.label.length);
     const wrong = c.solution.motives.filter((m) => m.id !== c.solution.motive).map((m) => m.label.length);
@@ -344,7 +343,7 @@ test("no motive gives itself away by its length", () => {
 });
 
 test("the night is tuned: a careless team runs out, a decent one doesn't", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     const d = c.deadline!;
     assert.ok(d, `${c.id} needs a story clock`);
     const open = c.evidence.filter((e) => e.access.kind === "interview" && !e.after).length;
@@ -355,7 +354,7 @@ test("the night is tuned: a careless team runs out, a decent one doesn't", () =>
 });
 
 test("every case has one locked file, and its password reads however it's typed", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     const locked = c.evidence.filter((e) => e.lock);
     assert.equal(locked.length, 1, `${c.id} should have exactly one locked file`);
     const [answer] = locked[0].lock!.answers;
@@ -367,7 +366,7 @@ test("every case has one locked file, and its password reads however it's typed"
 });
 
 test("the camera can catch every clue in every case, and each frame catches the clue it's aimed at", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     for (const e of c.evidence) {
       if (e.access.kind !== "inspect") continue;
       const picture = c.evidence.find((p) => p.id === (e.access as { scene: string }).scene)!;
@@ -382,7 +381,7 @@ test("the camera can catch every clue in every case, and each frame catches the 
 });
 
 test("every crack in every case cracks when someone shows them what breaks it", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     for (const e of c.evidence) {
       if (e.access.kind !== "press") continue;
       const a = e.access;
@@ -460,7 +459,7 @@ test("every case suspect has their own character, drawn in all five moods", () =
 });
 
 test("a contradiction's quotes are the pieces' own words, and a side without words is a picture", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     for (const e of c.evidence) {
       if (e.access.kind !== "crosscheck" || !e.access.quotes) continue;
       e.access.quotes.forEach((quote, i) => {
@@ -490,7 +489,7 @@ test("Case 001 is picture-led: every contradiction quotes its pieces, and every 
 });
 
 test("a checkpoint's replay plays pieces that exist by then, in order, in their own words or their picture", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     c.chapters.forEach((chapter, i) => {
       const replay = chapter.checkpoint?.replay;
       if (!replay) return;
@@ -536,7 +535,7 @@ test("Case 001's first proof plays back as the night: credited to whoever turned
 });
 
 test("a case's map of the night only names rooms, people, things and pieces it has, inside its night", () => {
-  for (const c of [case001, case002, case003, case004, practiceTipJar]) {
+  for (const c of [case001, case002, case003, case004]) {
     const map = c.nightMap;
     if (!map) continue;
     const rooms = new Set(map.rooms.map((r) => r.id));

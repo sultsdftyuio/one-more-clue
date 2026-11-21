@@ -4,7 +4,7 @@ import type { PaidCase } from "@/data/catalog";
  * Who may host a case, as pure functions (no Supabase or Dodo calls), so the
  * rules are easy to test.
  *
- * - free: not for sale (Case 001, the practice case)
+ * - free: not for sale (Case 001)
  * - testing: for sale, but payments aren't switched on yet, so it plays free
  * - owned: bought, alone or in a bundle
  * - locked: for sale and not owned

@@ -5,7 +5,7 @@ import { AnimatePresence, m } from "motion/react";
 import { useEffect, useState } from "react";
 import { sfx } from "@/components/home/sound";
 import { rolesDemo } from "@/data/roles";
-import { suspectArt } from "@/lib/art";
+import { castArt } from "@/lib/cast-art";
 import { cx } from "@/lib/cx";
 import { Cost, Handoff, Note } from "./shared";
 
@@ -37,7 +37,7 @@ function useTyped(text: string, on: boolean) {
  * slap something from the board down, and if it breaks their story, they crack.
  */
 export function RoomDemo({ asked, onAsk, next }: { asked: boolean; onAsk: () => void; next: () => void }) {
-  const { suspect, name, question, answer, lead } = rolesDemo.interview;
+  const { look, name, question, answer, lead } = rolesDemo.interview;
   const [justAsked, setJustAsked] = useState(false);
   const [showing, setShowing] = useState(false);
   const typed = useTyped(answer, justAsked);
@@ -50,7 +50,7 @@ export function RoomDemo({ asked, onAsk, next }: { asked: boolean; onAsk: () => 
         <span aria-hidden className="absolute top-0 left-1/2 h-3 w-24 -translate-x-1/2 rounded-b-full bg-[#4b4060] shadow-[0_6px_18px_rgba(255,214,140,0.6)]" />
         <div className="relative flex items-end gap-3 sm:gap-5">
           <m.div className="w-24 shrink-0 sm:w-32" animate={asked ? { rotate: [0, -1.5, 1.5, 0] } : {}} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-            <Image src={suspectArt[suspect].idle} alt={`${name}, in the chair`} sizes="128px" className="w-full drop-shadow-[0_8px_8px_rgba(0,0,0,0.5)]" />
+            <Image src={castArt[look].idle} alt={`${name}, in the chair`} sizes="128px" className="w-full drop-shadow-[0_8px_8px_rgba(0,0,0,0.5)]" />
           </m.div>
           <div className="mb-5 min-w-0 flex-1">
             <AnimatePresence mode="wait">

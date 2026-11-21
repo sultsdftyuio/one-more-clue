@@ -1,5 +1,4 @@
 import type { PropName } from "@/lib/art";
-import type { SuspectId } from "./suspects";
 
 export type RoleId = "photographer" | "interviewer" | "tech" | "archivist";
 
@@ -16,9 +15,10 @@ export type RoleCard = {
 };
 
 /**
- * The four roles, shown with real evidence from the practice case (Café
- * Lumen). Only the setup and one innocent alibi are used, so nothing here
- * gives the practice case away.
+ * The four roles, shown with real evidence from Case 001's opening: Ozzy's
+ * incident photo, how he found the cabinet, and his patrol log. None of it
+ * answers a checkpoint, and the wall only says his 9:17 holds up, not that
+ * he's innocent.
  */
 export const roles: RoleCard[] = [
   {
@@ -57,49 +57,48 @@ export const roles: RoleCard[] = [
 
 export const rolesDemo = {
   photo: {
-    image: "/evidence/practice-instagram.webp",
-    caption: "@cafelumen · posted 8:38 PM · “Thursday regulars ☕”",
+    image: "/evidence/case001-incident.webp",
+    caption: "Taken by Ozzy for the incident report · 9:20 PM",
     // Clue areas in percent, the same ones the game uses for this picture.
-    spots: [
-      { id: "jar", x: 33, y: 50, w: 9, h: 17, title: "The jar at 8:38", text: "The tip jar is on the counter at 8:38, stuffed with notes." },
-      { id: "reader", x: 44, y: 55, w: 7, h: 12, title: "The card reader", text: "The card reader sits right next to the jar. Anyone paying there could touch it." },
-    ],
+    spots: [{ id: "cabinet", x: 1, y: 9, w: 26, h: 44, title: "The empty cabinet", text: "Cabinet B: empty, not forced, the spare key in the lock." }],
   },
   interview: {
-    suspect: "circle" as SuspectId,
-    name: "Ollie",
-    question: "Where were you between 8:41 and 8:44?",
-    answer: "Next door at Page & Co., signing for parcels. My van's number 12, parked right outside. Check my scanner.",
-    lead: "QuickParcel",
+    /** The character's own look in the game (src/lib/cast-art.ts). */
+    look: "c001-ozzy",
+    name: "Ozzy",
+    question: "When did you find the cabinet open?",
+    answer: "9:17, on my round. Door wide open, key still in the lock. Check my rounds, badge S-42.",
+    lead: "Ozzy's rounds",
   },
   search: {
-    lead: "QuickParcel",
+    lead: "Ozzy's rounds",
     records: [
       {
-        id: "scanner",
-        terms: ["ollie", "quickparcel", "parcel", "courier", "scanner", "van"],
-        source: "QuickParcel · courier Ollie",
-        // Locked: the password is in Ollie's answer, on the Interviewer's desk.
-        lock: { hint: "QuickParcel driver app. Password hint: Ollie's van number.", answers: ["12", "van12"] },
+        id: "rounds",
+        terms: ["ozzy", "reyes", "guard", "rounds", "patrol", "security"],
+        source: "Patrol checkpoints · O. Reyes",
+        // Locked: the password is in Ozzy's answer, on the Interviewer's desk.
+        lock: { hint: "Security system. Password hint: the night guard's badge number.", answers: ["S-42", "S42"] },
         rows: [
-          { time: "8:41 PM", text: "Delivered at Page & Co. (next door) · signed by owner" },
-          { time: "8:44 PM", text: "Delivered at Page & Co. (next door) · signed by owner" },
-          { time: "8:47 PM", text: "Left Lumen Street" },
+          { time: "9:00 PM", text: "Checkpoint: lobby" },
+          { time: "9:10 PM", text: "Checkpoint: Lab 4 corridor" },
+          { time: "9:17 PM", text: "Checkpoint: Lab 4 · alarm raised" },
         ],
       },
       {
-        id: "phone",
-        terms: ["tri", "mum", "phone"],
-        source: "Network records · Tri",
+        id: "register",
+        terms: ["halo", "prototype", "glasses", "asset", "register"],
+        source: "Asset register · HALO",
         rows: [
-          { time: "8:35 PM", text: "Call to 'Mum ❤️' started" },
-          { time: "8:51 PM", text: "Call ended (16 min)" },
+          { time: "Kept", text: "Cabinet B, Lab 4" },
+          { time: "Keys", text: "P. Tran, E. Squires" },
+          { time: "Spare", text: "Top drawer of the professor's desk" },
         ],
       },
     ],
   },
   wall: {
     verdict: "Checks out",
-    text: "Ollie says he was next door, and his scanner puts him there at 8:41 and 8:44. They agree, so the string hangs slack: no lie here, and one suspect is off your list. When two things can't both be true, it snaps tight, and you've caught a liar.",
+    text: "Ozzy says he found the cabinet open at 9:17, and his patrol log puts him at Lab 4 at 9:17. They agree, so the string hangs slack: no lie here. When two things can't both be true, it snaps tight, and you've caught a liar.",
   },
 };

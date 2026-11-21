@@ -1,7 +1,12 @@
 import type { CaseFile } from "@/lib/game/types";
 
 /**
- * Practice case: Last Orders at Café Lumen.
+ * Test fixture only: the old practice case, Last Orders at Café Lumen.
+ *
+ * It was taken off the site on 19 Nov 2026 and is not in src/data/cases, so
+ * nobody can reach or start it. The engine and bot tests still play it because
+ * it is small and its mechanics (a locked file, a crack, a red herring) are
+ * pinned down here. Its pictures were deleted from public/, so never list it.
  *
  * Truth: Rex took the tip jar. He claims he never went in, and a tourist's
  * photo "from 8:41" seems to prove it, but the stop's clock in that photo reads
@@ -15,7 +20,7 @@ import type { CaseFile } from "@/lib/game/types";
  * Tech searches for it, the Photographer inspects the still. Rex mentions the
  * depot, the Tech searches it and finds the motive.
  */
-export const practiceTipJar: CaseFile = {
+export const tipJar: CaseFile = {
   id: "practice-tip-jar",
   code: "Practice case",
   title: "Last Orders at Café Lumen",

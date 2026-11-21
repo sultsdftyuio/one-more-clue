@@ -1,7 +1,7 @@
 // Run with: npm test
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { practiceTipJar as tipJar } from "../../data/cases/practice-tip-jar.ts";
+import { tipJar } from "./fixtures/tip-jar.ts";
 import { nextBotMove } from "./bots.ts";
 import { addPlayer, applyAction, createRoom } from "./engine.ts";
 import type { Action, Mode, RoomState } from "./types.ts";

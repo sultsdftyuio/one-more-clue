@@ -540,7 +540,7 @@ const inst = {
 const SWING = 0.66;
 const offbeat = (at: number, spb: number) => at + (Math.random() < 0.5 ? 0 : spb * SWING);
 
-/** The noir set: Case 001, the practice case, and any case without a theme. */
+/** The noir set: Case 001 and any case without a theme. */
 const NOIR: Record<Track, TrackDef> = {
   // A relaxed detective-lounge swing in F while people gather.
   lobby: {

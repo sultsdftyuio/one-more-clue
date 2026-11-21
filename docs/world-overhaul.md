@@ -99,7 +99,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 - [ ] **W0.2** Put the world behind a flag: a per-room `world` flag and a hidden route, so the current game stays the default.
 - [ ] **W0.3** Phaser spike: Phaser 4 inside Next 15 and React 19, client only. Show the Case 001 plate with swipe, pinch and DPR handling, holding 60 fps with 8 sprites on a mid-range phone. Measure the bundle size.
 - [ ] **W0.4** The `WorldCanvas` shell and the client store bridging Phaser and React.
-- [x] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7. *(Done 2026-11-20, measured from a laptop: Supabase falls short and LiveKit is recommended instead, see section 7. The real-phone run still needs the owner.)*
+- [x] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7. *(Done 2026-11-20, measured from a laptop: Supabase falls short and the owner chose LiveKit instead, see section 7. The real-phone run still needs the owner.)*
 - [ ] **W0.6** Run the real-player playtest of today's Case 001 (decision 5), using [playtest.md](playtest.md). The owner runs this with friends. It runs alongside phase 0 and must finish before phase 8.
 - [ ] **W0.7** Move the world painter into this repo's `art/` (scripts that import `omc_cinema` read it from `../one-more-clue-videos`).
 
@@ -205,7 +205,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 ## 7. Decisions (approved by the owner on 2026-11-20)
 
 1. **World engine: Phaser 4.** It has the camera, scenes, input and tweens built in. PixiJS was the alternative.
-2. **Presence channel: Supabase Realtime.** It's already a dependency and has presence built in. LiveKit data messages stay the fallback if the W0.5 spike shows Supabase falls short. **W0.5 found that it does fall short. The recommendation below swaps the two; it waits for the owner's OK.**
+2. **Presence channel: LiveKit data messages** (changed by the owner on 2026-11-21 after W0.5). The first pick was Supabase Realtime, but the spike found it too slow and too limited on the free plan (see below). If LiveKit drops, players show in their last known room.
 3. **Mini-games: DOM, SVG and CSS, like the mockups.** They're quicker to build, the text stays crisp and they're easy to reuse. They are not Phaser scenes.
 4. **Rollout: hidden route first.** Today's game stays the default until the phase 8 playtest says otherwise.
 5. **Playtest order: today's Case 001 gets its real-player playtest first** (W0.6), while phase 0 is built.
@@ -214,7 +214,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### W0.5 · What the presence spike measured (2026-11-20)
 
-**Recommendation: carry presence on LiveKit data messages, not Supabase Realtime.** Supabase stays for accounts and purchases. This swaps decision 2's pick and its fallback, so it needs the owner's OK before W3.1 builds on it.
+**Decided (owner, 2026-11-21): presence goes on LiveKit data messages, not Supabase Realtime.** Supabase stays for accounts and purchases. Why:
 
 1. **Speed.** From here, a position reached the other phone in about 15–30 ms over LiveKit and about 140–150 ms over Supabase (half the measured round trip). Add the smoothing delay, and teammates show under 0.2 s behind on LiveKit and about 0.45 s behind on Supabase.
 2. **Supabase's free plan can't take 10 updates a second.** Any phone sending about 8 or more messages a second was throttled within 5–10 s. Deliveries fell to 0–40%, then the service dropped the connections. At 5 a second it held in Node, but browser tabs still lost 4–31% of messages to heartbeat timeouts and bursts.
@@ -271,7 +271,7 @@ What it shows:
 
 Today the server sends one "room changed" packet per saved action, only to phones in voice. Those phones then fetch their view again over the REST API; everyone else waits for the 2-second poll (a second on average, plus the fetch). That's a few hundred packets a game, and never positions. The packet travels the same LiveKit path measured here (about 20 ms one way); the fetch after it is the slow part. Presence on LiveKit would reuse that connection: one connection per phone for voice and presence, so a player already in voice costs no extra minutes. Game state keeps going through REST and the nudge, as section 4 says.
 
-For W3.1, if the owner agrees:
+For W3.1:
 
 - Give players a data-publish grant (today's pass has `canPublishData: false`). Keep checking that each packet's sender matches the id inside it, as the spike does, and ignore "room" packets that don't come from the server.
 - Send positions as lossy packets at up to 10/s while moving, and nothing while standing still. Send statuses, pings and hellos reliably.
@@ -300,3 +300,4 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
 - 2026-11-20: plan written from the design discussions and the Case 001 mockups.
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
 - 2026-11-20: W0.5 done on its branch (not pushed yet): a presence spike with both services, a hidden `/lab/presence` page and two benches. Supabase's free plan throttles any phone sending about 8 or more messages a second, and was about 140 ms one way from the UAE. LiveKit data messages took about 15–30 ms and lost nothing at 10/s. Recommends swapping decision 2 (LiveKit for presence), waiting for the owner's OK. The real-phone run is still to do (section 7).
+- 2026-11-21: the owner chose LiveKit data messages for presence (decision 2 updated). W3.1 builds on LiveKit.

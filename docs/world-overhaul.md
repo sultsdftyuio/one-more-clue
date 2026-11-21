@@ -5,7 +5,7 @@
 This is the plan for turning One More Clue from a set of screens into a living world: a building you walk through, people who do things, a night you can rewind, roles that act on real objects, and small side games that help a bit. It's written so any future session can pick up the next task without rereading the chat that produced it.
 
 - Visual reference: the design canvas <https://claude.ai/artifact/TMQ7nxTF6igQV2FwECvV8Q>. The boards to follow are "001 · Close-up", "001 · Whole building" and the eight "Mini ·" boards. The older A/B/C boards are only history.
-- Mockup scripts: [art/mockups/case001/](../art/mockups/case001/) (`world.py` paints the building, `boards.py` writes the boards, `sprites.py` builds the sprite sheet, `polish.py` the mini-game details) and [art/mockups/dollhouse/](../art/mockups/dollhouse/).
+- Mockup scripts: [art/mockups/case001/](../art/mockups/case001/) (`world.py` paints the building, `boards.py` writes the boards, `sprites.py` builds the sprite sheet, `polish.py` the mini-game details) and [art/mockups/dollhouse/](../art/mockups/dollhouse/). The building painter itself now lives in [art/world/](../art/world/) (W0.7).
 - Case writing guide: [case-system.md](case-system.md). Playtests: [playtest.md](playtest.md).
 
 ---
@@ -85,7 +85,7 @@ Ghost routes need no hand animation: they come from the existing `nightMap.sight
 
 ### Art and assets
 
-- The painter (Python, from `omc_cinema`, as in [art/mockups/case001/world.py](../art/mockups/case001/world.py)) exports each building as layers: sky and city, the building, foreground and occluders (so people can step behind desks), at 2 px per cm, as WebP, with a manifest of rooms, floor lines and spots.
+- The painter (Python, in [art/world/](../art/world/), moved out of `omc_cinema` in W0.7) exports each building as layers: sky and city, the building, foreground and occluders (so people can step behind desks), at 2 px per cm, as WebP, with a manifest of rooms, floor lines and spots.
 - Characters come from the cast kit: idle, walk and the five moods for each suspect, plus the four detectives, packed into one sprite atlas per case.
 - Budget: about 3 MB for a case's first load on a phone, with the other cases loaded later.
 
@@ -101,7 +101,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 - [x] **W0.4** The `WorldCanvas` shell and the client store bridging Phaser and React. *(Done 2026-11-20: `src/components/world/` (WorldCanvas, WorldRoom, HUD, name tags placed from world coordinates) and a zustand store, `src/lib/world/store.ts`, holding the player's view, the camera, the zoom range, camera requests, the selection and frame stats. Presence goes in the same store in W0.5/W3.)*
 - [x] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7. *(Done 2026-11-20, measured from a laptop: Supabase falls short and the owner chose LiveKit instead, see section 7. The real-phone run still needs the owner.)*
 - [ ] **W0.6** Run the real-player playtest of today's Case 001 (decision 5), using [playtest.md](playtest.md). The owner runs this with friends. It runs alongside phase 0 and must finish before phase 8.
-- [ ] **W0.7** Move the world painter into this repo's `art/` (scripts that import `omc_cinema` read it from `../one-more-clue-videos`).
+- [x] **W0.7** Move the world painter into this repo's `art/` (scripts that import `omc_cinema` read it from `../one-more-clue-videos`). *(Done 2026-11-20: [art/world/](../art/world/) paints Case 001's plate with no videos repo.)*
 
 **Done when** a flagged room opens the painted Case 001 building and four phones can pan and pinch it smoothly.
 
@@ -301,4 +301,5 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
 - 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas` (PR once the owner OKs it). Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.
 - 2026-11-20: W0.5 done (PR #39): a presence spike with both services, a hidden `/lab/presence` page and two benches. Supabase's free plan throttles any phone sending about 8 or more messages a second, and was about 140 ms one way from the UAE. LiveKit data messages took about 15–30 ms and lost nothing at 10/s. Recommends swapping decision 2 (LiveKit for presence), waiting for the owner's OK. The real-phone run is still to do (section 7).
+- 2026-11-20: W0.7 done. The world painter moved to [art/world/](../art/world/), with trimmed copies of the `omc_cinema` code it used. `python art/world/world.py` renders the Case 001 plate byte-identical to the mockup's `world.webp`, and the same `world.json`, from this repo alone. The mockup copy in `art/mockups/case001/` is unchanged and still needs the videos repo.
 - 2026-11-21: the owner chose LiveKit data messages for presence (decision 2 updated). W3.1 builds on LiveKit.

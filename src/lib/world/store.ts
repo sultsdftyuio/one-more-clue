@@ -1,0 +1,90 @@
+/**
+ * The small client store the world screen shares between the Phaser scene and the React overlays
+ * (W0.4 in docs/world-overhaul.md):
+ * - React writes the player's view from the server and camera requests ("show the whole building");
+ * - the scene writes the camera every frame it moves, the screen size and how drawing is going;
+ * - both write the selection (tap someone in the building, or close their card).
+ *
+ * It's a zustand vanilla store, one per world screen: React reads it with `useStore`, the scene
+ * reads it with `getState()` and `subscribe()`. No React or Phaser in here, so `node --test` covers it.
+ */
+import { createStore } from "zustand/vanilla";
+import type { PlayerView } from "../game/engine.ts";
+import { sameCamera, type Camera, type Viewport, type ZoomRange } from "./camera.ts";
+
+/** Where React can ask the camera to go. The scene works out the numbers, since it knows the screen. */
+export type CameraTarget =
+  | { kind: "whole" }
+  | { kind: "closeUp" }
+  | { kind: "person"; id: string }
+  | { kind: "room"; id: string };
+
+export type WorldStatus = {
+  stage: "loading" | "ready" | "failed";
+  renderer: "WebGL" | "Canvas" | null;
+  /** Frames drawn in the last second, and the slowest of them in ms. */
+  fps: number;
+  slowest: number;
+  /** The pixel density the canvas draws at (capped below the screen's on dense phones). */
+  dpr: number;
+  error: string | null;
+};
+
+export type WorldState = {
+  view: PlayerView | null;
+  viewport: Viewport;
+  camera: Camera;
+  range: ZoomRange;
+  /** A camera move React asked for and the scene hasn't picked up yet. */
+  request: { target: CameraTarget; id: number } | null;
+  /** The person (later, any object) the player tapped. */
+  selected: string | null;
+  status: WorldStatus;
+};
+
+export type WorldActions = {
+  setView(view: PlayerView | null): void;
+  /** Called by the scene whenever the picture moves. Changes too small to see are dropped. */
+  setCamera(camera: Camera): void;
+  setViewport(viewport: Viewport, range: ZoomRange): void;
+  /** Asks the scene to move the camera; a newer request replaces one not yet taken. */
+  look(target: CameraTarget): void;
+  /** The scene takes the waiting request, if any. */
+  takeRequest(): CameraTarget | null;
+  select(id: string | null): void;
+  setStatus(patch: Partial<WorldStatus>): void;
+};
+
+export type WorldStore = ReturnType<typeof createWorldStore>;
+
+const INITIAL_STATUS: WorldStatus = { stage: "loading", renderer: null, fps: 0, slowest: 0, dpr: 1, error: null };
+
+export function createWorldStore(initial: Partial<WorldState> = {}) {
+  return createStore<WorldState & WorldActions>()((set, get) => ({
+    view: null,
+    viewport: { w: 0, h: 0 },
+    camera: { x: 0, y: 0, zoom: 1 },
+    range: { min: 1, max: 1, closeUp: 1 },
+    request: null,
+    selected: null,
+    status: INITIAL_STATUS,
+    ...initial,
+
+    setView: (view) => set({ view }),
+    setCamera: (camera) => {
+      if (!sameCamera(get().camera, camera)) set({ camera });
+    },
+    setViewport: (viewport, range) => set({ viewport, range }),
+    look: (target) => set({ request: { target, id: (get().request?.id ?? 0) + 1 } }),
+    takeRequest: () => {
+      const request = get().request;
+      if (!request) return null;
+      set({ request: null });
+      return request.target;
+    },
+    select: (selected) => {
+      if (get().selected !== selected) set({ selected });
+    },
+    setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
+  }));
+}

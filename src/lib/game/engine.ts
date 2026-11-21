@@ -181,8 +181,11 @@ export function createRoom(input: {
   host: { id: string; token: string; name: string };
   mode: Mode;
   now: number;
+  /** A world room (see RoomState.world). Classic rooms leave it out, so their state is unchanged. */
+  world?: boolean;
 }): RoomState {
   return {
+    ...(input.world ? { world: true as const } : {}),
     code: input.code,
     caseId: input.caseFile.id,
     mode: input.mode,
@@ -1355,6 +1358,8 @@ export type PlayerView = {
   chain: ChainStep[];
   /** Set by the room service: whether the host may add bots here. */
   testBots?: boolean;
+  /** Whether this room also opens in the walkable world (the hidden /r/<code>/world route). */
+  world: boolean;
 };
 
 function interrogationView(state: RoomState, caseFile: CaseFile, me: Player): PlayerView["interrogation"] {
@@ -1545,6 +1550,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     version: state.version,
     phase: state.phase,
     mode: state.mode,
+    world: Boolean(state.world),
     startedAt: state.startedAt ?? null,
     me: { ...toPublic(me), abilities },
     case: {

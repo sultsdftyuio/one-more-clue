@@ -395,6 +395,11 @@ export type RoomState = {
   outcome: Outcome | null;
   /** When a bot last made a move, so they act at a human pace. */
   botMovedAt?: number;
+  /**
+   * Opens in the walkable world on the hidden route (/r/<code>/world) as well as the classic screens.
+   * Only set for rooms made from /world/<caseId>; missing means a classic room. See docs/world-overhaul.md.
+   */
+  world?: true;
 };
 
 export type InterrogationState = {

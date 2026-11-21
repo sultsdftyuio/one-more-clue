@@ -1,6 +1,6 @@
 # The world overhaul
 
-**Status: approved by the owner on 2026-11-20, with the recommended pick for all seven decisions (section 7).** Phase 0 is next. Nothing is built yet except the mockups.
+**Status: approved by the owner on 2026-11-20, with the recommended pick for all seven decisions (section 7).** Phase 0 is under way: see the ticks and the log.
 
 This is the plan for turning One More Clue from a set of screens into a living world: a building you walk through, people who do things, a night you can rewind, roles that act on real objects, and small side games that help a bit. It's written so any future session can pick up the next task without rereading the chat that produced it.
 
@@ -96,9 +96,9 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 ### Phase 0 · Foundations (no change players can see) · M
 
 - [x] **W0.1** The owner approves this plan and the decisions in section 7. *(Done 2026-11-20: approved with the recommended picks.)*
-- [ ] **W0.2** Put the world behind a flag: a per-room `world` flag and a hidden route, so the current game stays the default.
-- [ ] **W0.3** Phaser spike: Phaser 4 inside Next 15 and React 19, client only. Show the Case 001 plate with swipe, pinch and DPR handling, holding 60 fps with 8 sprites on a mid-range phone. Measure the bundle size.
-- [ ] **W0.4** The `WorldCanvas` shell and the client store bridging Phaser and React.
+- [x] **W0.2** Put the world behind a flag: a per-room `world` flag and a hidden route, so the current game stays the default. *(Done 2026-11-20: `RoomState.world`, set only for rooms opened from `/world/<caseId>`, and only for cases with a painted building (Case 001, listed in `src/lib/world/plates.ts`). `/r/<code>/world` shows a world room in the building; classic or missing rooms go to `/r/<code>`, and the same room still plays classic there. Nothing links to either page.)*
+- [x] **W0.3** Phaser spike: Phaser 4 inside Next 15 and React 19, client only. Show the Case 001 plate with swipe, pinch and DPR handling, holding 60 fps with 8 sprites on a mid-range phone. Measure the bundle size. *(Done 2026-11-20 with Phaser 4.2.1, see the log for numbers. Phaser's own input is off: it drops a finger's moves while it's over the HUD, so gestures come from DOM pointer events. `scripts/world-assets.py` packs the art for phones: the 4800 px sprite strip as a 2048 px grid, a 2048 × 1024 copy of the plate for zoomed-out views (both mipmapped), and the security desk cut out so Ozzy stands behind it. Still to try on real phones.)*
+- [x] **W0.4** The `WorldCanvas` shell and the client store bridging Phaser and React. *(Done 2026-11-20: `src/components/world/` (WorldCanvas, WorldRoom, HUD, name tags placed from world coordinates) and a zustand store, `src/lib/world/store.ts`, holding the player's view, the camera, the zoom range, camera requests, the selection and frame stats. Presence goes in the same store in W0.5/W3.)*
 - [ ] **W0.5** Presence spike on Supabase Realtime (decision 2): a broadcast and presence channel per room, measured for latency on phones, cost and free-tier limits. Keep LiveKit data messages as the fallback if Supabase falls short, and write what you measured into section 7.
 - [ ] **W0.6** Run the real-player playtest of today's Case 001 (decision 5), using [playtest.md](playtest.md). The owner runs this with friends. It runs alongside phase 0 and must finish before phase 8.
 - [ ] **W0.7** Move the world painter into this repo's `art/` (scripts that import `omc_cinema` read it from `../one-more-clue-videos`).
@@ -224,3 +224,4 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 - 2026-11-20: plan written from the design discussions and the Case 001 mockups.
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
+- 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas` (PR once the owner OKs it). Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.

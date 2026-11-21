@@ -3,6 +3,7 @@ import { caseById } from "@/data/cases";
 import { BOT_NAMES, nextBotMove } from "@/lib/game/bots";
 import { activePlayers, addPlayer, applyAction, cleanName, createRoom, viewFor, type PlayerView } from "@/lib/game/engine";
 import type { Action, CaseFile, Mode, RoomState } from "@/lib/game/types";
+import { hasWorld } from "@/lib/world/plates";
 import { redisConfigured } from "@/lib/waitlist/redis-store";
 import { createFileStore } from "./file-store";
 import { caseAccess } from "@/lib/billing/purchases";
@@ -129,9 +130,11 @@ async function update(store: RoomStore, code: string, change: (state: RoomState)
   throw new RoomError("The room is busy. Try again.", 409);
 }
 
-export async function createGame(input: { caseId: string; name: string; mode: Mode }) {
+export async function createGame(input: { caseId: string; name: string; mode: Mode; world?: boolean }) {
   const caseFile = caseById(input.caseId);
   if (!caseFile) throw new RoomError("Unknown case.", 400);
+  // World rooms come from the hidden /world/<caseId> page, for cases with a painted building.
+  if (input.world && !hasWorld(caseFile.id)) throw new RoomError("This case has no world yet.", 400);
   // Only the host needs to own a paid case; everyone who joins plays free.
   if ((await caseAccess(caseFile.id)) === "locked") throw new RoomError("Buy this case to host it. Your friends play free.", 402);
   const name = cleanName(input.name);
@@ -141,7 +144,7 @@ export async function createGame(input: { caseId: string; name: string; mode: Mo
   const store = getRoomStore();
   const token = newToken();
   for (let attempt = 0; attempt < 10; attempt++) {
-    const state = createRoom({ code: newCode(), caseFile, host: { id: newId(), token, name }, mode, now: Date.now() });
+    const state = createRoom({ code: newCode(), caseFile, host: { id: newId(), token, name }, mode, now: Date.now(), world: input.world });
     if (await store.create(state)) return { code: state.code, token };
   }
   throw new RoomError("Couldn't find a free room code. Try again.", 503);
@@ -194,6 +197,19 @@ export async function roomInvite(code: string) {
     return { caseId: caseFile.id, caseCode: caseFile.code, caseTitle: caseFile.title, host };
   } catch {
     // A preview is never worth an error page: fall back to the plain one.
+    return null;
+  }
+}
+
+/**
+ * The case of a world room, for the hidden world route; null when the room is gone, is a classic
+ * room, or its case has no painted building (the route then sends players to the classic screens).
+ */
+export async function worldRoomCase(code: string) {
+  try {
+    const state = await getRoomStore().get(code);
+    return state?.world && hasWorld(state.caseId) ? state.caseId : null;
+  } catch {
     return null;
   }
 }

@@ -17,6 +17,9 @@ import { Icon } from "../ui/Icon";
  * motion it develops by itself, and after a few seconds anyone can just tap to
  * finish it.
  */
+/** How far along the print finishes by itself. */
+const SNAP = 0.9;
+
 export function DevelopPrint({ scene, hotspot, title, note, onDeveloped }: { scene: EvidenceBody; hotspot: string; title: string; note: string; onDeveloped: () => void }) {
   const reduced = usePrefersReducedMotion();
   const amount = useRef(0);
@@ -33,7 +36,10 @@ export function DevelopPrint({ scene, hotspot, title, note, onDeveloped }: { sce
 
   const add = useCallback((more: number) => {
     if (amount.current >= 1) return;
-    amount.current = Math.min(1, amount.current + more);
+    const next = amount.current + more;
+    // Rubbing adds a sliver at a time, so the last few percent of the bar looked full while the print stayed
+    // unfinished: once it's nearly there, it comes up the rest of the way.
+    amount.current = next >= SNAP ? 1 : next;
     setProgress(amount.current);
     if (amount.current >= 1) {
       play("develop");

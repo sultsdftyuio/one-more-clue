@@ -43,7 +43,7 @@ export function Station({
           type="button"
           onClick={onHelp}
           data-coach="help"
-          aria-label={`How the ${name} works`}
+          aria-label={`How ${name.replace(/^The /, "the ")} works`}
           className="grid size-9 shrink-0 place-items-center rounded-full border-2 border-current font-display text-lg leading-none opacity-70 transition-opacity hover:opacity-100"
         >
           ?

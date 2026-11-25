@@ -20,6 +20,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<string, CastMember> }) {
   const store = useWorldStore();
   const selected = useWorld((s) => s.selected);
+  const statuses = useWorld((s) => s.statuses);
   const nodes = useRef(new Map<string, HTMLSpanElement>());
 
   const tags = useMemo(
@@ -27,8 +28,7 @@ export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<str
       plate.people.flatMap((person) => {
         const member = cast[person.id];
         if (!member?.tag) return [];
-        const { feet, box } = spriteOf(plate, person);
-        return [{ id: person.id, text: member.tag, me: member.me, x: feet.x, y: box.y + box.h * 0.02 }];
+        return [{ id: person.id, text: member.tag, me: member.me, person }];
       }),
     [plate, cast],
   );
@@ -39,16 +39,18 @@ export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<str
       for (const tag of tags) {
         const node = nodes.current.get(tag.id);
         if (!node) continue;
-        const at = plateToScreen(s.camera, s.viewport, tag.x, tag.y);
+        // Over their head, wherever they've walked to.
+        const { feet, box } = spriteOf(plate, tag.person, s.positions[tag.id]);
+        const at = plateToScreen(s.camera, s.viewport, feet.x, box.y + box.h * 0.02);
         node.style.transform = `translate3d(${at.x.toFixed(1)}px, ${at.y.toFixed(1)}px, 0) translate(-50%, -100%)`;
         node.style.opacity = String(shown);
       }
     };
     place(store.getState());
     return store.subscribe((s, prev) => {
-      if (s.camera !== prev.camera || s.viewport !== prev.viewport || s.range !== prev.range) place(s);
+      if (s.camera !== prev.camera || s.viewport !== prev.viewport || s.range !== prev.range || s.positions !== prev.positions) place(s);
     });
-  }, [store, tags]);
+  }, [store, tags, plate]);
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -67,6 +69,7 @@ export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<str
           )}
         >
           {tag.me ? `You · ${tag.text}` : tag.text}
+          {!tag.me && statuses[tag.id] && <span className="font-semibold text-ink/70"> · {statuses[tag.id]}</span>}
         </span>
       ))}
     </div>

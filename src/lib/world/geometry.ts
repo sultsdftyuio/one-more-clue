@@ -3,12 +3,13 @@
  * and what a tap lands on. Pure, so `node --test` covers it.
  */
 import type { WorldPerson, WorldPlate } from "./plates.ts";
+import { TILE } from "./sprites.ts";
+
+/** A point in world cm. */
+export type Spot = { x: number; z: number };
 
 /** Characters are drawn at 80% of the mockup's first size: the owner's pick (CS in art/mockups/case001/boards.py). */
 export const CHARACTER_SCALE = 0.8;
-
-/** One tile of a sprite atlas, in px (art/mockups/case001/sprites.py). */
-export const TILE = { w: 400, h: 560 };
 
 /** How far down its tile a character's feet are. */
 export const FEET = 0.926;
@@ -50,8 +51,8 @@ export function outlineBox(plate: WorldPlate, outline: [number, number][]) {
  * A character's sprite on the plate: `feet` is where the sprite's origin goes (origin 0.5, FEET),
  * `scale` turns the atlas tile into plate pixels, and `box` is the whole tile.
  */
-export function spriteOf(plate: WorldPlate, person: WorldPerson) {
-  const feet = toPlate(plate, person.x, person.z);
+export function spriteOf(plate: WorldPlate, person: WorldPerson, at: Spot = person) {
+  const feet = toPlate(plate, at.x, at.z);
   const h = (person.detective ? TILE_CM.detective : TILE_CM.suspect) * CHARACTER_SCALE * plate.pxPerCm;
   const w = (h * TILE.w) / TILE.h;
   return { feet, scale: h / TILE.h, box: { x: feet.x - w / 2, y: feet.y - FEET * h, w, h } };
@@ -81,14 +82,14 @@ export function insideOutline(outline: [number, number][], x: number, z: number)
  * `slop` widens each body by that many plate pixels, since fingers are bigger than the art.
  * Someone behind furniture can't be tapped through it.
  */
-export function personAt(plate: WorldPlate, px: number, py: number, slop = 0): string | null {
+export function personAt(plate: WorldPlate, px: number, py: number, slop = 0, at: Record<string, Spot> = {}): string | null {
   const point = fromPlate(plate, px, py);
   const hidden = plate.occluders.some((o) => insideOutline(o.outline, point.x, point.z));
   const people = drawOrder(plate);
   for (let i = people.length - 1; i >= 0; i--) {
     const person = people[i];
     if (person.behind && hidden) continue;
-    const { feet, box } = spriteOf(plate, person);
+    const { feet, box } = spriteOf(plate, person, at[person.id]);
     // The tile has air around the body: keep the middle of it, from the hat down to the feet.
     const left = box.x + box.w * 0.18 - slop;
     const right = box.x + box.w * 0.82 + slop;
@@ -102,4 +103,28 @@ export function personAt(plate: WorldPlate, px: number, py: number, slop = 0): s
 /** Which room a world point is in, if any. */
 export function roomAt(plate: WorldPlate, x: number, z: number): string | null {
   return plate.rooms.find((r) => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1)?.id ?? null;
+}
+
+/** The colour of the light where someone stands: their room's, or white outside every room. */
+export function lightAt(plate: WorldPlate, x: number, z: number): number {
+  return plate.rooms.find((r) => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1)?.light ?? 0xffffff;
+}
+
+/** How far in from a floor's ends someone can walk, in cm, so they never stand in the wall. */
+const WALK_MARGIN = 30;
+
+/**
+ * Where someone standing at `from` walks to when the floor at (x, z) is tapped: the same x on their own floor, kept
+ * off the end walls. Doors between rooms on one floor are open, so they can walk the whole floor; stairs come with
+ * walking proper (W3). Null when the tap isn't on their floor.
+ */
+export function walkTarget(plate: WorldPlate, from: Spot, x: number, z: number): number | null {
+  const here = plate.rooms.find((r) => from.x >= r.x0 - 20 && from.x <= r.x1 + 20 && Math.abs(from.z - 6 - r.z0) < 20);
+  if (!here) return null;
+  const floor = plate.rooms.filter((r) => r.z0 === here.z0);
+  const top = Math.max(...floor.map((r) => r.z1));
+  if (z < here.z0 - 20 || z > top) return null;
+  const x0 = Math.min(...floor.map((r) => r.x0)) + WALK_MARGIN;
+  const x1 = Math.max(...floor.map((r) => r.x1)) - WALK_MARGIN;
+  return Math.min(x1, Math.max(x0, x));
 }

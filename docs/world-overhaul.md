@@ -65,7 +65,7 @@ Players and the owner found the current game reads like a website: tabs, cards a
 - Send at most 5–10 position updates per second per player and smooth them on the other phones. If the channel drops, fall back to showing each player in their last known room.
 - Capacity is a known risk: today's free plans won't hold heavy traffic (see decision 6).
 
-### Data: the `world` section of a case (shape to settle in W1.1)
+### Data: the `world` section of a case (the first sketch; the settled shape is `CaseWorld` in [types.ts](../src/lib/game/types.ts))
 
 ```ts
 world: {
@@ -107,45 +107,71 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 1 · World data and checks · M
 
-- [ ] **W1.1** Add `CaseWorld` and friends to [types.ts](../src/lib/game/types.ts).
-- [ ] **W1.2** Add `checkWorld` to `checkCase`. It must confirm that:
+- [x] **W1.1** Add `CaseWorld` and friends to [types.ts](../src/lib/game/types.ts). *(Done 2026-11-25. The shape changed from the sketch in section 4: rooms have a `box` (x and z), and away rooms have none. Floors are a single floor line `z`. Spots can hold several pieces, and `kind` is `object`, `device`, `view` or `sidejob`. Suspects stand in `people`, not at spots. Records that aren't in the building go in `elsewhere`. Each sore spot names the evidence it comes from in `about`.)*
+- [x] **W1.2** Add `checkWorld` to `checkCase` ([world.ts](../src/lib/game/world.ts)). It must confirm that:
   - every `nightMap` room has a world room
   - every physical evidence item has a spot
   - every inside room is reachable through links
   - every sighting's room exists
   - every side job points at a real spot
   - every suspect has a sore spot
-- [ ] **W1.3** Write Case 001's world from the mockup ([world.json](../art/mockups/case001/world.json)) into `src/data/cases/case-001.world.ts`.
-- [ ] **W1.4** Tests in [cases.test.ts](../src/lib/game/cases.test.ts) for the world checks.
-- [ ] **W1.5** Add "The world" section to [case-system.md](case-system.md): how to lay out a building, place spots and pick sore spots.
+- [x] **W1.3** Write Case 001's world from the mockup ([world.json](../art/mockups/case001/world.json)) into `src/data/cases/case-001.world.ts`.
+- [x] **W1.4** Tests in [cases.test.ts](../src/lib/game/cases.test.ts) for the world checks.
+- [x] **W1.5** Add "The world" section to [case-system.md](case-system.md): how to lay out a building, place spots and pick sore spots.
 
 **Done when** `npm test` passes and Case 001 has a complete, checked world.
 
 ### Phase 2 · The world scene · L
 
-- [ ] **W2.1** Plate layers and occluders, so people stand behind desks and benches.
-- [ ] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap.
-- [ ] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows.
-- [ ] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet.
-- [ ] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax.
-- [ ] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip.
+- [x] **W2.1** Plate layers and occluders, so people stand behind desks and benches. *(Done 2026-11-25: a front layer of eight pieces (the reception desk, Lab 4's bench and chair, the maker space's printer bench, stool and laser cutter, and the corridor's bench and water cooler), each cut from the plate with its exact shape by [front.py](../art/world/front.py) and drawn over whoever stands behind. The sky and city as their own layer, for parallax, is left to W2.5.)*
+- [x] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap. *(Done 2026-11-25. Looking at someone ("Find me", arriving, a teammate's name) follows them until a finger, the wheel or another target takes over. In close-up a quick swipe pages to the next room, and a slow drag still pans freely. Upright phones already show both floors, so paging up and down only happens when the view would move. Letting go of a pinch past halfway out settles on the whole building. Double-tap and the buttons already went out and back. The minimap sits under the title card: the plate shrunk down, a frame for the view, the room you're in, a dot for everyone, and each room as a button.)*
+- [x] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows. *(Done 2026-11-25. [cast_sprites.py](../art/world/cast_sprites.py) draws the suspects in all five moods from the cast kit, and the detectives from [detectives.py](../art/world/detectives.py). Everyone gets a three-frame front-on walk, played a, b, a, c: a wide stance where the body dips, then each foot lifted in turn, with the legs never crossing. 48 frames fit on two 2048 px sheets. The scene walks people along their floor, flips them to face the way they go, shows their mood when standing, tints them with their room's light (easing as they cross a door) and draws a soft two-ellipse contact shadow. For now a tap on your floor walks your detective there, on this phone only, until W3 shares it.)*
+- [x] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet. *(Done 2026-11-26. The server decides which spots show: `PlayerView.spots`, from `spotsFor` in [world.ts](../src/lib/game/world.ts), lists those holding evidence that exists by this chapter, marked only with the roles that evidence belongs to, and only during the investigation. Side-job spots wait for W6. [WorldSpots](../src/components/world/WorldSpots.tsx) draws them as labelled DOM buttons with a pulse and role icons, ringed in mustard when one of your roles can use them, fading out when zoomed out. [WorldSheets](../src/components/world/WorldSheets.tsx) opens your role's own tool from the classic screens in a sheet, or, if the spot isn't yours, says who to ask. Spots got names for screen readers, and a test keeps every spot clear of anyone standing in the building.)*
+- [x] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax. *(Done 2026-11-26. [ambience.ts](../src/components/world/ambience.ts) draws, from the plate's `ambience` data:
+  - rain outside and over the roof, and drops running down the Lab 4 and maker space windows
+  - the corridor's right-hand strip light stuttering every few seconds, dimming the corridor
+  - steam off Ozzy's flask
+  - seven blinking LEDs
+  - red second hands ticking on both wall clocks
+  - clouds in a sky layer that scrolls at 70% of the camera, for parallax
+
+  It all holds still with reduced motion. [WorldRoomTags](../src/components/world/WorldRoomTags.tsx) labels the rooms as the camera pulls back, while the name tags fade. The sky as its own painted layer wasn't needed: the clouds give the depth.)*
+- [x] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip. *(Done 2026-11-26. The [HUD](../src/components/world/WorldHud.tsx) shows:
+  - the chapter pill and question (tap it to solve)
+  - the night clock as a chip, with room for the helps (W6)
+  - the team (tap a name to find them) and the minimap
+
+  [WorldGame](../src/components/world/WorldGame.tsx) brings the classic game's own pieces over the building: the dock and its panels (Evidence, Board, Solve, Team, Notes), the vote bar, teammates' news, find moments, cracks, lie calls and chapter stories. A [timeline bar](../src/components/world/TimelineBar.tsx) above the dock puts a dot on every timed moment in your evidence, and tapping one opens its piece. The frame meter now only shows with `?fps` in the address. Chapter 1 can now be played from inside the world.)*
 
 **Done when** you can walk Case 001's building, see everyone and open today's tools from real objects.
 
 ### Phase 3 · Presence and movement · M
 
-- [ ] **W3.1** The presence channel: position, room, status and pings (hold on a spot to ping it, and the ping shows on the minimap).
-- [ ] **W3.2** Smoothing, reconnects and the last-known-room fallback.
-- [ ] **W3.3** Engine actions for meaningful moves (entering a room, using a spot) where the game needs them.
+- [x] **W3.1** The presence channel: position, room, status and pings (hold on a spot to ping it, and the ping shows on the minimap). *(Done 2026-11-26.
+  - **The channel:** every world room gets its own data-only LiveKit room, `omc-<CODE>-world`, through `/api/rooms/<code>/presence`. A separate room means a player's voice connection never collides with it, since LiveKit allows one identity per room. The identity is the player id, and receivers check each packet's sender.
+  - **Walks:** [presence.ts](../src/lib/world/presence.ts) sends a walk as where you're heading, so other phones play the same walk at the same pace. Corrections go out at up to 4 a second while you move, plus your final spot.
+  - **Statuses:** "at Priya's laptop", "solving" and so on show on your name tag.
+  - **Pings:** holding a spot for half a second pings it. The ping shows in the building, on the minimap and, when off-screen, at the screen's edge with an arrow. Tapping it flies the camera there.)*
+- [x] **W3.2** Smoothing, reconnects and the last-known-room fallback. *(Done 2026-11-26.
+  - **Smoothing:** shared walk targets do it, and a teammate far from where they say they are is moved there at once.
+  - **Reconnects:** LiveKit handles short drops. [usePresence](../src/components/world/usePresence.ts) starts again after a lost channel, waiting 2, 5, 10, then 30 s, and so does a connection that can't even load.
+  - **Fallback:** without the channel, teammates stand at their saved place (W3.3), and hellos put everyone right on reconnecting.)*
+- [x] **W3.3** Engine actions for meaningful moves (entering a room, using a spot) where the game needs them. *(Done 2026-11-26. A `move` action saves the room and x where your walk ended, sent only when you walk into a new room. It's checked against the building, costs nothing, and shows as `place` on each player. Using a spot needed no action of its own: the tools a spot opens already send theirs, and what you're doing is a presence status.)*
 
 **Done when** four phones see each other walk smoothly, and a dropped connection degrades gracefully.
 
 ### Phase 4 · The rewind · M
 
-- [ ] **W4.1** A pure, tested function that turns found sightings plus link paths into ghost tracks.
-- [ ] **W4.2** Rewind mode: the world goes blue-grey, the living fade to outlines, ghosts glow and the rain freezes.
-- [ ] **W4.3** The Archivist drags, everyone sees (shared cursor), and Freeze stops the night on one moment for the team.
-- [ ] **W4.4** Clashes ("can't both be true") from today's map-of-the-night logic, shown in the building.
+- [x] **W4.1** A pure, tested function that turns found sightings plus link paths into ghost tracks. *(Done 2026-11-26. `ghostsAt` in [rewind.ts](../src/lib/world/rewind.ts) works from `rewindFor` on the server, which is the night as the whole team knows it, so every phone shows the same ghosts:
+  - a sighting covering the minute puts a ghost in its room: solid if seen, an outline if it's only someone's story
+  - two places at once give two ghosts
+  - gaps stay foggy, except a walk through the doors and stairs in the last few minutes before a sighting close behind the last
+  - rooms off the building are listed as elsewhere
+
+  It's tested on Case 001's real night.)*
+- [x] **W4.2** Rewind mode: the world goes blue-grey, the living fade to outlines, ghosts glow and the rain freezes. *(Done 2026-11-26. The plate and furniture are tinted blue-grey and the living fade to 22%. Ghosts are the suspects' own sprites, pale blue when seen and faint lilac when only said, with a glow, and labelled "seen", "says so" or "on the way". Things like HALO get a glowing label. The ambience stops where it is.)*
+- [x] **W4.3** The Archivist drags, everyone sees (shared cursor), and Freeze stops the night on one moment for the team. *(Done 2026-11-26. Anyone can open the rewind and drag it on their own phone. The Archivist's slider goes out on the live channel (`cursor` messages, at up to 10 a second) and pulls everyone's open rewind along. Freeze opens the rewind on every phone at that minute and locks it until the Archivist lets go.)*
+- [x] **W4.4** Clashes ("can't both be true") from today's map-of-the-night logic, shown in the building. *(Done 2026-11-26. A clash shows as a red dashed line between the two places, or, when one place is off the building, as "also gone home" under the ghost that's here. The Archivist ties it on the spot, as on the wall. The tie only appears when they can see both pieces; otherwise the label says to pin them.)*
 
 **Done when**, in chapter 1, Priya walking out at 8:45 and HALO on its dock until 9:13 appear only after those pieces are found.
 
@@ -299,7 +325,71 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
 
 - 2026-11-20: plan written from the design discussions and the Case 001 mockups.
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
-- 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas` (PR once the owner OKs it). Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.
+- 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas`, merged as PR #38. Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.
 - 2026-11-20: W0.5 done (PR #39): a presence spike with both services, a hidden `/lab/presence` page and two benches. Supabase's free plan throttles any phone sending about 8 or more messages a second, and was about 140 ms one way from the UAE. LiveKit data messages took about 15–30 ms and lost nothing at 10/s. Recommends swapping decision 2 (LiveKit for presence), waiting for the owner's OK. The real-phone run is still to do (section 7).
-- 2026-11-20: W0.7 done. The world painter moved to [art/world/](../art/world/), with trimmed copies of the `omc_cinema` code it used. `python art/world/world.py` renders the Case 001 plate byte-identical to the mockup's `world.webp`, and the same `world.json`, from this repo alone. The mockup copy in `art/mockups/case001/` is unchanged and still needs the videos repo.
+- 2026-11-20: W0.7 done (PR #40). The world painter moved to [art/world/](../art/world/), with trimmed copies of the `omc_cinema` code it used. `python art/world/world.py` renders the Case 001 plate byte-identical to the mockup's `world.webp`, and the same `world.json`, from this repo alone. The mockup copy in `art/mockups/case001/` is unchanged and still needs the videos repo.
 - 2026-11-21: the owner chose LiveKit data messages for presence (decision 2 updated). W3.1 builds on LiveKit.
+- 2026-11-25: W1.1–W1.5 done on branch `world/w1-world-data`. Case 001's world is in [case-001.world.ts](../src/data/cases/case-001.world.ts):
+  - seven rooms (the maker space added, plus the two away rooms) and four links
+  - eight record spots and seven side-job spots
+  - all four suspects, the eight mockup side jobs and a sore spot each, as the mockups chose them
+  - two records `elsewhere`: Kestrel's website and Squires's email
+
+  `checkWorld` runs in `checkCase`, with six new tests in cases.test.ts. [plates.ts](../src/lib/world/plates.ts) now reads its rooms, plate size and suspect positions from the case's world, so the building is written down once. Three things the world has that the plate doesn't paint yet, for W2.1/W2.4: the lobby's door into the maker space, the lobby camera and the corridor's fuse cupboard. Side-job spot positions are placeholders until W6.
+- 2026-11-25: W2.1 done on branch `world/w2-1-layers` (on top of W1).
+  - [art/world/front.py](../art/world/front.py) redraws each piece of front furniture on its own with the painter's code, so its mask is pixel-exact, and writes `front.json` (room and outline) and `front-mask.png`. The plate is untouched.
+  - `scripts/world-assets.py` now cuts every piece into `src/assets/world/case-001/front/` (8 files, 39 KB in all) and reads the plate from `art/world/`, not the mockup.
+  - [plates.ts](../src/lib/world/plates.ts) lists the eight pieces, and a test keeps them the same as `front.json`. The scene already drew any number of occluders between the people behind them and everyone else.
+  - Checked in headless Chrome with Mei moved behind the bench for the test: the bench top, a leg and the pencil cup draw over her, and nothing else changes. Hit tests use each piece's box, so a tap between a bench's legs counts as the bench.
+- 2026-11-25: W2.2 done on branch `world/w2-2-camera` (on top of W2.1).
+  - New camera logic in [camera.ts](../src/lib/world/camera.ts) (`roomInView`, `nextRoom`, `onRoom`, `swipeTarget`, `pinchSettle`), with tests. `following` is in the store, and the scene follows a sprite's live position, so it keeps up once people walk (W3).
+  - [WorldMinimap.tsx](../src/components/world/WorldMinimap.tsx) moves its frame through a store subscription, not React renders.
+  - Checked in headless Chrome at 390 × 844 with real touch events:
+    - arriving follows you in the corridor
+    - a quick swipe left pages outside and stops following
+    - two swipes right page back to Lab 4
+    - a slow drag stays in the room
+    - the minimap's "Outside" button goes there
+    - a pinch out settles on the whole building and hides the minimap
+    - "Close-up" flies back to you and follows again
+    - 116–120 fps, no page errors
+  - Not yet tried on a real phone.
+- 2026-11-25: W2.3 done on branch `world/w2-3-characters` (on top of W2.2).
+  - The old twelve-still sprite strip is gone. Its moods (shocked Priya, nervous Squires, smug Rena) gave way to the case world's plain "idle", per rule 4; moods can be set through the store (`setMood`) when W5 needs them.
+  - Tags and minimap dots follow walkers; taps hit people where they stand now.
+  - Checked in headless Chrome at phone size:
+    - a floor tap walks Sam left into Lab 4, facing that way, with his legs changing and the camera following
+    - the light on him turns cool in Lab 4
+    - the shadows show on the lit lobby floor
+    - no page errors
+  - Shadows had to be strong to show on the painting's dark floor strip.
+  - Not yet tried on a real phone.
+- 2026-11-26: W2.4 done on branch `world/w2-4-spots` (on top of W2.3).
+  - Spots moved so none covers a person: the photo spot is by the lab clock, the security desk spot is on the key board behind the desk, and the side-job spots are clear. Squires moved 16 cm left, off the main door's badge reader.
+  - Checked in headless Chrome at phone size in two- and four-player games (the host as the Tech):
+    - the five chapter-1 spots show with the right roles and hide when zoomed out
+    - Priya's laptop opens the computer
+    - the photo spot opens the camera when you're also the Photographer, and otherwise says "Ask Bot Marple to come and look"
+    - no page errors
+  - Finds made from a world sheet don't yet get the classic find moments (Moments): that belongs with W2.6's HUD.
+- 2026-11-26: W2.5 done on branch `world/w2-5-ambience` (on top of W2.4). Checked in headless Chrome: rain and clouds at laptop size; room names in the phone's whole-building view; the Lab 4 clock's second hand on the painted clock and rain on its window up close; 120 fps on the phone run, no page errors.
+- 2026-11-26: W2.6 done on branch `world/w2-6-hud` (on top of W2.5). Checked in headless Chrome in a four-player game at phone size: the question opens Solve, the dock opens Evidence, a timeline dot opens the badge log, and teammates' toasts show. No page errors. Phase 2 is done.
+- 2026-11-26: W3.1–W3.3 done on branch `world/w3-1-presence` (on top of W2.6). Checked with two headless Chrome phones on real LiveKit:
+  - B saw A's detective walk 135 cm, matching A's own walk
+  - B saw "A: look here" when A held the Lab 4 badge reader spot, held at B's screen edge with an arrow, since B was looking at Lab 4
+  - B's name tag for A read "at Priya's laptop"
+  - the server saved A's place (corridor, x 495)
+  - with LiveKit blocked, a reloaded B drew A at that saved place
+  - no page errors after one fix: a connection that can't load now counts as lost and is retried
+
+  Not tried on real phones or mobile data. Phase 3 is done.
+- 2026-11-26: Phase 4 (W4.1–W4.4) done on branch `world/w4-rewind` (on top of W3).
+  - Case 001's world was split: [case-001.building.ts](../src/data/cases/case-001.building.ts) holds the plate, rooms, links, people and ambience, and is the only part the browser loads. Since W1 the browser had also been getting what's at each spot and the sore spots.
+  - Checked with two headless Chrome phones on real LiveKit:
+    - at 8:58 the Archivist saw HALO, Squires and Rena as ghosts, plus the HALO clash ("also gone home")
+    - the other phone followed the Archivist's slider to 9:10
+    - a freeze reopened the other phone's rewind, locked
+    - after the HALO detail was pinned, the Archivist tied the clash and it turned to "Caught"
+    - no page errors
+  - Fixed along the way: the tie had been offered for pieces the Archivist couldn't see, which the engine refuses.
+  - Not tried on real phones. Phases 2 to 4 are done; next is phase 5, roles in the world.

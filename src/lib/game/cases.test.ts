@@ -12,7 +12,9 @@ import { framedHotspot, shotOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
 import { costMinutes, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, mapFor, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
-import type { Action, CaseFile, FinalReport, RoomState } from "./types.ts";
+import type { Action, CaseFile, CaseWorld, FinalReport, RoomState } from "./types.ts";
+import { checkWorld, spotsFor } from "./world.ts";
+import { worldOf } from "../world/plates.ts";
 
 // With four players the core roles go round in order:
 const TECH = "p1";
@@ -602,4 +604,93 @@ test("every case is written picture-first: quoted contradictions, and a replay f
       if (chapter.checkpoint) assert.ok(chapter.checkpoint.replay, `${c.id}: chapter ${i + 1}'s proof has no replay`);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// The world: each case's painted building has to agree with the case.
+
+/** Case 001 with its world changed by `edit`, to see what the checks say. */
+function brokenWorld(edit: (world: CaseWorld, caseFile: CaseFile) => void): string[] {
+  const caseFile = structuredClone(case001);
+  edit(caseFile.world!, caseFile);
+  return checkWorld(caseFile);
+}
+const says = (problems: string[], text: string) => assert.ok(problems.some((p) => p.includes(text)), `expected "${text}" in ${JSON.stringify(problems)}`);
+
+test("Case 001 has a complete, checked world, painted in files that exist", () => {
+  const world = case001.world!;
+  assert.ok(world, "Case 001 has a world");
+  assert.deepEqual(checkWorld(case001), []);
+  for (const layer of world.plate.layers) assert.ok(existsSync(`src/assets/world/case-001/${layer}`), layer);
+  // Every room of the night is in it, and every suspect waits somewhere with a sore spot of their own.
+  assert.deepEqual(case001.nightMap!.rooms.map((r) => r.id).filter((id) => !world.rooms.some((w) => w.id === id)), []);
+  assert.deepEqual(Object.keys(world.people).sort(), case001.suspects.map((s) => s.id).sort());
+  assert.deepEqual(Object.keys(world.soreSpots).sort(), case001.suspects.map((s) => s.id).sort());
+  // The eight side jobs from the mockups, and a sore spot to win for every suspect.
+  assert.equal(world.sideJobs.length, 8);
+  assert.deepEqual(world.sideJobs.filter((j) => j.help === "sore-spot").map((j) => j.suspect).sort(), case001.suspects.map((s) => s.id).sort());
+});
+
+test("a world without a room of the night, or a sighting off the plan, doesn't check", () => {
+  says(brokenWorld((w) => (w.rooms = w.rooms.filter((r) => r.id !== "kestrel"))), `room "kestrel" isn't in the world`);
+  says(brokenWorld((w) => (w.rooms.find((r) => r.id === "outside")!.kind = "inside")), `"outside" is inside, but the map of the night has it outside`);
+  says(brokenWorld((_, c) => c.nightMap!.sightings.push({ evidence: "badge-log", who: "square", room: "roof", at: "9:00 PM" })), `"roof", which isn't in the world`);
+});
+
+test("every record in the world has a spot, opened by its own role", () => {
+  says(brokenWorld((w) => (w.spots.find((s) => s.id === "cabinet")!.evidence = ["asset-register"])), `"dock-log" has no spot`);
+  says(brokenWorld((w) => (w.spots.find((s) => s.id === "laptop")!.roles = ["tech"])), `holds "lab-chat", but doesn't open for its role "archivist"`);
+  says(brokenWorld((w) => (w.spots.find((s) => s.id === "anpr")!.x = 100)), `spot "anpr" isn't inside "outside"`);
+  // A record can be somewhere else instead, but not both.
+  says(brokenWorld((w) => (w.elsewhere!["dock-log"] = "on the dock")), `"dock-log" is both at a spot and elsewhere`);
+  assert.deepEqual(brokenWorld((w) => {
+    w.spots.find((s) => s.id === "cabinet")!.evidence = ["asset-register"];
+    w.elsewhere!["dock-log"] = "the dock's own server";
+  }), []);
+});
+
+test("every room in the building can be walked to, and links run from room to room", () => {
+  says(brokenWorld((w) => (w.links = w.links.filter((l) => l.from !== "maker"))), `room "maker" can't be reached`);
+  says(brokenWorld((w) => (w.links[0].path = [[600, 306], [460, 306]])), `doesn't start inside "lab4"`);
+  says(brokenWorld((w) => w.links.push({ from: "lobby", to: "home", kind: "door", path: [[900, 6], [1000, 6]] })), "joins a room that isn't in the building");
+  says(brokenWorld((w) => (w.rooms.find((r) => r.id === "lab4")!.box!.z0 = 310)), `"lab4" doesn't stand on its floor`);
+  says(brokenWorld((w) => (w.rooms.find((r) => r.id === "maker")!.box!.x1 = 500)), `"maker" and "lobby" overlap`);
+});
+
+test("side jobs start at real spots, and every suspect has a sore spot, innocent ones too", () => {
+  says(brokenWorld((w) => (w.sideJobs[0].spot = "nowhere")), `starts at "nowhere", which isn't a spot`);
+  says(brokenWorld((w) => delete w.sideJobs.find((j) => j.id === "race-rena")!.suspect), `"race-rena" wins a sore spot, but names no suspect`);
+  says(brokenWorld((w) => delete w.soreSpots.rectangle), `suspect "rectangle" has no sore spot`);
+  says(brokenWorld((w) => (w.soreSpots.circle.about = ["a-made-up-clue"])), `comes from "a-made-up-clue", which doesn't exist`);
+  says(brokenWorld((w) => delete w.people.square), `suspect "square" isn't anywhere in the world`);
+  says(brokenWorld((w) => (w.people.circle.room = "lab4")), `suspect "circle" isn't inside "lab4"`);
+});
+
+test("the world scene draws the case's own building: its rooms and where its suspects stand", () => {
+  const world = case001.world!;
+  const plate = worldOf("case-001")!;
+  assert.deepEqual(plate.extent, world.plate.extent);
+  assert.deepEqual(plate.size, world.plate.size);
+  assert.deepEqual(plate.rooms.map((r) => r.id), world.rooms.filter((r) => r.box).map((r) => r.id));
+  for (const r of plate.rooms) assert.deepEqual({ x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 }, world.rooms.find((w) => w.id === r.id)!.box);
+  for (const p of plate.people.filter((p) => p.suspect)) assert.deepEqual({ x: p.x, z: p.z }, { x: world.people[p.suspect!].x, z: world.people[p.suspect!].z }, p.id);
+});
+
+test("the world's spots show chapter by chapter, marked only with roles that have something there by then", () => {
+  const ids = (chapter: number) => spotsFor(case001, chapter).map((s) => s.id).sort();
+  assert.deepEqual(ids(1), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader"]);
+  assert.deepEqual(ids(2), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader", "security-desk"], "the visitor sheet and the guard tour arrive");
+  assert.deepEqual(ids(3), ["anpr", "cabinet", "lab-reader", "lab-view", "laptop", "lobby-camera", "lobby-reader", "security-desk"], "the lobby and gate cameras in the last chapter");
+  const laptop = spotsFor(case001, 1).find((s) => s.id === "laptop")!;
+  assert.deepEqual(laptop.roles.sort(), ["archivist", "tech"]);
+  assert.equal(laptop.name, "Priya's laptop");
+  assert.ok(spotsFor(case001, 3).every((s) => (s.kind as string) !== "sidejob"), "side jobs wait for W6");
+  assert.deepEqual(spotsFor(case002, 1), [], "a case without a world has no spots");
+});
+
+test("a phone only gets spots during the investigation", () => {
+  const state = createRoom({ code: "S", caseFile: case001, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+  assert.deepEqual(viewFor(state, case001, "p1", new Set()).spots, [], "not in the lobby");
+  const playing = { ...state, phase: "investigation" as const, chapter: 1 };
+  assert.deepEqual(viewFor(playing, case001, "p1", new Set()).spots, spotsFor(case001, 1));
 });

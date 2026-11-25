@@ -8,7 +8,7 @@ import { redisConfigured } from "@/lib/waitlist/redis-store";
 import { createFileStore } from "./file-store";
 import { caseAccess } from "@/lib/billing/purchases";
 import { saveFeedback } from "./feedback";
-import { liveConfigured, liveToken, notifyRoom } from "./live";
+import { liveConfigured, liveToken, notifyRoom, presenceToken } from "./live";
 import { createRedisStore } from "./redis-store";
 import type { RoomStore } from "./types";
 
@@ -242,6 +242,15 @@ export async function getLivePass(code: string, token: string | undefined) {
   const me = playerByToken(await load(getRoomStore(), code), token);
   if (!me) throw new RoomError("You're not in this room.", 403);
   return { enabled: true as const, ...(await liveToken(code, me)) };
+}
+
+/** This player's pass into the world's presence channel: { enabled: false } without LiveKit or outside a world room. */
+export async function getPresencePass(code: string, token: string | undefined) {
+  const state = await load(getRoomStore(), code);
+  const me = playerByToken(state, token);
+  if (!me) throw new RoomError("You're not in this room.", 403);
+  if (!liveConfigured() || !state.world) return { enabled: false as const };
+  return { enabled: true as const, ...(await presenceToken(code, me)) };
 }
 
 export async function actInGame(code: string, token: string | undefined, action: Action) {

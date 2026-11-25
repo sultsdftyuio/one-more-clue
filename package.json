@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/game/timeline.test.ts src/lib/game/lines.test.ts src/lib/game/voice.test.ts src/lib/billing/access.test.ts src/lib/world/flag.test.ts src/lib/world/camera.test.ts src/lib/world/gestures.test.ts src/lib/world/geometry.test.ts src/lib/world/store.test.ts src/lib/presence/presence.test.ts",
+    "test": "node --test src/lib/game/engine.test.ts src/lib/game/bots.test.ts src/lib/game/cases.test.ts src/lib/game/timeline.test.ts src/lib/game/lines.test.ts src/lib/game/voice.test.ts src/lib/billing/access.test.ts src/lib/world/flag.test.ts src/lib/world/camera.test.ts src/lib/world/gestures.test.ts src/lib/world/geometry.test.ts src/lib/world/sprites.test.ts src/lib/world/store.test.ts src/lib/world/presence.test.ts src/lib/world/rewind.test.ts src/lib/presence/presence.test.ts",
     "art:sync": "node scripts/sync-art.mjs",
     "setup:payments": "node scripts/setup-payments.mjs",
     "setup:dodo-products": "node scripts/create-dodo-products.mjs",

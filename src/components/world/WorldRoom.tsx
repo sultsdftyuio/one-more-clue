@@ -5,12 +5,22 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { myName, randomName, rememberName } from "@/components/game/names";
 import { useRoom } from "@/components/game/useRoom";
+import type { Panel } from "@/components/game/Investigation";
+import type { WorldSpotView } from "@/lib/game/world";
 import { castOf, stickersFor } from "@/lib/world/cast";
+import { roomAt } from "@/lib/world/geometry";
 import { worldOf } from "@/lib/world/plates";
 import { createWorldStore } from "@/lib/world/store";
 import { worldArt } from "./assets";
 import { WorldCanvas } from "./WorldCanvas";
 import { WorldHud } from "./WorldHud";
+import { WorldMinimap } from "./WorldMinimap";
+import { WorldGame } from "./WorldGame";
+import { WorldPings } from "./WorldPings";
+import { RewindOverlay } from "./WorldRewind";
+import { usePresence } from "./usePresence";
+import { WorldSpots } from "./WorldSpots";
+import { WorldRoomTags } from "./WorldRoomTags";
 import { WorldTags } from "./WorldTags";
 import { WorldContext } from "./useWorld";
 
@@ -74,7 +84,9 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   const plate = worldOf(caseId);
   const art = worldArt(caseId);
   const [store] = useState(() => createWorldStore());
-  const { status, error, join } = useRoom(code, false);
+  const { status, error, join, act, busy } = useRoom(code, false);
+  const [spot, setSpot] = useState<WorldSpotView | null>(null);
+  const [panel, setPanel] = useState<Panel | null>(null);
   const view = status.kind === "ready" ? status.view : null;
 
   useEffect(() => {
@@ -87,6 +99,49 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     return Object.fromEntries(Object.entries(worn).map(([sticker, player]) => [player.id, sticker]));
   }, [view]);
   const mine = view ? (stickers[view.me.id] ?? null) : null;
+
+  useEffect(() => {
+    store.getState().setMe(mine);
+  }, [store, mine]);
+
+  // The live channel (W3.1): teammates walking, what they're doing, and pings.
+  const presence = usePresence({ code, store, plate, view, stickers });
+  const doing = spot ? `at ${spot.name}` : panel === "evidence" ? "reading the evidence" : panel === "board" ? "at the board" : panel === "solve" ? "solving" : "";
+  useEffect(() => {
+    presence.current?.setStatus(doing);
+  }, [presence, doing]);
+
+  // Walk into a new room and the game remembers where you are (W3.3), for late joiners and when the channel drops.
+  const myPlace = view?.players.find((p) => p.id === view.me.id)?.place?.room ?? null;
+  const saved = useRef<string | null>(null);
+  saved.current = myPlace;
+  useEffect(() => {
+    if (!plate) return;
+    return store.subscribe((s, prev) => {
+      const walk = s.myWalk;
+      if (!walk || walk === prev.myWalk || walk.to !== null) return;
+      const room = roomAt(plate, walk.x, walk.z);
+      if (room && room !== saved.current) {
+        saved.current = room;
+        void act({ type: "move", room, x: walk.x }, { quiet: true });
+      }
+    });
+  }, [store, plate, act]);
+
+  // Until the live channel says otherwise, teammates stand where they were last saved.
+  const live = useStore(store, (s) => s.presence === "live");
+  const places = view ? view.players.filter((p) => p.id !== view.me.id && p.place).map((p) => `${p.id}:${p.place!.room}:${Math.round(p.place!.x)}`).join("|") : "";
+  useEffect(() => {
+    if (!plate || !view || live) return;
+    for (const p of view.players) {
+      const sticker = stickers[p.id];
+      const room = p.place && plate.rooms.find((r) => r.id === p.place!.room);
+      if (p.id === view.me.id || !sticker || !room || !p.place) continue;
+      store.getState().pushRemote({ id: sticker, x: p.place.x, z: room.z0 + 6, to: null, snap: true });
+    }
+    // `places` stands in for the parts of the view this reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plate, places, live, stickers, store]);
 
   // Once the building is drawn and we know who you are, the camera flies in to your detective.
   const ready = useStore(store, (s) => s.status.stage === "ready");
@@ -109,8 +164,12 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     <WorldContext.Provider value={store}>
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
+        <WorldPings plate={plate} view={view} />
+        {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
+        <WorldRoomTags plate={plate} />
+        {view && <RewindOverlay plate={plate} view={view} act={act} />}
         <WorldTags plate={plate} cast={cast} />
-        <WorldHud code={code} view={view} cast={cast} stickers={stickers} />
+        <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} />
 
         {status.kind === "needsJoin" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
@@ -137,6 +196,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
           </p>
         )}
       </div>
+      {view && <WorldGame view={view} act={act} busy={busy} spot={spot} onCloseSpot={() => setSpot(null)} panel={panel} onPanel={setPanel} />}
     </WorldContext.Provider>
   );
 }

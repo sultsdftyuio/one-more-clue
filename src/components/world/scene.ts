@@ -13,8 +13,11 @@ import {
   easeCamera,
   glide,
   isZoomedOut,
+  onRoom,
   panBy,
+  pinchSettle,
   screenToPlate,
+  swipeTarget,
   wholeBuilding,
   zoomAt,
   zoomRange,
@@ -22,13 +25,16 @@ import {
   type Viewport,
   type ZoomRange,
 } from "@/lib/world/camera";
-import { drawOrder, FEET, outlineBox, personAt, roomBox, spriteOf, TILE } from "@/lib/world/geometry";
+import { drawOrder, FEET, fromPlate, lightAt, outlineBox, personAt, spriteOf, toPlate, walkTarget, type Spot } from "@/lib/world/geometry";
 import { Gestures, type GestureEvent } from "@/lib/world/gestures";
-import type { WorldPlate } from "@/lib/world/plates";
+import type { WorldPerson, WorldPlate } from "@/lib/world/plates";
+import { frameOf, poseAt, SHEET_GAP, SHEETS, TILE, WALK_CM_PER_S, type Pose } from "@/lib/world/sprites";
 import type { CameraTarget, WorldStore } from "@/lib/world/store";
+import { Ambience } from "./ambience";
+import { ghostsAt, type Ghost } from "@/lib/world/rewind";
 
 /** Where the case's pictures are served from (see assets.ts). */
-export type WorldArt = { plate: string; plateMap: string; sprites: string; occluders: Record<string, string> };
+export type WorldArt = { plate: string; plateMap: string; sheets: string[]; occluders: Record<string, string> };
 
 export type WorldOptions = {
   store: WorldStore;
@@ -38,8 +44,6 @@ export type WorldOptions = {
   maxDpr: number;
 };
 
-/** Atlas tiles sit this far apart (scripts/world-assets.py). */
-const ATLAS_GAP = 24;
 /** Below this many canvas pixels per plate pixel the small, mipmapped copy of the plate is drawn instead; the two cross-fade. */
 const MAP_FROM = 0.45;
 const MAP_TO = 0.6;
@@ -49,10 +53,44 @@ const TAP_SLACK = 14;
 const WHEEL = 0.0015;
 /** A selected person grows by this much. */
 const SELECTED_GROWTH = 0.06;
+/**
+ * A contact shadow: two ellipses, a wide faint one and a small dark one inside it, which reads as a soft shadow.
+ * Widths are a share of the sprite's tile; SHADOW_FLAT is height over width.
+ */
+const SHADOW_WIDTH = 0.8;
+const SHADOW_CORE = 0.6;
+const SHADOW_FLAT = 0.17;
+const SHADOW_ALPHA = { rim: 0.3, core: 0.45 };
+const SHADOW_COLOUR = 0x06040e;
+/** The rewind's blue-grey over the painted building. */
+const REWIND_TINT = 0x7d8bb8;
+/** How quickly someone's colour follows the room light they walk into, in ms. */
+const TINT_MS = 260;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-type Person = { id: string; image: Phaser.GameObjects.Image; scale: number; phase: number; grow: number };
+/**
+ * Someone in the building. `height` is the sprite's height in plate px before breathing and growing, so following
+ * them doesn't wobble. `at` is where their feet are in world cm; `target` the x they're walking to, if any.
+ */
+type Person = {
+  id: string;
+  def: WorldPerson;
+  image: Phaser.GameObjects.Image;
+  shadow: { rim: Phaser.GameObjects.Ellipse; core: Phaser.GameObjects.Ellipse };
+  scale: number;
+  height: number;
+  phase: number;
+  grow: number;
+  at: Spot;
+  target: number | null;
+  walkingSince: number | null;
+  facing: 1 | -1;
+  pose: Pose | null;
+  tint: [number, number, number];
+};
+
+const rgb = (c: number): [number, number, number] => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
 
 class BuildingScene extends Phaser.Scene {
   private readonly options: WorldOptions;
@@ -63,11 +101,24 @@ class BuildingScene extends Phaser.Scene {
   private cam: Camera = { x: 0, y: 0, zoom: 1 };
   private goal: Camera | null = null;
   private fling = { vx: 0, vy: 0 };
+  /** Whoever the camera keeps in the middle of the close-up, until a finger, the wheel or another target takes over. */
+  private following: string | null = null;
+  /** A pinch happened since the fingers last all came up. */
+  private pinched = false;
   private plateImage: Phaser.GameObjects.Image | null = null;
   private mapImage: Phaser.GameObjects.Image | null = null;
   /** Set when the GPU can't hold the full plate, so the small copy is always drawn. */
   private mapOnly = false;
   private people: Person[] = [];
+  private ambience: Ambience | null = null;
+  /** Someone was put somewhere without walking, so the store's positions need refreshing. */
+  private placed = false;
+  /** The furniture cut-outs, so the rewind can tint them with the plate. */
+  private occluderImages: Phaser.GameObjects.Image[] = [];
+  /** The rewind (W4.2): whether the world is showing the night, the ghosts' sprites and what they were drawn from. */
+  private rewinding = false;
+  private ghostSprites: { image: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Ellipse }[] = [];
+  private ghostKey = "";
   private glow: Phaser.GameObjects.Ellipse | null = null;
   private frames: number[] = [];
   private statsAt = 0;
@@ -82,7 +133,9 @@ class BuildingScene extends Phaser.Scene {
     const { art, plate, store } = this.options;
     this.load.image("plate", art.plate);
     this.load.image("plate-map", art.plateMap);
-    this.load.spritesheet("cast", art.sprites, { frameWidth: TILE.w, frameHeight: TILE.h, margin: ATLAS_GAP, spacing: ATLAS_GAP });
+    for (let i = 0; i < SHEETS; i++) {
+      this.load.spritesheet(`cast-${i}`, art.sheets[i], { frameWidth: TILE.w, frameHeight: TILE.h, margin: SHEET_GAP, spacing: SHEET_GAP });
+    }
     for (const o of plate.occluders) this.load.image(`occluder-${o.id}`, art.occluders[o.id]);
     this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, () =>
       store.getState().setStatus({ stage: "failed", error: "The building's pictures didn't load. Check your connection and reload." }),
@@ -99,20 +152,45 @@ class BuildingScene extends Phaser.Scene {
     // behind furniture, the furniture cut out of the plate, then everyone else.
     this.mapImage = this.add.image(0, 0, "plate-map").setOrigin(0).setDisplaySize(plate.size.w, plate.size.h);
     this.plateImage = this.add.image(0, 0, "plate").setOrigin(0).setVisible(!this.mapOnly);
+    // Rain, flickers, steam, LEDs, clocks and clouds, over the plate and under the people.
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    this.ambience = new Ambience(this, plate, Boolean(reduced));
     this.glow = this.add.ellipse(0, 0, 10, 10, 0xffe6a7, 0.32).setVisible(false);
     let furnished = false;
     const furnish = () => {
       furnished = true;
       for (const o of plate.occluders) {
         const box = outlineBox(plate, o.outline);
-        this.add.image(box.x, box.y, `occluder-${o.id}`).setOrigin(0).setDisplaySize(box.w, box.h);
+        this.occluderImages.push(this.add.image(box.x, box.y, `occluder-${o.id}`).setOrigin(0).setDisplaySize(box.w, box.h));
       }
     };
     for (const person of drawOrder(plate)) {
       if (!person.behind && !furnished) furnish();
       const sprite = spriteOf(plate, person);
-      const image = this.add.image(sprite.feet.x, sprite.feet.y, "cast", person.tile).setOrigin(0.5, FEET).setScale(sprite.scale);
-      this.people.push({ id: person.id, image, scale: sprite.scale, phase: person.delay * 1000, grow: 1 });
+      // Each person's shadow goes just before them, so furniture covers both alike.
+      // Made 100 px wide, then scaled each frame: re-shaping an ellipse rebuilds its outline, scaling doesn't.
+      const shadow = {
+        rim: this.add.ellipse(sprite.feet.x, sprite.feet.y, 100, 100 * SHADOW_FLAT, SHADOW_COLOUR, SHADOW_ALPHA.rim),
+        core: this.add.ellipse(sprite.feet.x, sprite.feet.y, 100 * SHADOW_CORE, 100 * SHADOW_CORE * SHADOW_FLAT, SHADOW_COLOUR, SHADOW_ALPHA.core),
+      };
+      const image = this.add.image(sprite.feet.x, sprite.feet.y, "cast-0", 0).setOrigin(0.5, FEET).setScale(sprite.scale);
+      const light = rgb(lightAt(plate, person.x, person.z));
+      this.people.push({
+        id: person.id,
+        def: person,
+        image,
+        shadow,
+        scale: sprite.scale,
+        height: sprite.box.h,
+        phase: person.delay * 1000,
+        grow: 1,
+        at: { x: person.x, z: person.z },
+        target: null,
+        walkingSince: null,
+        facing: 1,
+        pose: null,
+        tint: light,
+      });
     }
     if (!furnished) furnish();
 
@@ -138,10 +216,13 @@ class BuildingScene extends Phaser.Scene {
 
     const target = state.takeRequest();
     if (target) {
+      this.follow(target.kind === "person" ? target.id : null);
       this.goal = this.cameraFor(target);
       this.fling = { vx: 0, vy: 0 };
     }
     if (this.gestures.active === 0) {
+      // Keep whoever we follow in the middle, wherever they go.
+      if (this.following) this.goal = this.followCamera(this.following) ?? this.goal;
       if (this.goal) {
         this.cam = easeCamera(this.cam, this.goal, dt);
         if (this.cam === this.goal) this.goal = null;
@@ -166,21 +247,81 @@ class BuildingScene extends Phaser.Scene {
       this.mapImage.setVisible(sharp < 1);
     }
 
-    this.animatePeople(time, dt, state.selected);
+    this.updateRewind(state);
+    if (!this.rewinding) this.ambience?.update(time, dt);
+    const walk = state.takeWalk();
+    if (walk) this.walkTo(walk.id, walk.x, time);
+    for (const move of state.takeRemote()) this.remoteMove(move, time);
+    this.animatePeople(time, dt, state);
     state.setCamera(this.cam);
     this.countFrame(time, dt);
   }
 
-  /** People breathe a little, out of step, and whoever is selected grows and stands in a pool of light. */
-  private animatePeople(time: number, dt: number, selected: string | null) {
+  /**
+   * Everyone, every frame: walkers move along their floor with their walk playing and face the way they go; those
+   * standing breathe a little, out of step, in their mood. Each takes on the colour of the room's light, has a soft
+   * shadow at their feet, and whoever is selected grows and stands in a pool of light.
+   */
+  private animatePeople(time: number, dt: number, state: ReturnType<WorldStore["getState"]>) {
+    const { plate } = this.options;
     const ease = 1 - Math.exp(-dt / 90);
+    const tintEase = 1 - Math.exp(-dt / TINT_MS);
     let lit: Person | null = null;
+    let moved = false;
     for (const p of this.people) {
-      const want = p.id === selected ? 1 + SELECTED_GROWTH : 1;
+      if (p.target !== null) {
+        const step = (WALK_CM_PER_S * dt) / 1000;
+        const left = p.target - p.at.x;
+        p.facing = left < 0 ? -1 : 1;
+        if (Math.abs(left) <= step) {
+          p.at = { x: p.target, z: p.at.z };
+          p.target = null;
+          p.walkingSince = null;
+          if (p.id === state.me) state.reportWalk({ x: p.at.x, z: p.at.z, to: null });
+        } else {
+          p.at = { x: p.at.x + Math.sign(left) * step, z: p.at.z };
+        }
+        moved = true;
+      }
+      const mood = state.moods[p.id] ?? p.def.mood ?? "idle";
+      const pose = poseAt(mood, p.walkingSince === null ? null : time - p.walkingSince);
+      if (pose !== p.pose) {
+        const frame = frameOf(p.id, pose);
+        if (frame) p.image.setTexture(`cast-${frame.sheet}`, frame.frame);
+        p.pose = pose;
+      }
+      p.image.setFlipX(p.facing < 0);
+
+      const feet = toPlate(plate, p.at.x, p.at.z);
+      const want = p.id === state.selected ? 1 + SELECTED_GROWTH : 1;
       p.grow += (want - p.grow) * ease;
-      const breath = Math.sin(((time + p.phase) / 1700) * Math.PI * 2);
+      // Breathing only while standing: the walk has its own rise and fall.
+      const breath = p.walkingSince === null ? Math.sin(((time + p.phase) / 1700) * Math.PI * 2) : 0;
+      p.image.setPosition(feet.x, feet.y);
       p.image.setScale(p.scale * p.grow * (1 - 0.004 * breath), p.scale * p.grow * (1 + 0.012 * breath));
-      if (p.id === selected) lit = p;
+
+      // A foot off the floor makes the shadow a touch smaller and lighter.
+      const footUp = pose === "walk-b" || pose === "walk-c";
+      const w = p.height * (TILE.w / TILE.h) * SHADOW_WIDTH * p.grow * (footUp ? 0.9 : 1);
+      const fade = footUp ? 0.8 : 1;
+      for (const part of [p.shadow.rim, p.shadow.core]) part.setPosition(feet.x, feet.y - p.height * 0.01).setScale(w / 100);
+      // In the rewind the living fade back, so the night's ghosts stand out.
+      const living = this.rewinding ? 0.22 : 1;
+      p.image.setAlpha(living);
+      p.shadow.rim.setAlpha(SHADOW_ALPHA.rim * fade * living);
+      p.shadow.core.setAlpha(SHADOW_ALPHA.core * fade * living);
+
+      const light = rgb(lightAt(plate, p.at.x, p.at.z));
+      p.tint = p.tint.map((c, k) => c + (light[k] - c) * tintEase) as [number, number, number];
+      p.image.setTint((Math.round(p.tint[0]) << 16) | (Math.round(p.tint[1]) << 8) | Math.round(p.tint[2]));
+
+      if (p.id === state.selected) lit = p;
+    }
+    if (moved || this.placed) {
+      this.placed = false;
+      const positions: Record<string, Spot> = {};
+      for (const p of this.people) if (p.at.x !== p.def.x || p.at.z !== p.def.z) positions[p.id] = p.at;
+      state.setPositions(positions);
     }
     if (!this.glow) return;
     this.glow.setVisible(Boolean(lit));
@@ -190,6 +331,90 @@ class BuildingScene extends Phaser.Scene {
       if (Math.abs(this.glow.width - w) >= 1) this.glow.setSize(w, w * 0.22);
       this.glow.setPosition(lit.image.x, lit.image.y);
     }
+  }
+
+  /**
+   * The rewind (W4.2): the world turns blue-grey, the living fade, the rain stops where it is, and the night's ghosts
+   * stand where the team's evidence puts them at the slider's minute: solid and pale blue when seen, a faint lilac
+   * outline when it's only someone's story. Things (HALO) are drawn by the overlay, with a label.
+   */
+  private updateRewind(state: ReturnType<WorldStore["getState"]>) {
+    const { plate } = this.options;
+    const map = state.view?.rewind ?? null;
+    const open = state.rewind.open && Boolean(map);
+    if (open !== this.rewinding) {
+      this.rewinding = open;
+      const tint = open ? REWIND_TINT : 0xffffff;
+      for (const image of [this.plateImage, this.mapImage, ...this.occluderImages]) image?.setTint(tint);
+      if (!open) {
+        for (const g of this.ghostSprites) {
+          g.image.setVisible(false);
+          g.glow.setVisible(false);
+        }
+        this.ghostKey = "";
+        state.setGhosts([]);
+      }
+    }
+    if (!open || !map) return;
+    const key = `${state.rewind.minute}|${map.sightings.length}|${map.sightings.map((s) => s.id).join(",").length}`;
+    if (key === this.ghostKey) return;
+    this.ghostKey = key;
+    const rooms = map.rooms.map((r) => {
+      const box = plate.rooms.find((p) => p.id === r.id);
+      return { id: r.id, name: r.name, kind: r.away ? ("away" as const) : r.outdoor ? ("outside" as const) : ("inside" as const), box: box ? { x0: box.x0, x1: box.x1, z0: box.z0, z1: box.z1 } : undefined };
+    });
+    const { ghosts } = ghostsAt(map.sightings, { rooms, links: plate.links }, state.rewind.minute);
+    this.drawGhosts(ghosts);
+    state.setGhosts(ghosts);
+  }
+
+  private drawGhosts(ghosts: Ghost[]) {
+    const { plate } = this.options;
+    const people = ghosts.map((g) => ({ g, person: plate.people.find((p) => p.suspect === g.who) })).filter((x) => x.person);
+    while (this.ghostSprites.length < people.length) {
+      const glow = this.add.ellipse(0, 0, 10, 10, 0x9fd8ff, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+      const image = this.add.image(0, 0, "cast-0", 0).setOrigin(0.5, FEET);
+      this.ghostSprites.push({ image, glow });
+    }
+    this.ghostSprites.forEach((sprite, i) => {
+      const entry = people[i];
+      sprite.image.setVisible(Boolean(entry));
+      sprite.glow.setVisible(Boolean(entry));
+      if (!entry) return;
+      const { g, person } = entry;
+      const frame = frameOf(person!.id, "idle");
+      if (frame) sprite.image.setTexture(`cast-${frame.sheet}`, frame.frame);
+      const s = spriteOf(plate, person!, { x: g.x, z: g.z });
+      sprite.image.setPosition(s.feet.x, s.feet.y).setScale(s.scale).setTint(g.says ? 0xd8c8ff : 0xbfeaff).setAlpha(g.says ? 0.42 : 0.88);
+      sprite.glow.setPosition(s.feet.x, s.feet.y - s.box.h * 0.45).setSize(s.box.w * 0.9, s.box.h * 0.95).setAlpha(g.says ? 0.08 : 0.2);
+    });
+  }
+
+  /** Starts someone walking along their floor to x (cm). */
+  private walkTo(id: string, x: number, time: number) {
+    const p = this.people.find((q) => q.id === id);
+    if (!p || Math.abs(x - p.at.x) < 2) return;
+    p.target = x;
+    if (p.walkingSince === null) p.walkingSince = time;
+    // My own walks go out on the live channel (presence.ts), so teammates see them.
+    const state = this.options.store.getState();
+    if (id === state.me) state.reportWalk({ x: p.at.x, z: p.at.z, to: x });
+  }
+
+  /**
+   * A teammate's move from the live channel: far from where we draw them (or another floor, or a hello), they're
+   * put there at once; then they walk to where they're heading, at the same pace they walk on their own phone.
+   */
+  private remoteMove(move: { id: string; x: number; z: number; to: number | null; snap: boolean }, time: number) {
+    const p = this.people.find((q) => q.id === move.id);
+    if (!p || move.id === this.options.store.getState().me) return;
+    if (move.snap || Math.abs(p.at.z - move.z) > 50 || Math.abs(p.at.x - move.x) > 120) {
+      p.at = { x: move.x, z: move.z };
+      p.target = null;
+      p.walkingSince = null;
+      this.placed = true;
+    }
+    this.walkTo(p.id, move.to ?? move.x, time);
   }
 
   /** Frames drawn over the last second, and the slowest, for the frame meter. */
@@ -214,17 +439,20 @@ class BuildingScene extends Phaser.Scene {
     const { plate } = this.options;
     if (target.kind === "whole") return wholeBuilding(this.view, plate);
     if (target.kind === "closeUp") return closeUpOn(this.view, plate, this.cam.x, this.cam.y);
-    if (target.kind === "person") {
-      const person = plate.people.find((p) => p.id === target.id);
-      if (!person) return this.cam;
-      const { feet, box } = spriteOf(plate, person);
-      return closeUpOn(this.view, plate, feet.x, feet.y - box.h * 0.45);
-    }
-    const room = plate.rooms.find((r) => r.id === target.id);
-    if (!room) return this.cam;
-    const box = roomBox(plate, room);
-    const zoom = clamp(Math.min(this.view.w / box.w, this.view.h / box.h) * 0.96, this.range.min, this.range.max);
-    return clampCamera({ x: box.x + box.w / 2, y: box.y + box.h / 2, zoom }, this.view, plate, this.range);
+    if (target.kind === "person") return this.followCamera(target.id) ?? this.cam;
+    return onRoom(this.view, plate, target.id, this.cam.zoom, this.range) ?? this.cam;
+  }
+
+  /** A close-up on someone, from where their sprite is now (so it keeps up once people walk). */
+  private followCamera(id: string): Camera | null {
+    const p = this.people.find((x) => x.id === id);
+    return p ? closeUpOn(this.view, this.options.plate, p.image.x, p.image.y - p.height * 0.45) : null;
+  }
+
+  private follow(id: string | null) {
+    if (this.following === id) return;
+    this.following = id;
+    this.options.store.getState().setFollowing(id);
   }
 
   /**
@@ -237,6 +465,15 @@ class BuildingScene extends Phaser.Scene {
     else if (kind === "move") this.apply(this.gestures.move(id, x, y, t));
     else if (kind === "up") this.apply(this.gestures.up(id, t));
     else this.gestures.cancel(id);
+    // The last finger is up after a pinch out past halfway: settle on the whole building.
+    if (this.pinched && this.gestures.active === 0) {
+      this.pinched = false;
+      const settle = pinchSettle(this.cam, this.view, this.options.plate, this.range);
+      if (settle) {
+        this.goal = settle;
+        this.fling = { vx: 0, vy: 0 };
+      }
+    }
   }
 
   /** A mouse wheel turn at (x, y): zoom around the cursor. */
@@ -244,6 +481,7 @@ class BuildingScene extends Phaser.Scene {
     if (!this.plateImage) return;
     this.goal = null;
     this.fling = { vx: 0, vy: 0 };
+    this.follow(null);
     const zoom = clamp(this.cam.zoom * Math.exp(-dy * WHEEL), this.range.min, this.range.max);
     this.cam = clampCamera(zoomAt(this.cam, this.view, zoom, x, y), this.view, this.options.plate, this.range);
   }
@@ -254,17 +492,36 @@ class BuildingScene extends Phaser.Scene {
       if (e.kind === "grab") {
         this.goal = null;
         this.fling = { vx: 0, vy: 0 };
+        this.follow(null);
       } else if (e.kind === "pan") {
         this.cam = panBy(this.cam, e.dx, e.dy);
       } else if (e.kind === "pinch") {
+        this.pinched = true;
         const panned = panBy(this.cam, e.dx, e.dy);
         const zoom = clamp(panned.zoom * e.scale, this.range.min, this.range.max);
         this.cam = zoomAt(panned, this.view, zoom, e.x, e.y);
       } else if (e.kind === "fling") {
-        this.fling = { vx: e.vx, vy: e.vy };
+        // In close-up a quick swipe pages to the next room; otherwise the picture glides.
+        const page = swipeTarget(this.cam, this.view, plate, e.vx, e.vy, this.range);
+        if (page) this.goal = page;
+        else this.fling = { vx: e.vx, vy: e.vy };
       } else if (e.kind === "tap") {
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);
-        store.getState().select(personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom));
+        const at = Object.fromEntries(this.people.map((p) => [p.id, p.at]));
+        const hit = personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom, at);
+        store.getState().select(hit);
+        // A tap on the floor walks your detective there (on this phone only, until W3 shares it).
+        const me = store.getState().me;
+        const mine = me ? this.people.find((p) => p.id === me) : undefined;
+        if (!hit && mine) {
+          const point = fromPlate(plate, spot.x, spot.y);
+          const x = walkTarget(plate, mine.at, point.x, point.z);
+          if (x !== null) {
+            this.walkTo(mine.id, x, this.time.now);
+            // Close up, the camera goes along with you.
+            if (this.cam.zoom >= this.range.closeUp * 0.9) this.follow(mine.id);
+          }
+        }
       } else if (e.kind === "doubleTap") {
         // Zoomed out: dive in where you tapped. Zoomed in: back out to the whole building.
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);

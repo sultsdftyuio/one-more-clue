@@ -19,6 +19,28 @@ It writes next to `world.py`:
 - `world.json`: the rooms, where everyone stands and the other spots, in world cm (committed)
 - `world.png` or `world-draft.png`: a lossless copy for checking (not committed)
 
+Then the front layer, the furniture people can stand behind (W2.1):
+
+```
+python art/world/front.py          # front.json and front-mask.png, about 10 seconds
+python scripts/world-assets.py     # cuts each piece out of the plate into src/assets/world/case-001/front/
+```
+
+The characters (W2.3):
+
+```
+python art/world/cast_sprites.py   # cast-0.webp and cast-1.webp in src/assets/world/case-001/, and cast.json; about 20 seconds
+```
+
+It draws the suspects with the cast kit (`art/omc_art/cast`) in all five moods and the detectives with
+`detectives.py`, each standing and in a three-frame walk, and packs them on two 2048 px sheets. `cast.json` lists the
+frames; `src/lib/world/sprites.ts` lists the same and a test checks they match. `cast-walks.png` is a strip for
+checking by eye (not committed).
+
+`front.py` draws each piece again on its own, with `world.py`'s own code at the same spot, so its mask is the
+piece's exact shape, gaps between legs included. Add a piece to `PIECES` there, then copy its outline from
+`front.json` into `src/lib/world/plates.ts` (a test checks the two match). Both files are committed.
+
 ## What it needs
 
 Python 3 with skia-python, numpy, Pillow and scipy. scipy does the blurs in the film finish and the noise in the

@@ -33,6 +33,7 @@ import type {
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
+import { checkWorld, spotsFor, type WorldSpotView } from "./world.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -883,6 +884,17 @@ export function applyAction(
       break;
     }
 
+    case "move": {
+      // Where a detective stands in the world: checked against the building, saved for late joiners and as the
+      // fallback when the live channel drops. It costs nothing and changes nothing else.
+      const room = caseFile.world?.rooms.find((r) => r.id === action.room && r.box);
+      if (!state.world || !room?.box) return fail("That room isn't in the building.");
+      const x = Number(action.x);
+      if (!Number.isFinite(x)) return fail("Where did you go?");
+      next.places = { ...(state.places ?? {}), [me.id]: { room: room.id, x: Math.min(room.box.x1, Math.max(room.box.x0, x)), at: now } };
+      break;
+    }
+
     case "chat": {
       const text = String(action.text ?? "").trim().slice(0, MAX_CHAT);
       if (!text) return fail("Say something first.");
@@ -1047,6 +1059,7 @@ export function checkCase(caseFile: CaseFile): string[] {
   }
   problems.push(...checkInterrogation(caseFile, byId));
   problems.push(...checkChains(caseFile, byId));
+  problems.push(...checkWorld(caseFile));
   const { solution } = caseFile;
   if (!caseFile.suspects.some((s) => s.id === solution.culprit)) problems.push("the culprit is not a suspect");
   if (!solution.motives.some((m) => m.id === solution.motive)) problems.push("the motive is not one of the options");
@@ -1180,6 +1193,8 @@ export type PublicPlayer = {
   bot: boolean;
   /** Their seat in the lobby's row (0-based). */
   seat: number;
+  /** Where their detective last stood in the world (W3.3), if they've walked into a room. */
+  place?: { room: string; x: number };
 };
 
 /**
@@ -1317,6 +1332,10 @@ export type PlayerView = {
   checked: string[];
   /** For the Archivist: the map of the night, when the case has one. */
   nightMap: NightMapView | null;
+  /** The world's spots open this chapter, with who can use each (empty outside the investigation or without a world). */
+  spots: WorldSpotView[];
+  /** The world's rewind: the night as the team knows it (world rooms with a map of the night, during the investigation). */
+  rewind: NightMapView | null;
   /** The last piece someone showed on every phone. */
   spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
   /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
@@ -1450,6 +1469,20 @@ export const MOMENT_MINUTES = 5;
  * at once). A clash shows once both pieces are in view, which is the point: the map makes a lie visible.
  */
 export function mapFor(state: RoomState, caseFile: CaseFile, me: Pick<Player, "id" | "roles">): NightMapView | null {
+  return mapWith(state, caseFile, (piece) => canSee(state, me, piece));
+}
+
+/**
+ * The night as the whole team knows it, for the world's rewind (W4): every place a piece anyone on the team can see
+ * puts someone. Everyone watches the same rewind, so it can't be one player's view. Ghosts only walk where these put
+ * people; the rest of the night stays foggy.
+ */
+export function rewindFor(state: RoomState, caseFile: CaseFile): NightMapView | null {
+  const team = state.players.filter((p) => !p.left);
+  return mapWith(state, caseFile, (piece) => team.some((p) => canSee(state, p, piece)));
+}
+
+function mapWith(state: RoomState, caseFile: CaseFile, visible: (piece: CaseEvidence) => boolean): NightMapView | null {
   const map = caseFile.nightMap;
   if (!map) return null;
   const start = parseTime(map.from);
@@ -1460,7 +1493,7 @@ export function mapFor(state: RoomState, caseFile: CaseFile, me: Pick<Player, "i
   const sightings: MapSighting[] = [];
   map.sightings.forEach((s, i) => {
     const piece = pieces.get(s.evidence);
-    if (!piece || !canSee(state, me, piece)) return;
+    if (!piece || !visible(piece)) return;
     const at = minute(s.at);
     const from = s.until ? at : Math.max(0, at - moment);
     const to = s.until ? minute(s.until) : Math.min(span, at + moment);
@@ -1493,6 +1526,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     ready: state.ready.includes(p.id),
     bot: Boolean(p.bot),
     seat: seats[p.id] ?? -1,
+    ...(state.places?.[p.id] ? { place: { room: state.places[p.id].room, x: state.places[p.id].x } } : {}),
   });
   const me = state.players.find((p) => p.id === playerId)!;
   const abilities = abilitiesOf(caseFile, me);
@@ -1632,6 +1666,8 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
     nightMap: abilities.includes("crosscheck") ? mapFor(state, caseFile, me) : null,
+    spots: state.phase === "investigation" ? spotsFor(caseFile, state.chapter) : [],
+    rewind: state.world && state.phase === "investigation" ? rewindFor(state, caseFile) : null,
     wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
     strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,

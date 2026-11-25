@@ -106,3 +106,90 @@ export function glide(vx: number, vy: number, dtMs: number, tauMs = 325) {
 export function sameCamera(a: Camera, b: Camera) {
   return Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01 && Math.abs(a.zoom - b.zoom) < 1e-5;
 }
+
+// ---------------------------------------------------------------------------
+// Rooms: swiping between them (W2.2)
+
+/** A fling at least this fast (CSS px per ms) in close-up goes to the next room; slower ones just glide. */
+export const SWIPE_MIN = 0.45;
+/** A page has to move the picture at least this far on screen (CSS px), or the swipe just glides. */
+const PAGE_MIN_PX = 48;
+
+export type Direction = "left" | "right" | "up" | "down";
+
+type RoomRect = { id: string; x: number; y: number; w: number; h: number };
+
+/** The rooms as plate-pixel rectangles. */
+function roomRects(plate: WorldPlate): RoomRect[] {
+  return plate.rooms.map((r) => ({
+    id: r.id,
+    x: (r.x0 - plate.extent.x0) * plate.pxPerCm,
+    y: (plate.extent.z1 - r.z1) * plate.pxPerCm,
+    w: (r.x1 - r.x0) * plate.pxPerCm,
+    h: (r.z1 - r.z0) * plate.pxPerCm,
+  }));
+}
+
+/** The room the camera is looking at: the one under the middle of the screen, or else the nearest. */
+export function roomInView(plate: WorldPlate, cam: Camera): string | null {
+  let best: { id: string; d: number } | null = null;
+  for (const r of roomRects(plate)) {
+    const dx = Math.max(r.x - cam.x, 0, cam.x - (r.x + r.w));
+    const dy = Math.max(r.y - cam.y, 0, cam.y - (r.y + r.h));
+    const d = Math.hypot(dx, dy);
+    if (!best || d < best.d) best = { id: r.id, d };
+  }
+  return best?.id ?? null;
+}
+
+/**
+ * The room next to `from` in a direction, or null at the edge of the building. Rooms ahead are scored by how far
+ * ahead they are plus twice how far off to the side, so the lobby (beside the way out) beats the corridor (above it).
+ */
+export function nextRoom(plate: WorldPlate, from: string, dir: Direction): string | null {
+  const rects = roomRects(plate);
+  const here = rects.find((r) => r.id === from);
+  if (!here) return null;
+  const centre = (r: RoomRect) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  const c = centre(here);
+  let best: { id: string; score: number } | null = null;
+  for (const r of rects) {
+    if (r.id === from) continue;
+    const o = centre(r);
+    const ahead = dir === "right" ? o.x - c.x : dir === "left" ? c.x - o.x : dir === "down" ? o.y - c.y : c.y - o.y;
+    const side = dir === "left" || dir === "right" ? Math.abs(o.y - c.y) : Math.abs(o.x - c.x);
+    if (ahead <= 0) continue;
+    const score = ahead + 2 * side;
+    if (!best || score < best.score) best = { id: r.id, score };
+  }
+  return best?.id ?? null;
+}
+
+/** Centred on a room, at this zoom but never further out than the close-up (as near as the edges allow). */
+export function onRoom(view: Viewport, plate: WorldPlate, roomId: string, zoom: number, range = zoomRange(view, plate)): Camera | null {
+  const r = roomRects(plate).find((x) => x.id === roomId);
+  if (!r) return null;
+  return clampCamera({ x: r.x + r.w / 2, y: r.y + r.h / 2, zoom: Math.max(zoom, range.closeUp) }, view, plate, range);
+}
+
+/**
+ * Where a fling takes the camera. In close-up (or nearer), a quick swipe pages to the next room the way the finger
+ * pulls the picture: swipe left to see the room on the right. Null means glide as usual (zoomed out, too slow,
+ * or nothing that way).
+ */
+export function swipeTarget(cam: Camera, view: Viewport, plate: WorldPlate, vx: number, vy: number, range = zoomRange(view, plate)): Camera | null {
+  if (cam.zoom < range.closeUp * 0.9 || Math.hypot(vx, vy) < SWIPE_MIN) return null;
+  const dir: Direction = Math.abs(vx) >= Math.abs(vy) ? (vx < 0 ? "right" : "left") : vy < 0 ? "down" : "up";
+  const here = roomInView(plate, cam);
+  const next = here ? nextRoom(plate, here, dir) : null;
+  const goal = next ? onRoom(view, plate, next, cam.zoom, range) : null;
+  if (!goal) return null;
+  // On a tall screen both floors already show, so paging up or down would barely move: glide instead.
+  const from = clampCamera(cam, view, plate, range);
+  return Math.hypot(goal.x - from.x, goal.y - from.y) * goal.zoom >= PAGE_MIN_PX ? goal : null;
+}
+
+/** After a pinch: let go past halfway out and the camera settles on the whole building. Null leaves it where it is. */
+export function pinchSettle(cam: Camera, view: Viewport, plate: WorldPlate, range = zoomRange(view, plate)): Camera | null {
+  return cam.zoom > range.min * 1.001 && isZoomedOut(cam, range) ? wholeBuilding(view, plate) : null;
+}

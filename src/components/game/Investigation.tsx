@@ -29,7 +29,7 @@ import { TeamPanel } from "./TeamPanel";
 import { Icon, type IconName } from "./ui/Icon";
 import { Sheet } from "./ui/Sheet";
 
-type Panel = "evidence" | "board" | "solve" | "team" | "notes";
+export type Panel = "evidence" | "board" | "solve" | "team" | "notes";
 
 function useClock(startedAt: number | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -90,7 +90,7 @@ function ChapterCircles({ view, label }: { view: PlayerView; label: string }) {
  * The night running out. Every paid move spends some of it, and each spend
  * drops off the clock as it happens, on every phone, so the whole team feels it.
  */
-function StoryClock({ view }: { view: PlayerView }) {
+export function StoryClock({ view }: { view: PlayerView }) {
   const deadline = view.deadline;
   const spent = deadline?.spent ?? 0;
   const last = useRef(spent);
@@ -192,7 +192,7 @@ function TopBar({ view, act }: { view: PlayerView; act: Act }) {
  * writes a replay, the proof plays back as the night on a timeline instead of
  * a paragraph saying what it proved.
  */
-function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
+export function ChapterStory({ view, onClose }: { view: PlayerView; onClose: () => void }) {
   const last = view.solved.at(-1);
   const [replayed, setReplayed] = useState(!last?.replay);
   const beats: Beat[] = [
@@ -224,7 +224,7 @@ function ConfrontationStory({ view, onClose }: { view: PlayerView; onClose: () =
 }
 
 /** Brief pop-ups when teammates find, pin or unlock something. */
-function ActivityToasts({ view }: { view: PlayerView }) {
+export function ActivityToasts({ view }: { view: PlayerView }) {
   const seen = useRef<string | null>(null);
   const [toasts, setToasts] = useState<PlayerView["activity"]>([]);
 
@@ -267,7 +267,7 @@ const DOCK: { id: Panel; label: string; icon: IconName }[] = [
 const urgent = (badge: string) => badge === "vote" || badge === "live" || badge.endsWith("new");
 
 /** Everything that isn't your own tool: one tap away, with a badge when something there needs you. */
-function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void }) {
+export function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Open a panel">
       <div className="mx-auto grid max-w-2xl grid-cols-5">

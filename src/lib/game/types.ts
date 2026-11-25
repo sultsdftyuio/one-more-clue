@@ -218,6 +218,56 @@ export type ThingIcon = "glasses" | "mask" | "envelope" | "plate" | "gold-plate"
 export type Sighting = { evidence: string; who: string; room: string; at: string; until?: string; says?: boolean };
 
 /**
+ * The case's building for the world game (docs/world-overhaul.md, and "The world" in docs/case-system.md):
+ * a flat 2D cutaway, painted as one plate, with rooms, the ways between them, the spots people tap and where
+ * everyone waits. Units are centimetres: x runs left to right, z runs up from the ground floor.
+ */
+export type CaseWorld = {
+  /**
+   * The painted art. `layers` are files in src/assets/world/<case id>/, back to front. `extent` is the world the
+   * plate covers, and `size` its pixels, which must be `extent` times `pxPerCm`.
+   */
+  plate: { layers: string[]; extent: WorldBox; pxPerCm: number; size: { w: number; h: number } };
+  /** Where each floor's floor is: people in a room on it stand at `z`. */
+  floors: { id: string; name: string; z: number }[];
+  /**
+   * Every room of the map of the night, plus any the world adds (a room where nothing happened can still hold a
+   * side job). Ids match `nightMap.rooms`. Rooms in the building have a floor and a box; `away` rooms (gone home,
+   * across town) are off the plate and have neither.
+   */
+  rooms: WorldRoomSpec[];
+  /** The ways between rooms, both directions. `path` is the walk, from inside `from` to inside `to`. */
+  links: { from: string; to: string; kind: "door" | "stairs" | "lift" | "gate"; path: [number, number][] }[];
+  /**
+   * The things people tap, each with a short `name` ("Priya's laptop") for screen readers. `evidence` is what opens there (every record in the case has a spot, unless it's in
+   * `elsewhere`), and `roles` who can open it, which has to include the role each piece belongs to.
+   * A `view` is where a photo or a camera looks from; a `sidejob` is where a side job starts.
+   */
+  spots: { id: string; name: string; room: string; x: number; z: number; kind: "object" | "device" | "view" | "sidejob"; evidence?: string[]; roles?: string[] }[];
+  /** Records that aren't anywhere in the building (a web page, an email), each with where it is instead. */
+  elsewhere?: Record<string, string>;
+  /** Where each suspect waits now, by suspect id: their feet at (x, z). */
+  people: Record<string, { room: string; x: number; z: number; mood: WorldMood }>;
+  /** Short games that help a bit (never a clue). A `sore-spot` win is that suspect's sore spot. `event` jobs fire at a story beat for the whole team. */
+  sideJobs: { id: string; game: string; spot: string; help: "coffee" | "lightbulb" | "sore-spot"; suspect?: string; event?: boolean }[];
+  /**
+   * The topic that makes each suspect uneasy, innocent ones too, so it never singles anyone out. `about` is the
+   * evidence the topic comes from: nothing in the world may hint at what isn't in the case file.
+   */
+  soreSpots: Record<string, { topic: string; about: string[] }>;
+  /** The weather, the time on the clocks, and each room's lights. */
+  ambience: { weather: "clear" | "rain" | "snow" | "storm"; time: string; lights: Record<string, "on" | "dim" | "off"> };
+};
+
+/** A box in world cm. */
+export type WorldBox = { x0: number; x1: number; z0: number; z1: number };
+
+export type WorldRoomSpec = { id: string; name: string; kind: "inside" | "outside" | "away"; floor?: string; box?: WorldBox };
+
+/** The five moods every case character is drawn in (src/lib/cast-art.ts). */
+export type WorldMood = "idle" | "nervous" | "smug" | "shocked" | "cracked";
+
+/**
  * The story's clock: the night the team has to solve the case in. Wrong
  * answers, questions and wasted moves each spend some of it (see clock.ts),
  * and when it runs out the case is lost.
@@ -262,6 +312,8 @@ export type CaseFile = {
   deadline?: Deadline;
   /** The map of the night, for the Archivist. Without one the wall is their only view. */
   nightMap?: NightMap;
+  /** The painted building for the world game. Without one the case only plays on the classic screens. */
+  world?: CaseWorld;
   /** The opening film, played to everyone when the case starts. Without one, the story beats play instead. */
   cinematic?: { video: string; poster?: string };
   evidence: CaseEvidence[];
@@ -400,6 +452,11 @@ export type RoomState = {
    * Only set for rooms made from /world/<caseId>; missing means a classic room. See docs/world-overhaul.md.
    */
   world?: true;
+  /**
+   * Where each player's detective last stood in the world, by player id (W3.3): saved when they walk into a new room,
+   * so a phone that joins late, or loses the live channel, can still draw them in the right place.
+   */
+  places?: Record<string, { room: string; x: number; at: number }>;
 };
 
 export type InterrogationState = {
@@ -459,6 +516,8 @@ export type Action =
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }
+  /** The world only: my detective walked into a new room and stands at x (cm). Saved, never scored. */
+  | { type: "move"; room: string; x: number }
   | { type: "propose"; kind: ProposalKind; evidenceId?: string; report?: FinalReport }
   | { type: "vote"; proposalId: string; vote: "yes" | "no" }
   | { type: "withdraw"; proposalId: string }

@@ -49,6 +49,27 @@ export type WorldOccluder = {
   outline: [number, number][];
 };
 
+/**
+ * The small things that move in a painted building (W2.5), in world cm. All of it is decoration: nothing here is a
+ * clue, and it all holds still for players who ask their device for less motion.
+ */
+export type WorldAmbience = {
+  /** Where rain falls: open air only, never inside. */
+  rain: { x0: number; x1: number; z0: number; z1: number }[];
+  /** Window glass that rain runs down. */
+  windows: { x0: number; x1: number; z0: number; z1: number }[];
+  /** Little lights that blink: a colour, and how many seconds between blinks. */
+  leds: { x: number; z: number; colour: number; every: number }[];
+  /** A strip light that stutters now and then, and the room it dims when it does. */
+  flicker: { x: number; z: number; w: number; room: string } | null;
+  /** Where steam rises from (a hot drink). */
+  steam: { x: number; z: number }[];
+  /** Wall clocks: a red second hand goes round on each. */
+  clocks: { x: number; z: number; r: number }[];
+  /** The sky band clouds drift through, slower than the building when the camera pans. */
+  clouds: { z0: number; z1: number } | null;
+};
+
 export type WorldPlate = {
   caseId: string;
   /** What the building is, for screen readers: the canvas itself has no text. */
@@ -62,6 +83,7 @@ export type WorldPlate = {
   rooms: WorldRoom[];
   people: WorldPerson[];
   occluders: WorldOccluder[];
+  ambience: WorldAmbience;
 };
 
 /** The rooms in the building (away rooms aren't on the plate) and the plate's size, from the case's world, with each room's light. */
@@ -109,6 +131,35 @@ const case001: WorldPlate = {
     { id: "corridor-bench", outline: [[699.5, 306], [820.5, 306], [820.5, 352.5], [699.5, 352.5]] },
     { id: "water-cooler", outline: [[903.5, 305.5], [936.5, 305.5], [936.5, 444.5], [903.5, 444.5]] },
   ],
+  // Measured on the plate (art/world/world.py): the rain outside and over the roof, Lab 4's and the maker space's
+  // windows, the badge readers, the printers, the roof antenna and the gate camera, the corridor's right-hand strip
+  // light, Ozzy's flask on the desk, and the two wall clocks.
+  ambience: {
+    rain: [
+      { x0: 974, x1: 1560, z0: -70, z1: 780 },
+      { x0: -60, x1: 974, z0: 668, z1: 780 },
+    ],
+    windows: [
+      { x0: 127, x1: 230, z0: 437, z1: 530 },
+      { x0: 56, x1: 158, z0: 120, z1: 230 },
+    ],
+    leds: [
+      { x: 529, z: 436, colour: 0x3dd68c, every: 2.4 },
+      { x: 945, z: 130, colour: 0x3dd68c, every: 2.9 },
+      { x: 83, z: 83, colour: 0x7fb2ff, every: 1.3 },
+      { x: 131, z: 83, colour: 0x7fb2ff, every: 1.7 },
+      { x: 179, z: 83, colour: 0x7fb2ff, every: 1.1 },
+      { x: 880, z: 772, colour: 0xff3a3a, every: 2.0 },
+      { x: 1332, z: 324, colour: 0xff3a3a, every: 3.3 },
+    ],
+    flicker: { x: 890, z: 575, w: 120, room: "corridor" },
+    steam: [{ x: 701, z: 154 }],
+    clocks: [
+      { x: 312, z: 544, r: 17 },
+      { x: 768, z: 532, r: 11 },
+    ],
+    clouds: { z0: 690, z1: 775 },
+  },
 };
 
 const WORLDS: Record<string, WorldPlate> = { [case001.caseId]: case001 };

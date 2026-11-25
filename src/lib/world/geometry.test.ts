@@ -171,3 +171,19 @@ test("no spot covers someone standing in the building, so tapping a person never
     }
   }
 });
+
+test("the building's small motions sit where the painting has them, and rain stays out of the rooms", () => {
+  const a = plate.ambience;
+  const onPlate = (x: number, z: number) => x >= plate.extent.x0 && x <= plate.extent.x1 && z >= plate.extent.z0 && z <= plate.extent.z1;
+  for (const p of [...a.leds, ...a.steam, ...a.clocks]) assert.ok(onPlate(p.x, p.z), JSON.stringify(p));
+  for (const c of a.clocks) assert.ok(roomAt(plate, c.x, c.z), "clocks hang inside rooms");
+  for (const w of a.windows) assert.ok(roomAt(plate, (w.x0 + w.x1) / 2, (w.z0 + w.z1) / 2), "windows are in rooms");
+  if (a.flicker) assert.equal(roomAt(plate, a.flicker.x, a.flicker.z - 10), a.flicker.room);
+  // Rain areas never cover an inside room.
+  for (const r of a.rain) {
+    for (const room of plate.rooms.filter((x) => x.id !== "outside")) {
+      const overlap = r.x0 < room.x1 && room.x0 < r.x1 && r.z0 < room.z1 && room.z0 < r.z1;
+      assert.ok(!overlap, `rain over ${room.id}`);
+    }
+  }
+});

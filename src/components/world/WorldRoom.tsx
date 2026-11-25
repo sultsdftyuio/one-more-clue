@@ -15,6 +15,7 @@ import { WorldHud } from "./WorldHud";
 import { WorldMinimap } from "./WorldMinimap";
 import { WorldSheets } from "./WorldSheets";
 import { WorldSpots } from "./WorldSpots";
+import { WorldRoomTags } from "./WorldRoomTags";
 import { WorldTags } from "./WorldTags";
 import { WorldContext } from "./useWorld";
 
@@ -119,6 +120,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
         {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} />}
+        <WorldRoomTags plate={plate} />
         <WorldTags plate={plate} cast={cast} />
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} />
 

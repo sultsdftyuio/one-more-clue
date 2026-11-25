@@ -127,7 +127,15 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 - [x] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap. *(Done 2026-11-25. Looking at someone ("Find me", arriving, a teammate's name) follows them until a finger, the wheel or another target takes over. In close-up a quick swipe pages to the next room, and a slow drag still pans freely. Upright phones already show both floors, so paging up and down only happens when the view would move. Letting go of a pinch past halfway out settles on the whole building. Double-tap and the buttons already went out and back. The minimap sits under the title card: the plate shrunk down, a frame for the view, the room you're in, a dot for everyone, and each room as a button.)*
 - [x] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows. *(Done 2026-11-25. [cast_sprites.py](../art/world/cast_sprites.py) draws the suspects in all five moods from the cast kit, and the detectives from [detectives.py](../art/world/detectives.py). Everyone gets a three-frame front-on walk, played a, b, a, c: a wide stance where the body dips, then each foot lifted in turn, with the legs never crossing. 48 frames fit on two 2048 px sheets. The scene walks people along their floor, flips them to face the way they go, shows their mood when standing, tints them with their room's light (easing as they cross a door) and draws a soft two-ellipse contact shadow. For now a tap on your floor walks your detective there, on this phone only, until W3 shares it.)*
 - [x] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet. *(Done 2026-11-26. The server decides which spots show: `PlayerView.spots`, from `spotsFor` in [world.ts](../src/lib/game/world.ts), lists those holding evidence that exists by this chapter, marked only with the roles that evidence belongs to, and only during the investigation. Side-job spots wait for W6. [WorldSpots](../src/components/world/WorldSpots.tsx) draws them as labelled DOM buttons with a pulse and role icons, ringed in mustard when one of your roles can use them, fading out when zoomed out. [WorldSheets](../src/components/world/WorldSheets.tsx) opens your role's own tool from the classic screens in a sheet, or, if the spot isn't yours, says who to ask. Spots got names for screen readers, and a test keeps every spot clear of anyone standing in the building.)*
-- [ ] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax.
+- [x] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax. *(Done 2026-11-26. [ambience.ts](../src/components/world/ambience.ts) draws, from the plate's `ambience` data:
+  - rain outside and over the roof, and drops running down the Lab 4 and maker space windows
+  - the corridor's right-hand strip light stuttering every few seconds, dimming the corridor
+  - steam off Ozzy's flask
+  - seven blinking LEDs
+  - red second hands ticking on both wall clocks
+  - clouds in a sky layer that scrolls at 70% of the camera, for parallax
+
+  It all holds still with reduced motion. [WorldRoomTags](../src/components/world/WorldRoomTags.tsx) labels the rooms as the camera pulls back, while the name tags fade. The sky as its own painted layer wasn't needed: the clouds give the depth.)*
 - [ ] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip.
 
 **Done when** you can walk Case 001's building, see everyone and open today's tools from real objects.
@@ -346,3 +354,4 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
     - the photo spot opens the camera when you're also the Photographer, and otherwise says "Ask Bot Marple to come and look"
     - no page errors
   - Finds made from a world sheet don't yet get the classic find moments (Moments): that belongs with W2.6's HUD.
+- 2026-11-26: W2.5 done on branch `world/w2-5-ambience` (on top of W2.4). Checked in headless Chrome: rain and clouds at laptop size; room names in the phone's whole-building view; the Lab 4 clock's second hand on the painted clock and rain on its window up close; 120 fps on the phone run, no page errors.

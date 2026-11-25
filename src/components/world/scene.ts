@@ -30,6 +30,7 @@ import { Gestures, type GestureEvent } from "@/lib/world/gestures";
 import type { WorldPerson, WorldPlate } from "@/lib/world/plates";
 import { frameOf, poseAt, SHEET_GAP, SHEETS, TILE, WALK_CM_PER_S, type Pose } from "@/lib/world/sprites";
 import type { CameraTarget, WorldStore } from "@/lib/world/store";
+import { Ambience } from "./ambience";
 
 /** Where the case's pictures are served from (see assets.ts). */
 export type WorldArt = { plate: string; plateMap: string; sheets: string[]; occluders: Record<string, string> };
@@ -106,6 +107,7 @@ class BuildingScene extends Phaser.Scene {
   /** Set when the GPU can't hold the full plate, so the small copy is always drawn. */
   private mapOnly = false;
   private people: Person[] = [];
+  private ambience: Ambience | null = null;
   private glow: Phaser.GameObjects.Ellipse | null = null;
   private frames: number[] = [];
   private statsAt = 0;
@@ -139,6 +141,9 @@ class BuildingScene extends Phaser.Scene {
     // behind furniture, the furniture cut out of the plate, then everyone else.
     this.mapImage = this.add.image(0, 0, "plate-map").setOrigin(0).setDisplaySize(plate.size.w, plate.size.h);
     this.plateImage = this.add.image(0, 0, "plate").setOrigin(0).setVisible(!this.mapOnly);
+    // Rain, flickers, steam, LEDs, clocks and clouds, over the plate and under the people.
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    this.ambience = new Ambience(this, plate, Boolean(reduced));
     this.glow = this.add.ellipse(0, 0, 10, 10, 0xffe6a7, 0.32).setVisible(false);
     let furnished = false;
     const furnish = () => {
@@ -231,6 +236,7 @@ class BuildingScene extends Phaser.Scene {
       this.mapImage.setVisible(sharp < 1);
     }
 
+    this.ambience?.update(time, dt);
     const walk = state.takeWalk();
     if (walk) this.walkTo(walk.id, walk.x, time);
     this.animatePeople(time, dt, state);

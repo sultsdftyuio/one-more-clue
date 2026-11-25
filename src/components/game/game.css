@@ -783,6 +783,14 @@
   100% { opacity: 0; }
 }
 /* Tap words: everything you could tap is marked, and the word you tapped lights up for a moment. */
+/* Room under an open sheet's buttons for the Tap words bar (WordTap.tsx), which floats over the bottom of the screen. */
+.tap-clear {
+  display: none;
+}
+body.tech-tapping .tap-clear {
+  display: block;
+  height: calc(8rem + env(safe-area-inset-bottom));
+}
 body.tech-tapping [data-searchable] {
   cursor: text;
   outline: 3px dashed rgb(63 184 175 / 0.85);

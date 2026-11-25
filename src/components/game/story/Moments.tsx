@@ -129,6 +129,7 @@ function MomentCard({ evidence, onClose }: { evidence: VisibleEvidence; onClose:
             {speaks && !typed.complete ? "Skip" : "Got it"}
           </button>
         </div>
+        <div className="tap-clear" />
       </div>
     </div>
   );

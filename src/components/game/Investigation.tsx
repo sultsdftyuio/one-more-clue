@@ -423,6 +423,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
         // An open piece of evidence sits on top of the panel: Esc closes that first.
         <Sheet title={panels[panel].title} onClose={() => !opened && setPanel(null)}>
           <div className={cx(view.proposal && "pb-80")}>{panels[panel].body}</div>
+          <div className="tap-clear" />
         </Sheet>
       )}
 
@@ -436,6 +437,7 @@ export function Investigation({ view, act, busy }: { view: PlayerView; act: Act;
               </p>
             )}
           </div>
+          <div className="tap-clear" />
         </Sheet>
       )}
 

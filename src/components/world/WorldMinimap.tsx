@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { isZoomedOut, roomInView } from "@/lib/world/camera";
+import { PING_MS } from "@/lib/world/presence";
 import type { WorldPlate } from "@/lib/world/plates";
 import type { WorldState } from "@/lib/world/store";
 import { useWorld, useWorldStore } from "./useWorld";
@@ -36,6 +37,7 @@ export function WorldMinimap({
     (s) => s.status.stage === "ready" && !isZoomedOut(s.camera, s.range),
   );
   const frame = useRef<HTMLDivElement>(null);
+  const pings = useWorld((s) => s.pings);
   const rooms = useRef(new Map<string, HTMLButtonElement>());
   const dots = useRef(new Map<string, HTMLSpanElement>());
   const height = Math.round((WIDTH * plate.size.h) / plate.size.w);
@@ -127,6 +129,16 @@ export function WorldMinimap({
           />
         );
       })}
+      {pings
+        .filter((p) => Date.now() - p.at < PING_MS)
+        .map((p) => (
+          <span
+            key={`${p.by}:${p.at}`}
+            aria-hidden="true"
+            className="pointer-events-none absolute size-3 -translate-1/2 animate-ping rounded-full bg-coral"
+            style={percentOf(plate, p.x, p.z)}
+          />
+        ))}
       <div
         ref={frame}
         aria-hidden="true"

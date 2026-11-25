@@ -108,6 +108,8 @@ class BuildingScene extends Phaser.Scene {
   private mapOnly = false;
   private people: Person[] = [];
   private ambience: Ambience | null = null;
+  /** Someone was put somewhere without walking, so the store's positions need refreshing. */
+  private placed = false;
   private glow: Phaser.GameObjects.Ellipse | null = null;
   private frames: number[] = [];
   private statsAt = 0;
@@ -239,6 +241,7 @@ class BuildingScene extends Phaser.Scene {
     this.ambience?.update(time, dt);
     const walk = state.takeWalk();
     if (walk) this.walkTo(walk.id, walk.x, time);
+    for (const move of state.takeRemote()) this.remoteMove(move, time);
     this.animatePeople(time, dt, state);
     state.setCamera(this.cam);
     this.countFrame(time, dt);
@@ -264,6 +267,7 @@ class BuildingScene extends Phaser.Scene {
           p.at = { x: p.target, z: p.at.z };
           p.target = null;
           p.walkingSince = null;
+          if (p.id === state.me) state.reportWalk({ x: p.at.x, z: p.at.z, to: null });
         } else {
           p.at = { x: p.at.x + Math.sign(left) * step, z: p.at.z };
         }
@@ -300,7 +304,8 @@ class BuildingScene extends Phaser.Scene {
 
       if (p.id === state.selected) lit = p;
     }
-    if (moved) {
+    if (moved || this.placed) {
+      this.placed = false;
       const positions: Record<string, Spot> = {};
       for (const p of this.people) if (p.at.x !== p.def.x || p.at.z !== p.def.z) positions[p.id] = p.at;
       state.setPositions(positions);
@@ -321,6 +326,25 @@ class BuildingScene extends Phaser.Scene {
     if (!p || Math.abs(x - p.at.x) < 2) return;
     p.target = x;
     if (p.walkingSince === null) p.walkingSince = time;
+    // My own walks go out on the live channel (presence.ts), so teammates see them.
+    const state = this.options.store.getState();
+    if (id === state.me) state.reportWalk({ x: p.at.x, z: p.at.z, to: x });
+  }
+
+  /**
+   * A teammate's move from the live channel: far from where we draw them (or another floor, or a hello), they're
+   * put there at once; then they walk to where they're heading, at the same pace they walk on their own phone.
+   */
+  private remoteMove(move: { id: string; x: number; z: number; to: number | null; snap: boolean }, time: number) {
+    const p = this.people.find((q) => q.id === move.id);
+    if (!p || move.id === this.options.store.getState().me) return;
+    if (move.snap || Math.abs(p.at.z - move.z) > 50 || Math.abs(p.at.x - move.x) > 120) {
+      p.at = { x: move.x, z: move.z };
+      p.target = null;
+      p.walkingSince = null;
+      this.placed = true;
+    }
+    this.walkTo(p.id, move.to ?? move.x, time);
   }
 
   /** Frames drawn over the last second, and the slowest, for the frame meter. */

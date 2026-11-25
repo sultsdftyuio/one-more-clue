@@ -20,6 +20,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<string, CastMember> }) {
   const store = useWorldStore();
   const selected = useWorld((s) => s.selected);
+  const statuses = useWorld((s) => s.statuses);
   const nodes = useRef(new Map<string, HTMLSpanElement>());
 
   const tags = useMemo(
@@ -68,6 +69,7 @@ export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<str
           )}
         >
           {tag.me ? `You · ${tag.text}` : tag.text}
+          {!tag.me && statuses[tag.id] && <span className="font-semibold text-ink/70"> · {statuses[tag.id]}</span>}
         </span>
       ))}
     </div>

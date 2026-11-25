@@ -147,9 +147,16 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 3 · Presence and movement · M
 
-- [ ] **W3.1** The presence channel: position, room, status and pings (hold on a spot to ping it, and the ping shows on the minimap).
-- [ ] **W3.2** Smoothing, reconnects and the last-known-room fallback.
-- [ ] **W3.3** Engine actions for meaningful moves (entering a room, using a spot) where the game needs them.
+- [x] **W3.1** The presence channel: position, room, status and pings (hold on a spot to ping it, and the ping shows on the minimap). *(Done 2026-11-26.
+  - **The channel:** every world room gets its own data-only LiveKit room, `omc-<CODE>-world`, through `/api/rooms/<code>/presence`. A separate room means a player's voice connection never collides with it, since LiveKit allows one identity per room. The identity is the player id, and receivers check each packet's sender.
+  - **Walks:** [presence.ts](../src/lib/world/presence.ts) sends a walk as where you're heading, so other phones play the same walk at the same pace. Corrections go out at up to 4 a second while you move, plus your final spot.
+  - **Statuses:** "at Priya's laptop", "solving" and so on show on your name tag.
+  - **Pings:** holding a spot for half a second pings it. The ping shows in the building, on the minimap and, when off-screen, at the screen's edge with an arrow. Tapping it flies the camera there.)*
+- [x] **W3.2** Smoothing, reconnects and the last-known-room fallback. *(Done 2026-11-26.
+  - **Smoothing:** shared walk targets do it, and a teammate far from where they say they are is moved there at once.
+  - **Reconnects:** LiveKit handles short drops. [usePresence](../src/components/world/usePresence.ts) starts again after a lost channel, waiting 2, 5, 10, then 30 s, and so does a connection that can't even load.
+  - **Fallback:** without the channel, teammates stand at their saved place (W3.3), and hellos put everyone right on reconnecting.)*
+- [x] **W3.3** Engine actions for meaningful moves (entering a room, using a spot) where the game needs them. *(Done 2026-11-26. A `move` action saves the room and x where your walk ended, sent only when you walk into a new room. It's checked against the building, costs nothing, and shows as `place` on each player. Using a spot needed no action of its own: the tools a spot opens already send theirs, and what you're doing is a presence status.)*
 
 **Done when** four phones see each other walk smoothly, and a dropped connection degrades gracefully.
 
@@ -361,3 +368,12 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   - Finds made from a world sheet don't yet get the classic find moments (Moments): that belongs with W2.6's HUD.
 - 2026-11-26: W2.5 done on branch `world/w2-5-ambience` (on top of W2.4). Checked in headless Chrome: rain and clouds at laptop size; room names in the phone's whole-building view; the Lab 4 clock's second hand on the painted clock and rain on its window up close; 120 fps on the phone run, no page errors.
 - 2026-11-26: W2.6 done on branch `world/w2-6-hud` (on top of W2.5). Checked in headless Chrome in a four-player game at phone size: the question opens Solve, the dock opens Evidence, a timeline dot opens the badge log, and teammates' toasts show. No page errors. Phase 2 is done.
+- 2026-11-26: W3.1–W3.3 done on branch `world/w3-1-presence` (on top of W2.6). Checked with two headless Chrome phones on real LiveKit:
+  - B saw A's detective walk 135 cm, matching A's own walk
+  - B saw "A: look here" when A held the Lab 4 badge reader spot, held at B's screen edge with an arrow, since B was looking at Lab 4
+  - B's name tag for A read "at Priya's laptop"
+  - the server saved A's place (corridor, x 495)
+  - with LiveKit blocked, a reloaded B drew A at that saved place
+  - no page errors after one fix: a connection that can't load now counts as lost and is retried
+
+  Not tried on real phones or mobile data. Phase 3 is done.

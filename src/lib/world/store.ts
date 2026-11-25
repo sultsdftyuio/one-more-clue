@@ -53,8 +53,21 @@ export type WorldState = {
   moods: Record<string, Mood>;
   /** A walk asked for and not yet taken by the scene: who, and the x (cm) to walk to on their floor. */
   walkRequest: { id: string; x: number } | null;
+  /** My detective started (`to` set) or finished (`to` null) a walk: the scene reports it, presence sends it. */
+  myWalk: { x: number; z: number; to: number | null; n: number } | null;
+  /** Teammates' moves heard on the live channel, waiting for the scene. `snap` moves them there at once. */
+  remote: RemoteMove[];
+  /** What teammates are doing, by detective ("at Priya's laptop"). */
+  statuses: Record<string, string>;
+  /** Spots someone held to point at, for a few seconds each. */
+  pings: Ping[];
+  /** The live channel: off until it starts, then how it's going. */
+  presence: "off" | "connecting" | "live" | "reconnecting" | "lost";
   status: WorldStatus;
 };
+
+export type RemoteMove = { id: string; x: number; z: number; to: number | null; snap: boolean };
+export type Ping = { by: string; spot: string | null; x: number; z: number; at: number };
 
 export type WorldActions = {
   setView(view: PlayerView | null): void;
@@ -74,6 +87,13 @@ export type WorldActions = {
   /** Asks the scene to walk someone along their floor to x; a newer request replaces one not yet taken. */
   walk(id: string, x: number): void;
   takeWalk(): { id: string; x: number } | null;
+  reportWalk(walk: { x: number; z: number; to: number | null }): void;
+  pushRemote(move: RemoteMove): void;
+  takeRemote(): RemoteMove[];
+  setPresenceStatus(id: string, status: string): void;
+  /** Adds a ping and drops ones older than `PING_MS`. */
+  addPing(ping: Ping): void;
+  setPresence(state: WorldState["presence"]): void;
   setStatus(patch: Partial<WorldStatus>): void;
 };
 
@@ -94,6 +114,11 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     positions: {},
     moods: {},
     walkRequest: null,
+    myWalk: null,
+    remote: [],
+    statuses: {},
+    pings: [],
+    presence: "off",
     status: INITIAL_STATUS,
     ...initial,
 
@@ -134,6 +159,20 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
       const request = get().walkRequest;
       if (request) set({ walkRequest: null });
       return request;
+    },
+    reportWalk: (walk) => set({ myWalk: { ...walk, n: (get().myWalk?.n ?? 0) + 1 } }),
+    pushRemote: (move) => set({ remote: [...get().remote, move] }),
+    takeRemote: () => {
+      const moves = get().remote;
+      if (moves.length) set({ remote: [] });
+      return moves;
+    },
+    setPresenceStatus: (id, status) => {
+      if ((get().statuses[id] ?? "") !== status) set({ statuses: { ...get().statuses, [id]: status } });
+    },
+    addPing: (ping) => set({ pings: [...get().pings.filter((p) => ping.at - p.at < 4000 && !(p.by === ping.by)), ping] }),
+    setPresence: (presence) => {
+      if (get().presence !== presence) set({ presence });
     },
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));

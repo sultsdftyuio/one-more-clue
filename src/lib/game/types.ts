@@ -452,6 +452,11 @@ export type RoomState = {
    * Only set for rooms made from /world/<caseId>; missing means a classic room. See docs/world-overhaul.md.
    */
   world?: true;
+  /**
+   * Where each player's detective last stood in the world, by player id (W3.3): saved when they walk into a new room,
+   * so a phone that joins late, or loses the live channel, can still draw them in the right place.
+   */
+  places?: Record<string, { room: string; x: number; at: number }>;
 };
 
 export type InterrogationState = {
@@ -511,6 +516,8 @@ export type Action =
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }
+  /** The world only: my detective walked into a new room and stands at x (cm). Saved, never scored. */
+  | { type: "move"; room: string; x: number }
   | { type: "propose"; kind: ProposalKind; evidenceId?: string; report?: FinalReport }
   | { type: "vote"; proposalId: string; vote: "yes" | "no" }
   | { type: "withdraw"; proposalId: string }

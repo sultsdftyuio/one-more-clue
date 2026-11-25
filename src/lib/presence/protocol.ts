@@ -1,7 +1,7 @@
 /**
- * W0.5 presence spike (throwaway). What phones say to each other on the live
- * presence channel: where they stand, what they're doing, and pings. None of
- * this goes through the engine; it's cosmetic and can be lost.
+ * What phones say to each other on the live presence channel: where they stand, what they're doing, and pings.
+ * Started as the W0.5 spike; the world uses it since W3.1, where `id` is the sender's player id (the LiveKit
+ * identity, so receivers can check it). None of this goes through the engine; it's cosmetic and can be lost.
  * See docs/world-overhaul.md, sections 4 and 7.
  */
 
@@ -18,6 +18,9 @@ export type PosMessage = {
   x: number;
   /** Room id. */
   r: string;
+  /** The world: height in cm (which floor), and the x they're walking to, if they're on the move. */
+  z?: number;
+  to?: number;
   /**
    * Round-trip echoes, RTCP style: for each peer heard recently, the last
    * sequence number received from them and how many ms ago it arrived. The
@@ -31,10 +34,10 @@ export type PosMessage = {
 export type StatusMessage = { k: "status"; id: string; s: string };
 
 /** A tap on a spot that everyone should look at. */
-export type PingMessage = { k: "ping"; id: string; x: number; r: string };
+export type PingMessage = { k: "ping"; id: string; x: number; r: string; z?: number; spot?: string };
 
 /** Sent when a phone (re)joins, so others learn its name, room and status before it moves. */
-export type HelloMessage = { k: "hello"; id: string; name: string; x: number; r: string; s: string };
+export type HelloMessage = { k: "hello"; id: string; name: string; x: number; r: string; s: string; z?: number };
 
 /** Lab only: one tap starts a timed walk on every phone, so round trips get measured both ways. */
 export type TestMessage = { k: "test"; id: string; seconds: number };
@@ -42,7 +45,7 @@ export type TestMessage = { k: "test"; id: string; seconds: number };
 export type PresenceMessage = PosMessage | StatusMessage | PingMessage | HelloMessage | TestMessage;
 
 /** Who is on the channel, as presence reports it (Supabase), or as hellos report it (LiveKit). */
-export type Member = { id: string; name: string; x: number; r: string; s: string };
+export type Member = { id: string; name: string; x: number; r: string; s: string; z?: number };
 
 export type TransportName = "supabase" | "livekit";
 

@@ -18,6 +18,9 @@ export const ABILITY_ICON: Record<Ability, IconName> = { search: "search", inter
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+/** How long to hold a spot to ping it. */
+const HOLD_MS = 500;
+
 /**
  * The spots in the building (W2.4): a soft pulse on each thing worth a look, marked with the icon of every role that
  * has something to open there this chapter. The server decides which show (PlayerView.spots), so a spot never hints
@@ -25,8 +28,32 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * coordinates, like the name tags, so they're crisp, focusable and labelled, and they fade out as the camera pulls
  * back to the whole building.
  */
-export function WorldSpots({ plate, view, onOpen }: { plate: WorldPlate; view: PlayerView; onOpen: (spot: WorldSpotView) => void }) {
+export function WorldSpots({
+  plate,
+  view,
+  onOpen,
+  onPing,
+}: {
+  plate: WorldPlate;
+  view: PlayerView;
+  onOpen: (spot: WorldSpotView) => void;
+  /** Held for half a second: point the team at it (W3.1) instead of opening it. */
+  onPing?: (spot: WorldSpotView) => void;
+}) {
   const store = useWorldStore();
+  const hold = useRef<{ timer: number; fired: boolean } | null>(null);
+  const press = (spot: WorldSpotView) => {
+    if (!onPing) return;
+    const h = { timer: 0, fired: false };
+    h.timer = window.setTimeout(() => {
+      h.fired = true;
+      onPing(spot);
+    }, HOLD_MS);
+    hold.current = h;
+  };
+  const release = () => {
+    if (hold.current) window.clearTimeout(hold.current.timer);
+  };
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const spots = view.spots;
 
@@ -64,8 +91,20 @@ export function WorldSpots({ plate, view, onOpen }: { plate: WorldPlate; view: P
               else nodes.current.delete(spot.id);
             }}
             type="button"
-            onClick={() => onOpen(spot)}
-            aria-label={`${spot.name}: for the ${names}${mine ? " (you)" : ""}`}
+            onPointerDown={() => press(spot)}
+            onPointerUp={release}
+            onPointerLeave={release}
+            onPointerCancel={release}
+            onContextMenu={(e) => e.preventDefault()}
+            onClick={() => {
+              // A hold that pinged doesn't also open the spot.
+              if (hold.current?.fired) {
+                hold.current = null;
+                return;
+              }
+              onOpen(spot);
+            }}
+            aria-label={`${spot.name}: for the ${names}${mine ? " (you)" : ""}. Hold to point the team at it.`}
             style={{ visibility: "hidden" }}
             className="pointer-events-auto absolute top-0 left-0 grid size-11 place-items-center will-change-transform"
           >

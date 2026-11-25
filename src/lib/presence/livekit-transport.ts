@@ -49,7 +49,7 @@ export class LiveKitTransport implements PresenceTransport {
       const message = decode(decoder.decode(payload));
       if (!message || (participant && participant.identity !== message.id)) return;
       if (message.k === "hello") {
-        this.members.set(message.id, { id: message.id, name: message.name, x: message.x, r: message.r, s: message.s });
+        this.members.set(message.id, { id: message.id, name: message.name, x: message.x, r: message.r, s: message.s, z: message.z });
         emitMembers();
       }
       events.onMessage(message, payload.byteLength);

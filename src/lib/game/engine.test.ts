@@ -640,3 +640,19 @@ test("lobby reactions are kept briefly, rate-limited per player, and only in the
   assert.equal(applyAction(state, case001, "p2", { type: "cheer", kind: "popcorn" }, 40_000, newId).ok, false);
   assert.deepEqual(viewFor(state, case001, "p1", new Set()).cheers, []);
 });
+
+test("the world remembers where each detective last stood, checked against the building", () => {
+  let state = createRoom({ code: "W", caseFile: case001, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+  const move = (s: typeof state, room: string, x: number) => applyAction(s, case001, "p1", { type: "move", room, x }, 5, () => "id");
+  assert.equal(move(state, "lab4", 200).ok, false, "a classic room has no world to walk in");
+  state = { ...state, world: true };
+  const moved = move(state, "lab4", 200);
+  assert.ok(moved.ok);
+  if (!moved.ok) return;
+  assert.deepEqual(moved.state.places?.p1, { room: "lab4", x: 200, at: 5 });
+  assert.deepEqual(viewFor(moved.state, case001, "p1", new Set()).players[0].place, { room: "lab4", x: 200 });
+  const clamped = move(state, "lab4", 9999);
+  assert.ok(clamped.ok && clamped.state.places?.p1.x === 432, "kept inside the room");
+  assert.equal(move(state, "home", 0).ok, false, "not into a room off the plate");
+  assert.equal(move(state, "roof", 0).ok, false);
+});

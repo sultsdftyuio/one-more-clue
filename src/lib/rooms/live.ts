@@ -33,6 +33,21 @@ export async function liveToken(code: string, player: { id: string; name: string
   return { url: process.env.LIVEKIT_URL!, token: await token.toJwt() };
 }
 
+/**
+ * A pass into a world room's presence channel (W3.1): data messages only, no microphone. It's its own LiveKit room,
+ * `omc-<CODE>-world`, so it never collides with the same player's voice connection (one identity per LiveKit room).
+ * The identity is the player's id, so a phone can't speak for anyone else: receivers check each packet's sender.
+ */
+export async function presenceToken(code: string, player: { id: string; name: string }) {
+  const token = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+    identity: player.id,
+    name: player.name,
+    ttl: "6h",
+  });
+  token.addGrant({ roomJoin: true, room: `${liveRoom(code)}-world`, canSubscribe: true, canPublish: false, canPublishData: true });
+  return { url: process.env.LIVEKIT_URL!, token: await token.toJwt() };
+}
+
 let client: RoomServiceClient | null = null;
 
 /** Tells everyone connected that the room is now at `version`. Never throws: polling is the fallback. */

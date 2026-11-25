@@ -884,6 +884,17 @@ export function applyAction(
       break;
     }
 
+    case "move": {
+      // Where a detective stands in the world: checked against the building, saved for late joiners and as the
+      // fallback when the live channel drops. It costs nothing and changes nothing else.
+      const room = caseFile.world?.rooms.find((r) => r.id === action.room && r.box);
+      if (!state.world || !room?.box) return fail("That room isn't in the building.");
+      const x = Number(action.x);
+      if (!Number.isFinite(x)) return fail("Where did you go?");
+      next.places = { ...(state.places ?? {}), [me.id]: { room: room.id, x: Math.min(room.box.x1, Math.max(room.box.x0, x)), at: now } };
+      break;
+    }
+
     case "chat": {
       const text = String(action.text ?? "").trim().slice(0, MAX_CHAT);
       if (!text) return fail("Say something first.");
@@ -1182,6 +1193,8 @@ export type PublicPlayer = {
   bot: boolean;
   /** Their seat in the lobby's row (0-based). */
   seat: number;
+  /** Where their detective last stood in the world (W3.3), if they've walked into a room. */
+  place?: { room: string; x: number };
 };
 
 /**
@@ -1497,6 +1510,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     ready: state.ready.includes(p.id),
     bot: Boolean(p.bot),
     seat: seats[p.id] ?? -1,
+    ...(state.places?.[p.id] ? { place: { room: state.places[p.id].room, x: state.places[p.id].x } } : {}),
   });
   const me = state.players.find((p) => p.id === playerId)!;
   const abilities = abilitiesOf(caseFile, me);

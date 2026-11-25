@@ -40,3 +40,14 @@ test("status updates merge, so the scene can report frame rate without losing th
   store.getState().setStatus({ fps: 60, slowest: 18 });
   assert.deepEqual(store.getState().status, { stage: "ready", renderer: "WebGL", fps: 60, slowest: 18, dpr: 2, error: null });
 });
+
+test("the scene says who the camera follows, and only a change notifies", () => {
+  const store = createWorldStore();
+  let calls = 0;
+  store.subscribe(() => calls++);
+  store.getState().setFollowing("sam");
+  store.getState().setFollowing("sam");
+  assert.equal(store.getState().following, "sam");
+  store.getState().setFollowing(null);
+  assert.equal(calls, 2);
+});

@@ -11,6 +11,7 @@ import { createWorldStore } from "@/lib/world/store";
 import { worldArt } from "./assets";
 import { WorldCanvas } from "./WorldCanvas";
 import { WorldHud } from "./WorldHud";
+import { WorldMinimap } from "./WorldMinimap";
 import { WorldTags } from "./WorldTags";
 import { WorldContext } from "./useWorld";
 
@@ -110,7 +111,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
         <WorldTags plate={plate} cast={cast} />
-        <WorldHud code={code} view={view} cast={cast} stickers={stickers} />
+        <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} />
 
         {status.kind === "needsJoin" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">

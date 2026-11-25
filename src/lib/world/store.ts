@@ -16,7 +16,9 @@ import { sameCamera, type Camera, type Viewport, type ZoomRange } from "./camera
 export type CameraTarget =
   | { kind: "whole" }
   | { kind: "closeUp" }
+  /** A close-up on someone, which then follows them until a finger moves the camera. */
   | { kind: "person"; id: string }
+  /** Centred on a room, in close-up or nearer. */
   | { kind: "room"; id: string };
 
 export type WorldStatus = {
@@ -39,6 +41,8 @@ export type WorldState = {
   request: { target: CameraTarget; id: number } | null;
   /** The person (later, any object) the player tapped. */
   selected: string | null;
+  /** Whoever the camera is following, set by the scene. */
+  following: string | null;
   status: WorldStatus;
 };
 
@@ -52,6 +56,7 @@ export type WorldActions = {
   /** The scene takes the waiting request, if any. */
   takeRequest(): CameraTarget | null;
   select(id: string | null): void;
+  setFollowing(id: string | null): void;
   setStatus(patch: Partial<WorldStatus>): void;
 };
 
@@ -67,6 +72,7 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     range: { min: 1, max: 1, closeUp: 1 },
     request: null,
     selected: null,
+    following: null,
     status: INITIAL_STATUS,
     ...initial,
 
@@ -84,6 +90,9 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     },
     select: (selected) => {
       if (get().selected !== selected) set({ selected });
+    },
+    setFollowing: (following) => {
+      if (get().following !== following) set({ following });
     },
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));

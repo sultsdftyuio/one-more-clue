@@ -7,10 +7,16 @@ import {
   easeCamera,
   glide,
   isZoomedOut,
+  nextRoom,
+  onRoom,
   panBy,
+  pinchSettle,
   plateToScreen,
+  roomInView,
   sameCamera,
   screenToPlate,
+  SWIPE_MIN,
+  swipeTarget,
   wholeBuilding,
   zoomAt,
   zoomRange,
@@ -119,4 +125,57 @@ test("zoomed out means past halfway (in zoom) from the close-up to the whole bui
   assert.equal(isZoomedOut({ x: 0, y: 0, zoom: range.closeUp }, range), false);
   assert.equal(sameCamera({ x: 1, y: 1, zoom: 0.5 }, { x: 1.001, y: 1, zoom: 0.5 }), true);
   assert.equal(sameCamera({ x: 1, y: 1, zoom: 0.5 }, { x: 1.5, y: 1, zoom: 0.5 }), false);
+});
+
+// Rooms (W2.2)
+
+/** A phone on its side: in close-up it shows about one floor, so paging up and down matters. */
+const sideways = { w: 844, h: 390 };
+
+test("the camera knows which room it's looking at, even from the gap between two", () => {
+  const range = zoomRange(sideways, plate);
+  for (const room of plate.rooms) assert.equal(roomInView(plate, onRoom(sideways, plate, room.id, range.closeUp)!), room.id, room.id);
+  // Halfway between Lab 4 and the corridor, on the wall between them (x 440 cm): the nearer room wins.
+  const wall = { x: (440 - plate.extent.x0) * 2, y: (plate.extent.z1 - 440) * 2, zoom: 0.5 };
+  assert.ok(["lab4", "corridor"].includes(roomInView(plate, wall)!));
+});
+
+test("rooms have neighbours on every side the building goes on", () => {
+  assert.equal(nextRoom(plate, "lab4", "right"), "corridor");
+  assert.equal(nextRoom(plate, "lab4", "down"), "maker");
+  assert.equal(nextRoom(plate, "lab4", "left"), null, "nothing west of Lab 4");
+  assert.equal(nextRoom(plate, "lab4", "up"), null, "nothing above the top floor");
+  assert.equal(nextRoom(plate, "corridor", "left"), "lab4");
+  assert.equal(nextRoom(plate, "corridor", "down"), "lobby");
+  assert.equal(nextRoom(plate, "maker", "right"), "lobby");
+  assert.equal(nextRoom(plate, "lobby", "right"), "outside", "the main door leads out");
+  assert.equal(nextRoom(plate, "outside", "left"), "lobby", "back in at ground level, not up to the corridor");
+  assert.equal(nextRoom(plate, "outside", "right"), null);
+});
+
+test("in close-up a quick swipe pages to the next room, the way the finger pulls", () => {
+  const range = zoomRange(phone, plate);
+  const inLab = onRoom(phone, plate, "lab4", range.closeUp)!;
+  const left = swipeTarget(inLab, phone, plate, -1, 0.1)!;
+  assert.equal(roomInView(plate, left), "corridor", "swipe left: the room to the right comes in");
+  near(left.zoom, range.closeUp);
+  assert.equal(swipeTarget(inLab, phone, plate, 0.1, -1), null, "upright, both floors already show: nothing to page to");
+  const sideLab = onRoom(sideways, plate, "lab4", zoomRange(sideways, plate).closeUp)!;
+  assert.equal(roomInView(plate, swipeTarget(sideLab, sideways, plate, 0.1, -1)!), "maker", "on its side, swipe up: the floor below comes up");
+  assert.equal(swipeTarget(inLab, phone, plate, 1, 0), null, "nothing west of Lab 4: it just glides to the edge");
+  assert.equal(swipeTarget(inLab, phone, plate, -(SWIPE_MIN * 0.8), 0), null, "a slow fling only glides");
+  const whole = wholeBuilding(phone, plate);
+  assert.equal(swipeTarget(whole, phone, plate, -2, 0), null, "zoomed out, the picture glides freely");
+  // Pinched in nearer than the close-up: paging keeps that zoom.
+  const nearer = { ...inLab, zoom: range.max };
+  near(swipeTarget(nearer, phone, plate, -1, 0)!.zoom, range.max);
+});
+
+test("let go of a pinch past halfway out and the camera settles on the whole building", () => {
+  const range = zoomRange(phone, plate);
+  const half = Math.sqrt(range.min * range.closeUp);
+  const out = { x: 1600, y: 800, zoom: half * 0.9 };
+  assert.deepEqual(pinchSettle(out, phone, plate), wholeBuilding(phone, plate));
+  assert.equal(pinchSettle({ ...out, zoom: half * 1.1 }, phone, plate), null, "not past halfway: it stays put");
+  assert.equal(pinchSettle(wholeBuilding(phone, plate), phone, plate), null, "already all the way out");
 });

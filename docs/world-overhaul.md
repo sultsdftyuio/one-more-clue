@@ -124,7 +124,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 ### Phase 2 · The world scene · L
 
 - [x] **W2.1** Plate layers and occluders, so people stand behind desks and benches. *(Done 2026-11-25: a front layer of eight pieces (the reception desk, Lab 4's bench and chair, the maker space's printer bench, stool and laser cutter, and the corridor's bench and water cooler), each cut from the plate with its exact shape by [front.py](../art/world/front.py) and drawn over whoever stands behind. The sky and city as their own layer, for parallax, is left to W2.5.)*
-- [ ] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap.
+- [x] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap. *(Done 2026-11-25. Looking at someone ("Find me", arriving, a teammate's name) follows them until a finger, the wheel or another target takes over. In close-up a quick swipe pages to the next room, and a slow drag still pans freely. Upright phones already show both floors, so paging up and down only happens when the view would move. Letting go of a pinch past halfway out settles on the whole building. Double-tap and the buttons already went out and back. The minimap sits under the title card: the plate shrunk down, a frame for the view, the room you're in, a dot for everyone, and each room as a button.)*
 - [ ] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows.
 - [ ] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet.
 - [ ] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax.
@@ -315,3 +315,16 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   - `scripts/world-assets.py` now cuts every piece into `src/assets/world/case-001/front/` (8 files, 39 KB in all) and reads the plate from `art/world/`, not the mockup.
   - [plates.ts](../src/lib/world/plates.ts) lists the eight pieces, and a test keeps them the same as `front.json`. The scene already drew any number of occluders between the people behind them and everyone else.
   - Checked in headless Chrome with Mei moved behind the bench for the test: the bench top, a leg and the pencil cup draw over her, and nothing else changes. Hit tests use each piece's box, so a tap between a bench's legs counts as the bench.
+- 2026-11-25: W2.2 done on branch `world/w2-2-camera` (on top of W2.1).
+  - New camera logic in [camera.ts](../src/lib/world/camera.ts) (`roomInView`, `nextRoom`, `onRoom`, `swipeTarget`, `pinchSettle`), with tests. `following` is in the store, and the scene follows a sprite's live position, so it keeps up once people walk (W3).
+  - [WorldMinimap.tsx](../src/components/world/WorldMinimap.tsx) moves its frame through a store subscription, not React renders.
+  - Checked in headless Chrome at 390 × 844 with real touch events:
+    - arriving follows you in the corridor
+    - a quick swipe left pages outside and stops following
+    - two swipes right page back to Lab 4
+    - a slow drag stays in the room
+    - the minimap's "Outside" button goes there
+    - a pinch out settles on the whole building and hides the minimap
+    - "Close-up" flies back to you and follows again
+    - 116–120 fps, no page errors
+  - Not yet tried on a real phone.

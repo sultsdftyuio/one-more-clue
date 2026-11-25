@@ -13,8 +13,11 @@ import {
   easeCamera,
   glide,
   isZoomedOut,
+  onRoom,
   panBy,
+  pinchSettle,
   screenToPlate,
+  swipeTarget,
   wholeBuilding,
   zoomAt,
   zoomRange,
@@ -22,7 +25,7 @@ import {
   type Viewport,
   type ZoomRange,
 } from "@/lib/world/camera";
-import { drawOrder, FEET, outlineBox, personAt, roomBox, spriteOf, TILE } from "@/lib/world/geometry";
+import { drawOrder, FEET, outlineBox, personAt, spriteOf, TILE } from "@/lib/world/geometry";
 import { Gestures, type GestureEvent } from "@/lib/world/gestures";
 import type { WorldPlate } from "@/lib/world/plates";
 import type { CameraTarget, WorldStore } from "@/lib/world/store";
@@ -52,7 +55,8 @@ const SELECTED_GROWTH = 0.06;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-type Person = { id: string; image: Phaser.GameObjects.Image; scale: number; phase: number; grow: number };
+/** `height` is the sprite's height in plate px before breathing and growing, so following someone doesn't wobble. */
+type Person = { id: string; image: Phaser.GameObjects.Image; scale: number; height: number; phase: number; grow: number };
 
 class BuildingScene extends Phaser.Scene {
   private readonly options: WorldOptions;
@@ -63,6 +67,10 @@ class BuildingScene extends Phaser.Scene {
   private cam: Camera = { x: 0, y: 0, zoom: 1 };
   private goal: Camera | null = null;
   private fling = { vx: 0, vy: 0 };
+  /** Whoever the camera keeps in the middle of the close-up, until a finger, the wheel or another target takes over. */
+  private following: string | null = null;
+  /** A pinch happened since the fingers last all came up. */
+  private pinched = false;
   private plateImage: Phaser.GameObjects.Image | null = null;
   private mapImage: Phaser.GameObjects.Image | null = null;
   /** Set when the GPU can't hold the full plate, so the small copy is always drawn. */
@@ -112,7 +120,7 @@ class BuildingScene extends Phaser.Scene {
       if (!person.behind && !furnished) furnish();
       const sprite = spriteOf(plate, person);
       const image = this.add.image(sprite.feet.x, sprite.feet.y, "cast", person.tile).setOrigin(0.5, FEET).setScale(sprite.scale);
-      this.people.push({ id: person.id, image, scale: sprite.scale, phase: person.delay * 1000, grow: 1 });
+      this.people.push({ id: person.id, image, scale: sprite.scale, height: sprite.box.h, phase: person.delay * 1000, grow: 1 });
     }
     if (!furnished) furnish();
 
@@ -138,10 +146,13 @@ class BuildingScene extends Phaser.Scene {
 
     const target = state.takeRequest();
     if (target) {
+      this.follow(target.kind === "person" ? target.id : null);
       this.goal = this.cameraFor(target);
       this.fling = { vx: 0, vy: 0 };
     }
     if (this.gestures.active === 0) {
+      // Keep whoever we follow in the middle, wherever they go.
+      if (this.following) this.goal = this.followCamera(this.following) ?? this.goal;
       if (this.goal) {
         this.cam = easeCamera(this.cam, this.goal, dt);
         if (this.cam === this.goal) this.goal = null;
@@ -214,17 +225,20 @@ class BuildingScene extends Phaser.Scene {
     const { plate } = this.options;
     if (target.kind === "whole") return wholeBuilding(this.view, plate);
     if (target.kind === "closeUp") return closeUpOn(this.view, plate, this.cam.x, this.cam.y);
-    if (target.kind === "person") {
-      const person = plate.people.find((p) => p.id === target.id);
-      if (!person) return this.cam;
-      const { feet, box } = spriteOf(plate, person);
-      return closeUpOn(this.view, plate, feet.x, feet.y - box.h * 0.45);
-    }
-    const room = plate.rooms.find((r) => r.id === target.id);
-    if (!room) return this.cam;
-    const box = roomBox(plate, room);
-    const zoom = clamp(Math.min(this.view.w / box.w, this.view.h / box.h) * 0.96, this.range.min, this.range.max);
-    return clampCamera({ x: box.x + box.w / 2, y: box.y + box.h / 2, zoom }, this.view, plate, this.range);
+    if (target.kind === "person") return this.followCamera(target.id) ?? this.cam;
+    return onRoom(this.view, plate, target.id, this.cam.zoom, this.range) ?? this.cam;
+  }
+
+  /** A close-up on someone, from where their sprite is now (so it keeps up once people walk). */
+  private followCamera(id: string): Camera | null {
+    const p = this.people.find((x) => x.id === id);
+    return p ? closeUpOn(this.view, this.options.plate, p.image.x, p.image.y - p.height * 0.45) : null;
+  }
+
+  private follow(id: string | null) {
+    if (this.following === id) return;
+    this.following = id;
+    this.options.store.getState().setFollowing(id);
   }
 
   /**
@@ -237,6 +251,15 @@ class BuildingScene extends Phaser.Scene {
     else if (kind === "move") this.apply(this.gestures.move(id, x, y, t));
     else if (kind === "up") this.apply(this.gestures.up(id, t));
     else this.gestures.cancel(id);
+    // The last finger is up after a pinch out past halfway: settle on the whole building.
+    if (this.pinched && this.gestures.active === 0) {
+      this.pinched = false;
+      const settle = pinchSettle(this.cam, this.view, this.options.plate, this.range);
+      if (settle) {
+        this.goal = settle;
+        this.fling = { vx: 0, vy: 0 };
+      }
+    }
   }
 
   /** A mouse wheel turn at (x, y): zoom around the cursor. */
@@ -244,6 +267,7 @@ class BuildingScene extends Phaser.Scene {
     if (!this.plateImage) return;
     this.goal = null;
     this.fling = { vx: 0, vy: 0 };
+    this.follow(null);
     const zoom = clamp(this.cam.zoom * Math.exp(-dy * WHEEL), this.range.min, this.range.max);
     this.cam = clampCamera(zoomAt(this.cam, this.view, zoom, x, y), this.view, this.options.plate, this.range);
   }
@@ -254,14 +278,19 @@ class BuildingScene extends Phaser.Scene {
       if (e.kind === "grab") {
         this.goal = null;
         this.fling = { vx: 0, vy: 0 };
+        this.follow(null);
       } else if (e.kind === "pan") {
         this.cam = panBy(this.cam, e.dx, e.dy);
       } else if (e.kind === "pinch") {
+        this.pinched = true;
         const panned = panBy(this.cam, e.dx, e.dy);
         const zoom = clamp(panned.zoom * e.scale, this.range.min, this.range.max);
         this.cam = zoomAt(panned, this.view, zoom, e.x, e.y);
       } else if (e.kind === "fling") {
-        this.fling = { vx: e.vx, vy: e.vy };
+        // In close-up a quick swipe pages to the next room; otherwise the picture glides.
+        const page = swipeTarget(this.cam, this.view, plate, e.vx, e.vy, this.range);
+        if (page) this.goal = page;
+        else this.fling = { vx: e.vx, vy: e.vy };
       } else if (e.kind === "tap") {
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);
         store.getState().select(personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom));

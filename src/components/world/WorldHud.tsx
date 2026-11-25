@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
 import { useWorld } from "./useWorld";
 
-const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
+const chip =
+  "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
 // Solid, not frosted: a backdrop blur would re-blur the moving canvas every frame, which costs phones dearly.
 const glass = "rounded-2xl border-2 border-ink/80 bg-night/90";
 
@@ -19,10 +20,19 @@ function FrameMeter() {
   const renderer = useWorld((s) => s.status.renderer);
   const dpr = useWorld((s) => s.status.dpr);
   if (!renderer) return null;
-  const tone = fps >= 55 ? "text-teal" : fps >= 40 ? "text-mustard" : "text-coral";
+  const tone =
+    fps >= 55 ? "text-teal" : fps >= 40 ? "text-mustard" : "text-coral";
   return (
-    <p className={cx(glass, "px-2.5 py-1 text-right text-[11px] leading-tight font-bold text-cream/80")} aria-label={`Drawing at ${fps} frames a second`}>
-      <span className={cx("text-sm font-extrabold", tone)}>{fps || "–"} fps</span>
+    <p
+      className={cx(
+        glass,
+        "px-2.5 py-1 text-right text-[11px] leading-tight font-bold text-cream/80",
+      )}
+      aria-label={`Drawing at ${fps} frames a second`}
+    >
+      <span className={cx("text-sm font-extrabold", tone)}>
+        {fps || "–"} fps
+      </span>
       <br />
       {renderer} · {dpr}× · worst {slowest} ms
     </p>
@@ -62,55 +72,81 @@ export function WorldHud({
   view,
   cast,
   stickers,
+  minimap,
 }: {
   code: string;
   view: PlayerView | null;
   cast: Record<string, CastMember>;
   /** The detective sticker each player wears, by player id. */
   stickers: Record<string, string>;
+  /** Shown under the title card. */
+  minimap?: ReactNode;
 }) {
   const stage = useWorld((s) => s.status.stage);
   const failure = useWorld((s) => s.status.error);
-  const zoomedOut = useWorld((s) => s.status.stage === "ready" && isZoomedOut(s.camera, s.range));
+  const zoomedOut = useWorld(
+    (s) => s.status.stage === "ready" && isZoomedOut(s.camera, s.range),
+  );
   const selected = useWorld((s) => s.selected);
   const look = useWorld((s) => s.look);
   const select = useWorld((s) => s.select);
   const member = selected ? cast[selected] : undefined;
   const mine = view ? (stickers[view.me.id] ?? null) : null;
+  const followingMe = useWorld((s) => Boolean(mine) && s.following === mine);
 
   return (
     <>
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
-        <div className={cx(glass, "pointer-events-auto max-w-[70%] px-3 py-2")}>
-          <p className="text-[11px] font-extrabold tracking-widest text-mustard uppercase">World preview · Room {code}</p>
-          <h1 className="truncate font-display text-xl leading-tight text-cream">{view ? `${view.case.code} · ${view.case.title}` : "The building"}</h1>
-          {view && (
-            <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Your team">
-              {view.players.map((p) => {
-                const sticker = stickers[p.id];
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      disabled={!sticker}
-                      onClick={() => {
-                        if (!sticker) return;
-                        select(sticker);
-                        look({ kind: "person", id: sticker });
-                      }}
-                      className={cx(
-                        "flex items-center gap-1 rounded-full border border-cream/30 px-2 py-0.5 text-xs font-bold",
-                        p.id === view.me.id ? "bg-mustard text-ink" : "bg-cream/10 text-cream",
-                      )}
-                    >
-                      <span className={cx("size-1.5 rounded-full", p.online ? "bg-teal" : "bg-cream/40")} aria-hidden="true" />
-                      {p.id === view.me.id ? `${p.name} (you)` : p.name}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+        <div className="flex max-w-[70%] flex-col items-start gap-2">
+          <div
+            className={cx(glass, "pointer-events-auto max-w-full px-3 py-2")}
+          >
+            <p className="text-[11px] font-extrabold tracking-widest text-mustard uppercase">
+              World preview · Room {code}
+            </p>
+            <h1 className="truncate font-display text-xl leading-tight text-cream">
+              {view ? `${view.case.code} · ${view.case.title}` : "The building"}
+            </h1>
+            {view && (
+              <ul
+                className="mt-1.5 flex flex-wrap gap-1.5"
+                aria-label="Your team"
+              >
+                {view.players.map((p) => {
+                  const sticker = stickers[p.id];
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        disabled={!sticker}
+                        onClick={() => {
+                          if (!sticker) return;
+                          select(sticker);
+                          look({ kind: "person", id: sticker });
+                        }}
+                        className={cx(
+                          "flex items-center gap-1 rounded-full border border-cream/30 px-2 py-0.5 text-xs font-bold",
+                          p.id === view.me.id
+                            ? "bg-mustard text-ink"
+                            : "bg-cream/10 text-cream",
+                        )}
+                      >
+                        <span
+                          className={cx(
+                            "size-1.5 rounded-full",
+                            p.online ? "bg-teal" : "bg-cream/40",
+                          )}
+                          aria-hidden="true"
+                        />
+                        {p.id === view.me.id ? `${p.name} (you)` : p.name}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {minimap}
         </div>
         <FrameMeter />
       </header>
@@ -118,14 +154,17 @@ export function WorldHud({
       {stage === "loading" && (
         <p className="pointer-events-none absolute inset-0 grid place-items-center font-display text-2xl text-cream">
           <span className="flex items-center gap-3">
-            <span className="size-3 animate-pulse rounded-full bg-mustard" /> Opening the building…
+            <span className="size-3 animate-pulse rounded-full bg-mustard" />{" "}
+            Opening the building…
           </span>
         </p>
       )}
       {stage === "failed" && (
         <div className="absolute inset-0 grid place-items-center p-6">
           <div className="max-w-sm rounded-3xl border-[3px] border-ink bg-dusk p-6 text-center shadow-card">
-            <h2 className="font-display text-2xl text-cream">The building didn&apos;t open</h2>
+            <h2 className="font-display text-2xl text-cream">
+              The building didn&apos;t open
+            </h2>
             <p className="mt-2 font-semibold text-cream/80">{failure}</p>
             <Link href={`/r/${code}`} className={cx(chip, "mt-5 inline-block")}>
               Classic screens
@@ -140,9 +179,13 @@ export function WorldHud({
             aria-live="polite"
             className="pointer-events-auto relative mx-auto w-full max-w-md animate-pop-in rounded-3xl border-[3px] border-ink bg-cream p-4 pr-12 text-ink shadow-card"
           >
-            <h2 className="font-display text-2xl leading-tight">{member.name}</h2>
+            <h2 className="font-display text-2xl leading-tight">
+              {member.name}
+            </h2>
             <p className="text-sm font-extrabold text-ink/70">{member.line}</p>
-            {member.blurb && <p className="mt-1.5 text-sm font-semibold">{member.blurb}</p>}
+            {member.blurb && (
+              <p className="mt-1.5 text-sm font-semibold">{member.blurb}</p>
+            )}
             <button
               type="button"
               onClick={() => select(null)}
@@ -153,13 +196,26 @@ export function WorldHud({
             </button>
           </section>
         )}
-        <nav className="pointer-events-auto flex flex-wrap items-center justify-center gap-2" aria-label="Camera">
+        <nav
+          className="pointer-events-auto flex flex-wrap items-center justify-center gap-2"
+          aria-label="Camera"
+        >
           {zoomedOut ? (
-            <button type="button" className={chip} onClick={() => look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })}>
+            <button
+              type="button"
+              className={chip}
+              onClick={() =>
+                look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })
+              }
+            >
               Close-up
             </button>
           ) : (
-            <button type="button" className={chip} onClick={() => look({ kind: "whole" })}>
+            <button
+              type="button"
+              className={chip}
+              onClick={() => look({ kind: "whole" })}
+            >
               Whole building
             </button>
           )}
@@ -167,12 +223,13 @@ export function WorldHud({
             <button
               type="button"
               className={chip}
+              aria-pressed={followingMe}
               onClick={() => {
                 select(mine);
                 look({ kind: "person", id: mine });
               }}
             >
-              Find me
+              {followingMe ? "Following you" : "Find me"}
             </button>
           )}
           <InviteButton code={code} />

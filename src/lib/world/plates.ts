@@ -1,11 +1,14 @@
 /**
- * The painted buildings the world can open, until case files carry their own `world` section
- * (W1.1–W1.3 in docs/world-overhaul.md). Each one's numbers come from the painter's manifest,
- * art/mockups/<case>/world.json; the pictures live in src/assets/world/<case>/ (scripts/world-assets.py).
+ * The painted buildings the world can open, as the world scene draws them. The rooms, the plate's size and where
+ * each suspect stands come from the case's own `world` section (src/data/cases/<case>.world.ts); this adds what
+ * only the drawing needs: sprite tiles, the detectives, idle timing and the furniture people stand behind.
+ * The pictures live in src/assets/world/<case>/ (scripts/world-assets.py).
  *
  * World units are centimetres: x runs left to right, z runs up from the ground floor.
  * No React, no Phaser and no `@/` imports, so `node --test` can load it.
  */
+import { case001World } from "../../data/cases/case-001.world.ts";
+import type { CaseWorld } from "../game/types.ts";
 
 export type WorldRoom = {
   id: string;
@@ -55,31 +58,34 @@ export type WorldPlate = {
   occluders: WorldOccluder[];
 };
 
+/** The rooms in the building (away rooms aren't on the plate), and the plate's size, from the case's world. */
+function fromWorld(world: CaseWorld) {
+  const rooms = world.rooms.flatMap((r) => (r.box ? [{ id: r.id, name: r.name, ...r.box }] : []));
+  return { extent: world.plate.extent, pxPerCm: world.plate.pxPerCm, size: world.plate.size, rooms };
+}
+
+/** Where a suspect waits, from the case's world. */
+const standing = (world: CaseWorld, suspect: string) => {
+  const { x, z } = world.people[suspect];
+  return { suspect, x, z };
+};
+
 const case001: WorldPlate = {
   caseId: "case-001",
   label:
     "The Halden Innovation Building at night, cut open: Lab 4 above the dark maker space, the corridor above the lobby and its stairs, and the car park and North Gate outside in the rain.",
-  extent: { x0: -60, x1: 1560, z0: -70, z1: 780 },
-  pxPerCm: 2,
-  size: { w: 3240, h: 1700 },
-  rooms: [
-    { id: "lab4", name: "Lab 4", x0: 8, x1: 432, z0: 300, z1: 580 },
-    { id: "maker", name: "Maker space", x0: 8, x1: 432, z0: 0, z1: 280 },
-    { id: "corridor", name: "Corridor", x0: 448, x1: 952, z0: 300, z1: 580 },
-    { id: "lobby", name: "Lobby", x0: 448, x1: 952, z0: 0, z1: 280 },
-    { id: "outside", name: "Outside", x0: 974, x1: 1556, z0: 0, z1: 300 },
-  ],
+  ...fromWorld(case001World),
   // Back to front, as the "001 · Close-up" board draws them. Ozzy stands behind the security desk:
   // the board lowers him so his head still clears it at 80% size (115 - 75 × 0.8).
   people: [
     { id: "mei", tile: 9, x: 165, z: 306, detective: true, delay: 0.2 },
-    { id: "priya", tile: 0, x: 300, z: 306, suspect: "triangle", delay: 0.9 },
+    { id: "priya", tile: 0, ...standing(case001World, "triangle"), delay: 0.9 },
     { id: "jo", tile: 11, x: 388, z: 306, detective: true, delay: 1.4 },
     { id: "sam", tile: 8, x: 630, z: 306, detective: true, delay: 0.5 },
-    { id: "rena", tile: 6, x: 800, z: 306, suspect: "rectangle", delay: 1.1 },
-    { id: "ozzy", tile: 4, x: 748, z: 55, suspect: "circle", behind: true, delay: 1.7 },
+    { id: "rena", tile: 6, ...standing(case001World, "rectangle"), delay: 1.1 },
+    { id: "ozzy", tile: 4, ...standing(case001World, "circle"), behind: true, delay: 1.7 },
     { id: "ali", tile: 10, x: 600, z: 6, detective: true, delay: 0.3 },
-    { id: "squires", tile: 2, x: 886, z: 6, suspect: "square", delay: 1.0 },
+    { id: "squires", tile: 2, ...standing(case001World, "square"), delay: 1.0 },
   ],
   occluders: [
     {

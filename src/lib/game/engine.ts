@@ -33,6 +33,7 @@ import type {
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
+import { checkWorld } from "./world.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -1047,6 +1048,7 @@ export function checkCase(caseFile: CaseFile): string[] {
   }
   problems.push(...checkInterrogation(caseFile, byId));
   problems.push(...checkChains(caseFile, byId));
+  problems.push(...checkWorld(caseFile));
   const { solution } = caseFile;
   if (!caseFile.suspects.some((s) => s.id === solution.culprit)) problems.push("the culprit is not a suspect");
   if (!solution.motives.some((m) => m.id === solution.motive)) problems.push("the motive is not one of the options");

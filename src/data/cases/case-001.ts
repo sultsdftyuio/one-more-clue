@@ -1,4 +1,5 @@
 import type { CaseFile } from "@/lib/game/types";
+import { case001World } from "./case-001.world.ts";
 
 /**
  * Case 001: The Last Message.
@@ -101,6 +102,8 @@ export const case001: CaseFile = {
       { evidence: "question-ozzy-found", who: "circle", room: "lab4", at: "9:17 PM", says: true },
     ],
   },
+  // The painted building for the world game (docs/world-overhaul.md).
+  world: case001World,
   minPlayers: 2,
   maxPlayers: 4,
   story: [

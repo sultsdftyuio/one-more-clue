@@ -106,6 +106,20 @@ Give a case a `nightMap` and the Archivist can switch the wall to a map: the pla
 - **Moments.** A sighting without an `until` shows five minutes either side; a fast night sets `moment` lower (Case 004's countdown uses one).
 - `npm test` checks every sighting's piece, room, person and time, and pins down each case's clashes, so a change to a case can't quietly add or lose one.
 
+## The world
+
+A case with a `world` can be played inside its painted building (the world game, still on a hidden route: [world-overhaul.md](world-overhaul.md)). The world lives in its own file, `src/data/cases/<case>.world.ts`, and is checked with the rest of the case. [Case 001's](../src/data/cases/case-001.world.ts) is the example to copy.
+
+- **The building.** Paint it flat and cut open, floors stacked, with [art/world/](../art/world/), which also writes the manifest (`world.json`) the numbers come from. Units are centimetres: x runs left to right, z up from the ground floor. `plate` gives the painted layers (files in `src/assets/world/<case>/`), the world they cover (`extent`) and the pixels per cm; the size has to match.
+- **Rooms.** Every room on the map of the night is a world room with the same id, and the same kind: inside, `outside` (the map's `outdoor`) or `away`. Rooms in the building have a box and stand on a floor (the box starts at the floor's `z`), and don't overlap. Away rooms (gone home, across town) aren't on the plate, so they have neither. A world can add rooms the night never visits, such as a closed maker space, to give a side job somewhere to happen.
+- **Links.** Doors, stairs, a lift or a gate join rooms, both ways. Each `path` is the walk, from a point inside one room to a point inside the other. Every room in the building has to be reachable from every other one.
+- **Spots.** These are what people tap. Put each record where it lives: the badge log on its readers, the visitor sheet on the security desk, a photo at the place it was taken (a `view`). Every record of a core role (a chat, log, document, photo, footage or recording) needs a spot, and a spot's `roles` must include the role each of its pieces belongs to. A record that isn't anywhere in the building (a web page, an email) goes in `elsewhere`, saying where it is instead. Statements don't need spots, since the suspects say them, and nor do findings, because they live inside a photo or a cross-check.
+- **People.** Every suspect waits somewhere in the building, inside their room's box, in a plain mood. Nobody stands anywhere, or looks any way, that tells the team more than the case file does.
+- **Side jobs.** Each one starts at a spot (kind `sidejob`) and wins a small help: a coffee (the next question or search is free), a lightbulb (a room glows) or a sore spot (that suspect's touchy topic). `event` jobs fire for the whole team at a story beat.
+- **Sore spots.** Every suspect has one, innocent ones too, so having one never singles anyone out. A sore spot is a topic, never a verdict. `about` names the evidence the topic comes from. Give the culprit's the same weight as everyone else's: Case 001's Rena gets "leaving at nine", the same story the professor tells.
+- **Nothing extra.** The world is held to the case's timeline. No prop, mood or spot may hint at anything the case file doesn't already say ([world-overhaul.md](world-overhaul.md), ground rule 4).
+- `npm test` checks all of it: rooms against the map of the night, every sighting's room, links and reachability, every record's spot, people in their rooms, side jobs' spots, and a sore spot for every suspect.
+
 ## Voices
 
 Suspects and the narrator are heard, not only read. Every line a case speaks gets a recording: interview answers and cracks, the confrontation (opening, claims, caught lies, walkout), the chapter openings' `line` and `narration` beats, the confession (with "It was me."), each replay's `say`, and five stock shrugs per suspect. The briefing beats are only voiced for a case without an opening film. `scripts/voice-lines.ts <case>` lists them.

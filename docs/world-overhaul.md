@@ -65,7 +65,7 @@ Players and the owner found the current game reads like a website: tabs, cards a
 - Send at most 5–10 position updates per second per player and smooth them on the other phones. If the channel drops, fall back to showing each player in their last known room.
 - Capacity is a known risk: today's free plans won't hold heavy traffic (see decision 6).
 
-### Data: the `world` section of a case (shape to settle in W1.1)
+### Data: the `world` section of a case (the first sketch; the settled shape is `CaseWorld` in [types.ts](../src/lib/game/types.ts))
 
 ```ts
 world: {
@@ -107,17 +107,17 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 1 · World data and checks · M
 
-- [ ] **W1.1** Add `CaseWorld` and friends to [types.ts](../src/lib/game/types.ts).
-- [ ] **W1.2** Add `checkWorld` to `checkCase`. It must confirm that:
+- [x] **W1.1** Add `CaseWorld` and friends to [types.ts](../src/lib/game/types.ts). *(Done 2026-11-25. The shape changed from the sketch in section 4: rooms have a `box` (x and z), and away rooms have none. Floors are a single floor line `z`. Spots can hold several pieces, and `kind` is `object`, `device`, `view` or `sidejob`. Suspects stand in `people`, not at spots. Records that aren't in the building go in `elsewhere`. Each sore spot names the evidence it comes from in `about`.)*
+- [x] **W1.2** Add `checkWorld` to `checkCase` ([world.ts](../src/lib/game/world.ts)). It must confirm that:
   - every `nightMap` room has a world room
   - every physical evidence item has a spot
   - every inside room is reachable through links
   - every sighting's room exists
   - every side job points at a real spot
   - every suspect has a sore spot
-- [ ] **W1.3** Write Case 001's world from the mockup ([world.json](../art/mockups/case001/world.json)) into `src/data/cases/case-001.world.ts`.
-- [ ] **W1.4** Tests in [cases.test.ts](../src/lib/game/cases.test.ts) for the world checks.
-- [ ] **W1.5** Add "The world" section to [case-system.md](case-system.md): how to lay out a building, place spots and pick sore spots.
+- [x] **W1.3** Write Case 001's world from the mockup ([world.json](../art/mockups/case001/world.json)) into `src/data/cases/case-001.world.ts`.
+- [x] **W1.4** Tests in [cases.test.ts](../src/lib/game/cases.test.ts) for the world checks.
+- [x] **W1.5** Add "The world" section to [case-system.md](case-system.md): how to lay out a building, place spots and pick sore spots.
 
 **Done when** `npm test` passes and Case 001 has a complete, checked world.
 
@@ -299,7 +299,14 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
 
 - 2026-11-20: plan written from the design discussions and the Case 001 mockups.
 - 2026-11-20: the owner approved the plan with the recommended pick for all seven decisions. W0.1 done. Next: W0.2–W0.5 and W0.7, plus the owner's playtest (W0.6).
-- 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas` (PR once the owner OKs it). Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.
+- 2026-11-20: W0.2–W0.4 done on branch `world/w0-2-4-world-canvas`, merged as PR #38. Bundle: Phaser loads only in the world canvas, 352 KB gzipped (1.37 MB raw), plus 3.5 KB of scene code; the world page itself is 114 KB first load; every classic page's first load is unchanged (home 217 KB, room 209 KB). Art: 614 KB. Frame rate, production build in headless Chrome as a 390 × 844 phone (drawn at 2×), laptop Intel Iris Xe GPU, 120 Hz: 120 fps through idle, pan, fling, pinch and double-tap, slowest frame 17 ms. With the CPU slowed 4× (the usual mid-range phone stand-in) runs swung from 86–114 fps down to 25–95 fps even when idle, which points at the laptop's mixed fast/slow cores rather than the scene; the profile puts page code at about 1 ms a frame at full speed. The real test is a phone: open `/world/case-001`, then share the room's world link.
 - 2026-11-20: W0.5 done (PR #39): a presence spike with both services, a hidden `/lab/presence` page and two benches. Supabase's free plan throttles any phone sending about 8 or more messages a second, and was about 140 ms one way from the UAE. LiveKit data messages took about 15–30 ms and lost nothing at 10/s. Recommends swapping decision 2 (LiveKit for presence), waiting for the owner's OK. The real-phone run is still to do (section 7).
-- 2026-11-20: W0.7 done. The world painter moved to [art/world/](../art/world/), with trimmed copies of the `omc_cinema` code it used. `python art/world/world.py` renders the Case 001 plate byte-identical to the mockup's `world.webp`, and the same `world.json`, from this repo alone. The mockup copy in `art/mockups/case001/` is unchanged and still needs the videos repo.
+- 2026-11-20: W0.7 done (PR #40). The world painter moved to [art/world/](../art/world/), with trimmed copies of the `omc_cinema` code it used. `python art/world/world.py` renders the Case 001 plate byte-identical to the mockup's `world.webp`, and the same `world.json`, from this repo alone. The mockup copy in `art/mockups/case001/` is unchanged and still needs the videos repo.
 - 2026-11-21: the owner chose LiveKit data messages for presence (decision 2 updated). W3.1 builds on LiveKit.
+- 2026-11-25: W1.1–W1.5 done on branch `world/w1-world-data`. Case 001's world is in [case-001.world.ts](../src/data/cases/case-001.world.ts):
+  - seven rooms (the maker space added, plus the two away rooms) and four links
+  - eight record spots and seven side-job spots
+  - all four suspects, the eight mockup side jobs and a sore spot each, as the mockups chose them
+  - two records `elsewhere`: Kestrel's website and Squires's email
+
+  `checkWorld` runs in `checkCase`, with six new tests in cases.test.ts. [plates.ts](../src/lib/world/plates.ts) now reads its rooms, plate size and suspect positions from the case's world, so the building is written down once. Three things the world has that the plate doesn't paint yet, for W2.1/W2.4: the lobby's door into the maker space, the lobby camera and the corridor's fuse cupboard. Side-job spot positions are placeholders until W6.

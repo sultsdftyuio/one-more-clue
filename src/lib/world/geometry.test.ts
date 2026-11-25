@@ -6,6 +6,7 @@ import { castOf, shortName, stickerOf, stickersFor } from "./cast.ts";
 import { CHARACTER_SCALE, drawOrder, fromPlate, lightAt, outlineBox, personAt, roomAt, roomBox, spriteOf, toPlate, walkTarget } from "./geometry.ts";
 import { worldOf } from "./plates.ts";
 import { frameOf } from "./sprites.ts";
+import { case001World } from "../../data/cases/case-001.world.ts";
 
 const plate = worldOf("case-001")!;
 const person = (id: string) => plate.people.find((p) => p.id === id)!;
@@ -159,4 +160,14 @@ test("someone who has walked is drawn, and tapped, where they are now", () => {
   assert.equal(personAt(plate, body.x, body.y, 0, { sam: moved }), "sam");
   const old = toPlate(plate, 630, 380);
   assert.notEqual(personAt(plate, old.x, old.y, 0, { sam: moved }), "sam", "not where they used to be");
+});
+
+test("no spot covers someone standing in the building, so tapping a person never opens a tool instead", () => {
+  for (const spot of case001World.spots) {
+    const p = toPlate(plate, spot.x, spot.z);
+    // A spot's button is 44 CSS px; at the close-up (0.5 CSS px per plate px) that's 88 plate px across.
+    for (const [dx, dy] of [[0, 0], [-40, 0], [40, 0], [0, -40], [0, 40]]) {
+      assert.equal(personAt(plate, p.x + dx, p.y + dy), null, `${spot.id} sits on someone`);
+    }
+  }
 });

@@ -109,6 +109,7 @@ export function checkWorld(caseFile: CaseFile): string[] {
   // Spots: in a room in the building, opening real evidence for the roles it belongs to.
   for (const spot of world.spots) {
     const room = rooms.get(spot.room);
+    if (!spot.name.trim()) problems.push(`spot "${spot.id}" has no name`);
     if (!room?.box) problems.push(`spot "${spot.id}" is in "${spot.room}", which isn't a room in the building`);
     else if (!inside(room.box, spot.x, spot.z)) problems.push(`spot "${spot.id}" isn't inside "${spot.room}"`);
     for (const role of spot.roles ?? []) if (!coreRoles.has(role)) problems.push(`spot "${spot.id}" opens for "${role}", which isn't a core role`);
@@ -164,3 +165,22 @@ export function checkWorld(caseFile: CaseFile): string[] {
   return problems;
 }
 
+/** A spot as a player's phone gets it: where it is, and the roles with something to open there by now. */
+export type WorldSpotView = { id: string; name: string; room: string; x: number; z: number; kind: "object" | "device" | "view"; roles: string[] };
+
+/**
+ * The spots that show in a chapter: those holding evidence that exists by then, each marked with the roles that
+ * evidence belongs to (not every role the spot could ever open for), so a spot never hints at a later chapter.
+ * Side-job spots wait for the side jobs (W6). Positions aren't secret; what's found there stays on the server.
+ */
+export function spotsFor(caseFile: CaseFile, chapter: number): WorldSpotView[] {
+  const world = caseFile.world;
+  if (!world) return [];
+  const byId = new Map(caseFile.evidence.map((e) => [e.id, e]));
+  return world.spots.flatMap((spot) => {
+    if (spot.kind === "sidejob") return [];
+    const open = (spot.evidence ?? []).map((id) => byId.get(id)).filter((e) => e && e.chapter <= chapter);
+    const roles = [...new Set(open.map((e) => e!.role))].filter((r) => spot.roles?.includes(r));
+    return roles.length ? [{ id: spot.id, name: spot.name, room: spot.room, x: spot.x, z: spot.z, kind: spot.kind, roles }] : [];
+  });
+}

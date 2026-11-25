@@ -239,11 +239,11 @@ export type CaseWorld = {
   /** The ways between rooms, both directions. `path` is the walk, from inside `from` to inside `to`. */
   links: { from: string; to: string; kind: "door" | "stairs" | "lift" | "gate"; path: [number, number][] }[];
   /**
-   * The things people tap. `evidence` is what opens there (every record in the case has a spot, unless it's in
+   * The things people tap, each with a short `name` ("Priya's laptop") for screen readers. `evidence` is what opens there (every record in the case has a spot, unless it's in
    * `elsewhere`), and `roles` who can open it, which has to include the role each piece belongs to.
    * A `view` is where a photo or a camera looks from; a `sidejob` is where a side job starts.
    */
-  spots: { id: string; room: string; x: number; z: number; kind: "object" | "device" | "view" | "sidejob"; evidence?: string[]; roles?: string[] }[];
+  spots: { id: string; name: string; room: string; x: number; z: number; kind: "object" | "device" | "view" | "sidejob"; evidence?: string[]; roles?: string[] }[];
   /** Records that aren't anywhere in the building (a web page, an email), each with where it is instead. */
   elsewhere?: Record<string, string>;
   /** Where each suspect waits now, by suspect id: their feet at (x, z). */

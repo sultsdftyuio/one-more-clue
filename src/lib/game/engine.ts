@@ -33,7 +33,7 @@ import type {
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
-import { checkWorld } from "./world.ts";
+import { checkWorld, spotsFor, type WorldSpotView } from "./world.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -1319,6 +1319,8 @@ export type PlayerView = {
   checked: string[];
   /** For the Archivist: the map of the night, when the case has one. */
   nightMap: NightMapView | null;
+  /** The world's spots open this chapter, with who can use each (empty outside the investigation or without a world). */
+  spots: WorldSpotView[];
   /** The last piece someone showed on every phone. */
   spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
   /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
@@ -1634,6 +1636,7 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
     nightMap: abilities.includes("crosscheck") ? mapFor(state, caseFile, me) : null,
+    spots: state.phase === "investigation" ? spotsFor(caseFile, state.chapter) : [],
     wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
     strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,

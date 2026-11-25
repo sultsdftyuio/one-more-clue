@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { myName, randomName, rememberName } from "@/components/game/names";
 import { useRoom } from "@/components/game/useRoom";
+import type { WorldSpotView } from "@/lib/game/world";
 import { castOf, stickersFor } from "@/lib/world/cast";
 import { worldOf } from "@/lib/world/plates";
 import { createWorldStore } from "@/lib/world/store";
@@ -12,6 +13,8 @@ import { worldArt } from "./assets";
 import { WorldCanvas } from "./WorldCanvas";
 import { WorldHud } from "./WorldHud";
 import { WorldMinimap } from "./WorldMinimap";
+import { WorldSheets } from "./WorldSheets";
+import { WorldSpots } from "./WorldSpots";
 import { WorldTags } from "./WorldTags";
 import { WorldContext } from "./useWorld";
 
@@ -75,7 +78,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   const plate = worldOf(caseId);
   const art = worldArt(caseId);
   const [store] = useState(() => createWorldStore());
-  const { status, error, join } = useRoom(code, false);
+  const { status, error, join, act, busy } = useRoom(code, false);
+  const [spot, setSpot] = useState<WorldSpotView | null>(null);
   const view = status.kind === "ready" ? status.view : null;
 
   useEffect(() => {
@@ -114,6 +118,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     <WorldContext.Provider value={store}>
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
+        {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} />}
         <WorldTags plate={plate} cast={cast} />
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} />
 
@@ -142,6 +147,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
           </p>
         )}
       </div>
+      {view && <WorldSheets view={view} act={act} busy={busy} spot={spot} onClose={() => setSpot(null)} />}
     </WorldContext.Provider>
   );
 }

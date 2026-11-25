@@ -13,7 +13,7 @@ import { linesOf } from "./lines.ts";
 import { costMinutes, nightMinutes, parseTime } from "./clock.ts";
 import { addPlayer, applyAction, bestChain, bestSearchHit, createRoom, mapFor, normalizeTerm, OBJECTION_MS, PIN_LIMIT, searchNote, viewFor } from "./engine.ts";
 import type { Action, CaseFile, CaseWorld, FinalReport, RoomState } from "./types.ts";
-import { checkWorld } from "./world.ts";
+import { checkWorld, spotsFor } from "./world.ts";
 import { worldOf } from "../world/plates.ts";
 
 // With four players the core roles go round in order:
@@ -674,4 +674,23 @@ test("the world scene draws the case's own building: its rooms and where its sus
   assert.deepEqual(plate.rooms.map((r) => r.id), world.rooms.filter((r) => r.box).map((r) => r.id));
   for (const r of plate.rooms) assert.deepEqual({ x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 }, world.rooms.find((w) => w.id === r.id)!.box);
   for (const p of plate.people.filter((p) => p.suspect)) assert.deepEqual({ x: p.x, z: p.z }, { x: world.people[p.suspect!].x, z: world.people[p.suspect!].z }, p.id);
+});
+
+test("the world's spots show chapter by chapter, marked only with roles that have something there by then", () => {
+  const ids = (chapter: number) => spotsFor(case001, chapter).map((s) => s.id).sort();
+  assert.deepEqual(ids(1), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader"]);
+  assert.deepEqual(ids(2), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader", "security-desk"], "the visitor sheet and the guard tour arrive");
+  assert.deepEqual(ids(3), ["anpr", "cabinet", "lab-reader", "lab-view", "laptop", "lobby-camera", "lobby-reader", "security-desk"], "the lobby and gate cameras in the last chapter");
+  const laptop = spotsFor(case001, 1).find((s) => s.id === "laptop")!;
+  assert.deepEqual(laptop.roles.sort(), ["archivist", "tech"]);
+  assert.equal(laptop.name, "Priya's laptop");
+  assert.ok(spotsFor(case001, 3).every((s) => (s.kind as string) !== "sidejob"), "side jobs wait for W6");
+  assert.deepEqual(spotsFor(case002, 1), [], "a case without a world has no spots");
+});
+
+test("a phone only gets spots during the investigation", () => {
+  const state = createRoom({ code: "S", caseFile: case001, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
+  assert.deepEqual(viewFor(state, case001, "p1", new Set()).spots, [], "not in the lobby");
+  const playing = { ...state, phase: "investigation" as const, chapter: 1 };
+  assert.deepEqual(viewFor(playing, case001, "p1", new Set()).spots, spotsFor(case001, 1));
 });

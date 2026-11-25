@@ -136,7 +136,12 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
   - clouds in a sky layer that scrolls at 70% of the camera, for parallax
 
   It all holds still with reduced motion. [WorldRoomTags](../src/components/world/WorldRoomTags.tsx) labels the rooms as the camera pulls back, while the name tags fade. The sky as its own painted layer wasn't needed: the clouds give the depth.)*
-- [ ] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip.
+- [x] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip. *(Done 2026-11-26. The [HUD](../src/components/world/WorldHud.tsx) shows:
+  - the chapter pill and question (tap it to solve)
+  - the night clock as a chip, with room for the helps (W6)
+  - the team (tap a name to find them) and the minimap
+
+  [WorldGame](../src/components/world/WorldGame.tsx) brings the classic game's own pieces over the building: the dock and its panels (Evidence, Board, Solve, Team, Notes), the vote bar, teammates' news, find moments, cracks, lie calls and chapter stories. A [timeline bar](../src/components/world/TimelineBar.tsx) above the dock puts a dot on every timed moment in your evidence, and tapping one opens its piece. The frame meter now only shows with `?fps` in the address. Chapter 1 can now be played from inside the world.)*
 
 **Done when** you can walk Case 001's building, see everyone and open today's tools from real objects.
 
@@ -355,3 +360,4 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
     - no page errors
   - Finds made from a world sheet don't yet get the classic find moments (Moments): that belongs with W2.6's HUD.
 - 2026-11-26: W2.5 done on branch `world/w2-5-ambience` (on top of W2.4). Checked in headless Chrome: rain and clouds at laptop size; room names in the phone's whole-building view; the Lab 4 clock's second hand on the painted clock and rain on its window up close; 120 fps on the phone run, no page errors.
+- 2026-11-26: W2.6 done on branch `world/w2-6-hud` (on top of W2.5). Checked in headless Chrome in a four-player game at phone size: the question opens Solve, the dock opens Evidence, a timeline dot opens the badge log, and teammates' toasts show. No page errors. Phase 2 is done.

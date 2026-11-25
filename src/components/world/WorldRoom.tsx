@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { myName, randomName, rememberName } from "@/components/game/names";
 import { useRoom } from "@/components/game/useRoom";
+import type { Panel } from "@/components/game/Investigation";
 import type { WorldSpotView } from "@/lib/game/world";
 import { castOf, stickersFor } from "@/lib/world/cast";
 import { worldOf } from "@/lib/world/plates";
@@ -13,7 +14,7 @@ import { worldArt } from "./assets";
 import { WorldCanvas } from "./WorldCanvas";
 import { WorldHud } from "./WorldHud";
 import { WorldMinimap } from "./WorldMinimap";
-import { WorldSheets } from "./WorldSheets";
+import { WorldGame } from "./WorldGame";
 import { WorldSpots } from "./WorldSpots";
 import { WorldRoomTags } from "./WorldRoomTags";
 import { WorldTags } from "./WorldTags";
@@ -81,6 +82,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   const [store] = useState(() => createWorldStore());
   const { status, error, join, act, busy } = useRoom(code, false);
   const [spot, setSpot] = useState<WorldSpotView | null>(null);
+  const [panel, setPanel] = useState<Panel | null>(null);
   const view = status.kind === "ready" ? status.view : null;
 
   useEffect(() => {
@@ -122,7 +124,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} />}
         <WorldRoomTags plate={plate} />
         <WorldTags plate={plate} cast={cast} />
-        <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} />
+        <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} />
 
         {status.kind === "needsJoin" && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
@@ -149,7 +151,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
           </p>
         )}
       </div>
-      {view && <WorldSheets view={view} act={act} busy={busy} spot={spot} onClose={() => setSpot(null)} />}
+      {view && <WorldGame view={view} act={act} busy={busy} spot={spot} onCloseSpot={() => setSpot(null)} panel={panel} onPanel={setPanel} />}
     </WorldContext.Provider>
   );
 }

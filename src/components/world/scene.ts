@@ -25,13 +25,14 @@ import {
   type Viewport,
   type ZoomRange,
 } from "@/lib/world/camera";
-import { drawOrder, FEET, outlineBox, personAt, spriteOf, TILE } from "@/lib/world/geometry";
+import { drawOrder, FEET, fromPlate, lightAt, outlineBox, personAt, spriteOf, toPlate, walkTarget, type Spot } from "@/lib/world/geometry";
 import { Gestures, type GestureEvent } from "@/lib/world/gestures";
-import type { WorldPlate } from "@/lib/world/plates";
+import type { WorldPerson, WorldPlate } from "@/lib/world/plates";
+import { frameOf, poseAt, SHEET_GAP, SHEETS, TILE, WALK_CM_PER_S, type Pose } from "@/lib/world/sprites";
 import type { CameraTarget, WorldStore } from "@/lib/world/store";
 
 /** Where the case's pictures are served from (see assets.ts). */
-export type WorldArt = { plate: string; plateMap: string; sprites: string; occluders: Record<string, string> };
+export type WorldArt = { plate: string; plateMap: string; sheets: string[]; occluders: Record<string, string> };
 
 export type WorldOptions = {
   store: WorldStore;
@@ -41,8 +42,6 @@ export type WorldOptions = {
   maxDpr: number;
 };
 
-/** Atlas tiles sit this far apart (scripts/world-assets.py). */
-const ATLAS_GAP = 24;
 /** Below this many canvas pixels per plate pixel the small, mipmapped copy of the plate is drawn instead; the two cross-fade. */
 const MAP_FROM = 0.45;
 const MAP_TO = 0.6;
@@ -52,11 +51,42 @@ const TAP_SLACK = 14;
 const WHEEL = 0.0015;
 /** A selected person grows by this much. */
 const SELECTED_GROWTH = 0.06;
+/**
+ * A contact shadow: two ellipses, a wide faint one and a small dark one inside it, which reads as a soft shadow.
+ * Widths are a share of the sprite's tile; SHADOW_FLAT is height over width.
+ */
+const SHADOW_WIDTH = 0.8;
+const SHADOW_CORE = 0.6;
+const SHADOW_FLAT = 0.17;
+const SHADOW_ALPHA = { rim: 0.3, core: 0.45 };
+const SHADOW_COLOUR = 0x06040e;
+/** How quickly someone's colour follows the room light they walk into, in ms. */
+const TINT_MS = 260;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** `height` is the sprite's height in plate px before breathing and growing, so following someone doesn't wobble. */
-type Person = { id: string; image: Phaser.GameObjects.Image; scale: number; height: number; phase: number; grow: number };
+/**
+ * Someone in the building. `height` is the sprite's height in plate px before breathing and growing, so following
+ * them doesn't wobble. `at` is where their feet are in world cm; `target` the x they're walking to, if any.
+ */
+type Person = {
+  id: string;
+  def: WorldPerson;
+  image: Phaser.GameObjects.Image;
+  shadow: { rim: Phaser.GameObjects.Ellipse; core: Phaser.GameObjects.Ellipse };
+  scale: number;
+  height: number;
+  phase: number;
+  grow: number;
+  at: Spot;
+  target: number | null;
+  walkingSince: number | null;
+  facing: 1 | -1;
+  pose: Pose | null;
+  tint: [number, number, number];
+};
+
+const rgb = (c: number): [number, number, number] => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
 
 class BuildingScene extends Phaser.Scene {
   private readonly options: WorldOptions;
@@ -90,7 +120,9 @@ class BuildingScene extends Phaser.Scene {
     const { art, plate, store } = this.options;
     this.load.image("plate", art.plate);
     this.load.image("plate-map", art.plateMap);
-    this.load.spritesheet("cast", art.sprites, { frameWidth: TILE.w, frameHeight: TILE.h, margin: ATLAS_GAP, spacing: ATLAS_GAP });
+    for (let i = 0; i < SHEETS; i++) {
+      this.load.spritesheet(`cast-${i}`, art.sheets[i], { frameWidth: TILE.w, frameHeight: TILE.h, margin: SHEET_GAP, spacing: SHEET_GAP });
+    }
     for (const o of plate.occluders) this.load.image(`occluder-${o.id}`, art.occluders[o.id]);
     this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, () =>
       store.getState().setStatus({ stage: "failed", error: "The building's pictures didn't load. Check your connection and reload." }),
@@ -119,8 +151,30 @@ class BuildingScene extends Phaser.Scene {
     for (const person of drawOrder(plate)) {
       if (!person.behind && !furnished) furnish();
       const sprite = spriteOf(plate, person);
-      const image = this.add.image(sprite.feet.x, sprite.feet.y, "cast", person.tile).setOrigin(0.5, FEET).setScale(sprite.scale);
-      this.people.push({ id: person.id, image, scale: sprite.scale, height: sprite.box.h, phase: person.delay * 1000, grow: 1 });
+      // Each person's shadow goes just before them, so furniture covers both alike.
+      // Made 100 px wide, then scaled each frame: re-shaping an ellipse rebuilds its outline, scaling doesn't.
+      const shadow = {
+        rim: this.add.ellipse(sprite.feet.x, sprite.feet.y, 100, 100 * SHADOW_FLAT, SHADOW_COLOUR, SHADOW_ALPHA.rim),
+        core: this.add.ellipse(sprite.feet.x, sprite.feet.y, 100 * SHADOW_CORE, 100 * SHADOW_CORE * SHADOW_FLAT, SHADOW_COLOUR, SHADOW_ALPHA.core),
+      };
+      const image = this.add.image(sprite.feet.x, sprite.feet.y, "cast-0", 0).setOrigin(0.5, FEET).setScale(sprite.scale);
+      const light = rgb(lightAt(plate, person.x, person.z));
+      this.people.push({
+        id: person.id,
+        def: person,
+        image,
+        shadow,
+        scale: sprite.scale,
+        height: sprite.box.h,
+        phase: person.delay * 1000,
+        grow: 1,
+        at: { x: person.x, z: person.z },
+        target: null,
+        walkingSince: null,
+        facing: 1,
+        pose: null,
+        tint: light,
+      });
     }
     if (!furnished) furnish();
 
@@ -177,21 +231,73 @@ class BuildingScene extends Phaser.Scene {
       this.mapImage.setVisible(sharp < 1);
     }
 
-    this.animatePeople(time, dt, state.selected);
+    const walk = state.takeWalk();
+    if (walk) this.walkTo(walk.id, walk.x, time);
+    this.animatePeople(time, dt, state);
     state.setCamera(this.cam);
     this.countFrame(time, dt);
   }
 
-  /** People breathe a little, out of step, and whoever is selected grows and stands in a pool of light. */
-  private animatePeople(time: number, dt: number, selected: string | null) {
+  /**
+   * Everyone, every frame: walkers move along their floor with their walk playing and face the way they go; those
+   * standing breathe a little, out of step, in their mood. Each takes on the colour of the room's light, has a soft
+   * shadow at their feet, and whoever is selected grows and stands in a pool of light.
+   */
+  private animatePeople(time: number, dt: number, state: ReturnType<WorldStore["getState"]>) {
+    const { plate } = this.options;
     const ease = 1 - Math.exp(-dt / 90);
+    const tintEase = 1 - Math.exp(-dt / TINT_MS);
     let lit: Person | null = null;
+    let moved = false;
     for (const p of this.people) {
-      const want = p.id === selected ? 1 + SELECTED_GROWTH : 1;
+      if (p.target !== null) {
+        const step = (WALK_CM_PER_S * dt) / 1000;
+        const left = p.target - p.at.x;
+        p.facing = left < 0 ? -1 : 1;
+        if (Math.abs(left) <= step) {
+          p.at = { x: p.target, z: p.at.z };
+          p.target = null;
+          p.walkingSince = null;
+        } else {
+          p.at = { x: p.at.x + Math.sign(left) * step, z: p.at.z };
+        }
+        moved = true;
+      }
+      const mood = state.moods[p.id] ?? p.def.mood ?? "idle";
+      const pose = poseAt(mood, p.walkingSince === null ? null : time - p.walkingSince);
+      if (pose !== p.pose) {
+        const frame = frameOf(p.id, pose);
+        if (frame) p.image.setTexture(`cast-${frame.sheet}`, frame.frame);
+        p.pose = pose;
+      }
+      p.image.setFlipX(p.facing < 0);
+
+      const feet = toPlate(plate, p.at.x, p.at.z);
+      const want = p.id === state.selected ? 1 + SELECTED_GROWTH : 1;
       p.grow += (want - p.grow) * ease;
-      const breath = Math.sin(((time + p.phase) / 1700) * Math.PI * 2);
+      // Breathing only while standing: the walk has its own rise and fall.
+      const breath = p.walkingSince === null ? Math.sin(((time + p.phase) / 1700) * Math.PI * 2) : 0;
+      p.image.setPosition(feet.x, feet.y);
       p.image.setScale(p.scale * p.grow * (1 - 0.004 * breath), p.scale * p.grow * (1 + 0.012 * breath));
-      if (p.id === selected) lit = p;
+
+      // A foot off the floor makes the shadow a touch smaller and lighter.
+      const footUp = pose === "walk-b" || pose === "walk-c";
+      const w = p.height * (TILE.w / TILE.h) * SHADOW_WIDTH * p.grow * (footUp ? 0.9 : 1);
+      const fade = footUp ? 0.8 : 1;
+      for (const part of [p.shadow.rim, p.shadow.core]) part.setPosition(feet.x, feet.y - p.height * 0.01).setScale(w / 100);
+      p.shadow.rim.setAlpha(SHADOW_ALPHA.rim * fade);
+      p.shadow.core.setAlpha(SHADOW_ALPHA.core * fade);
+
+      const light = rgb(lightAt(plate, p.at.x, p.at.z));
+      p.tint = p.tint.map((c, k) => c + (light[k] - c) * tintEase) as [number, number, number];
+      p.image.setTint((Math.round(p.tint[0]) << 16) | (Math.round(p.tint[1]) << 8) | Math.round(p.tint[2]));
+
+      if (p.id === state.selected) lit = p;
+    }
+    if (moved) {
+      const positions: Record<string, Spot> = {};
+      for (const p of this.people) if (p.at.x !== p.def.x || p.at.z !== p.def.z) positions[p.id] = p.at;
+      state.setPositions(positions);
     }
     if (!this.glow) return;
     this.glow.setVisible(Boolean(lit));
@@ -201,6 +307,14 @@ class BuildingScene extends Phaser.Scene {
       if (Math.abs(this.glow.width - w) >= 1) this.glow.setSize(w, w * 0.22);
       this.glow.setPosition(lit.image.x, lit.image.y);
     }
+  }
+
+  /** Starts someone walking along their floor to x (cm). */
+  private walkTo(id: string, x: number, time: number) {
+    const p = this.people.find((q) => q.id === id);
+    if (!p || Math.abs(x - p.at.x) < 2) return;
+    p.target = x;
+    if (p.walkingSince === null) p.walkingSince = time;
   }
 
   /** Frames drawn over the last second, and the slowest, for the frame meter. */
@@ -293,7 +407,21 @@ class BuildingScene extends Phaser.Scene {
         else this.fling = { vx: e.vx, vy: e.vy };
       } else if (e.kind === "tap") {
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);
-        store.getState().select(personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom));
+        const at = Object.fromEntries(this.people.map((p) => [p.id, p.at]));
+        const hit = personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom, at);
+        store.getState().select(hit);
+        // A tap on the floor walks your detective there (on this phone only, until W3 shares it).
+        const me = store.getState().me;
+        const mine = me ? this.people.find((p) => p.id === me) : undefined;
+        if (!hit && mine) {
+          const point = fromPlate(plate, spot.x, spot.y);
+          const x = walkTarget(plate, mine.at, point.x, point.z);
+          if (x !== null) {
+            this.walkTo(mine.id, x, this.time.now);
+            // Close up, the camera goes along with you.
+            if (this.cam.zoom >= this.range.closeUp * 0.9) this.follow(mine.id);
+          }
+        }
       } else if (e.kind === "doubleTap") {
         // Zoomed out: dive in where you tapped. Zoomed in: back out to the whole building.
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);

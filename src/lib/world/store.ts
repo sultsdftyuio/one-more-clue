@@ -11,6 +11,8 @@
 import { createStore } from "zustand/vanilla";
 import type { PlayerView } from "../game/engine.ts";
 import { sameCamera, type Camera, type Viewport, type ZoomRange } from "./camera.ts";
+import type { Spot } from "./geometry.ts";
+import type { Mood } from "./sprites.ts";
 
 /** Where React can ask the camera to go. The scene works out the numbers, since it knows the screen. */
 export type CameraTarget =
@@ -43,6 +45,14 @@ export type WorldState = {
   selected: string | null;
   /** Whoever the camera is following, set by the scene. */
   following: string | null;
+  /** The detective this player wears, so a tap on the floor walks them there. */
+  me: string | null;
+  /** Where people stand who have moved from their places, in world cm, written by the scene while they walk. */
+  positions: Record<string, Spot>;
+  /** Moods that differ from the case's, by person id. */
+  moods: Record<string, Mood>;
+  /** A walk asked for and not yet taken by the scene: who, and the x (cm) to walk to on their floor. */
+  walkRequest: { id: string; x: number } | null;
   status: WorldStatus;
 };
 
@@ -57,6 +67,13 @@ export type WorldActions = {
   takeRequest(): CameraTarget | null;
   select(id: string | null): void;
   setFollowing(id: string | null): void;
+  setMe(id: string | null): void;
+  /** The scene reports everyone who has moved. Only real changes notify. */
+  setPositions(positions: Record<string, Spot>): void;
+  setMood(id: string, mood: Mood): void;
+  /** Asks the scene to walk someone along their floor to x; a newer request replaces one not yet taken. */
+  walk(id: string, x: number): void;
+  takeWalk(): { id: string; x: number } | null;
   setStatus(patch: Partial<WorldStatus>): void;
 };
 
@@ -73,6 +90,10 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     request: null,
     selected: null,
     following: null,
+    me: null,
+    positions: {},
+    moods: {},
+    walkRequest: null,
     status: INITIAL_STATUS,
     ...initial,
 
@@ -93,6 +114,26 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     },
     setFollowing: (following) => {
       if (get().following !== following) set({ following });
+    },
+    setMe: (me) => {
+      if (get().me !== me) set({ me });
+    },
+    setPositions: (positions) => {
+      const before = get().positions;
+      const keys = Object.keys(positions);
+      const same =
+        keys.length === Object.keys(before).length &&
+        keys.every((k) => before[k] && Math.abs(before[k].x - positions[k].x) < 0.05 && Math.abs(before[k].z - positions[k].z) < 0.05);
+      if (!same) set({ positions });
+    },
+    setMood: (id, mood) => {
+      if (get().moods[id] !== mood) set({ moods: { ...get().moods, [id]: mood } });
+    },
+    walk: (id, x) => set({ walkRequest: { id, x } }),
+    takeWalk: () => {
+      const request = get().walkRequest;
+      if (request) set({ walkRequest: null });
+      return request;
     },
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));

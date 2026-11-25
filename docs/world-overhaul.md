@@ -125,7 +125,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 - [x] **W2.1** Plate layers and occluders, so people stand behind desks and benches. *(Done 2026-11-25: a front layer of eight pieces (the reception desk, Lab 4's bench and chair, the maker space's printer bench, stool and laser cutter, and the corridor's bench and water cooler), each cut from the plate with its exact shape by [front.py](../art/world/front.py) and drawn over whoever stands behind. The sky and city as their own layer, for parallax, is left to W2.5.)*
 - [x] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap. *(Done 2026-11-25. Looking at someone ("Find me", arriving, a teammate's name) follows them until a finger, the wheel or another target takes over. In close-up a quick swipe pages to the next room, and a slow drag still pans freely. Upright phones already show both floors, so paging up and down only happens when the view would move. Letting go of a pinch past halfway out settles on the whole building. Double-tap and the buttons already went out and back. The minimap sits under the title card: the plate shrunk down, a frame for the view, the room you're in, a dot for everyone, and each room as a button.)*
-- [ ] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows.
+- [x] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows. *(Done 2026-11-25. [cast_sprites.py](../art/world/cast_sprites.py) draws the suspects in all five moods from the cast kit, and the detectives from [detectives.py](../art/world/detectives.py). Everyone gets a three-frame front-on walk, played a, b, a, c: a wide stance where the body dips, then each foot lifted in turn, with the legs never crossing. 48 frames fit on two 2048 px sheets. The scene walks people along their floor, flips them to face the way they go, shows their mood when standing, tints them with their room's light (easing as they cross a door) and draws a soft two-ellipse contact shadow. For now a tap on your floor walks your detective there, on this phone only, until W3 shares it.)*
 - [ ] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet.
 - [ ] **W2.5** Room tags and ambient motion: rain on windows, flicker, steam, LEDs, the clock, parallax.
 - [ ] **W2.6** React HUD: title, chapter question, team, minimap, the timeline bar and the reward chip.
@@ -327,4 +327,14 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
     - a pinch out settles on the whole building and hides the minimap
     - "Close-up" flies back to you and follows again
     - 116–120 fps, no page errors
+  - Not yet tried on a real phone.
+- 2026-11-25: W2.3 done on branch `world/w2-3-characters` (on top of W2.2).
+  - The old twelve-still sprite strip is gone. Its moods (shocked Priya, nervous Squires, smug Rena) gave way to the case world's plain "idle", per rule 4; moods can be set through the store (`setMood`) when W5 needs them.
+  - Tags and minimap dots follow walkers; taps hit people where they stand now.
+  - Checked in headless Chrome at phone size:
+    - a floor tap walks Sam left into Lab 4, facing that way, with his legs changing and the camera following
+    - the light on him turns cool in Lab 4
+    - the shadows show on the lit lobby floor
+    - no page errors
+  - Shadows had to be strong to show on the painting's dark floor strip.
   - Not yet tried on a real phone.

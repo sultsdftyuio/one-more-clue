@@ -9,6 +9,12 @@ import { useWorld, useWorldStore } from "./useWorld";
 /** The minimap's width in CSS px; its height follows the plate. */
 const WIDTH = 160;
 
+/** Where a world point sits on the minimap, as CSS percentages. */
+const percentOf = (plate: WorldPlate, x: number, z: number) => ({
+  left: `${((x - plate.extent.x0) / (plate.extent.x1 - plate.extent.x0)) * 100}%`,
+  top: `${((plate.extent.z1 - z) / (plate.extent.z1 - plate.extent.z0)) * 100}%`,
+});
+
 /**
  * A small map of the whole building in the corner (W2.2): the painted plate shrunk down, a frame for what the
  * camera shows, a dot for everyone, and each room as a button that takes the camera there. The frame and the
@@ -31,12 +37,9 @@ export function WorldMinimap({
   );
   const frame = useRef<HTMLDivElement>(null);
   const rooms = useRef(new Map<string, HTMLButtonElement>());
+  const dots = useRef(new Map<string, HTMLSpanElement>());
   const height = Math.round((WIDTH * plate.size.h) / plate.size.w);
-  const ext = plate.extent;
-  const pct = (x: number, z: number) => ({
-    left: `${((x - ext.x0) / (ext.x1 - ext.x0)) * 100}%`,
-    top: `${((ext.z1 - z) / (ext.z1 - ext.z0)) * 100}%`,
-  });
+  const pct = (x: number, z: number) => percentOf(plate, x, z);
 
   useLayoutEffect(() => {
     let current: string | null = null;
@@ -50,6 +53,11 @@ export function WorldMinimap({
         node.style.width = `${w.toFixed(1)}px`;
         node.style.height = `${h.toFixed(1)}px`;
       }
+      for (const person of plate.people) {
+        const dot = dots.current.get(person.id);
+        const at = s.positions[person.id] ?? person;
+        if (dot) Object.assign(dot.style, percentOf(plate, at.x, at.z + 40));
+      }
       const here = roomInView(plate, s.camera);
       if (here === current) return;
       current = here;
@@ -58,7 +66,7 @@ export function WorldMinimap({
     };
     place(store.getState());
     return store.subscribe((s, prev) => {
-      if (s.camera !== prev.camera || s.viewport !== prev.viewport) place(s);
+      if (s.camera !== prev.camera || s.viewport !== prev.viewport || s.positions !== prev.positions) place(s);
     });
   }, [store, plate]);
 
@@ -105,6 +113,10 @@ export function WorldMinimap({
         return (
           <span
             key={person.id}
+            ref={(node) => {
+              if (node) dots.current.set(person.id, node);
+              else dots.current.delete(person.id);
+            }}
             aria-hidden="true"
             className={
               me

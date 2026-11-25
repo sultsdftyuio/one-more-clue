@@ -9,6 +9,7 @@
  */
 import { case001World } from "../../data/cases/case-001.world.ts";
 import type { CaseWorld } from "../game/types.ts";
+import type { Mood } from "./sprites.ts";
 
 export type WorldRoom = {
   id: string;
@@ -17,19 +18,21 @@ export type WorldRoom = {
   x1: number;
   z0: number;
   z1: number;
+  /** The colour of the room's light, as a tint for the people in it (0xRRGGBB; white leaves them as drawn). */
+  light: number;
 };
 
 /** Someone standing in the building: their feet at (x, z), drawn with one tile of the case's sprite atlas. */
 export type WorldPerson = {
   id: string;
-  /** Tile of the sprite atlas, in the order of art/mockups/case001/sprites.py. */
-  tile: number;
   x: number;
   z: number;
   /** One of the four detectives (players wear these), rather than a suspect. */
   detective?: boolean;
   /** The case's suspect id, for suspects. */
   suspect?: string;
+  /** How a suspect looks while standing, from the case's world; detectives are always "idle". */
+  mood?: Mood;
   /** Stands behind the furniture in `occluders`, so it's drawn before them. */
   behind?: boolean;
   /** Start of this person's idle bob, in seconds, so the cast doesn't breathe in step. */
@@ -61,34 +64,37 @@ export type WorldPlate = {
   occluders: WorldOccluder[];
 };
 
-/** The rooms in the building (away rooms aren't on the plate), and the plate's size, from the case's world. */
-function fromWorld(world: CaseWorld) {
-  const rooms = world.rooms.flatMap((r) => (r.box ? [{ id: r.id, name: r.name, ...r.box }] : []));
+/** The rooms in the building (away rooms aren't on the plate) and the plate's size, from the case's world, with each room's light. */
+function fromWorld(world: CaseWorld, lights: Record<string, number>) {
+  const rooms = world.rooms.flatMap((r) => (r.box ? [{ id: r.id, name: r.name, ...r.box, light: lights[r.id] ?? 0xffffff }] : []));
   return { extent: world.plate.extent, pxPerCm: world.plate.pxPerCm, size: world.plate.size, rooms };
 }
 
-/** Where a suspect waits, from the case's world. */
+/** Where a suspect waits and how they look, from the case's world. */
 const standing = (world: CaseWorld, suspect: string) => {
-  const { x, z } = world.people[suspect];
-  return { suspect, x, z };
+  const { x, z, mood } = world.people[suspect];
+  return { suspect, x, z, mood };
 };
 
 const case001: WorldPlate = {
   caseId: "case-001",
   label:
     "The Halden Innovation Building at night, cut open: Lab 4 above the dark maker space, the corridor above the lobby and its stairs, and the car park and North Gate outside in the rain.",
-  ...fromWorld(case001World),
+  // Each room's light on the people in it, picked from the painter's lamps (LIGHTS in art/world/world.py) and kept
+  // gentle: Lab 4's cool strip lights, the dark blue of the maker space at night, the corridor's and lobby's warm
+  // bulbs, and moonlight outside.
+  ...fromWorld(case001World, { lab4: 0xeef2ff, maker: 0x8f9ad0, corridor: 0xfff1df, lobby: 0xffedd6, outside: 0xb3c0ea }),
   // Back to front, as the "001 · Close-up" board draws them. Ozzy stands behind the security desk:
   // the board lowers him so his head still clears it at 80% size (115 - 75 × 0.8).
   people: [
-    { id: "mei", tile: 9, x: 165, z: 306, detective: true, delay: 0.2 },
-    { id: "priya", tile: 0, ...standing(case001World, "triangle"), delay: 0.9 },
-    { id: "jo", tile: 11, x: 388, z: 306, detective: true, delay: 1.4 },
-    { id: "sam", tile: 8, x: 630, z: 306, detective: true, delay: 0.5 },
-    { id: "rena", tile: 6, ...standing(case001World, "rectangle"), delay: 1.1 },
-    { id: "ozzy", tile: 4, ...standing(case001World, "circle"), behind: true, delay: 1.7 },
-    { id: "ali", tile: 10, x: 600, z: 6, detective: true, delay: 0.3 },
-    { id: "squires", tile: 2, ...standing(case001World, "square"), delay: 1.0 },
+    { id: "mei", x: 165, z: 306, detective: true, delay: 0.2 },
+    { id: "priya", ...standing(case001World, "triangle"), delay: 0.9 },
+    { id: "jo", x: 388, z: 306, detective: true, delay: 1.4 },
+    { id: "sam", x: 630, z: 306, detective: true, delay: 0.5 },
+    { id: "rena", ...standing(case001World, "rectangle"), delay: 1.1 },
+    { id: "ozzy", ...standing(case001World, "circle"), behind: true, delay: 1.7 },
+    { id: "ali", x: 600, z: 6, detective: true, delay: 0.3 },
+    { id: "squires", ...standing(case001World, "square"), delay: 1.0 },
   ],
   // The furniture people can stand behind: art/world/front.json, which a test keeps this the same as. Each one is
   // drawn over whoever stands behind it, from src/assets/world/case-001/front/<id>.webp (scripts/world-assets.py).

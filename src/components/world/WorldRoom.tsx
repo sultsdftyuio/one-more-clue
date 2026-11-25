@@ -89,6 +89,10 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   }, [view]);
   const mine = view ? (stickers[view.me.id] ?? null) : null;
 
+  useEffect(() => {
+    store.getState().setMe(mine);
+  }, [store, mine]);
+
   // Once the building is drawn and we know who you are, the camera flies in to your detective.
   const ready = useStore(store, (s) => s.status.stage === "ready");
   const arrived = useRef(false);

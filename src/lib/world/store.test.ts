@@ -51,3 +51,22 @@ test("the scene says who the camera follows, and only a change notifies", () => 
   store.getState().setFollowing(null);
   assert.equal(calls, 2);
 });
+
+test("walks are asked for once, moods and positions only notify on a real change", () => {
+  const store = createWorldStore();
+  const s = () => store.getState();
+  s().walk("sam", 800);
+  s().walk("sam", 820);
+  assert.deepEqual(s().takeWalk(), { id: "sam", x: 820 }, "the newest request wins");
+  assert.equal(s().takeWalk(), null);
+  let calls = 0;
+  store.subscribe(() => calls++);
+  s().setMood("priya", "nervous");
+  s().setMood("priya", "nervous");
+  s().setPositions({ sam: { x: 700, z: 306 } });
+  s().setPositions({ sam: { x: 700.01, z: 306 } });
+  s().setMe("sam");
+  s().setMe("sam");
+  assert.equal(calls, 3);
+  assert.deepEqual(s().moods, { priya: "nervous" });
+});

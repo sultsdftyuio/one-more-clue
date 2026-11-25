@@ -15,6 +15,8 @@ import type { WorldStore } from "./store.ts";
 
 /** Corrections while walking: at most this many a second. */
 export const MOVE_HZ = 4;
+/** The Archivist's rewind slider: at most this many updates a second. */
+export const CURSOR_HZ = 10;
 /** A ping shows this long. */
 export const PING_MS = 4000;
 
@@ -52,6 +54,7 @@ export class WorldPresence {
     this.unsubscribe = store.subscribe((s, prev) => {
       const sticker = s.me;
       if (!sticker) return;
+      if (s.cursor !== prev.cursor && s.cursor) this.cursor(s.cursor);
       if (s.myWalk !== prev.myWalk && s.myWalk) this.walked(s.myWalk);
       else if (s.positions !== prev.positions && s.positions[sticker]) this.moving(s.positions[sticker]);
     });
@@ -92,6 +95,17 @@ export class WorldPresence {
     transport.send({ k: "ping", id: me.id, x: spot.x, z: spot.z, r: roomAt(spot.x, spot.z), spot: spot.id });
   }
 
+  /** My rewind slider (only the Archivist's phone sets one): drags at most CURSOR_HZ a second, freezes at once. */
+  private lastCursor = -Infinity;
+  private lastFrozen = false;
+  private cursor(c: { minute: number | null; frozen: boolean }) {
+    const now = this.o.now();
+    if (c.frozen === this.lastFrozen && c.minute !== null && now - this.lastCursor < 1000 / CURSOR_HZ) return;
+    this.lastCursor = now;
+    this.lastFrozen = c.frozen;
+    this.o.transport.send({ k: "cursor", id: this.o.me.id, m: c.minute, f: c.frozen });
+  }
+
   private walked(walk: { x: number; z: number; to: number | null }) {
     this.walkingTo = walk.to;
     this.here = { x: walk.x, z: walk.z };
@@ -129,6 +143,8 @@ export class WorldPresence {
       this.place(message.id, message.x, message.z, message.k === "pos" ? (message.to ?? null) : null, message.k === "hello");
     } else if (message.k === "status") {
       store.getState().setPresenceStatus(sticker, message.s);
+    } else if (message.k === "cursor") {
+      store.getState().receiveCursor(message.id, message.m, message.f);
     } else if (message.k === "ping" && message.z !== undefined) {
       store.getState().addPing({ by: message.id, spot: message.spot ?? null, x: message.x, z: message.z, at: Date.now() });
     }

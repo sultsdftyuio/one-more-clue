@@ -12,6 +12,7 @@ import { createStore } from "zustand/vanilla";
 import type { PlayerView } from "../game/engine.ts";
 import { sameCamera, type Camera, type Viewport, type ZoomRange } from "./camera.ts";
 import type { Spot } from "./geometry.ts";
+import type { Ghost } from "./rewind.ts";
 import type { Mood } from "./sprites.ts";
 
 /** Where React can ask the camera to go. The scene works out the numbers, since it knows the screen. */
@@ -63,6 +64,15 @@ export type WorldState = {
   pings: Ping[];
   /** The live channel: off until it starts, then how it's going. */
   presence: "off" | "connecting" | "live" | "reconnecting" | "lost";
+  /**
+   * The rewind (W4): whether it's open, the minute of the night it shows, who froze it for the team (a player id;
+   * nobody else can move it then) and whose slider it's following. `cursor` is this phone's own slider for the live
+   * channel to send, when this player is the Archivist.
+   */
+  rewind: { open: boolean; minute: number; frozenBy: string | null; following: string | null };
+  cursor: { minute: number | null; frozen: boolean; n: number } | null;
+  /** The ghosts the scene is drawing right now, for their tags and the clash lines. */
+  ghosts: Ghost[];
   status: WorldStatus;
 };
 
@@ -94,6 +104,15 @@ export type WorldActions = {
   /** Adds a ping and drops ones older than `PING_MS`. */
   addPing(ping: Ping): void;
   setPresence(state: WorldState["presence"]): void;
+  /** Opens or closes the rewind on this phone (closing leaves a freeze in place: it reopens). */
+  openRewind(open: boolean): void;
+  /** This player moved the slider: `me` is their player id; `share` sends it to the team (the Archivist). */
+  dragRewind(minute: number, me: string, share: boolean): void;
+  /** The Archivist freezes the night on the current minute for everyone, or lets it go. */
+  freezeRewind(me: string, frozen: boolean): void;
+  /** Someone's slider arrived on the live channel. */
+  receiveCursor(by: string, minute: number | null, frozen: boolean): void;
+  setGhosts(ghosts: Ghost[]): void;
   setStatus(patch: Partial<WorldStatus>): void;
 };
 
@@ -119,6 +138,9 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     statuses: {},
     pings: [],
     presence: "off",
+    rewind: { open: false, minute: 0, frozenBy: null, following: null },
+    cursor: null,
+    ghosts: [],
     status: INITIAL_STATUS,
     ...initial,
 
@@ -174,6 +196,35 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     setPresence: (presence) => {
       if (get().presence !== presence) set({ presence });
     },
+    openRewind: (open) => {
+      const r = get().rewind;
+      if (!open && r.frozenBy) return;
+      set({ rewind: { ...r, open, following: open ? r.following : null } });
+    },
+    dragRewind: (minute, me, share) => {
+      const r = get().rewind;
+      if (r.frozenBy && r.frozenBy !== me) return;
+      set({ rewind: { ...r, open: true, minute, following: null }, cursor: share ? { minute, frozen: Boolean(r.frozenBy), n: (get().cursor?.n ?? 0) + 1 } : get().cursor });
+    },
+    freezeRewind: (me, frozen) => {
+      const r = get().rewind;
+      set({
+        rewind: { ...r, open: true, frozenBy: frozen ? me : null },
+        cursor: { minute: r.minute, frozen, n: (get().cursor?.n ?? 0) + 1 },
+      });
+    },
+    receiveCursor: (by, minute, frozen) => {
+      const r = get().rewind;
+      if (frozen) {
+        set({ rewind: { open: true, minute: minute ?? r.minute, frozenBy: by, following: by } });
+        return;
+      }
+      const thawed = r.frozenBy === by ? null : r.frozenBy;
+      // While open, the Archivist's slider pulls everyone's along ("everyone sees").
+      if (minute !== null && r.open && !thawed) set({ rewind: { ...r, minute, frozenBy: thawed, following: by } });
+      else if (thawed !== r.frozenBy) set({ rewind: { ...r, frozenBy: thawed } });
+    },
+    setGhosts: (ghosts) => set({ ghosts }),
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));
 }

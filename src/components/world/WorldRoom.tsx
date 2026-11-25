@@ -17,6 +17,7 @@ import { WorldHud } from "./WorldHud";
 import { WorldMinimap } from "./WorldMinimap";
 import { WorldGame } from "./WorldGame";
 import { WorldPings } from "./WorldPings";
+import { RewindOverlay } from "./WorldRewind";
 import { usePresence } from "./usePresence";
 import { WorldSpots } from "./WorldSpots";
 import { WorldRoomTags } from "./WorldRoomTags";
@@ -166,6 +167,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         <WorldPings plate={plate} view={view} />
         {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
         <WorldRoomTags plate={plate} />
+        {view && <RewindOverlay plate={plate} view={view} act={act} />}
         <WorldTags plate={plate} cast={cast} />
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} />
 

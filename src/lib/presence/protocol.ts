@@ -39,10 +39,13 @@ export type PingMessage = { k: "ping"; id: string; x: number; r: string; z?: num
 /** Sent when a phone (re)joins, so others learn its name, room and status before it moves. */
 export type HelloMessage = { k: "hello"; id: string; name: string; x: number; r: string; s: string; z?: number };
 
+/** The world's rewind (W4.3): the Archivist's slider, in minutes of the night (null when they close it), and whether they froze it. */
+export type CursorMessage = { k: "cursor"; id: string; m: number | null; f: boolean };
+
 /** Lab only: one tap starts a timed walk on every phone, so round trips get measured both ways. */
 export type TestMessage = { k: "test"; id: string; seconds: number };
 
-export type PresenceMessage = PosMessage | StatusMessage | PingMessage | HelloMessage | TestMessage;
+export type PresenceMessage = PosMessage | StatusMessage | PingMessage | HelloMessage | CursorMessage | TestMessage;
 
 /** Who is on the channel, as presence reports it (Supabase), or as hellos report it (LiveKit). */
 export type Member = { id: string; name: string; x: number; r: string; s: string; z?: number };

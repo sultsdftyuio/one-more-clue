@@ -162,10 +162,16 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 4 · The rewind · M
 
-- [ ] **W4.1** A pure, tested function that turns found sightings plus link paths into ghost tracks.
-- [ ] **W4.2** Rewind mode: the world goes blue-grey, the living fade to outlines, ghosts glow and the rain freezes.
-- [ ] **W4.3** The Archivist drags, everyone sees (shared cursor), and Freeze stops the night on one moment for the team.
-- [ ] **W4.4** Clashes ("can't both be true") from today's map-of-the-night logic, shown in the building.
+- [x] **W4.1** A pure, tested function that turns found sightings plus link paths into ghost tracks. *(Done 2026-11-26. `ghostsAt` in [rewind.ts](../src/lib/world/rewind.ts) works from `rewindFor` on the server, which is the night as the whole team knows it, so every phone shows the same ghosts:
+  - a sighting covering the minute puts a ghost in its room: solid if seen, an outline if it's only someone's story
+  - two places at once give two ghosts
+  - gaps stay foggy, except a walk through the doors and stairs in the last few minutes before a sighting close behind the last
+  - rooms off the building are listed as elsewhere
+
+  It's tested on Case 001's real night.)*
+- [x] **W4.2** Rewind mode: the world goes blue-grey, the living fade to outlines, ghosts glow and the rain freezes. *(Done 2026-11-26. The plate and furniture are tinted blue-grey and the living fade to 22%. Ghosts are the suspects' own sprites, pale blue when seen and faint lilac when only said, with a glow, and labelled "seen", "says so" or "on the way". Things like HALO get a glowing label. The ambience stops where it is.)*
+- [x] **W4.3** The Archivist drags, everyone sees (shared cursor), and Freeze stops the night on one moment for the team. *(Done 2026-11-26. Anyone can open the rewind and drag it on their own phone. The Archivist's slider goes out on the live channel (`cursor` messages, at up to 10 a second) and pulls everyone's open rewind along. Freeze opens the rewind on every phone at that minute and locks it until the Archivist lets go.)*
+- [x] **W4.4** Clashes ("can't both be true") from today's map-of-the-night logic, shown in the building. *(Done 2026-11-26. A clash shows as a red dashed line between the two places, or, when one place is off the building, as "also gone home" under the ghost that's here. The Archivist ties it on the spot, as on the wall. The tie only appears when they can see both pieces; otherwise the label says to pin them.)*
 
 **Done when**, in chapter 1, Priya walking out at 8:45 and HALO on its dock until 9:13 appear only after those pieces are found.
 
@@ -377,3 +383,13 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   - no page errors after one fix: a connection that can't load now counts as lost and is retried
 
   Not tried on real phones or mobile data. Phase 3 is done.
+- 2026-11-26: Phase 4 (W4.1–W4.4) done on branch `world/w4-rewind` (on top of W3).
+  - Case 001's world was split: [case-001.building.ts](../src/data/cases/case-001.building.ts) holds the plate, rooms, links, people and ambience, and is the only part the browser loads. Since W1 the browser had also been getting what's at each spot and the sore spots.
+  - Checked with two headless Chrome phones on real LiveKit:
+    - at 8:58 the Archivist saw HALO, Squires and Rena as ghosts, plus the HALO clash ("also gone home")
+    - the other phone followed the Archivist's slider to 9:10
+    - a freeze reopened the other phone's rewind, locked
+    - after the HALO detail was pinned, the Archivist tied the clash and it turned to "Caught"
+    - no page errors
+  - Fixed along the way: the tie had been offered for pieces the Archivist couldn't see, which the engine refuses.
+  - Not tried on real phones. Phases 2 to 4 are done; next is phase 5, roles in the world.

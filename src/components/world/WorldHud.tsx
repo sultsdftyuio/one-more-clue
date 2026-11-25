@@ -9,6 +9,7 @@ import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
 import { useWorld } from "./useWorld";
+import { RewindButton } from "./WorldRewind";
 
 const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
 // Solid, not frosted: a backdrop blur would re-blur the moving canvas every frame, which costs phones dearly.
@@ -116,6 +117,7 @@ export function WorldHud({
   const mine = view ? (stickers[view.me.id] ?? null) : null;
   const followingMe = useWorld((s) => Boolean(mine) && s.following === mine);
   const playing = view?.phase === "investigation";
+  const rewinding = useWorld((s) => s.rewind.open);
   const goal = view && playing ? goalOf(view) : null;
 
   return (
@@ -195,7 +197,7 @@ export function WorldHud({
       )}
 
       {/* During the investigation the dock (4.6rem) and the timeline bar sit underneath. */}
-      <footer className={cx("pointer-events-none absolute inset-x-0 grid gap-3 p-3", playing ? "bottom-[calc(7.4rem+env(safe-area-inset-bottom))]" : "bottom-0")}>
+      <footer className={cx("pointer-events-none absolute inset-x-0 grid gap-3 p-3", playing ? (rewinding ? "bottom-[calc(13.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(7.4rem+env(safe-area-inset-bottom))]") : "bottom-0")}>
         {member && (
           <section
             aria-live="polite"
@@ -237,6 +239,7 @@ export function WorldHud({
               {followingMe ? "Following you" : "Find me"}
             </button>
           )}
+          {playing && view?.rewind && <RewindButton className={chip} />}
           {!playing && <InviteButton code={code} />}
           <Link href={`/r/${code}`} className={cx(chip, "bg-cream/80")}>
             Classic

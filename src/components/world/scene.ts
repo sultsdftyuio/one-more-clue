@@ -31,6 +31,7 @@ import type { WorldPerson, WorldPlate } from "@/lib/world/plates";
 import { frameOf, poseAt, SHEET_GAP, SHEETS, TILE, WALK_CM_PER_S, type Pose } from "@/lib/world/sprites";
 import type { CameraTarget, WorldStore } from "@/lib/world/store";
 import { Ambience } from "./ambience";
+import { ghostsAt, type Ghost } from "@/lib/world/rewind";
 
 /** Where the case's pictures are served from (see assets.ts). */
 export type WorldArt = { plate: string; plateMap: string; sheets: string[]; occluders: Record<string, string> };
@@ -61,6 +62,8 @@ const SHADOW_CORE = 0.6;
 const SHADOW_FLAT = 0.17;
 const SHADOW_ALPHA = { rim: 0.3, core: 0.45 };
 const SHADOW_COLOUR = 0x06040e;
+/** The rewind's blue-grey over the painted building. */
+const REWIND_TINT = 0x7d8bb8;
 /** How quickly someone's colour follows the room light they walk into, in ms. */
 const TINT_MS = 260;
 
@@ -110,6 +113,12 @@ class BuildingScene extends Phaser.Scene {
   private ambience: Ambience | null = null;
   /** Someone was put somewhere without walking, so the store's positions need refreshing. */
   private placed = false;
+  /** The furniture cut-outs, so the rewind can tint them with the plate. */
+  private occluderImages: Phaser.GameObjects.Image[] = [];
+  /** The rewind (W4.2): whether the world is showing the night, the ghosts' sprites and what they were drawn from. */
+  private rewinding = false;
+  private ghostSprites: { image: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Ellipse }[] = [];
+  private ghostKey = "";
   private glow: Phaser.GameObjects.Ellipse | null = null;
   private frames: number[] = [];
   private statsAt = 0;
@@ -152,7 +161,7 @@ class BuildingScene extends Phaser.Scene {
       furnished = true;
       for (const o of plate.occluders) {
         const box = outlineBox(plate, o.outline);
-        this.add.image(box.x, box.y, `occluder-${o.id}`).setOrigin(0).setDisplaySize(box.w, box.h);
+        this.occluderImages.push(this.add.image(box.x, box.y, `occluder-${o.id}`).setOrigin(0).setDisplaySize(box.w, box.h));
       }
     };
     for (const person of drawOrder(plate)) {
@@ -238,7 +247,8 @@ class BuildingScene extends Phaser.Scene {
       this.mapImage.setVisible(sharp < 1);
     }
 
-    this.ambience?.update(time, dt);
+    this.updateRewind(state);
+    if (!this.rewinding) this.ambience?.update(time, dt);
     const walk = state.takeWalk();
     if (walk) this.walkTo(walk.id, walk.x, time);
     for (const move of state.takeRemote()) this.remoteMove(move, time);
@@ -295,8 +305,11 @@ class BuildingScene extends Phaser.Scene {
       const w = p.height * (TILE.w / TILE.h) * SHADOW_WIDTH * p.grow * (footUp ? 0.9 : 1);
       const fade = footUp ? 0.8 : 1;
       for (const part of [p.shadow.rim, p.shadow.core]) part.setPosition(feet.x, feet.y - p.height * 0.01).setScale(w / 100);
-      p.shadow.rim.setAlpha(SHADOW_ALPHA.rim * fade);
-      p.shadow.core.setAlpha(SHADOW_ALPHA.core * fade);
+      // In the rewind the living fade back, so the night's ghosts stand out.
+      const living = this.rewinding ? 0.22 : 1;
+      p.image.setAlpha(living);
+      p.shadow.rim.setAlpha(SHADOW_ALPHA.rim * fade * living);
+      p.shadow.core.setAlpha(SHADOW_ALPHA.core * fade * living);
 
       const light = rgb(lightAt(plate, p.at.x, p.at.z));
       p.tint = p.tint.map((c, k) => c + (light[k] - c) * tintEase) as [number, number, number];
@@ -318,6 +331,63 @@ class BuildingScene extends Phaser.Scene {
       if (Math.abs(this.glow.width - w) >= 1) this.glow.setSize(w, w * 0.22);
       this.glow.setPosition(lit.image.x, lit.image.y);
     }
+  }
+
+  /**
+   * The rewind (W4.2): the world turns blue-grey, the living fade, the rain stops where it is, and the night's ghosts
+   * stand where the team's evidence puts them at the slider's minute: solid and pale blue when seen, a faint lilac
+   * outline when it's only someone's story. Things (HALO) are drawn by the overlay, with a label.
+   */
+  private updateRewind(state: ReturnType<WorldStore["getState"]>) {
+    const { plate } = this.options;
+    const map = state.view?.rewind ?? null;
+    const open = state.rewind.open && Boolean(map);
+    if (open !== this.rewinding) {
+      this.rewinding = open;
+      const tint = open ? REWIND_TINT : 0xffffff;
+      for (const image of [this.plateImage, this.mapImage, ...this.occluderImages]) image?.setTint(tint);
+      if (!open) {
+        for (const g of this.ghostSprites) {
+          g.image.setVisible(false);
+          g.glow.setVisible(false);
+        }
+        this.ghostKey = "";
+        state.setGhosts([]);
+      }
+    }
+    if (!open || !map) return;
+    const key = `${state.rewind.minute}|${map.sightings.length}|${map.sightings.map((s) => s.id).join(",").length}`;
+    if (key === this.ghostKey) return;
+    this.ghostKey = key;
+    const rooms = map.rooms.map((r) => {
+      const box = plate.rooms.find((p) => p.id === r.id);
+      return { id: r.id, name: r.name, kind: r.away ? ("away" as const) : r.outdoor ? ("outside" as const) : ("inside" as const), box: box ? { x0: box.x0, x1: box.x1, z0: box.z0, z1: box.z1 } : undefined };
+    });
+    const { ghosts } = ghostsAt(map.sightings, { rooms, links: plate.links }, state.rewind.minute);
+    this.drawGhosts(ghosts);
+    state.setGhosts(ghosts);
+  }
+
+  private drawGhosts(ghosts: Ghost[]) {
+    const { plate } = this.options;
+    const people = ghosts.map((g) => ({ g, person: plate.people.find((p) => p.suspect === g.who) })).filter((x) => x.person);
+    while (this.ghostSprites.length < people.length) {
+      const glow = this.add.ellipse(0, 0, 10, 10, 0x9fd8ff, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+      const image = this.add.image(0, 0, "cast-0", 0).setOrigin(0.5, FEET);
+      this.ghostSprites.push({ image, glow });
+    }
+    this.ghostSprites.forEach((sprite, i) => {
+      const entry = people[i];
+      sprite.image.setVisible(Boolean(entry));
+      sprite.glow.setVisible(Boolean(entry));
+      if (!entry) return;
+      const { g, person } = entry;
+      const frame = frameOf(person!.id, "idle");
+      if (frame) sprite.image.setTexture(`cast-${frame.sheet}`, frame.frame);
+      const s = spriteOf(plate, person!, { x: g.x, z: g.z });
+      sprite.image.setPosition(s.feet.x, s.feet.y).setScale(s.scale).setTint(g.says ? 0xd8c8ff : 0xbfeaff).setAlpha(g.says ? 0.42 : 0.88);
+      sprite.glow.setPosition(s.feet.x, s.feet.y - s.box.h * 0.45).setSize(s.box.w * 0.9, s.box.h * 0.95).setAlpha(g.says ? 0.08 : 0.2);
+    });
   }
 
   /** Starts someone walking along their floor to x (cm). */

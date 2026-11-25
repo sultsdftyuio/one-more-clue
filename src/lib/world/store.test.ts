@@ -70,3 +70,34 @@ test("walks are asked for once, moods and positions only notify on a real change
   assert.equal(calls, 3);
   assert.deepEqual(s().moods, { priya: "nervous" });
 });
+
+test("the rewind: the Archivist's slider pulls everyone's along, and a freeze locks it for all but them", () => {
+  const store = createWorldStore();
+  const s = () => store.getState();
+  // I drag my own slider (not the Archivist): it moves, nothing is shared.
+  s().dragRewind(10, "p1", false);
+  assert.deepEqual(s().rewind, { open: true, minute: 10, frozenBy: null, following: null });
+  assert.equal(s().cursor, null);
+  // The Archivist's slider arrives: mine follows it.
+  s().receiveCursor("p2", 40, false);
+  assert.deepEqual(s().rewind, { open: true, minute: 40, frozenBy: null, following: "p2" });
+  // Closed, a moving slider doesn't open it; a freeze does, at its minute, and then I can't move or close it.
+  s().openRewind(false);
+  s().receiveCursor("p2", 50, false);
+  assert.equal(s().rewind.open, false);
+  s().receiveCursor("p2", 42, true);
+  assert.deepEqual(s().rewind, { open: true, minute: 42, frozenBy: "p2", following: "p2" });
+  s().dragRewind(5, "p1", false);
+  s().openRewind(false);
+  assert.equal(s().rewind.minute, 42);
+  assert.equal(s().rewind.open, true);
+  // They let it go.
+  s().receiveCursor("p2", 42, false);
+  assert.equal(s().rewind.frozenBy, null);
+  // As the Archivist, my drags and freezes go out to the team.
+  s().dragRewind(30, "p1", true);
+  assert.deepEqual(s().cursor, { minute: 30, frozen: false, n: 1 });
+  s().freezeRewind("p1", true);
+  assert.deepEqual(s().cursor, { minute: 30, frozen: true, n: 2 });
+  assert.equal(s().rewind.frozenBy, "p1");
+});

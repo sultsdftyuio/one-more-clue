@@ -25,6 +25,8 @@ import type { PlayerView } from "@/lib/game/engine";
 import type { WorldSpotView } from "@/lib/game/world";
 import { cx } from "@/lib/cx";
 import { TimelineBar } from "./TimelineBar";
+import { useWorld } from "./useWorld";
+import { RewindBar } from "./WorldRewind";
 import { ABILITY_ICON } from "./WorldSpots";
 
 /** Each role's tool, the same ones the classic screens show (src/components/game/desk). */
@@ -67,6 +69,7 @@ export function WorldGame({
   );
   const game = useMemo(() => ({ view, act, busy, open }), [view, act, busy, open]);
   const piece = opened ? evidenceIn(view, opened) : undefined;
+  const rewinding = useWorld((s) => s.rewind.open);
 
   // A new chapter plays its story once on this phone, shared with the classic screens' memory of it.
   const chapterKey = `omc-chapter-${view.code}`;
@@ -106,7 +109,7 @@ export function WorldGame({
 
   return (
     <GameProvider value={game}>
-      {!view.proposal && <TimelineBar view={view} onOpen={open} />}
+      {rewinding && view.rewind ? <RewindBar view={view} map={view.rewind} /> : !view.proposal && <TimelineBar view={view} onOpen={open} />}
       <Dock badges={badges} onOpen={onPanel} />
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />

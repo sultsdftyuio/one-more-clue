@@ -1,5 +1,6 @@
 // Run with: npm test
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { castOf, shortName, stickerOf, stickersFor } from "./cast.ts";
 import { CHARACTER_SCALE, drawOrder, fromPlate, outlineBox, personAt, roomAt, roomBox, spriteOf, toPlate } from "./geometry.ts";
@@ -59,7 +60,28 @@ test("a tap lands on the person under it, not through the desk, and not on empty
 });
 
 test("the desk cut-out sits on whole pixels, as the asset script cuts it", () => {
-  assert.deepEqual(outlineBox(plate, plate.occluders[0].outline), { x: 1256, y: 1253, w: 460, h: 295 });
+  assert.deepEqual(outlineBox(plate, plate.occluders.find((o) => o.id === "desk")!.outline), { x: 1256, y: 1253, w: 460, h: 295 });
+});
+
+test("the front layer is the painter's: every piece of furniture in front.json, cut out and in its room", () => {
+  const front = JSON.parse(readFileSync("art/world/front.json", "utf8")) as Record<string, { room: string; outline: [number, number][] }>;
+  assert.deepEqual(plate.occluders.map((o) => o.id).sort(), Object.keys(front).sort());
+  for (const o of plate.occluders) {
+    assert.deepEqual(o.outline, front[o.id].outline, o.id);
+    assert.ok(existsSync(`src/assets/world/case-001/front/${o.id}.webp`), `${o.id} has its cut-out`);
+    const [cx, cz] = [o.outline.reduce((a, p) => a + p[0], 0) / o.outline.length, o.outline.reduce((a, p) => a + p[1], 0) / o.outline.length];
+    assert.equal(roomAt(plate, cx, cz), front[o.id].room, `${o.id} stands in its room`);
+  }
+});
+
+test("someone behind the lab bench is drawn before it and can't be tapped through it, but shows above it", () => {
+  const behind = { ...plate, people: [...plate.people, { id: "ghost", tile: 0, x: 90, z: 306, suspect: "triangle", behind: true, delay: 0 }] };
+  const order = drawOrder(behind).map((p) => p.id);
+  assert.ok(order.indexOf("ghost") < order.indexOf("priya"), "behind people come first, so the furniture goes over them");
+  const knees = toPlate(behind, 90, 360);
+  assert.equal(personAt(behind, knees.x, knees.y), null, "the bench is in the way");
+  const head = toPlate(behind, 90, 470);
+  assert.equal(personAt(behind, head.x, head.y), "ghost", "above the bench, they're tappable");
 });
 
 test("players wear detectives by seat in the lobby, then by their first role", () => {

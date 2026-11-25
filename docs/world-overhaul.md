@@ -123,7 +123,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 2 · The world scene · L
 
-- [ ] **W2.1** Plate layers and occluders, so people stand behind desks and benches.
+- [x] **W2.1** Plate layers and occluders, so people stand behind desks and benches. *(Done 2026-11-25: a front layer of eight pieces (the reception desk, Lab 4's bench and chair, the maker space's printer bench, stool and laser cutter, and the corridor's bench and water cooler), each cut from the plate with its exact shape by [front.py](../art/world/front.py) and drawn over whoever stands behind. The sky and city as their own layer, for parallax, is left to W2.5.)*
 - [ ] **W2.2** Camera: follow you, swipe between rooms, pinch or tap out to the whole building, and the minimap.
 - [ ] **W2.3** Characters at 80% scale: atlas, idle and walk, facing, moods, a room-light tint and contact shadows.
 - [ ] **W2.4** Spots: a soft pulse and the role icon of who can open each one. Tapping opens that role's existing tool as a sheet.
@@ -310,3 +310,8 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   - two records `elsewhere`: Kestrel's website and Squires's email
 
   `checkWorld` runs in `checkCase`, with six new tests in cases.test.ts. [plates.ts](../src/lib/world/plates.ts) now reads its rooms, plate size and suspect positions from the case's world, so the building is written down once. Three things the world has that the plate doesn't paint yet, for W2.1/W2.4: the lobby's door into the maker space, the lobby camera and the corridor's fuse cupboard. Side-job spot positions are placeholders until W6.
+- 2026-11-25: W2.1 done on branch `world/w2-1-layers` (on top of W1).
+  - [art/world/front.py](../art/world/front.py) redraws each piece of front furniture on its own with the painter's code, so its mask is pixel-exact, and writes `front.json` (room and outline) and `front-mask.png`. The plate is untouched.
+  - `scripts/world-assets.py` now cuts every piece into `src/assets/world/case-001/front/` (8 files, 39 KB in all) and reads the plate from `art/world/`, not the mockup.
+  - [plates.ts](../src/lib/world/plates.ts) lists the eight pieces, and a test keeps them the same as `front.json`. The scene already drew any number of occluders between the people behind them and everyone else.
+  - Checked in headless Chrome with Mei moved behind the bench for the test: the bench top, a leg and the pencil cup draw over her, and nothing else changes. Hit tests use each piece's box, so a tap between a bench's legs counts as the bench.

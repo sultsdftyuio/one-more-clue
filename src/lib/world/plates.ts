@@ -39,7 +39,10 @@ export type WorldPerson = {
 /** A piece of furniture cut out of the plate (scripts/world-assets.py) and drawn over the people behind it. */
 export type WorldOccluder = {
   id: string;
-  /** The outline in world cm, as the painter's manifest gives it. */
+  /**
+   * The outline in world cm (art/world/front.json). Its box is the cut-out's, and a tap inside it can't reach
+   * anyone standing behind. For most pieces it's the whole box, so a tap between a bench's legs counts as the bench.
+   */
   outline: [number, number][];
 };
 
@@ -87,31 +90,18 @@ const case001: WorldPlate = {
     { id: "ali", tile: 10, x: 600, z: 6, detective: true, delay: 0.3 },
     { id: "squires", tile: 2, ...standing(case001World, "square"), delay: 1.0 },
   ],
+  // The furniture people can stand behind: art/world/front.json, which a test keeps this the same as. Each one is
+  // drawn over whoever stands behind it, from src/assets/world/case-001/front/<id>.webp (scripts/world-assets.py).
+  // The desk's outline is its real shape; the others are their boxes, and their pictures carry the exact shape.
   occluders: [
-    {
-      id: "desk",
-      outline: [
-        [568, 6],
-        [797.6, 6],
-        [797.6, 94.8],
-        [784, 113.2],
-        [730.4, 113.2],
-        [730.4, 133.2],
-        [711.2, 133.2],
-        [709.6, 113.2],
-        [709.6, 144.4],
-        [706.4, 150.8],
-        [695.2, 150.8],
-        [692, 144.4],
-        [692, 113.2],
-        [666.4, 113.2],
-        [666.4, 153.2],
-        [606.4, 153.2],
-        [606.4, 113.2],
-        [577.6, 113.2],
-        [568, 94.8],
-      ],
-    },
+    { id: "desk", outline: [[568, 6], [797.6, 6], [797.6, 94.8], [784, 113.2], [730.4, 113.2], [730.4, 133.2], [711.2, 133.2], [709.6, 113.2], [709.6, 144.4], [706.4, 150.8], [695.2, 150.8], [692, 144.4], [692, 113.2], [666.4, 113.2], [666.4, 153.2], [606.4, 153.2], [606.4, 113.2], [577.6, 113.2], [568, 94.8]] },
+    { id: "lab-bench", outline: [[7.5, 305.5], [402.5, 305.5], [402.5, 452.5], [7.5, 452.5]] },
+    { id: "lab-chair", outline: [[375.5, 306.5], [432.5, 306.5], [432.5, 418.5], [375.5, 418.5]] },
+    { id: "printer-bench", outline: [[39.5, 6], [196.5, 6], [196.5, 124.5], [39.5, 124.5]] },
+    { id: "stool", outline: [[221.5, 6], [250.5, 6], [250.5, 68.5], [221.5, 68.5]] },
+    { id: "laser-cutter", outline: [[281.5, 5.5], [378.5, 5.5], [378.5, 102.5], [281.5, 102.5]] },
+    { id: "corridor-bench", outline: [[699.5, 306], [820.5, 306], [820.5, 352.5], [699.5, 352.5]] },
+    { id: "water-cooler", outline: [[903.5, 305.5], [936.5, 305.5], [936.5, 444.5], [903.5, 444.5]] },
   ],
 };
 

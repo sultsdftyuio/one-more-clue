@@ -71,10 +71,14 @@ function TechAt({ spot }: { spot: WorldSpotView }) {
   const last = view.searches.at(-1);
   const said = last && last.query === spot.name && Date.now() - last.at < 60_000 && !last.hit ? last.note : null;
 
+  const [pulling, setPulling] = useState(false);
   const pull = async () => {
+    if (pulling) return;
     play("type");
     buzz(BUZZ.tap);
+    setPulling(true);
     await act({ type: "probe", spot: spot.id });
+    setPulling(false);
   };
 
   const playLog = (id: string) => {
@@ -98,9 +102,9 @@ function TechAt({ spot }: { spot: WorldSpotView }) {
 
   return (
     <div>
-      <button type="button" onClick={pull} disabled={busy} className={cx(big, spot.fresh ? "bg-teal text-ink" : "bg-cream text-ink")}>
+      <button type="button" onClick={pull} disabled={busy || pulling} aria-busy={pulling} className={cx(big, spot.fresh ? "bg-teal text-ink" : "bg-cream text-ink")}>
         <span className="flex items-center justify-center gap-2">
-          <Icon name="search" className="size-5" /> Pull the records
+          <Icon name="search" className={cx("size-5", pulling && "animate-spin")} /> {pulling ? "Pulling the records…" : "Pull the records"}
         </span>
       </button>
       <p className="mt-1.5 text-center text-sm font-semibold text-cream/75">
@@ -210,7 +214,29 @@ function ArchivistAt({ spot, onClose }: { spot: WorldSpotView; onClose: () => vo
  * What a spot opens in the world (W5): your role's way of working that object, or, when it isn't yours, who to ask.
  * Each role's full tool from the classic screens is still one tap away, so nothing the classic game can do is lost.
  */
-export function SpotSheetBody({ spot, onClose, onCamera }: { spot: WorldSpotView; onClose: () => void; onCamera: () => void }) {
+/** Where a point of the building is in its painting, for a close-up of the object a panel is about. */
+export type PlatePicture = { src: string; w: number; h: number; px: number; py: number };
+
+/** A close-up of the painted object itself, cut from the building, with its name over it. */
+function ObjectPicture({ picture, name }: { picture: PlatePicture; name: string }) {
+  const k = 1.15;
+  return (
+    <div className="relative mb-4 h-44 overflow-hidden rounded-2xl border-[3px] border-ink bg-night" aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={picture.src}
+        alt=""
+        draggable={false}
+        className="absolute max-w-none select-none"
+        style={{ width: picture.w * k, height: picture.h * k, left: `calc(50% - ${(picture.px * k).toFixed(0)}px)`, top: `calc(50% - ${(picture.py * k).toFixed(0)}px)` }}
+      />
+      <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(9,12,30,0.75))]" />
+      <span className="absolute bottom-2 left-3 rounded-full border-2 border-ink bg-night/85 px-2.5 py-0.5 text-sm font-extrabold text-cream">{name}</span>
+    </div>
+  );
+}
+
+export function SpotSheetBody({ spot, onClose, onCamera, picture }: { spot: WorldSpotView; onClose: () => void; onCamera: () => void; picture?: PlatePicture | null }) {
   const { view } = useGame();
   const roles = spot.roles.map((id) => view.case.roles.find((r) => r.id === id)).filter((r): r is CaseRole => r !== undefined);
   const mine = roles.find((r) => view.me.roles.includes(r.id) && r.ability !== "none");
@@ -218,9 +244,13 @@ export function SpotSheetBody({ spot, onClose, onCamera }: { spot: WorldSpotView
 
   return (
     <div>
-      <p className="mb-3 flex items-center gap-2 pr-12 text-sm font-bold text-cream/75">
-        <Icon name="target" className="size-4" /> {spot.name}
-      </p>
+      {picture ? (
+        <ObjectPicture picture={picture} name={spot.name} />
+      ) : (
+        <p className="mb-3 flex items-center gap-2 pr-12 text-sm font-bold text-cream/75">
+          <Icon name="target" className="size-4" /> {spot.name}
+        </p>
+      )}
       {mine?.ability === "search" && <TechAt spot={spot} />}
       {mine?.ability === "inspect" && <PhotographerAt spot={spot} onCamera={onCamera} />}
       {mine?.ability === "crosscheck" && <ArchivistAt spot={spot} onClose={onClose} />}

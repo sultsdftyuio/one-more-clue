@@ -20,14 +20,19 @@ import { Sheet } from "@/components/game/ui/Sheet";
 import type { PlayerView } from "@/lib/game/engine";
 import type { WorldSpotView } from "@/lib/game/world";
 import { cx } from "@/lib/cx";
-import { TimelineBar } from "./TimelineBar";
 import { useWorld } from "./useWorld";
 import { RewindBar } from "./WorldRewind";
-import { SpotSheetBody } from "./WorldSpotSheet";
+import { SpotSheetBody, type PlatePicture } from "./WorldSpotSheet";
 
 /** A role's tool opened from the building rather than a spot: the interrogation room on someone you walked up to (W5.3), or the camera from "then and now" (W5.1). */
 export type WorldTool = { kind: "interview"; who: string } | { kind: "camera" };
-const PANEL_TITLE: Record<Panel, string> = { evidence: "Evidence", board: "The board", solve: "Solve", team: "The team", notes: "Your notebook" };
+const PANEL_TITLE: Record<Panel, string> = {
+  evidence: "Evidence",
+  board: "The board",
+  solve: "Solve",
+  team: "The team",
+  notes: "Your notebook",
+};
 
 /**
  * The game played over the building (W2.4 and W2.6): the game context the classic tools read, the dock with its
@@ -46,6 +51,7 @@ export function WorldGame({
   onPanel,
   tool,
   onCloseTool,
+  picture,
 }: {
   view: PlayerView;
   act: Act;
@@ -54,6 +60,8 @@ export function WorldGame({
   onCloseSpot: () => void;
   tool: WorldTool | null;
   onCloseTool: () => void;
+  /** A close-up of the building at a spot, for the top of its panel. */
+  picture?: (x: number, z: number) => PlatePicture | null;
   panel: Panel | null;
   onPanel: (panel: Panel | null) => void;
 }) {
@@ -107,11 +115,7 @@ export function WorldGame({
 
   return (
     <GameProvider value={game}>
-      {rewinding && view.rewind ? (
-        <RewindBar view={view} map={view.rewind} />
-      ) : (
-        !view.proposal && !(view.interrogation && !view.interrogation.over) && <TimelineBar view={view} onOpen={open} />
-      )}
+      {rewinding && view.rewind && <RewindBar view={view} map={view.rewind} />}
       <Dock badges={badges} onOpen={onPanel} floating />
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />
@@ -124,28 +128,28 @@ export function WorldGame({
 
       {panel && (
         // An open piece of evidence sits on top of the panel: Esc closes that first.
-        <Sheet title={PANEL_TITLE[panel]} onClose={() => !opened && onPanel(null)}>
+        <Sheet side title={PANEL_TITLE[panel]} onClose={() => !opened && onPanel(null)}>
           <div className={cx(view.proposal && "pb-80")}>{panels[panel]}</div>
         </Sheet>
       )}
       {here && (
-        <Sheet title={here.name} onClose={onCloseSpot}>
-          <SpotSheetBody spot={here} onClose={onCloseSpot} onCamera={onCloseSpot} />
+        <Sheet side title={here.name} onClose={onCloseSpot}>
+          <SpotSheetBody spot={here} onClose={onCloseSpot} onCamera={onCloseSpot} picture={picture?.(here.x, here.z)} />
         </Sheet>
       )}
       {tool?.kind === "interview" && (
-        <Sheet title="The interrogation room" onClose={onCloseTool}>
+        <Sheet side title="The interrogation room" onClose={onCloseTool}>
           <SoreLine view={view} name={tool.who} />
           <InterviewerTool key={tool.who} who={tool.who} />
         </Sheet>
       )}
       {tool?.kind === "camera" && (
-        <Sheet title="The camera" onClose={onCloseTool}>
+        <Sheet side title="The camera" onClose={onCloseTool}>
           <PhotographerTool />
         </Sheet>
       )}
       {piece && (
-        <Sheet title={piece.title} onClose={() => setOpened(null)}>
+        <Sheet side title={piece.title} onClose={() => setOpened(null)}>
           <EvidenceCard evidence={piece} />
         </Sheet>
       )}
@@ -159,5 +163,9 @@ function SoreLine({ view, name }: { view: PlayerView; name: string }) {
   const sore = view.helps.sore.find((s) => s.name === name);
   if (!sore) return null;
   const short = name.split(" ")[0] === "Prof." ? name : name.split(" ")[0];
-  return <p className="mb-3 rounded-2xl border-2 border-ink bg-[#bfe0ff] px-3 py-2 text-sm font-extrabold text-ink">Sore spot: {short} gets uneasy about {sore.topic}.</p>;
+  return (
+    <p className="mb-3 rounded-2xl border-2 border-ink bg-[#bfe0ff] px-3 py-2 text-sm font-extrabold text-ink">
+      Sore spot: {short} gets uneasy about {sore.topic}.
+    </p>
+  );
 }

@@ -43,7 +43,7 @@ test("on a big screen the zoom limits still make sense, and the close-up frames 
   near(laptop.closeUp, 768 / 430 / 2, 1e-9);
   assert.ok(laptop.closeUp > laptop.min * 2, "a laptop's close-up is well in from the whole building");
   const desk = zoomRange({ w: 2560, h: 1440 }, plate);
-  near(desk.min, 2560 / 3240);
+  near(desk.min, (1440 - 2 * 84) / 1700, 1e-9);
   near(desk.closeUp, 0.9, 1e-9);
   assert.ok(desk.closeUp >= desk.min, "the close-up is never further out than the whole building");
   assert.ok(desk.max >= desk.closeUp);

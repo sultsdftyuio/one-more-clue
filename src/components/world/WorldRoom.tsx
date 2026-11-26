@@ -8,7 +8,7 @@ import { useRoom } from "@/components/game/useRoom";
 import type { Panel } from "@/components/game/Investigation";
 import type { WorldSpotView } from "@/lib/game/world";
 import { castOf, stickersFor } from "@/lib/world/cast";
-import { roomAt } from "@/lib/world/geometry";
+import { roomAt, toPlate as pointOnPlate } from "@/lib/world/geometry";
 import { worldOf } from "@/lib/world/plates";
 import { createWorldStore } from "@/lib/world/store";
 import { worldArt } from "./assets";
@@ -128,11 +128,17 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     ? `on a side job at ${job.spot.name}`
     : spot
       ? `at ${spot.name}`
-    : tool?.kind === "interview"
-      ? `questioning ${tool.who.split(" ")[0]}`
-      : tool?.kind === "camera"
-        ? "with the camera"
-        : panel === "evidence" ? "reading the evidence" : panel === "board" ? "at the board" : panel === "solve" ? "solving" : "";
+      : tool?.kind === "interview"
+        ? `questioning ${tool.who.split(" ")[0]}`
+        : tool?.kind === "camera"
+          ? "with the camera"
+          : panel === "evidence"
+            ? "reading the evidence"
+            : panel === "board"
+              ? "at the board"
+              : panel === "solve"
+                ? "solving"
+                : "";
   useEffect(() => {
     presence.current?.setStatus(doing);
   }, [presence, doing]);
@@ -156,7 +162,12 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
 
   // Until the live channel says otherwise, teammates stand where they were last saved.
   const live = useStore(store, (s) => s.presence === "live");
-  const places = view ? view.players.filter((p) => p.id !== view.me.id && p.place).map((p) => `${p.id}:${p.place!.room}:${Math.round(p.place!.x)}`).join("|") : "";
+  const places = view
+    ? view.players
+        .filter((p) => p.id !== view.me.id && p.place)
+        .map((p) => `${p.id}:${p.place!.room}:${Math.round(p.place!.x)}`)
+        .join("|")
+    : "";
   useEffect(() => {
     if (!plate || !view || live) return;
     for (const p of view.players) {
@@ -201,7 +212,9 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     const sore = view.helps.sore.find((s) => s.suspect === member.suspect);
     return (
       <>
-        {sore && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-[#bfe0ff] px-2.5 py-0.5 text-sm font-extrabold">Sore spot: {sore.topic}</p>}
+        {sore && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-[#bfe0ff] px-2.5 py-0.5 text-sm font-extrabold">Sore spot: {sore.topic}</p>
+        )}
         {questionFor(member)}
       </>
     );
@@ -224,7 +237,9 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         </button>
       );
     }
-    return interviewer ? <p className="mt-2 text-sm font-bold text-ink/70">Only the Interviewer can question them. Ask {interviewer.id === view.me.id ? "yourself" : interviewer.name}.</p> : null;
+    return interviewer ? (
+      <p className="mt-2 text-sm font-bold text-ink/70">Only the Interviewer can question them. Ask {interviewer.id === view.me.id ? "yourself" : interviewer.name}.</p>
+    ) : null;
   };
   // The Photographer's flash (W5.1): lights up the room their detective is in, on every phone.
   const flash = () => {
@@ -237,9 +252,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     if (presence.current) presence.current.flash(room);
     else s.addFlash({ room, by: view?.me.id ?? "", at: Date.now() });
   };
-  const roleButtons = view?.me.abilities.includes("inspect") ? (
-    <IconButton icon="bolt" label="Flash: light up this room for everyone" onClick={flash} />
-  ) : null;
+  const roleButtons = view?.me.abilities.includes("inspect") ? <IconButton icon="bolt" label="Flash: light up this room for everyone" onClick={flash} /> : null;
 
   const theme = themeOf(view?.case.theme);
 
@@ -255,55 +268,96 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     <WorldContext.Provider value={store}>
       {/* The case's own type and look, and the faces evidence is made with, as on the classic screens. */}
       <div className={cx(theme.font, evidenceFonts, theme.className)}>
-      <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
-        <WorldCanvas store={store} plate={plate} art={art} />
-        {view && <WorldGlow plate={plate} view={view} />}
-        <WorldFlash plate={plate} />
-        {view && <WorldThenNow plate={plate} view={view} onShoot={() => setTool({ kind: "camera" })} />}
-        <WorldPings plate={plate} view={view} />
-        {view && <WorldJobs plate={plate} view={view} onOpen={setJob} />}
-        {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
-        <WorldRoomTags plate={plate} />
-        {view && <RewindOverlay plate={plate} view={view} act={act} />}
-        <WorldTags plate={plate} cast={cast} marks={marks} />
-        {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}
-        <WorldPeople plate={plate} cast={cast} />
-        {view && <WorldControls plate={plate} view={view} cast={cast} mine={mine} onSpot={setSpot} onJob={setJob} />}
-        {view && <WorldConfrontation plate={plate} view={view} act={act} busy={busy} quiet={panel === "solve"} onCallLie={() => setPanel("solve")} />}
-        {view?.phase === "lobby" && <WorldLobby view={view} act={act} busy={busy} />}
-        <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} personActions={personActions} roleButtons={roleButtons} />
+        <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
+          <WorldCanvas store={store} plate={plate} art={art} />
+          {view && <WorldGlow plate={plate} view={view} />}
+          <WorldFlash plate={plate} />
+          {view && <WorldThenNow plate={plate} view={view} onShoot={() => setTool({ kind: "camera" })} />}
+          <WorldPings plate={plate} view={view} />
+          {view && <WorldJobs plate={plate} view={view} onOpen={setJob} />}
+          {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
+          <WorldRoomTags plate={plate} />
+          {view && <RewindOverlay plate={plate} view={view} act={act} />}
+          <WorldTags plate={plate} cast={cast} marks={marks} />
+          {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}
+          <WorldPeople plate={plate} cast={cast} />
+          {view && (
+            <WorldControls
+              plate={plate}
+              view={view}
+              cast={cast}
+              mine={mine}
+              onSpot={setSpot}
+              onJob={setJob}
+              onPerson={(id) => {
+                const member = cast[id];
+                if (member?.suspect && view.me.abilities.includes("interview")) {
+                  store.getState().select(null);
+                  setTool({ kind: "interview", who: member.name });
+                } else store.getState().select(id);
+              }}
+            />
+          )}
+          {view && <WorldConfrontation plate={plate} view={view} act={act} busy={busy} quiet={panel === "solve"} onCallLie={() => setPanel("solve")} />}
+          {view?.phase === "lobby" && <WorldLobby view={view} act={act} busy={busy} />}
+          <WorldHud
+            code={code}
+            view={view}
+            cast={cast}
+            stickers={stickers}
+            minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />}
+            onSolve={() => setPanel("solve")}
+            personActions={personActions}
+            roleButtons={roleButtons}
+          />
 
-        {status.kind === "needsJoin" && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
-            <WorldJoin onJoin={join} />
-          </div>
-        )}
-        {status.kind === "closed" && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
-            <div className={card}>
-              <h2 className="font-display text-2xl text-cream">Can&apos;t open this room</h2>
-              <p className="mt-2 font-semibold text-cream/80">{status.message}</p>
-              <Link href="/" className="mt-4 inline-block rounded-full border-2 border-ink bg-cream px-4 py-1.5 font-extrabold text-ink">
-                Home
-              </Link>
+          {status.kind === "needsJoin" && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
+              <WorldJoin onJoin={join} />
             </div>
-          </div>
+          )}
+          {status.kind === "closed" && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center p-6">
+              <div className={card}>
+                <h2 className="font-display text-2xl text-cream">Can&apos;t open this room</h2>
+                <p className="mt-2 font-semibold text-cream/80">{status.message}</p>
+                <Link href="/" className="mt-4 inline-block rounded-full border-2 border-ink bg-cream px-4 py-1.5 font-extrabold text-ink">
+                  Home
+                </Link>
+              </div>
+            </div>
+          )}
+          {error && (
+            <p
+              role="alert"
+              className="fixed inset-x-0 top-24 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
+            >
+              {error}
+            </p>
+          )}
+        </div>
+        {view && (
+          <WorldGame
+            view={view}
+            act={act}
+            busy={busy}
+            spot={spot}
+            onCloseSpot={() => setSpot(null)}
+            panel={panel}
+            onPanel={setPanel}
+            tool={tool}
+            onCloseTool={() => setTool(null)}
+            picture={(x, z) => {
+              const at = pointOnPlate(plate, x, z - 25);
+              return { src: art.plate, w: plate.size.w, h: plate.size.h, px: at.x, py: at.y };
+            }}
+          />
         )}
-        {error && (
-          <p
-            role="alert"
-            className="fixed inset-x-0 top-24 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
-          >
-            {error}
-          </p>
+        {view && job && view.phase === "investigation" && (
+          <SideJob key={job.id} job={job} view={view} act={act} roomName={plate.rooms.find((r) => r.id === job.spot.room)?.name ?? ""} onClose={() => setJob(null)} />
         )}
-      </div>
-      {view && <WorldGame view={view} act={act} busy={busy} spot={spot} onCloseSpot={() => setSpot(null)} panel={panel} onPanel={setPanel} tool={tool} onCloseTool={() => setTool(null)} />}
-      {view && job && view.phase === "investigation" && (
-        <SideJob key={job.id} job={job} view={view} act={act} roomName={plate.rooms.find((r) => r.id === job.spot.room)?.name ?? ""} onClose={() => setJob(null)} />
-      )}
-      {view && view.phase === "investigation" && <LightsOut view={view} act={act} />}
-      {view && <WorldPhaseLayer view={view} act={act} busy={busy} />}
+        {view && view.phase === "investigation" && <LightsOut view={view} act={act} />}
+        {view && <WorldPhaseLayer view={view} act={act} busy={busy} />}
       </div>
     </WorldContext.Provider>
   );

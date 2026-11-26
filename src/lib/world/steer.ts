@@ -48,14 +48,19 @@ export function stairsFrom(plate: Pick<WorldPlate, "links">, at: Spot, dir: 1 | 
 /** Something that can be used where it stands: a spot, a side job or a person. */
 export type Reachable = { kind: "spot" | "job" | "person"; id: string; x: number; room: string | null; label: string };
 
-/** The nearest thing within reach on your floor, or null. */
+/** Things count as this much nearer than people, so standing by a person and a machine, E uses the machine. */
+export const OBJECT_BIAS_CM = 30;
+
+/** The nearest thing within reach on your floor, or null. Objects and side jobs win a close call with a person. */
 export function nearest(plate: Pick<WorldPlate, "rooms">, at: Spot, things: Reachable[]): Reachable | null {
   const floor = new Set(floorOf(plate, at).map((r) => r.id));
   let best: { thing: Reachable; d: number } | null = null;
   for (const thing of things) {
     if (!thing.room || !floor.has(thing.room)) continue;
-    const d = Math.abs(thing.x - at.x);
-    if (d <= REACH_CM && (!best || d < best.d)) best = { thing, d };
+    const reach = Math.abs(thing.x - at.x);
+    if (reach > REACH_CM) continue;
+    const d = reach - (thing.kind === "person" ? 0 : OBJECT_BIAS_CM);
+    if (!best || d < best.d) best = { thing, d };
   }
   return best?.thing ?? null;
 }

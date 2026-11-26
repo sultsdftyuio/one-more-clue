@@ -888,3 +888,11 @@ body.tech-tapping [data-searchable] {
     animation: none;
   }
 }
+
+/* A world panel sliding in from the right edge. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(2.5rem);
+  }
+}

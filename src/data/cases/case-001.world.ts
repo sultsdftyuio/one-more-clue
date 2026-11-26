@@ -6,8 +6,6 @@ import { case001Building } from "./case-001.building.ts";
  * space, the corridor above the lobby and its stairs; the car park and the North Gate are outside in the rain.
  *
  * Numbers come from the painter's manifest (art/world/world.json, painted by art/world/world.py) at 2 px per cm.
- * Spots the plate doesn't paint yet, to add in W2.1/W2.4: the door from the lobby into the maker space, the
- * lobby camera and the corridor's fuse cupboard.
  *
  * Nothing here may hint past the case file (docs/world-overhaul.md, rule 4): spots sit where their record is,
  * every suspect waits somewhere plain in a plain mood, and each one has a sore spot, the culprit no more than anyone.
@@ -86,8 +84,9 @@ export const case001World: CaseWorld = {
       id: "lobby-camera",
       name: "The lobby camera",
       room: "lobby",
-      x: 930,
-      z: 265,
+      // On its bracket under the ceiling, left of the EXIT sign.
+      x: 876,
+      z: 258,
       kind: "device",
       evidence: ["cctv-lobby"],
       roles: ["tech"],
@@ -143,8 +142,9 @@ export const case001World: CaseWorld = {
       id: "fuse-cupboard",
       name: "The fuse cupboard",
       room: "corridor",
-      x: 930,
-      z: 420,
+      // On the wall over the water cooler, past Lab 5's door.
+      x: 935,
+      z: 478,
       kind: "sidejob",
     },
     {

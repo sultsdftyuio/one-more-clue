@@ -498,19 +498,31 @@ def draw_maker(c):
             p.rect(280, 140, 284, 196, fill("#C9A877"))
             # filament shelves
             for zz in (150.0, 200.0):
-                p.rect(312, zz - 4, 420, zz, fill("#6B5640"))
-                for k, col in enumerate(["#EF5B5B", "#F2EFE6", "#3FB8AF", "#F2B33D", "#9B87F5"]):
+                p.rect(312, zz - 4, 370, zz, fill("#6B5640"))
+                for k, col in enumerate(["#EF5B5B", "#3FB8AF", "#F2B33D"]):
                     p.c.drawCircle(324 + k * 21, zz + 10, 9, fill(col))
                     p.c.drawCircle(324 + k * 21, zz + 10, 9, D.line(0.5, INK))
                     p.c.drawCircle(324 + k * 21, zz + 10, 3, fill("#1B1F2A"))
+            # the door out to the lobby, shut for the night, under its little green sign
+            p.rect(376, 0, 422, 198, fill("#5E6676"))
+            p.rect(376, 0, 422, 198, D.line(1.0, INK))
+            p.rect(382, 6, 416, 192, fill("#6E7686"))
+            p.rect(388, 120, 410, 176, fill("#1A2240"))
+            p.rect(388, 120, 410, 176, D.line(0.6, INK))
+            p.rect(382, 92, 392, 96, fill("#C9CDD6"))
+            p.rect(380, 204, 418, 216, fill("#1E7A4E"))
+            p.rect(380, 204, 418, 216, D.line(0.5, INK))
             # the sign
             p.rect(188, 226, 300, 250, fill("#F2EFE6"))
             p.rect(188, 226, 300, 250, D.line(0.9, INK))
         else:
             p.rect(52, 110, 158, 230, fill("#5D7BD8", 0.10))
+            p.rect(380, 204, 418, 216, fill("#3DFF9A", 0.45))
+            p.c.drawCircle(399, 210, 30, radial((399, 210), 30, [(0, "#3DFF9A", 0.3), (1, "#3DFF9A", 0.0)], blend=PLUS))
     if A():
         wtext(c, "MAKER SPACE", x0 + 244, z0 + 240, 11.0, INK, tracking=1.0)
         wtext(c, "closed 8 PM - 8 AM", x0 + 244, z0 + 230, 6.5, "#5A5D64", face="type")
+        wtext(c, "LOBBY", x0 + 399, z0 + 207.5, 6.0, "#E8FFF2", tracking=0.6)
         room_shell(c, "maker", floor_tex="concrete", tile=50.0, trim="#3A3F4E", ceiling=True)
     put(c, 118, z0, printer_bench, 100)
     put(c, 330, z0, laser_cutter, 60)
@@ -573,6 +585,15 @@ def draw_corridor(c):
             p.rect(150, 120, 162, 160, fill("#D6312F"))
             p.rect(150, 120, 162, 160, D.line(0.7, INK))
             p.rect(152, 160, 160, 166, fill("#2A2D36"))
+            # the fuse cupboard over the water cooler, in the gap past Lab 5's door: grey steel, a hazard stripe, a keyhole
+            p.rect(474, 150, 501, 206, fill("#8D93A3"))
+            p.rect(474, 150, 501, 206, D.line(1.0, INK))
+            p.rect(477, 153, 498, 203, fill("#9EA4B4"))
+            p.rect(477, 195, 498, 201, fill("#F2B33D"))
+            for k in range(3):
+                p.poly([(478 + k * 7, 195), (482 + k * 7, 195), (479 + k * 7, 201), (475 + k * 7, 201)], fill("#22293F"))
+            p.poly([(488, 186), (483, 177), (487, 177), (484, 168), (492, 180), (488, 180)], fill("#F2B33D"))
+            p.c.drawCircle(495, 170, 1.5, fill("#22293F"))
             # ceiling panels, one switched off for the night
             p.rect(0, h - CEIL, w, h, fill("#C9CDD6"))
             p.rect(0, h - CEIL, w, h - CEIL + 1.5, fill("#8D93A3"))
@@ -671,6 +692,12 @@ def draw_lobby(c):
         room_shell(c, "lobby", floor_tex="lobbyfloor", tile=48.0, trim="#5A3A26", ceiling=True)
         with P2(c) as p:
             p.rect(896, 1, 952, 7, fill("#3A3C44"))
+            # the lobby camera, on a bracket under the ceiling, looking down at the desk and the doors
+            p.rect(887, 262, 891, 276, fill("#3A3E4A"))
+            p.poly([(862, 262), (890, 266), (892, 254), (864, 250)], fill("#E4E7EC"))
+            p.poly([(862, 262), (890, 266), (892, 254), (864, 250)], D.line(0.8, INK))
+            p.poly([(856, 260), (863, 262), (865, 251), (858, 249)], fill("#1B1F2A"))
+            p.c.drawCircle(886, 258, 1.4, fill("#5A1E24"))
             for cx in (640.0, 810.0):
                 p.rect(cx - 16, 270, cx + 16, 278, fill("#FFFDF2"))
     else:
@@ -678,6 +705,7 @@ def draw_lobby(c):
             wglow(c, cx, 272, 70, "#FFF6E0", 0.38)
         wglow(c, 924, 254, 40, "#FFFFFF", 0.35)
         wglow(c, 945, 130, 8, "#3DD68C", 0.8)
+        wglow(c, 886, 258, 7, "#FF3A4A", 0.8)          # the lobby camera's light
     # standing things: the drinks machine, the wet floor cone, the umbrellas, then the desk in front
     if A():
         with photo(c, LOB_X, z0 + 6, LOB_K, 626, clip=(x0, z0, x1, z1)):

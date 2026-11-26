@@ -13,10 +13,15 @@ export type Viewport = { w: number; h: number };
 
 export type ZoomRange = { min: number; max: number; closeUp: number };
 
-/** The close-up shows 1 CSS px per cm, like the "001 · Close-up" board. */
+/** The close-up shows at least 1 CSS px per cm, like the "001 · Close-up" board (a phone shows about a room). */
 export const CLOSE_UP_PX_PER_CM = 1;
-/** The nearest you can pinch in. */
-export const MAX_PX_PER_CM = 1.6;
+/** On a bigger screen the close-up frames about one room's width or one floor's height, up to this. */
+const CLOSE_UP_MAX_PX_PER_CM = 1.8;
+/** The nearest you can zoom in: the plate's own sharpness (2 px per cm), so nothing is blown up past it. */
+export const MAX_PX_PER_CM = 2;
+
+/** The close-up for this screen, in CSS px per cm: a room across or a floor high, whichever is smaller. */
+export const closeUpPxPerCm = (view: Viewport) => clamp(Math.min(view.w / 420, view.h / 430), CLOSE_UP_PX_PER_CM, CLOSE_UP_MAX_PX_PER_CM);
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -24,7 +29,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 export function zoomRange(view: Viewport, plate: WorldPlate): ZoomRange {
   const fit = Math.min(view.w / plate.size.w, view.h / plate.size.h);
   const max = Math.max(fit, MAX_PX_PER_CM / plate.pxPerCm);
-  return { min: fit, max, closeUp: clamp(CLOSE_UP_PX_PER_CM / plate.pxPerCm, fit, max) };
+  return { min: fit, max, closeUp: clamp(closeUpPxPerCm(view) / plate.pxPerCm, fit, max) };
 }
 
 /**

@@ -25,7 +25,8 @@ import {
   type Viewport,
   type ZoomRange,
 } from "@/lib/world/camera";
-import { drawOrder, FEET, fromPlate, lightAt, outlineBox, personAt, spriteOf, toPlate, walkTarget, type Spot } from "@/lib/world/geometry";
+import { drawOrder, FEET, lightAt, outlineBox, personAt, spriteOf, toPlate, type Spot } from "@/lib/world/geometry";
+import { floorSpan, stairsFrom } from "@/lib/world/steer";
 import { Gestures, type GestureEvent } from "@/lib/world/gestures";
 import type { WorldPerson, WorldPlate } from "@/lib/world/plates";
 import { frameOf, poseAt, SHEET_GAP, SHEETS, TILE, WALK_CM_PER_S, type Pose } from "@/lib/world/sprites";
@@ -84,6 +85,8 @@ type Person = {
   grow: number;
   at: Spot;
   target: number | null;
+  /** The rest of a walk that leaves the floor (the stairs), point by point, when taking one. */
+  route: [number, number][] | null;
   walkingSince: number | null;
   facing: 1 | -1;
   pose: Pose | null;
@@ -186,6 +189,7 @@ class BuildingScene extends Phaser.Scene {
         grow: 1,
         at: { x: person.x, z: person.z },
         target: null,
+        route: null,
         walkingSince: null,
         facing: 1,
         pose: null,
@@ -251,6 +255,7 @@ class BuildingScene extends Phaser.Scene {
     if (!this.rewinding) this.ambience?.update(time, dt);
     const walk = state.takeWalk();
     if (walk) this.walkTo(walk.id, walk.x, time);
+    this.steerMe(state, time, dt);
     for (const move of state.takeRemote()) this.remoteMove(move, time);
     this.animatePeople(time, dt, state);
     state.setCamera(this.cam);
@@ -390,6 +395,74 @@ class BuildingScene extends Phaser.Scene {
     });
   }
 
+  /** Which way my detective was last walking under the keys or buttons, so a change is told to teammates once. */
+  private steering = 0;
+
+  /**
+   * My own detective under the keys or the on-screen buttons: held left or right, they walk along their floor and the
+   * camera goes with them; up or down at the stairs walks them along the stairs to the other floor. Teammates see it
+   * as ordinary walks: a heading when they start or turn, the spot where they stop.
+   */
+  private steerMe(state: ReturnType<WorldStore["getState"]>, time: number, dt: number) {
+    const { plate } = this.options;
+    const p = state.me ? this.people.find((q) => q.id === state.me) : undefined;
+    if (!p) return;
+    const step = (WALK_CM_PER_S * dt) / 1000;
+    const climb = state.takeClimb();
+    if (climb && !p.route) {
+      const path = stairsFrom(plate, p.at, climb);
+      if (path) {
+        p.route = path;
+        p.target = null;
+        p.walkingSince ??= time;
+        this.follow(p.id);
+      }
+    }
+    if (p.route) {
+      const [nx, nz] = p.route[0];
+      const dx = nx - p.at.x;
+      const dz = nz - p.at.z;
+      const dist = Math.hypot(dx, dz);
+      if (Math.abs(dx) > 0.5) p.facing = dx < 0 ? -1 : 1;
+      if (dist <= step) {
+        p.at = { x: nx, z: nz };
+        p.route.shift();
+        if (!p.route.length) {
+          p.route = null;
+          p.walkingSince = null;
+          this.steering = 0;
+          state.reportWalk({ x: p.at.x, z: p.at.z, to: null });
+        }
+      } else {
+        p.at = { x: p.at.x + (dx / dist) * step, z: p.at.z + (dz / dist) * step };
+      }
+      this.placed = true;
+      return;
+    }
+    const dir = state.steer;
+    if (dir !== 0) {
+      const span = floorSpan(plate, p.at);
+      if (!span) return;
+      const x = clamp(p.at.x + dir * step, span.x0, span.x1);
+      p.target = null;
+      p.facing = dir < 0 ? -1 : 1;
+      if (x !== p.at.x) {
+        p.walkingSince ??= time;
+        p.at = { x, z: p.at.z };
+        this.placed = true;
+      } else p.walkingSince = null;
+      if (this.steering !== dir) {
+        this.steering = dir;
+        state.reportWalk({ x: p.at.x, z: p.at.z, to: dir > 0 ? span.x1 : span.x0 });
+        if (this.following !== p.id) this.follow(p.id);
+      }
+    } else if (this.steering !== 0) {
+      this.steering = 0;
+      p.walkingSince = null;
+      state.reportWalk({ x: p.at.x, z: p.at.z, to: null });
+    }
+  }
+
   /** Starts someone walking along their floor to x (cm). */
   private walkTo(id: string, x: number, time: number) {
     const p = this.people.find((q) => q.id === id);
@@ -510,18 +583,6 @@ class BuildingScene extends Phaser.Scene {
         const at = Object.fromEntries(this.people.map((p) => [p.id, p.at]));
         const hit = personAt(plate, spot.x, spot.y, TAP_SLACK / this.cam.zoom, at);
         store.getState().select(hit);
-        // A tap on the floor walks your detective there (on this phone only, until W3 shares it).
-        const me = store.getState().me;
-        const mine = me ? this.people.find((p) => p.id === me) : undefined;
-        if (!hit && mine) {
-          const point = fromPlate(plate, spot.x, spot.y);
-          const x = walkTarget(plate, mine.at, point.x, point.z);
-          if (x !== null) {
-            this.walkTo(mine.id, x, this.time.now);
-            // Close up, the camera goes along with you.
-            if (this.cam.zoom >= this.range.closeUp * 0.9) this.follow(mine.id);
-          }
-        }
       } else if (e.kind === "doubleTap") {
         // Zoomed out: dive in where you tapped. Zoomed in: back out to the whole building.
         const spot = screenToPlate(this.cam, this.view, e.x, e.y);

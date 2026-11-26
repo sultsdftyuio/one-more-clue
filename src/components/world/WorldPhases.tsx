@@ -27,7 +27,7 @@ export function WorldLobby({ view, act, busy }: { view: PlayerView; act: Act; bu
   return (
     <section
       aria-label="The lobby"
-      className="pointer-events-auto absolute inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md rounded-3xl border-[3px] border-ink bg-dusk/95 p-4 text-cream shadow-card"
+      className="pointer-events-auto absolute inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md rounded-3xl sm:top-20 sm:right-4 sm:bottom-auto sm:left-auto sm:mx-0 sm:w-96 border-[3px] border-ink bg-dusk/95 p-4 text-cream shadow-card"
     >
       <p className="text-xs font-extrabold tracking-widest text-mustard uppercase">{view.case.code}</p>
       <h2 className="font-display text-2xl leading-tight">{view.case.title}</h2>

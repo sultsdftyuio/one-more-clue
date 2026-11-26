@@ -1035,9 +1035,9 @@ const ambience = (() => {
     if (!rain || !hum) return;
     const on = settings.sound ? 1 : 0;
     const t = ctx.currentTime;
-    rain.gain.gain.setTargetAtTime(want.rain * 0.05 * on, t, 0.6);
+    rain.gain.gain.setTargetAtTime(want.rain * 0.085 * on, t, 0.6);
     rain.filter.frequency.setTargetAtTime(6000 - want.muffle * 5200, t, 0.4);
-    hum.gain.setTargetAtTime(want.hum * 0.012 * on, t, 0.8);
+    hum.gain.setTargetAtTime(want.hum * 0.02 * on, t, 0.8);
   };
   return {
     set(next: { rain: number; muffle: number; hum: number } | null) {

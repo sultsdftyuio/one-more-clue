@@ -33,4 +33,11 @@ test("what's in reach: the nearest thing on your own floor, within arm's length"
   assert.equal(nearest(plate, { x: 240, z: 306 }, things)?.id, "laptop");
   assert.equal(nearest(plate, { x: 118, z: 306 }, things), null, "the printers are downstairs");
   assert.equal(nearest(plate, { x: 700, z: 306 }, things), null);
+  // Standing between a person and a machine, the machine wins unless the person is much closer.
+  const lobby: Reachable[] = [
+    { kind: "person", id: "squires", x: 870, room: "lobby", label: "Squires" },
+    { kind: "job", id: "coffee-run", x: 912, room: "lobby", label: "The drinks machine" },
+  ];
+  assert.equal(nearest(plate, { x: 885, z: 6 }, lobby)?.id, "coffee-run");
+  assert.equal(nearest(plate, { x: 860, z: 6 }, lobby)?.id, "squires");
 });

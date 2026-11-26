@@ -26,8 +26,12 @@ export const closeUpPxPerCm = (view: Viewport) => clamp(Math.min(view.w / 420, v
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Zoom limits for this screen: all the way out shows the whole building; the close-up sits between. */
+/** Room kept clear above and below the whole building, for the HUD at the top and the dock at the bottom (CSS px). */
+export const HUD_ROOM = 84;
+
 export function zoomRange(view: Viewport, plate: WorldPlate): ZoomRange {
-  const fit = Math.min(view.w / plate.size.w, view.h / plate.size.h);
+  // All the way out, the whole building fits between the HUD and the dock.
+  const fit = Math.min(view.w / plate.size.w, Math.max(view.h * 0.5, view.h - HUD_ROOM * 2) / plate.size.h);
   const max = Math.max(fit, MAX_PX_PER_CM / plate.pxPerCm);
   return { min: fit, max, closeUp: clamp(closeUpPxPerCm(view) / plate.pxPerCm, fit, max) };
 }

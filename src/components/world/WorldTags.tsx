@@ -64,11 +64,19 @@ export function WorldTags({ plate, cast, marks = {} }: { plate: WorldPlate; cast
           style={{ opacity: 0 }}
           className={cx(
             "absolute top-0 left-0 -mt-1 rounded-full border-2 border-ink px-2 py-0.5 text-xs font-extrabold whitespace-nowrap shadow-pop-sm will-change-transform",
-            tag.me ? "bg-mustard text-ink" : "bg-cream text-ink",
+            tag.me ? "-mt-3 bg-mustard px-2.5 py-1 text-sm text-ink ring-2 ring-mustard/50" : "bg-cream text-ink",
             selected === tag.id && "ring-2 ring-moon ring-offset-1 ring-offset-ink",
           )}
         >
-          {tag.me ? `You · ${tag.text}` : tag.text}
+          {tag.me ? (
+            <>
+              <span className="mr-1 font-black">YOU</span>
+              <span className="font-semibold">{tag.text}</span>
+              <span aria-hidden="true" className="world-fresh absolute top-full left-1/2 -mt-0.5 size-0 -translate-x-1/2 border-x-[7px] border-t-[9px] border-x-transparent border-t-mustard" />
+            </>
+          ) : (
+            tag.text
+          )}
           {!tag.me && statuses[tag.id] && <span className="font-semibold text-ink/70"> · {statuses[tag.id]}</span>}
           {marks[tag.id] && <span className="ml-1 rounded-full bg-lilac px-1.5 text-[11px] font-black text-ink">{marks[tag.id]}</span>}
         </span>

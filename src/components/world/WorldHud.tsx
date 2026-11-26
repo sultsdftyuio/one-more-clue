@@ -58,7 +58,7 @@ function GoalBadge({ chapter, chapters, question, onSolve }: { chapter: number; 
         <button
           type="button"
           onClick={onSolve}
-          className="world-bubble absolute top-full left-0 z-10 mt-2 flex w-[min(20rem,80vw)] items-start gap-2 rounded-2xl border-[3px] border-ink bg-night/95 p-3 text-left shadow-card"
+          className="world-bubble fixed top-[4.25rem] left-1/2 z-20 flex w-[min(30rem,calc(100vw-1.5rem))] -translate-x-1/2 items-start gap-2.5 rounded-2xl border-[3px] border-ink bg-night/95 px-4 py-3 text-left shadow-card"
         >
           <Icon name="target" className="mt-0.5 size-4 shrink-0 text-mustard" />
           <span className="text-sm leading-snug font-bold text-cream">{question}</span>
@@ -269,7 +269,16 @@ export function WorldHud({
       )}
 
       {/* During the investigation the dock (4.6rem) and the timeline bar sit underneath. */}
-      <footer className={cx("pointer-events-none absolute inset-x-0 grid gap-3 p-3", playing ? (rewinding ? "bottom-[calc(13.5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(7.4rem+env(safe-area-inset-bottom))]") : "bottom-0")}>
+      <footer
+        className={cx(
+          "pointer-events-none absolute inset-x-0 grid gap-3 p-3",
+          playing
+            ? rewinding
+              ? "bottom-[calc(13.5rem+env(safe-area-inset-bottom))]"
+              : "bottom-[calc(4.6rem+env(safe-area-inset-bottom))]"
+            : "bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:bottom-0",
+        )}
+      >
         {member && (
           <section
             aria-live="polite"
@@ -289,32 +298,35 @@ export function WorldHud({
             </button>
           </section>
         )}
-        <nav className="pointer-events-none flex flex-wrap items-center justify-center gap-2" aria-label="Camera">
-          {zoomedOut ? (
-            <IconButton icon="crosshair" label="Close-up" onClick={() => look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })} />
-          ) : (
-            <IconButton icon="building" label="Whole building" onClick={() => look({ kind: "whole" })} />
-          )}
-          {mine && !zoomedOut && (
-            <IconButton
-              icon="target"
-              label={followingMe ? "Following you" : "Find me"}
-              pressed={followingMe}
-              onClick={() => {
-                select(mine);
-                look({ kind: "person", id: mine });
-              }}
-            />
-          )}
-          {playing && view?.rewind && <RewindButton className={roundButton} />}
-          {playing && !zoomedOut && roleButtons}
-          {!playing && <InviteButton code={code} />}
-          <SoundButton />
-          <Link href={`/r/${code}`} aria-label="Classic screens" title="Classic screens" className={cx(roundButton, "bg-cream/80")}>
-            <Icon name="screen" className="size-5" />
-          </Link>
-        </nav>
       </footer>
+      <nav
+        className="pointer-events-none absolute top-[7.25rem] right-3 flex flex-col items-center gap-2 sm:top-auto sm:right-auto sm:bottom-[max(0.6rem,env(safe-area-inset-bottom))] sm:left-3 sm:flex-row"
+        aria-label="Camera"
+      >
+        {zoomedOut ? (
+          <IconButton icon="crosshair" label="Close-up" onClick={() => look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })} />
+        ) : (
+          <IconButton icon="building" label="Whole building" onClick={() => look({ kind: "whole" })} />
+        )}
+        {mine && !zoomedOut && (
+          <IconButton
+            icon="target"
+            label={followingMe ? "Following you" : "Find me"}
+            pressed={followingMe}
+            onClick={() => {
+              select(mine);
+              look({ kind: "person", id: mine });
+            }}
+          />
+        )}
+        {playing && view?.rewind && <RewindButton className={roundButton} />}
+        {playing && !zoomedOut && roleButtons}
+        {!playing && <InviteButton code={code} />}
+        <SoundButton />
+        <Link href={`/r/${code}`} aria-label="Classic screens" title="Classic screens" className={cx(roundButton, "bg-cream/80")}>
+          <Icon name="screen" className="size-5" />
+        </Link>
+      </nav>
     </>
   );
 }

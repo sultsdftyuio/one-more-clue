@@ -44,6 +44,7 @@ export function WorldControls({
   mine,
   onSpot,
   onJob,
+  onPerson,
 }: {
   plate: WorldPlate;
   view: PlayerView;
@@ -51,6 +52,8 @@ export function WorldControls({
   mine: string | null;
   onSpot: (spot: WorldSpotView) => void;
   onJob: (job: SideJobView) => void;
+  /** E on a person: question them (the Interviewer) or show their card. */
+  onPerson: (personId: string) => void;
 }) {
   const store = useWorldStore();
   const [at, setAt] = useState<Spot | null>(null);
@@ -102,10 +105,25 @@ export function WorldControls({
     } else if (reach.kind === "job") {
       const job = view.jobs.find((j) => j.id === reach.id);
       if (job) onJob(job);
+    } else if (store.getState().selected === reach.id) {
+      store.getState().select(null);
     } else {
-      store.getState().select(reach.id);
+      onPerson(reach.id);
     }
   };
+
+  // A suspect's card closes once you walk away from them.
+  useEffect(() => {
+    if (!mine) return;
+    return store.subscribe((s, prev) => {
+      if (s.positions === prev.positions || !s.selected) return;
+      const person = plate.people.find((p) => p.id === s.selected);
+      if (!person || person.detective) return;
+      const me = s.positions[mine];
+      const them = s.positions[person.id] ?? person;
+      if (me && Math.abs(me.x - them.x) > 160) s.select(null);
+    });
+  }, [store, mine, plate]);
   const useRef_ = useRef(use);
   useRef_.current = use;
 
@@ -126,6 +144,8 @@ export function WorldControls({
       } else if (UP.has(e.key) || DOWN.has(e.key)) {
         e.preventDefault();
         if (!e.repeat) store.getState().requestClimb(UP.has(e.key) ? 1 : -1);
+      } else if (e.key === "Escape") {
+        store.getState().select(null);
       } else if (USE.has(e.key) && !e.repeat) {
         // Space and Enter on a focused button press the button, as they should.
         if ((e.key === " " || e.key === "Enter") && (e.target as HTMLElement)?.tagName === "BUTTON") return;
@@ -170,7 +190,7 @@ export function WorldControls({
       <KeyBubble plate={plate} reach={reach} mine={mine} touch={touch} stairs={up ? 1 : down ? -1 : 0} />
       {touch && (
         <>
-          <div className="pointer-events-none absolute bottom-[calc(14.75rem+env(safe-area-inset-bottom))] left-3 z-10 flex items-end gap-2">
+          <div className="pointer-events-none absolute bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 z-10 flex items-end gap-2">
             <button type="button" aria-label="Walk left" className={pad} {...hold(-1)}>
               ◀
             </button>
@@ -196,7 +216,7 @@ export function WorldControls({
             disabled={!reach}
             aria-label={reach ? `${verb} ${reach.label}` : "Nothing in reach"}
             className={cx(
-              "pointer-events-auto absolute right-3 bottom-[calc(14.75rem+env(safe-area-inset-bottom))] z-10 grid size-16 place-items-center rounded-full border-[3px] border-ink font-display text-lg shadow-pop-sm",
+              "pointer-events-auto absolute right-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 grid size-16 place-items-center rounded-full border-[3px] border-ink font-display text-lg shadow-pop-sm",
               reach ? "bg-mustard text-ink" : "bg-cream/40 text-ink/50",
             )}
           >

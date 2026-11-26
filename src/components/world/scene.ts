@@ -130,6 +130,8 @@ class BuildingScene extends Phaser.Scene {
   private ghostSprites: { image: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Ellipse }[] = [];
   private ghostKey = "";
   private glow: Phaser.GameObjects.Ellipse | null = null;
+  /** A gold ring on the floor under your own detective, so you always know which one is you. */
+  private mineRing: Phaser.GameObjects.Ellipse | null = null;
   private frames: number[] = [];
   private statsAt = 0;
 
@@ -166,6 +168,7 @@ class BuildingScene extends Phaser.Scene {
     const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     this.ambience = new Ambience(this, plate, Boolean(reduced));
     this.glow = this.add.ellipse(0, 0, 10, 10, 0xffe6a7, 0.32).setVisible(false);
+    this.mineRing = this.add.ellipse(0, 0, 10, 10, 0xf2b33d, 0.22).setStrokeStyle(5, 0xf2b33d, 0.95).setVisible(false);
     let furnished = false;
     const furnish = () => {
       furnished = true;
@@ -277,7 +280,17 @@ class BuildingScene extends Phaser.Scene {
    * standing breathe a little, out of step, in their mood. Each takes on the colour of the room's light, has a soft
    * shadow at their feet, and whoever is selected grows and stands in a pool of light.
    */
+  /** Whose detective has been brought to the front of the people, so the right one stays there. */
+  private frontMost: string | null = null;
+
   private animatePeople(time: number, dt: number, state: ReturnType<WorldStore["getState"]>) {
+    // Your own detective is always drawn in front of the other people (furniture still goes in front of everyone).
+    if (state.me && state.me !== this.frontMost) {
+      const mine = this.people.find((p) => p.id === state.me);
+      const last = this.people.reduce<Person | null>((top, p) => (!top || this.children.getIndex(p.image) > this.children.getIndex(top.image) ? p : top), null);
+      if (mine && last && mine !== last) this.children.moveAbove(mine.image, last.image);
+      this.frontMost = state.me;
+    }
     const { plate } = this.options;
     const ease = 1 - Math.exp(-dt / 90);
     const tintEase = 1 - Math.exp(-dt / TINT_MS);
@@ -368,6 +381,17 @@ class BuildingScene extends Phaser.Scene {
       const positions: Record<string, Spot> = {};
       for (const p of this.people) if (p.at.x !== p.def.x || p.at.z !== p.def.z) positions[p.id] = p.at;
       state.setPositions(positions);
+    }
+    // Your own detective stands in a gentle, pulsing gold ring.
+    const mine = state.me ? this.people.find((q) => q.id === state.me) : undefined;
+    if (this.mineRing) {
+      this.mineRing.setVisible(Boolean(mine) && !this.rewinding);
+      if (mine) {
+        const w = Math.round(mine.height * (TILE.w / TILE.h) * 1.15);
+        if (Math.abs(this.mineRing.width - w) >= 1) this.mineRing.setSize(w, w * 0.26);
+        this.mineRing.setPosition(mine.image.x, mine.image.y + mine.height * 0.005);
+        this.mineRing.setAlpha(this.reduceMotion ? 0.9 : 0.65 + 0.35 * Math.sin(time / 380));
+      }
     }
     if (!this.glow) return;
     this.glow.setVisible(Boolean(lit));

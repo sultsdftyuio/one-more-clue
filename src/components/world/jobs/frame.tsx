@@ -158,9 +158,10 @@ export function SideJobFrame({
           {HELP_LOOK[help].label}
         </span>
       </header>
-      <div className="relative min-h-0 flex-1">{stage !== "intro" && children(done)}</div>
+      {/* The game fills the screen; the header and the hint float over its room. */}
+      <div className="absolute inset-0">{stage !== "intro" && children(done)}</div>
       {prompt && !result && stage !== "intro" && (
-        <p className="pointer-events-none relative z-10 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-base font-extrabold text-cream/85">{prompt}</p>
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/60 to-transparent pt-10 pb-[max(1.1rem,env(safe-area-inset-bottom))] text-center text-base font-extrabold text-cream [text-shadow:0_2px_0_#141829]">{prompt}</p>
       )}
       {stage === "intro" && (
         <div className="absolute inset-0 z-20 grid place-items-center bg-black/35 p-6" aria-live="polite">

@@ -207,7 +207,7 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 8 · Case 001 chapter 1 playtest (the gate) · M
 
-- [ ] **W8.1** Chapter 1 end to end on the hidden route.
+- [x] **W8.1** Chapter 1 end to end on the hidden route. *(Done 2026-11-26 with two headless phones on `/r/<code>/world`: the Tech pulled HALO's dock log from Cabinet B's sheet, the Photographer caught HALO in the photo, both were pinned, the Archivist tied the chat to the dock log, the proof was presented and the other phone agreed in the world's vote bar. Both phones then played the proof replay ("Priya was gone. HALO wasn't.") and chapter 2's story, and the security desk spot opened for the Archivist and Tech. No page errors. The camera shot, pins, tie and proposal went through the API the world's own sheets call.)*
 - [ ] **W8.2** Friends play it beside the current version, following [playtest.md](playtest.md).
 - [ ] **W8.3** Fix what they hit, then decide: carry on, adjust or stop.
 
@@ -406,3 +406,4 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   Chapter 1 can be played from the building alone. Not tried on real phones.
 - 2026-11-26: Phase 6 (W6.1–W6.4) done on branch `world/w6-sidejobs` (on top of W5). Checked with two headless Chrome phones: all seven spot jobs played through their own controls (Pour on the gauge, three penalties, the tea in the wrong order then the right one, six printed layers, seven taps on the fuse board, three held breaths, the wire traced by touch), each win card showed, the helps reached the other phone (two coffees or one, the Lab 4 glow, sore spots on Ozzy, Squires, Priya and Rena), and three finds brought Lights out to both phones, where both fuses flipped and the lights came back. A frame left open while another job was opened kept the first one's state; frames are now keyed by job.
 - 2026-11-26: Phase 7 (W7.1–W7.3) on branch `world/w7-feel` (on top of W6). Checked with two headless phones: after a question, only the asker's phone fetched Ozzy's recorded answer; the people list read out all six people with their rooms; opening a side job put focus on "Back to the building"; 100 fps; no page errors. Sound itself wasn't heard (headless), and no real low-end phone was tried.
+- 2026-11-26: W8.1 done (chapter 1 end to end in the world, two headless phones). Next is the gate itself: W0.6 (the owner's playtest of today's Case 001), then W8.2–W8.3 with friends.

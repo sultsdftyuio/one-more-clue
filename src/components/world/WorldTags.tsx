@@ -70,7 +70,7 @@ export function WorldTags({ plate, cast, marks = {} }: { plate: WorldPlate; cast
         >
           {tag.me ? `You · ${tag.text}` : tag.text}
           {!tag.me && statuses[tag.id] && <span className="font-semibold text-ink/70"> · {statuses[tag.id]}</span>}
-          {marks[tag.id] && <span className="ml-1 rounded-full bg-lilac px-1.5 text-[10px] font-black text-ink">{marks[tag.id]}</span>}
+          {marks[tag.id] && <span className="ml-1 rounded-full bg-lilac px-1.5 text-[11px] font-black text-ink">{marks[tag.id]}</span>}
         </span>
       ))}
     </div>

@@ -48,7 +48,10 @@ export type Sfx =
   /** The story clock losing time. */
   | "tick"
   /** Something pushed onto every phone. */
-  | "spotlight";
+  | "spotlight"
+  /** The world: a footstep on the building's floor, and a teammate pointing at something. */
+  | "step"
+  | "ping";
 
 type Settings = { sound: boolean; music: boolean };
 
@@ -88,6 +91,7 @@ export function setAudioSettings(next: Partial<Settings>) {
     window.localStorage.setItem(KEY, JSON.stringify(settings));
   } catch {}
   music.apply();
+  ambience.apply();
   listeners.forEach((l) => l());
 }
 
@@ -145,8 +149,16 @@ export function unlock() {
       else ctx.resume();
     });
   }
-  if (ctx.state !== "running" && !document.hidden) void ctx.resume().then(() => music.apply(), () => undefined);
+  if (ctx.state !== "running" && !document.hidden)
+    void ctx.resume().then(
+      () => {
+        music.apply();
+        ambience.apply();
+      },
+      () => undefined,
+    );
   music.apply();
+  ambience.apply();
 }
 
 /** Whether the audio engine has started and is playing. */
@@ -206,6 +218,14 @@ export function play(sfx: Sfx) {
   switch (sfx) {
     case "tap":
       tone({ freq: 620, glide: 900, length: 0.07, volume: 0.12 });
+      break;
+    case "step":
+      hiss({ length: 0.07, volume: 0.06, from: 420, to: 180, type: "lowpass" });
+      tone({ freq: 95, glide: 70, length: 0.06, volume: 0.05 });
+      break;
+    case "ping":
+      tone({ freq: NOTE(19), type: "triangle", length: 0.14, volume: 0.16 });
+      tone({ freq: NOTE(26), type: "triangle", start: 0.09, length: 0.22, volume: 0.14 });
       break;
     case "pin":
       tone({ freq: 523, type: "triangle", length: 0.12, volume: 0.25 });
@@ -967,6 +987,71 @@ const music = (() => {
     apply,
   };
 })();
+
+/**
+ * The world's room tone (W7.1): rain on the building, muffled indoors, and the hum of the room the camera is in.
+ * Two noise and hum layers that ease towards whatever the world asks for; silent when sound is off.
+ */
+const ambience = (() => {
+  let rain: { gain: GainNode; filter: BiquadFilterNode } | null = null;
+  let hum: GainNode | null = null;
+  let want = { rain: 0, muffle: 0, hum: 0 };
+  const build = () => {
+    if (!ctx || rain) return;
+    const src = ctx.createBufferSource();
+    src.buffer = noise;
+    src.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 6000;
+    const shape = ctx.createBiquadFilter();
+    shape.type = "highpass";
+    shape.frequency.value = 400;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    src.connect(shape).connect(filter).connect(gain).connect(sfxBus);
+    src.start();
+    rain = { gain, filter };
+    hum = ctx.createGain();
+    hum.gain.value = 0;
+    for (const [freq, level] of [
+      [60, 1],
+      [120, 0.5],
+      [180, 0.2],
+    ]) {
+      const osc = ctx.createOscillator();
+      osc.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.value = level;
+      osc.connect(g).connect(hum);
+      osc.start();
+    }
+    hum.connect(sfxBus);
+  };
+  const apply = () => {
+    load();
+    if (!ctx || ctx.state !== "running") return;
+    build();
+    if (!rain || !hum) return;
+    const on = settings.sound ? 1 : 0;
+    const t = ctx.currentTime;
+    rain.gain.gain.setTargetAtTime(want.rain * 0.05 * on, t, 0.6);
+    rain.filter.frequency.setTargetAtTime(6000 - want.muffle * 5200, t, 0.4);
+    hum.gain.setTargetAtTime(want.hum * 0.012 * on, t, 0.8);
+  };
+  return {
+    set(next: { rain: number; muffle: number; hum: number } | null) {
+      want = next ?? { rain: 0, muffle: 0, hum: 0 };
+      apply();
+    },
+    apply,
+  };
+})();
+
+export const Ambience = {
+  /** The room tone the world wants now (each 0 to 1), or null for silence. */
+  set: (next: { rain: number; muffle: number; hum: number } | null) => ambience.set(next),
+};
 
 export const Music = {
   /** The track this screen wants (null for silence) from a case's music set; `intensity` 1 to 3 grows the investigation. */

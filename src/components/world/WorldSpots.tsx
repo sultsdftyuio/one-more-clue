@@ -123,7 +123,7 @@ export function WorldSpots({
               ))}
             </span>
             {spot.fresh && (
-              <span aria-hidden="true" className="world-fresh absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-ink bg-teal px-1.5 text-[10px] font-black tracking-wider whitespace-nowrap text-ink uppercase shadow-pop-sm">
+              <span aria-hidden="true" className="world-fresh absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-ink bg-teal px-1.5 text-[11px] font-black tracking-wider whitespace-nowrap text-ink uppercase shadow-pop-sm">
                 New
               </span>
             )}

@@ -101,7 +101,9 @@ export function WorldGlow({ plate, view }: { plate: WorldPlate; view: PlayerView
           }}
           style={{ visibility: "hidden" }}
           className="world-glow absolute top-0 left-0 rounded-md will-change-transform"
-        />
+        >
+          <span className="absolute top-2 left-1/2 -translate-x-1/2 rounded-full border-2 border-ink bg-mustard px-2 text-xs font-extrabold whitespace-nowrap text-ink">Lit: something here</span>
+        </div>
       ))}
     </div>
   );
@@ -160,7 +162,9 @@ export function LightsOut({ view, act }: { view: PlayerView; act: Act }) {
       buzz(BUZZ.crack);
     }
   }, [event?.job, event?.endsAt]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!event || !live) return null;
+  // Everyone's done (this phone's view says so): the lights are back, whatever the clock says.
+  const everyone = Boolean(event) && view.players.every((p) => event!.flipped.includes(p.id));
+  if (!event || !live || everyone) return null;
   const mine = event.flipped.includes(view.me.id);
   const left = Math.max(0, Math.ceil((event.endsAt - now) / 1000));
   const flip = () => {
@@ -190,6 +194,7 @@ export function LightsOut({ view, act }: { view: PlayerView; act: Act }) {
                 <li key={p.id} className="flex flex-col items-center gap-2">
                   <button
                     type="button"
+                    autoFocus={me && !done}
                     disabled={!me || done}
                     onClick={me ? flip : undefined}
                     onPointerDown={(e) => me && (drag.current = { y: e.clientY })}

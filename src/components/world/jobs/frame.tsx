@@ -116,8 +116,10 @@ export function SideJobFrame({
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className={cx("fixed inset-0 z-50 flex touch-none flex-col overflow-hidden text-cream select-none", backdrop)}>
       <header className="relative z-20 flex items-center gap-3 bg-gradient-to-b from-black/60 to-transparent px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-6">
-        <button type="button" onClick={onClose} aria-label="Back to the building" className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-cream/40 bg-black/30 text-xl font-black">
-          ‹
+        <button type="button" autoFocus onClick={onClose} aria-label="Back to the building" className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-cream/40 bg-black/30">
+          <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-display text-[1.7rem] leading-none italic">{title}</h2>
@@ -144,7 +146,7 @@ export function SideJobFrame({
               <HelpMark help={help} className="size-8" /> {helpText(result)}
             </p>
             <p className="mt-1 text-sm font-bold text-ink/65">For the whole team.</p>
-            <button type="button" onClick={onClose} className="mt-4 w-full rounded-2xl border-[3px] border-ink bg-mustard px-4 py-3 font-display text-xl shadow-pop-sm">
+                <button type="button" autoFocus onClick={onClose} className="mt-4 w-full rounded-2xl border-[3px] border-ink bg-mustard px-4 py-3 font-display text-xl shadow-pop-sm">
               Back to the building
             </button>
           </section>

@@ -21,6 +21,8 @@ import { WorldGame, type WorldTool } from "./WorldGame";
 import { chip } from "./WorldHud";
 import { WorldThenNow } from "./WorldThenNow";
 import { useHandOffs } from "./useHandOffs";
+import { useWorldSound } from "./useWorldSound";
+import { WorldPeople } from "./WorldPeople";
 import { SideJob } from "./jobs/SideJob";
 import { LightsOut, WorldGlow, WorldJobs } from "./WorldJobs";
 import type { SideJobView } from "@/lib/game/helps";
@@ -172,6 +174,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
 
   // A teammate's find opens something for you (W5.5): the spot lights up and gets a ping on this phone.
   useHandOffs(store, view);
+  // Music, room tone, footsteps and pings (W7.1).
+  useWorldSound(store, plate, view);
 
   // What the Interviewer can do with someone they walked up to (W5.3), and the team's view of who's waiting.
   const questions = view?.questions ?? null;
@@ -254,7 +258,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         <WorldRoomTags plate={plate} />
         {view && <RewindOverlay plate={plate} view={view} act={act} />}
         <WorldTags plate={plate} cast={cast} marks={marks} />
-        {view && <WorldBubbles plate={plate} view={view} />}
+        {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}
+        <WorldPeople plate={plate} cast={cast} />
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} personActions={personActions} roleButtons={roleButtons} />
 
         {status.kind === "needsJoin" && (

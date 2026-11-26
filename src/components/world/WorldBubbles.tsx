@@ -11,10 +11,14 @@ import { spriteOf } from "@/lib/world/geometry";
 import type { WorldPlate } from "@/lib/world/plates";
 import type { Mood } from "@/lib/world/sprites";
 import type { WorldState } from "@/lib/world/store";
+import { playVoice } from "@/components/game/audio/sound";
+import { recordingOf } from "@/components/game/audio/voices";
+import { speakerOf } from "@/lib/game/voice";
 import { useWorldStore } from "./useWorld";
 
 type Tone = "answer" | "crack" | "shrug" | "sore";
-type Bubble = { key: string; person: string; text: string; caption: string | null; tone: Tone; until: number };
+/** `say` is the words to speak in their recorded voice, when this phone should (see `voiceHere`). */
+type Bubble = { key: string; person: string; text: string; caption: string | null; tone: Tone; until: number; say?: string };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -27,7 +31,7 @@ const REACTION: Partial<Record<Tone, { mood: Mood; ms: number }>> = { crack: { m
  * evidence until it's pinned); everyone else sees them talking. A crack is told to the whole team, so everyone reads
  * it, and the suspect's face cracks; a shrug makes them smug. DOM placed from world coordinates, like the name tags.
  */
-export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerView }) {
+export function WorldBubbles({ plate, view, quiet = false }: { plate: WorldPlate; view: PlayerView; quiet?: boolean }) {
   const store = useWorldStore();
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const seen = useRef<Set<string> | null>(null);
@@ -48,6 +52,15 @@ export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerV
     });
     if (!made.length) return;
     setBubbles((list) => [...list.filter((b) => b.until > now && !made.some((m) => m.person === b.person)), ...made]);
+    // Their recorded voice (W7.1), unless the interrogation room is open here and already speaking it.
+    if (!quiet) {
+      for (const b of made) {
+        const suspect = plate.people.find((p) => p.id === b.person)?.suspect;
+        const name = view.case.suspects.find((s) => s.id === suspect)?.name;
+        const recording = b.say && name ? recordingOf(view.case.id, speakerOf(view.case, name), b.say) : null;
+        if (recording) void playVoice(recording.src);
+      }
+    }
     for (const b of made) {
       const reaction = REACTION[b.tone];
       if (!reaction) continue;
@@ -59,6 +72,8 @@ export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerV
         window.setTimeout(() => store.getState().setMood(b.person, (person?.mood ?? "idle") as Mood), reaction.ms),
       );
     }
+    // `quiet` is read when bubbles arrive, not a reason to look again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, plate, store]);
 
   useEffect(() => {
@@ -138,6 +153,12 @@ export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerV
   );
 }
 
+/**
+ * Whether this phone speaks a line out loud: every phone when the team plays apart, and only the asker's phone when
+ * they're in one room, so a line is never heard four times over.
+ */
+const voiceHere = (view: PlayerView, a: Activity) => view.mode !== "together" || a.playerId === view.me.id;
+
 /** The bubble a moment makes, if it's about a suspect standing in the building. */
 export function bubbleFor(a: Activity, view: PlayerView, plate: Pick<WorldPlate, "people">, now: number): Bubble | null {
   if (!a.who) return null;
@@ -151,13 +172,14 @@ export function bubbleFor(a: Activity, view: PlayerView, plate: Pick<WorldPlate,
     const caption = piece ? (asker ? `to ${asker}` : null) : asker ? `talking to ${asker}` : "talking";
     // Pressure follows topics (W5.3, W6.2): a question on a sore spot the team has won makes them uneasy, whoever they are.
     const sore = view.helps.sore.find((s) => s.suspect === a.who && s.about.includes(a.evidenceId!));
-    if (sore) return { key: a.id, person: person.id, text, caption: `${caption ? `${caption} · ` : ""}uneasy: ${sore.topic}`, tone: "sore", until: hold(text) };
-    return { key: a.id, person: person.id, text, caption, tone: "answer", until: hold(text) };
+    const say = piece?.body.type === "statement" && voiceHere(view, a) ? piece.body.text : undefined;
+    if (sore) return { key: a.id, person: person.id, text, caption: `${caption ? `${caption} · ` : ""}uneasy: ${sore.topic}`, tone: "sore", until: hold(text), say };
+    return { key: a.id, person: person.id, text, caption, tone: "answer", until: hold(text), say };
   }
   if (a.kind === "crack" && a.evidenceId) {
     const crack = view.cracks.find((c) => c.id === a.evidenceId);
     const text = crack ? `“${crack.text}”` : "…!";
-    return { key: a.id, person: person.id, text, caption: "Cracked", tone: "crack", until: hold(text) };
+    return { key: a.id, person: person.id, text, caption: "Cracked", tone: "crack", until: hold(text), say: crack && voiceHere(view, a) ? crack.text : undefined };
   }
   if (a.kind === "miss" || a.kind === "clock") {
     const shrugs = view.activity.filter((x) => x.who && (x.kind === "miss" || x.kind === "clock") && x.at <= a.at).length;

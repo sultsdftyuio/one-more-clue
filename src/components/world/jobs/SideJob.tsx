@@ -25,12 +25,12 @@ type GameSpec = {
  */
 export const GAMES: Record<string, GameSpec> = {
   "coffee-run": { title: () => "Coffee run", prompt: "Tap Pour on green", backdrop: "bg-[linear-gradient(#b9aa90,#9c8e78_70%,#8a7c66)]", Game: CoffeeRun },
-  penalty: { title: () => "Penalty", prompt: "Swipe up to shoot", backdrop: "bg-[#141a33]", Game: ({ onDone, who }) => <Penalty onDone={onDone} keeper={who} /> },
+  penalty: { title: () => "Penalty", prompt: "Swipe up to shoot", backdrop: "bg-[#0E1430]", Game: ({ onDone, who }) => <Penalty onDone={onDone} keeper={who} /> },
   "print-it": { title: () => "Print it", prompt: "Tap to stack", backdrop: "bg-[linear-gradient(#1d2340,#2a2f4d)]", Game: PrintIt },
   rewire: { title: () => "Rewire", prompt: "Tap a tile to turn it", backdrop: "bg-[linear-gradient(#1c1d27,#2a2c3c)]", Game: Rewire },
-  tea: { title: (s) => `Tea for ${s ?? "them"}`, prompt: "Drag them in, in order", backdrop: "bg-[#5a3a26]", Game: Tea },
+  tea: { title: (s) => `Tea for ${s ?? "them"}`, prompt: "Drag them in, in order", backdrop: "bg-[#3B7C72]", Game: ({ onDone, who }) => <Tea onDone={onDone} host={who} /> },
   breathe: { title: () => "Breathe", prompt: "Hold, then let go on the ring", backdrop: "bg-[#25304a]", Game: ({ onDone, who }) => <Breathe onDone={onDone} friend={who} /> },
-  race: { title: (s) => `Race ${s ?? ""}`.trim(), prompt: "Trace the wire, fast", backdrop: "bg-[#46506a]", Game: Race },
+  race: { title: (s) => `Race ${s ?? ""}`.trim(), prompt: "Trace the wire, fast", backdrop: "bg-[#6E7A92]", Game: ({ onDone, who }) => <Race onDone={onDone} rival={who} /> },
 };
 
 /** A side job, played: the frame, the game, and the help sent to the team when it ends. */

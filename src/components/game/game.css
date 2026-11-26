@@ -1024,3 +1024,253 @@ body.tech-tapping [data-searchable] {
     animation: none;
   }
 }
+
+/* Side-job scenes: rain on glass, drifting motes, sparks. */
+.world-rain-fall {
+  animation: world-rain-fall 0.9s linear infinite;
+}
+@keyframes world-rain-fall {
+  from {
+    transform: translateY(-30px);
+  }
+  to {
+    transform: translateY(60px);
+  }
+}
+.world-mote {
+  animation: world-mote 9s ease-in-out infinite;
+}
+@keyframes world-mote {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(18px, -40px);
+  }
+}
+.world-spark {
+  animation: world-spark 0.6s ease-out forwards;
+}
+@keyframes world-spark {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    translate: var(--sx) var(--sy);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-rain-fall,
+  .world-mote,
+  .world-spark {
+    animation: none;
+  }
+  .world-spark {
+    display: none;
+  }
+}
+
+/* Side-job props: a coin dropping in, coffee pouring, steam, a trimmed layer falling. */
+.world-coin {
+  animation: world-coin 0.45s ease-in forwards;
+}
+@keyframes world-coin {
+  from {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, 34px);
+    opacity: 0;
+  }
+}
+.world-pour {
+  transform-origin: top;
+  animation: world-pour 0.3s ease-out both;
+}
+@keyframes world-pour {
+  from {
+    transform: translateX(-50%) scaleY(0);
+  }
+}
+.world-steam {
+  animation: world-steam 1.4s ease-out infinite;
+}
+@keyframes world-steam {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scaleX(1);
+  }
+  40% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-22px) scaleX(1.6);
+  }
+}
+.world-trim {
+  animation: world-trim 0.7s ease-in forwards;
+}
+@keyframes world-trim {
+  to {
+    transform: translateY(180px) rotate(28deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-coin,
+  .world-pour,
+  .world-steam,
+  .world-trim {
+    animation: none;
+  }
+}
+
+/* Side games, round 3: the crowd, the net, the tea, the bulb. */
+.world-crowd {
+  animation: world-crowd 2.6s ease-in-out infinite;
+}
+@keyframes world-crowd {
+  50% {
+    transform: translateY(2px);
+  }
+}
+.world-cheer {
+  animation: world-cheer 0.32s ease-out 6 alternate;
+}
+@keyframes world-cheer {
+  to {
+    transform: translateY(-12px);
+  }
+}
+.world-flashbulb {
+  opacity: 0;
+  animation: world-flashbulb 1.4s ease-out both;
+}
+@keyframes world-flashbulb {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 0;
+  }
+}
+.world-net {
+  transform-origin: 50% 0;
+  animation: world-net 0.6s ease-out;
+}
+@keyframes world-net {
+  30% {
+    transform: scale(1.03, 1.12);
+  }
+  60% {
+    transform: scale(0.99, 0.96);
+  }
+}
+.world-drop {
+  animation: world-drop 0.5s cubic-bezier(0.5, 0, 0.8, 0.4) both;
+}
+@keyframes world-drop {
+  from {
+    transform: translateY(-40px) rotate(-14deg);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(64px) rotate(8deg);
+    opacity: 0;
+  }
+}
+.world-tilt {
+  transform-origin: 75% 75%;
+  animation: world-tilt 1.15s ease-in-out both;
+}
+@keyframes world-tilt {
+  from {
+    transform: translateY(-16px) rotate(0);
+    opacity: 0;
+  }
+  14% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  34%,
+  72% {
+    transform: rotate(var(--tilt, -40deg));
+  }
+  88% {
+    transform: rotate(0);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(0);
+    opacity: 0;
+  }
+}
+.world-stream {
+  transform-origin: top;
+  animation: world-stream 1.15s ease-in-out both;
+}
+@keyframes world-stream {
+  0%,
+  30% {
+    transform: scaleY(0);
+  }
+  40%,
+  72% {
+    transform: scaleY(1);
+  }
+  84%,
+  100% {
+    transform: scaleY(0);
+  }
+}
+.world-bulb {
+  animation: world-bulb 0.9s ease-in-out infinite alternate;
+}
+@keyframes world-bulb {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.world-ring-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: world-ring-pulse 1.2s ease-out infinite;
+}
+@keyframes world-ring-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-crowd,
+  .world-cheer,
+  .world-flashbulb,
+  .world-net,
+  .world-drop,
+  .world-tilt,
+  .world-stream,
+  .world-bulb,
+  .world-ring-pulse {
+    animation: none;
+  }
+}

@@ -41,6 +41,7 @@ export function WorldSpots({
   onPing?: (spot: WorldSpotView) => void;
 }) {
   const store = useWorldStore();
+  const rewinding = useWorld((s) => s.rewind.open);
   const near = useWorld((s) => s.near);
   const hold = useRef<{ timer: number; fired: boolean } | null>(null);
   const press = (spot: WorldSpotView) => {
@@ -77,7 +78,7 @@ export function WorldSpots({
     });
   }, [store, spots, plate, near]);
 
-  if (view.phase !== "investigation") return null;
+  if (view.phase !== "investigation" || rewinding) return null;
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {spots.map((spot) => {

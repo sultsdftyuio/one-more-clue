@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { play } from "@/components/game/audio/sound";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { nameOf, type Act } from "@/components/game/context";
 import { Icon } from "@/components/game/ui/Icon";
 import { formatTime, parseTime } from "@/lib/game/clock";
@@ -33,30 +34,63 @@ export function RewindButton({ className }: { className: string }) {
   );
 }
 
+/** Minutes a step button moves the tape. */
+const STEP = 5;
+
 /**
- * The rewind's controls (W4.2, W4.3), over the dock while it's open: drag through the night, play it, and, for the
- * Archivist, share it (their slider pulls everyone's along) and Freeze it on one moment for the whole team. Who the
- * evidence puts somewhere off the building (gone home, across town) is listed here.
+ * The rewind's controls (W4.2, W4.3), like a tape deck over the dock: step back, play, step on, and a tape track with a
+ * notch for every moment the team's evidence covers (blue where it was seen, lilac where it's only someone's story),
+ * hour marks and a playhead. The Archivist shares their tape (their slider pulls everyone's along) and can Freeze the
+ * night on one moment for the team. Who the evidence puts somewhere off the building is listed under it. Opening it
+ * spins the night back from its end to its start, so it feels like rewinding.
  */
 export function RewindBar({ view, map }: { view: PlayerView; map: NightMapView }) {
   const rewind = useWorld((s) => s.rewind);
   const drag = useWorld((s) => s.dragRewind);
   const freeze = useWorld((s) => s.freezeRewind);
   const close = useWorld((s) => s.openRewind);
+  const look = useWorld((s) => s.look);
+  const me = useWorld((s) => s.me);
   const archivist = view.me.abilities.includes("crosscheck");
   const locked = Boolean(rewind.frozenBy && rewind.frozenBy !== view.me.id);
   const [playing, setPlaying] = useState(false);
+  // The night is seen whole: the camera pulls back to the whole building while the tape runs.
+  useEffect(() => {
+    look({ kind: "whole" });
+  }, [look]);
   const minute = Math.min(map.span, Math.max(0, rewind.minute));
+  const set = useCallback((m: number) => drag(Math.min(map.span, Math.max(0, Math.round(m))), view.me.id, archivist), [drag, map.span, view.me.id, archivist]);
+
+  // Opening: the night spins back from its end to where the tape starts.
+  const spun = useRef(false);
+  useEffect(() => {
+    if (spun.current || locked || rewind.following) return;
+    spun.current = true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    play("whoosh");
+    const start = performance.now();
+    const target = minute;
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - start) / 900);
+      set(map.span - (map.span - target) * (1 - (1 - k) ** 3));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // Once, when the rewind opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!playing || locked) return;
     const timer = window.setInterval(() => {
       const next = minute + 1;
       if (next > map.span) setPlaying(false);
-      else drag(next, view.me.id, archivist);
-    }, 220);
+      else set(next);
+    }, 200);
     return () => window.clearInterval(timer);
-  }, [playing, locked, minute, map.span, drag, view.me.id, archivist]);
+  }, [playing, locked, minute, map.span, set]);
 
   // Only which rooms are off the building matters here; the building's own boxes are the scene's business.
   const rooms = useMemo(
@@ -64,74 +98,115 @@ export function RewindBar({ view, map }: { view: PlayerView; map: NightMapView }
     [map.rooms],
   );
   const { elsewhere } = useMemo(() => ghostsAt(map.sightings, { rooms, links: [] }, minute), [map.sightings, rooms, minute]);
+  // A notch for each moment on the tape, and a mark every half hour.
+  const notches = useMemo(() => {
+    const seen = new Map<number, boolean>();
+    for (const s of map.sightings) seen.set(s.from, (seen.get(s.from) ?? false) || !s.says);
+    return [...seen.entries()].map(([m, solid]) => ({ m, solid }));
+  }, [map.sightings]);
+  const marks = useMemo(() => {
+    const out: { m: number; label: string }[] = [];
+    for (let m = 0; m <= map.span; m += 30) out.push({ m, label: clockAt(map, m) });
+    return out;
+  }, [map]);
+  const pct = (m: number) => `${((m / Math.max(1, map.span)) * 100).toFixed(2)}%`;
+  const deck = "grid size-11 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-[#d9ecff] text-[#0b1530] shadow-pop-sm disabled:opacity-40 active:translate-y-0.5";
 
   return (
     <section
       aria-label="Rewind the night"
-      className="fixed inset-x-3 bottom-[calc(4.9rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl rounded-3xl border-[3px] border-ink bg-[#121a33]/95 p-3 text-cream shadow-card"
+      className="fixed inset-x-3 bottom-[max(0.6rem,env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl rounded-[1.6rem] border-[3px] border-ink bg-[linear-gradient(#1a2546,#0d1430)] p-3 text-[#d9ecff] shadow-card"
     >
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xl font-bold text-[#bfeaff]" aria-live="polite">
-          {clockAt(map, minute)}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-xs font-bold text-cream/70">
+        <button type="button" disabled={locked} onClick={() => set(minute - STEP)} aria-label={`Back ${STEP} minutes`} className={deck}>
+          <Icon name="rewind" className="size-5" />
+        </button>
+        <button type="button" disabled={locked} onClick={() => setPlaying(!playing)} aria-label={playing ? "Pause" : "Play the night"} className={cx(deck, "size-12 bg-[#8fe3ff]")}>
+          {playing ? (
+            <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+              <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
+              <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
+            </svg>
+          ) : (
+            <Icon name="play" className="size-5" />
+          )}
+        </button>
+        <button type="button" disabled={locked} onClick={() => set(minute + STEP)} aria-label={`On ${STEP} minutes`} className={deck}>
+          <Icon name="rewind" className="size-5 rotate-180" />
+        </button>
+        <p className="min-w-0 flex-1 truncate text-xs font-bold text-[#d9ecff]/70">
           {rewind.frozenBy
             ? rewind.frozenBy === view.me.id
               ? "You froze the night for the team"
               : `${nameOf(view, rewind.frozenBy)} froze the night here`
             : rewind.following
-              ? `Following ${nameOf(view, rewind.following)}`
-              : "Ghosts go where the evidence puts them"}
-        </span>
-        <button
-          type="button"
-          disabled={locked}
-          onClick={() => setPlaying(!playing)}
-          aria-label={playing ? "Pause" : "Play the night"}
-          className="grid size-9 place-items-center rounded-full border-2 border-ink bg-cream font-black text-ink disabled:opacity-40"
-        >
-          {playing ? "❚❚" : "▶"}
-        </button>
+              ? `Following ${nameOf(view, rewind.following)}'s tape`
+              : "Ghosts go only where the evidence puts them"}
+        </p>
         {archivist && (
           <button
             type="button"
             onClick={() => freeze(view.me.id, rewind.frozenBy !== view.me.id)}
             aria-pressed={rewind.frozenBy === view.me.id}
-            className={cx("rounded-full border-2 border-ink px-3 py-1 text-sm font-extrabold", rewind.frozenBy === view.me.id ? "bg-[#bfeaff] text-ink" : "bg-mustard text-ink")}
+            className={cx("shrink-0 rounded-full border-[3px] border-ink px-3 py-1.5 text-sm font-extrabold shadow-pop-sm", rewind.frozenBy === view.me.id ? "bg-[#8fe3ff] text-ink" : "bg-mustard text-ink")}
           >
-            {rewind.frozenBy === view.me.id ? "Unfreeze" : "Freeze"}
+            {rewind.frozenBy === view.me.id ? "Unfreeze" : "Freeze for all"}
           </button>
         )}
         <button
           type="button"
           disabled={Boolean(rewind.frozenBy)}
-          onClick={() => close(false)}
+          onClick={() => {
+            close(false);
+            look(me ? { kind: "person", id: me } : { kind: "closeUp" });
+          }}
           aria-label="Back to now"
-          className="grid size-9 place-items-center rounded-full bg-night/70 text-cream disabled:opacity-40"
+          title="Back to now"
+          className="grid size-10 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-coral text-cream shadow-pop-sm disabled:opacity-40"
         >
           <Icon name="x" className="size-4" />
         </button>
       </div>
-      <input
-        type="range"
-        min={0}
-        max={map.span}
-        step={1}
-        value={minute}
-        disabled={locked}
-        onChange={(e) => drag(Number(e.target.value), view.me.id, archivist)}
-        aria-label="The night"
-        aria-valuetext={clockAt(map, minute)}
-        className="mt-2 w-full accent-[#bfeaff] disabled:opacity-50"
-      />
-      <div className="flex justify-between font-mono text-[11px] font-bold text-cream/60">
-        <span>{map.from}</span>
-        <span>{map.to}</span>
+
+      {/* The tape: notches for the evidence's moments, half-hour marks, and the playhead. */}
+      <div className="relative mt-3 h-14">
+        <div className="absolute inset-x-0 top-3 h-6 overflow-hidden rounded-lg border-2 border-ink bg-[repeating-linear-gradient(90deg,#24325e_0_14px,#1d2a52_14px_16px)]">
+          <div className="absolute inset-y-0 left-0 bg-[#8fe3ff]/25" style={{ width: pct(minute) }} />
+          {notches.map((n) => (
+            <span
+              key={n.m}
+              aria-hidden="true"
+              className={cx("absolute top-0.5 bottom-0.5 w-1.5 -translate-x-1/2 rounded-full", n.solid ? "bg-[#8fe3ff]" : "border border-dashed border-[#c9b5ff] bg-transparent")}
+              style={{ left: pct(n.m) }}
+            />
+          ))}
+        </div>
+        {marks.map((m) => (
+          <span key={m.m} aria-hidden="true" className="absolute top-10 -translate-x-1/2 font-mono text-[11px] font-bold whitespace-nowrap text-[#d9ecff]/60" style={{ left: pct(m.m) }}>
+            {m.label}
+          </span>
+        ))}
+        <span aria-hidden="true" className="pointer-events-none absolute top-0 h-12 w-1 -translate-x-1/2 rounded-full bg-mustard shadow-[0_0_10px_2px_rgba(242,179,61,0.7)]" style={{ left: pct(minute) }}>
+          <span className="absolute -top-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-mustard" />
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={map.span}
+          step={1}
+          value={minute}
+          disabled={locked}
+          onChange={(e) => set(Number(e.target.value))}
+          aria-label="The night"
+          aria-valuetext={clockAt(map, minute)}
+          className="absolute inset-x-0 top-1 h-10 w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+        />
       </div>
+
       {elsewhere.length > 0 && (
-        <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Elsewhere">
+        <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Elsewhere">
           {elsewhere.map((e) => (
-            <li key={`${e.who}:${e.room}`} className={cx("rounded-full border px-2 py-0.5 text-xs font-bold", e.says ? "border-dashed border-[#d8c8ff] text-[#d8c8ff]" : "border-[#bfeaff] text-[#bfeaff]")}>
+            <li key={`${e.who}:${e.room}`} className={cx("rounded-full border px-2 py-0.5 text-xs font-bold", e.says ? "border-dashed border-[#c9b5ff] text-[#c9b5ff]" : "border-[#8fe3ff] text-[#8fe3ff]")}>
               {whoName(view, map, e.who)} · {e.name.toLowerCase()}
               {e.says ? " (says so)" : ""}
             </li>
@@ -139,6 +214,29 @@ export function RewindBar({ view, map }: { view: PlayerView; map: NightMapView }
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * The tape look over the whole screen while the rewind is open: scanlines, a dark vignette, a blinking "◀◀ REWIND"
+ * in the corner and the night's time large at the top, like a tape's on-screen display.
+ */
+export function RewindScreen({ view }: { view: PlayerView }) {
+  const open = useWorld((s) => s.rewind.open);
+  const minute = useWorld((s) => s.rewind.minute);
+  const frozen = useWorld((s) => Boolean(s.rewind.frozenBy));
+  const map = view.rewind;
+  if (!open || !map) return null;
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
+      <div className="world-scanlines absolute inset-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(5,8,22,0.7))]" />
+      <div className="world-tracking absolute inset-x-0 h-10 bg-[linear-gradient(transparent,rgba(217,236,255,0.10),transparent)]" />
+      <p className="world-osd absolute top-16 left-4 font-mono text-xl font-black tracking-widest text-[#d9ecff] sm:top-20">{frozen ? "❚❚ FROZEN" : "◀◀ REWIND"}</p>
+      <p className="absolute top-14 left-1/2 -translate-x-1/2 font-mono text-4xl font-black tracking-wider text-[#d9ecff] [text-shadow:0_0_14px_rgba(143,227,255,0.8),2px_2px_0_#0b1530] sm:text-5xl">
+        {clockAt(map, Math.min(map.span, Math.max(0, minute)))}
+      </p>
+    </div>
   );
 }
 

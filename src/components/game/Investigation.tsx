@@ -267,7 +267,18 @@ const DOCK: { id: Panel; label: string; icon: IconName }[] = [
 const urgent = (badge: string) => badge === "vote" || badge === "live" || badge.endsWith("new");
 
 /** Everything that isn't your own tool: one tap away, with a badge when something there needs you. */
-export function Dock({ badges, onOpen, floating = false }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void; floating?: boolean }) {
+export function Dock({
+  badges,
+  onOpen,
+  floating = false,
+  icons,
+}: {
+  badges: Partial<Record<Panel, string>>;
+  onOpen: (panel: Panel) => void;
+  floating?: boolean;
+  /** Picture icons for the floating dock (the world's), in place of the line icons. */
+  icons?: Partial<Record<Panel, React.ReactNode>>;
+}) {
   // In the world it's a floating bar of icons over the building (names for screen readers and on hover).
   if (floating) {
     return (
@@ -283,9 +294,12 @@ export function Dock({ badges, onOpen, floating = false }: { badges: Partial<Rec
               onClick={() => onOpen(d.id)}
               aria-label={badges[d.id] ? `${d.label} (${badges[d.id]})` : d.label}
               title={d.label}
-              className="relative grid size-12 place-items-center rounded-full text-cream/80 transition-colors hover:bg-cream/10 hover:text-mustard"
+              className={cx(
+                "relative grid place-items-center rounded-full text-cream/80 transition-transform hover:-translate-y-1 hover:scale-105 active:scale-95",
+                icons?.[d.id] ? "size-14 p-0.5" : "size-12 hover:bg-cream/10 hover:text-mustard",
+              )}
             >
-              <Icon name={d.icon} className="size-6" />
+              {icons?.[d.id] ?? <Icon name={d.icon} className="size-6" />}
               {badges[d.id] && (
                 <span
                   aria-hidden="true"

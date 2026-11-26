@@ -14,7 +14,7 @@ import type { WorldState } from "@/lib/world/store";
 import { playVoice } from "@/components/game/audio/sound";
 import { recordingOf } from "@/components/game/audio/voices";
 import { speakerOf } from "@/lib/game/voice";
-import { useWorldStore } from "./useWorld";
+import { useWorld, useWorldStore } from "./useWorld";
 
 type Tone = "answer" | "crack" | "shrug" | "sore";
 /** `say` is the words to speak in their recorded voice, when this phone should (see `voiceHere`). */
@@ -37,6 +37,7 @@ export function WorldBubbles({ plate, view, quiet = false }: { plate: WorldPlate
   const seen = useRef<Set<string> | null>(null);
   const nodes = useRef(new Map<string, HTMLDivElement>());
   const resets = useRef(new Map<string, number>());
+  const rewinding = useWorld((s) => s.rewind.open);
 
   useEffect(() => {
     if (!seen.current) {
@@ -114,7 +115,7 @@ export function WorldBubbles({ plate, view, quiet = false }: { plate: WorldPlate
     });
   }, [store, plate, bubbles]);
 
-  if (!bubbles.length) return null;
+  if (!bubbles.length || rewinding) return null;
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-live="polite">
       {bubbles.map((b) => {

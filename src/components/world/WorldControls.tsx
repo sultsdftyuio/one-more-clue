@@ -8,12 +8,13 @@ import { cx } from "@/lib/cx";
 import type { CastMember } from "@/lib/world/cast";
 import type { Spot } from "@/lib/world/geometry";
 import type { WorldPlate } from "@/lib/world/plates";
-import { nearest, stairsFrom, type Reachable } from "@/lib/world/steer";
+import { inReach, stairsFrom, type Reachable } from "@/lib/world/steer";
+import { play } from "@/components/game/audio/sound";
 import { Icon } from "@/components/game/ui/Icon";
 import { plateToScreen } from "@/lib/world/camera";
 import { spriteOf, toPlate } from "@/lib/world/geometry";
 import type { WorldState } from "@/lib/world/store";
-import { useWorldStore } from "./useWorld";
+import { useWorld, useWorldStore } from "./useWorld";
 
 const LEFT = new Set(["ArrowLeft", "a", "A"]);
 const RIGHT = new Set(["ArrowRight", "d", "D"]);
@@ -90,14 +91,20 @@ export function WorldControls({
     return list;
   }, [playing, view.spots, view.jobs, plate, cast, store]);
 
-  const reach = at ? nearest(plate, at, things) : null;
+  const reachable = at ? inReach(plate, at, things) : [];
+  const reach = reachable[0] ?? null;
+  const [choosing, setChoosing] = useState(false);
+  const reachKey = reachable.map((t) => t.id).join("|");
+  useEffect(() => setChoosing(false), [reachKey]);
   useEffect(() => {
     store.getState().setNear(reach ? { kind: reach.kind, id: reach.id } : null);
   }, [store, reach?.kind, reach?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const up = at ? stairsFrom(plate, at, 1) : null;
   const down = at ? stairsFrom(plate, at, -1) : null;
 
-  const use = () => {
+  const activate = (thing: Reachable | null) => {
+    setChoosing(false);
+    const reach = thing;
     if (!reach) return;
     if (reach.kind === "spot") {
       const spot = view.spots.find((s) => s.id === reach.id);
@@ -124,6 +131,18 @@ export function WorldControls({
       if (me && Math.abs(me.x - them.x) > 160) s.select(null);
     });
   }, [store, mine, plate]);
+  const use = () => {
+    if (reachable.length > 1 && !choosing) {
+      setChoosing(true);
+      play("tap");
+      return;
+    }
+    activate(reach);
+  };
+  const pick = useRef((n: number) => activate(reachable[n] ?? null));
+  pick.current = (n: number) => activate(reachable[n] ?? null);
+  const choosingRef = useRef(choosing);
+  choosingRef.current = choosing;
   const useRef_ = useRef(use);
   useRef_.current = use;
 
@@ -144,6 +163,9 @@ export function WorldControls({
       } else if (UP.has(e.key) || DOWN.has(e.key)) {
         e.preventDefault();
         if (!e.repeat) store.getState().requestClimb(UP.has(e.key) ? 1 : -1);
+      } else if (choosingRef.current && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        pick.current(Number(e.key) - 1);
       } else if (e.key === "Escape") {
         store.getState().select(null);
       } else if (USE.has(e.key) && !e.repeat) {
@@ -187,7 +209,30 @@ export function WorldControls({
   return (
     <>
       {/* What's in reach: a key bubble floating over the thing itself; the stairs: an arrow over your own head. */}
-      <KeyBubble plate={plate} reach={reach} mine={mine} touch={touch} stairs={up ? 1 : down ? -1 : 0} />
+      <KeyBubble plate={plate} reach={reach} more={reachable.length - 1} mine={mine} touch={touch} stairs={up ? 1 : down ? -1 : 0} />
+      {choosing && reachable.length > 1 && (
+        <div className="pointer-events-auto absolute inset-x-3 bottom-[calc(10.5rem+env(safe-area-inset-bottom))] z-30 mx-auto w-fit max-w-full rounded-3xl border-[3px] border-ink bg-night/95 p-2 shadow-card" role="menu" aria-label="What to use">
+          <ul className="flex flex-wrap justify-center gap-2">
+            {reachable.slice(0, 6).map((t, i) => (
+              <li key={`${t.kind}-${t.id}`}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  autoFocus={i === 0}
+                  onClick={() => activate(t)}
+                  className="world-pop flex items-center gap-2 rounded-2xl border-[3px] border-ink bg-cream py-1.5 pr-3 pl-1.5 text-left font-extrabold text-ink shadow-pop-sm hover:bg-mustard"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <span className="grid size-8 place-items-center rounded-xl bg-ink text-cream">
+                    {!touch ? <span className="font-mono text-sm">{i + 1}</span> : <Icon name={t.kind === "person" ? "chat" : t.kind === "job" ? "play" : "eye"} className="size-4" />}
+                  </span>
+                  <span className="max-w-[11rem] truncate">{t.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {touch && (
         <>
           <div className="pointer-events-none absolute bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 z-10 flex items-end gap-2">
@@ -233,10 +278,11 @@ export function WorldControls({
  * a speech bubble to talk, a play button for a side job. At the stairs, an arrow over your own head says which way
  * they go. Placed from world coordinates as the camera moves, like the name tags.
  */
-function KeyBubble({ plate, reach, mine, touch, stairs }: { plate: WorldPlate; reach: Reachable | null; mine: string; touch: boolean; stairs: number }) {
+function KeyBubble({ plate, reach, more, mine, touch, stairs }: { plate: WorldPlate; reach: Reachable | null; more: number; mine: string; touch: boolean; stairs: number }) {
   const store = useWorldStore();
   const thing = useRef<HTMLDivElement>(null);
   const arrow = useRef<HTMLDivElement>(null);
+  const rewinding = useWorld((s) => s.rewind.open);
   useLayoutEffect(() => {
     const place = (s: WorldState) => {
       if (thing.current && reach) {
@@ -269,6 +315,7 @@ function KeyBubble({ plate, reach, mine, touch, stairs }: { plate: WorldPlate; r
   }, [store, plate, reach, mine, stairs]);
   const icon = reach?.kind === "person" ? "chat" : reach?.kind === "job" ? "play" : "eye";
   const verb = reach?.kind === "person" ? "Talk to" : reach?.kind === "job" ? "Play at" : "Look at";
+  if (rewinding) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-live="polite">
       {reach && (
@@ -276,8 +323,10 @@ function KeyBubble({ plate, reach, mine, touch, stairs }: { plate: WorldPlate; r
           <span className="world-bubble flex items-center gap-1 rounded-2xl border-[3px] border-ink bg-cream px-1.5 py-1 text-ink shadow-pop-sm">
             {!touch && <kbd className="grid size-6 place-items-center rounded-lg border-2 border-ink bg-mustard font-mono text-sm font-black">E</kbd>}
             <Icon name={icon} className="size-5" />
+            {more > 0 && <span className="rounded-full bg-ink px-1.5 text-xs font-black text-cream">+{more}</span>}
             <span className="sr-only">
               {verb} {reach.label}
+              {more > 0 ? `, and ${more} more nearby` : ""}
             </span>
           </span>
         </div>

@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { goalOf } from "@/components/game/context";
 import { Icon, type IconName } from "@/components/game/ui/Icon";
 import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
-import { getAudioSettings, setAudioSettings, subscribeAudio, unlock } from "@/components/game/audio/sound";
+import { getAudioSettings, play, setAudioSettings, subscribeAudio, unlock } from "@/components/game/audio/sound";
+import { formatSpan, parseTime } from "@/lib/game/clock";
 import { useWorld } from "./useWorld";
 import { HelpsChip } from "./WorldJobs";
 import { RewindButton } from "./WorldRewind";
@@ -34,6 +35,7 @@ const glass = "rounded-2xl border-2 border-ink/80 bg-night/90";
  */
 function GoalBadge({ chapter, chapters, question, onSolve }: { chapter: number; chapters: number; question: string; onSolve: () => void }) {
   const [open, setOpen] = useState(true);
+  const rewinding = useWorld((s) => s.rewind.open);
   useEffect(() => {
     setOpen(true);
     const timer = window.setTimeout(() => setOpen(false), 8000);
@@ -54,7 +56,7 @@ function GoalBadge({ chapter, chapters, question, onSolve }: { chapter: number; 
           <Icon name="target" className="size-4" />
         </span>
       </button>
-      {open && (
+      {open && !rewinding && (
         <button
           type="button"
           onClick={onSolve}
@@ -91,24 +93,75 @@ function FrameMeter() {
  * The night left and what the team has earned (W2.6): the story clock as a small chip, with room for the helps the
  * side jobs win (W6). It goes coral when the night is nearly gone.
  */
+/**
+ * The night as a clock (the story's deadline): a little clock face showing the time, a ring round it for how much of
+ * the night is left (gold, turning coral when it runs low), the time in words beside it and how long is left. When a
+ * move costs time, the clock jolts and the minutes lost drop away under it.
+ */
 function NightChip({ view }: { view: PlayerView }) {
   const d = view.deadline;
+  const spent = d?.spent ?? 0;
+  const before = useRef(spent);
+  const [lost, setLost] = useState<{ minutes: number; key: number } | null>(null);
+  useEffect(() => {
+    if (spent > before.current) {
+      setLost({ minutes: spent - before.current, key: Date.now() });
+      play("tick");
+    }
+    before.current = spent;
+  }, [spent]);
+  useEffect(() => {
+    if (!lost) return;
+    const timer = window.setTimeout(() => setLost(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [lost]);
   if (!d) return null;
-  const share = d.night ? d.left / d.night : 1;
+  let minutes = 0;
+  try {
+    minutes = parseTime(d.time);
+  } catch {}
+  const share = d.night ? Math.max(0, Math.min(1, d.left / d.night)) : 1;
+  const ring = 2 * Math.PI * 20;
+  const colour = d.low ? "#EF6B5C" : "#F2B33D";
   return (
-    <div className={cx(glass, "pointer-events-auto flex items-center gap-2 px-2.5 py-1.5")} title={d.what}>
-      <Icon name="clock" className={cx("size-4 shrink-0", d.low ? "animate-pulse text-coral" : "text-mustard")} />
-      <span className={cx("font-mono text-sm font-bold whitespace-nowrap", d.low ? "text-coral" : "text-mustard")}>{d.time}</span>
-      <span
-        role="meter"
-        aria-label="Night left"
-        aria-valuemin={0}
-        aria-valuemax={d.night}
-        aria-valuenow={d.left}
-        className="h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-cream/15"
-      >
-        <span className={cx("block h-full rounded-full", d.low ? "bg-coral" : "bg-mustard")} style={{ width: `${share * 100}%` }} />
+    <div
+      key={lost?.key}
+      className={cx("pointer-events-auto relative flex items-center gap-2 rounded-full border-[3px] border-ink bg-night/90 py-1 pr-3.5 pl-1 shadow-pop-sm", lost && "animate-shake")}
+      title={d.what}
+      role="timer"
+      aria-label={`${d.time}. ${formatSpan(d.left)} of the night left. ${d.what}.`}
+    >
+      <svg viewBox="0 0 48 48" className="size-11 shrink-0" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="#FFF4E0" strokeOpacity="0.14" strokeWidth="5" />
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          fill="none"
+          stroke={colour}
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={`${(share * ring).toFixed(1)} ${ring.toFixed(1)}`}
+          transform="rotate(-90 24 24)"
+          style={{ transition: "stroke-dasharray 0.8s ease" }}
+        />
+        <circle cx="24" cy="24" r="14.5" fill="#FFF4E0" stroke="#141829" strokeWidth="2.5" />
+        {Array.from({ length: 12 }, (_, i) => (
+          <line key={i} x1="24" y1="11.8" x2="24" y2={i % 3 === 0 ? "14.6" : "13.4"} stroke="#141829" strokeWidth={i % 3 === 0 ? 1.8 : 1.1} transform={`rotate(${i * 30} 24 24)`} />
+        ))}
+        <line x1="24" y1="24" x2="24" y2="17" stroke="#141829" strokeWidth="2.6" strokeLinecap="round" transform={`rotate(${((minutes % 720) / 720) * 360} 24 24)`} style={{ transition: "transform 0.8s ease" }} />
+        <line x1="24" y1="24" x2="24" y2="13.5" stroke="#141829" strokeWidth="1.7" strokeLinecap="round" transform={`rotate(${(minutes % 60) * 6} 24 24)`} style={{ transition: "transform 0.8s ease" }} />
+        <circle cx="24" cy="24" r="1.8" fill="#E8574A" />
+      </svg>
+      <span className="leading-none">
+        <span className={cx("block font-mono text-base font-black whitespace-nowrap", d.low ? "text-coral" : "text-mustard")}>{d.time}</span>
+        <span className="mt-0.5 block text-[11px] font-extrabold whitespace-nowrap text-cream/65">{formatSpan(d.left)} left</span>
       </span>
+      {lost && (
+        <span className="world-lost pointer-events-none absolute top-full right-2 mt-1 rounded-full border-2 border-ink bg-coral px-2 py-0.5 font-mono text-sm font-black whitespace-nowrap text-cream shadow-pop-sm">
+          −{formatSpan(lost.minutes)}
+        </span>
+      )}
     </div>
   );
 }

@@ -51,6 +51,16 @@ export type Reachable = { kind: "spot" | "job" | "person"; id: string; x: number
 /** Things count as this much nearer than people, so standing by a person and a machine, E uses the machine. */
 export const OBJECT_BIAS_CM = 30;
 
+/** Everything within reach on your floor, best first (objects and side jobs win a close call with a person). */
+export function inReach(plate: Pick<WorldPlate, "rooms">, at: Spot, things: Reachable[]): Reachable[] {
+  const floor = new Set(floorOf(plate, at).map((r) => r.id));
+  return things
+    .filter((t) => t.room && floor.has(t.room) && Math.abs(t.x - at.x) <= REACH_CM)
+    .map((t) => ({ t, d: Math.abs(t.x - at.x) - (t.kind === "person" ? 0 : OBJECT_BIAS_CM) }))
+    .sort((a, b) => a.d - b.d)
+    .map(({ t }) => t);
+}
+
 /** The nearest thing within reach on your floor, or null. Objects and side jobs win a close call with a person. */
 export function nearest(plate: Pick<WorldPlate, "rooms">, at: Spot, things: Reachable[]): Reachable | null {
   const floor = new Set(floorOf(plate, at).map((r) => r.id));

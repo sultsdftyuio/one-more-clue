@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { play } from "@/components/game/audio/sound";
 import { buzz, BUZZ } from "@/components/game/haptics";
 import { cx } from "@/lib/cx";
@@ -98,6 +98,9 @@ export function SideJobFrame({
   children: (done: (stars: Stars) => void) => ReactNode;
 }) {
   const [result, setResult] = useState<Stars | null>(null);
+  // In: an iris opens on a title card and a "3, 2, 1, GO!" count; the game only starts after GO. Out: the iris closes.
+  const [stage, setStage] = useState<"intro" | "play" | "closing">(() => (reducedMotion() ? "play" : "intro"));
+  const [count, setCount] = useState(3);
   const sent = useRef(false);
   const done = (stars: Stars) => {
     if (sent.current) return;
@@ -106,17 +109,42 @@ export function SideJobFrame({
     buzz(BUZZ.crack);
     void onFinish(stars).then(() => setResult(stars));
   };
+  const leave = () => {
+    if (reducedMotion()) return onClose();
+    setStage("closing");
+    window.setTimeout(onClose, 320);
+  };
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    if (stage !== "intro") return;
+    play("whoosh");
+    const timers = [
+      window.setTimeout(() => (setCount(2), play("tick")), 1000),
+      window.setTimeout(() => (setCount(1), play("tick")), 1550),
+      window.setTimeout(() => (setCount(0), play("found")), 2100),
+      window.setTimeout(() => setStage("play"), 2550),
+    ];
+    play("tick");
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [stage]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && leave();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+    // `leave` only reads stable things.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} className={cx("fixed inset-0 z-50 flex touch-none flex-col overflow-hidden text-cream select-none", backdrop)}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className={cx("fixed inset-0 z-50 flex touch-none flex-col overflow-hidden text-cream select-none", backdrop, stage === "closing" ? "world-iris-out" : "world-iris-in")}
+    >
       <header className="relative z-20 flex items-center gap-3 bg-gradient-to-b from-black/60 to-transparent px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-6">
-        <button type="button" autoFocus onClick={onClose} aria-label="Back to the building" className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-cream/40 bg-black/30">
+        <button type="button" autoFocus onClick={leave} aria-label="Back to the building" className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-cream/40 bg-black/30">
           <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -130,10 +158,23 @@ export function SideJobFrame({
           {HELP_LOOK[help].label}
         </span>
       </header>
-      <div className="relative min-h-0 flex-1">{children(done)}</div>
-      {prompt && !result && <p className="pointer-events-none relative z-10 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-base font-extrabold text-cream/85">{prompt}</p>}
+      <div className="relative min-h-0 flex-1">{stage !== "intro" && children(done)}</div>
+      {prompt && !result && stage !== "intro" && (
+        <p className="pointer-events-none relative z-10 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-base font-extrabold text-cream/85">{prompt}</p>
+      )}
+      {stage === "intro" && (
+        <div className="absolute inset-0 z-20 grid place-items-center bg-black/35 p-6" aria-live="polite">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <HelpMark help={help} className="world-pop size-20 shadow-card" />
+            <p className="world-pop font-display text-5xl italic [animation-delay:120ms] [text-shadow:3px_3px_0_#141829]">{title}</p>
+            {prompt && <p className="world-pop rounded-full border-2 border-ink bg-cream px-4 py-1.5 text-lg font-extrabold text-ink [animation-delay:260ms]">{prompt}</p>}
+            <p key={count} className="world-count font-display text-7xl text-mustard [text-shadow:4px_4px_0_#141829]">{count > 0 ? count : "GO!"}</p>
+          </div>
+        </div>
+      )}
       {result && (
         <div className="absolute inset-0 z-30 grid place-items-end bg-black/40 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <Confetti />
           <section aria-live="polite" className="mx-auto w-full max-w-sm animate-pop-in rounded-3xl border-[3px] border-ink bg-cream p-5 text-center text-ink shadow-card">
             <p className="flex justify-center gap-2" aria-label={`${result} of 3 stars`}>
               {[1, 2, 3].map((n) => (
@@ -146,12 +187,40 @@ export function SideJobFrame({
               <HelpMark help={help} className="size-8" /> {helpText(result)}
             </p>
             <p className="mt-1 text-sm font-bold text-ink/65">For the whole team.</p>
-                <button type="button" autoFocus onClick={onClose} className="mt-4 w-full rounded-2xl border-[3px] border-ink bg-mustard px-4 py-3 font-display text-xl shadow-pop-sm">
+                <button type="button" autoFocus onClick={leave} className="mt-4 w-full rounded-2xl border-[3px] border-ink bg-mustard px-4 py-3 font-display text-xl shadow-pop-sm">
               Back to the building
             </button>
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+/** A burst of paper confetti behind the win card (none with reduced motion). */
+function Confetti() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 34 }, (_, i) => ({
+        left: 8 + ((i * 37) % 84),
+        delay: (i % 7) * 60,
+        dx: ((i * 53) % 120) - 60,
+        spin: ((i * 97) % 720) - 360,
+        colour: ["#F2B33D", "#E8574A", "#3FB8AF", "#9B87F5", "#FFF4E0"][i % 5],
+        w: 6 + (i % 3) * 3,
+      })),
+    [],
+  );
+  if (reducedMotion()) return null;
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="world-confetti absolute top-[38%] block h-3 rounded-sm"
+          style={{ left: `${p.left}%`, width: p.w, background: p.colour, animationDelay: `${p.delay}ms`, ["--dx" as string]: `${p.dx}px`, ["--spin" as string]: `${p.spin}deg` }}
+        />
+      ))}
     </div>
   );
 }

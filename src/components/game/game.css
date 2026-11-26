@@ -896,3 +896,131 @@ body.tech-tapping [data-searchable] {
     transform: translateX(2.5rem);
   }
 }
+
+/* Time lost from the night, dropping away under the clock. */
+.world-lost {
+  animation: world-lost 2.2s ease-out forwards;
+}
+@keyframes world-lost {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.95);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-lost {
+    animation: none;
+  }
+}
+
+/* The rewind's tape look. */
+.world-scanlines {
+  background: repeating-linear-gradient(rgb(5 8 22 / 0) 0 2px, rgb(5 8 22 / 0.22) 2px 4px);
+  mix-blend-mode: multiply;
+}
+.world-tracking {
+  animation: world-tracking 5.5s linear infinite;
+}
+@keyframes world-tracking {
+  0% {
+    top: -10%;
+  }
+  60%,
+  100% {
+    top: 110%;
+  }
+}
+.world-osd {
+  text-shadow: 0 0 10px rgb(143 227 255 / 0.8), 2px 2px 0 #0b1530;
+  animation: world-osd 1.1s steps(1) infinite;
+}
+@keyframes world-osd {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-tracking,
+  .world-osd {
+    animation: none;
+  }
+}
+
+/* Side jobs: an iris into the game and out of it, a popping title card, a count, and confetti on a win. */
+.world-iris-in {
+  animation: world-iris-in 0.45s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+}
+.world-iris-out {
+  animation: world-iris-out 0.32s ease-in both;
+}
+@keyframes world-iris-in {
+  from {
+    clip-path: circle(0% at 50% 55%);
+  }
+  to {
+    clip-path: circle(150% at 50% 55%);
+  }
+}
+@keyframes world-iris-out {
+  from {
+    clip-path: circle(150% at 50% 55%);
+  }
+  to {
+    clip-path: circle(0% at 50% 55%);
+  }
+}
+.world-pop {
+  animation: world-pop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes world-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(14px);
+  }
+}
+.world-count {
+  animation: world-count 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes world-count {
+  from {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+.world-confetti {
+  animation: world-confetti 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) both;
+}
+@keyframes world-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+  30% {
+    transform: translate(calc(var(--dx) * 0.6), -160px) rotate(calc(var(--spin) * 0.4));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), 260px) rotate(var(--spin));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-iris-in,
+  .world-iris-out,
+  .world-pop,
+  .world-count,
+  .world-confetti {
+    animation: none;
+  }
+}

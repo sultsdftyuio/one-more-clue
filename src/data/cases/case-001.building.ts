@@ -81,7 +81,7 @@ export const case001Building: Pick<CaseWorld, "plate" | "floors" | "rooms" | "li
         [470, 6],
       ],
     },
-    // Not painted yet: the maker space is closed for the night, but its door opens off the lobby.
+    // The maker space is closed for the night, but its door (under a little green LOBBY sign) opens off the lobby.
     {
       from: "maker",
       to: "lobby",

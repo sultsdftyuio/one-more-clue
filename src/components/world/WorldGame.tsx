@@ -107,7 +107,11 @@ export function WorldGame({
 
   return (
     <GameProvider value={game}>
-      {rewinding && view.rewind ? <RewindBar view={view} map={view.rewind} /> : !view.proposal && <TimelineBar view={view} onOpen={open} />}
+      {rewinding && view.rewind ? (
+        <RewindBar view={view} map={view.rewind} />
+      ) : (
+        !view.proposal && !(view.interrogation && !view.interrogation.over) && <TimelineBar view={view} onOpen={open} />
+      )}
       <Dock badges={badges} onOpen={onPanel} />
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />

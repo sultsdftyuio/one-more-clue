@@ -33,6 +33,11 @@ import { WorldSpots } from "./WorldSpots";
 import { WorldRoomTags } from "./WorldRoomTags";
 import { WorldTags } from "./WorldTags";
 import { WorldContext } from "./useWorld";
+import { WorldConfrontation } from "./WorldConfrontation";
+import { WorldLobby, WorldPhaseLayer } from "./WorldPhases";
+import { evidenceFonts } from "@/components/game/evidence/fonts";
+import { themeOf } from "@/components/game/themes";
+import { cx } from "@/lib/cx";
 
 const card = "pointer-events-auto mx-auto w-full max-w-sm rounded-3xl border-[3px] border-ink bg-dusk p-5 text-center shadow-card";
 
@@ -237,6 +242,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     </button>
   ) : null;
 
+  const theme = themeOf(view?.case.theme);
+
   if (!plate || !art) {
     return (
       <div className="grid min-h-[100svh] place-items-center p-6">
@@ -247,6 +254,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
 
   return (
     <WorldContext.Provider value={store}>
+      {/* The case's own type and look, and the faces evidence is made with, as on the classic screens. */}
+      <div className={cx(theme.font, evidenceFonts, theme.className)}>
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
         {view && <WorldGlow plate={plate} view={view} />}
@@ -260,6 +269,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         <WorldTags plate={plate} cast={cast} marks={marks} />
         {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}
         <WorldPeople plate={plate} cast={cast} />
+        {view && <WorldConfrontation plate={plate} view={view} act={act} busy={busy} quiet={panel === "solve"} onCallLie={() => setPanel("solve")} />}
+        {view?.phase === "lobby" && <WorldLobby view={view} act={act} busy={busy} />}
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} personActions={personActions} roleButtons={roleButtons} />
 
         {status.kind === "needsJoin" && (
@@ -281,7 +292,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         {error && (
           <p
             role="alert"
-            className="absolute inset-x-0 top-24 z-10 mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
+            className="fixed inset-x-0 top-24 z-[60] mx-auto w-fit max-w-[calc(100%-2rem)] animate-pop-in rounded-2xl border-[3px] border-ink bg-coral px-4 py-2 text-center font-bold text-cream shadow-pop-sm"
           >
             {error}
           </p>
@@ -292,6 +303,8 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         <SideJob key={job.id} job={job} view={view} act={act} roomName={plate.rooms.find((r) => r.id === job.spot.room)?.name ?? ""} onClose={() => setJob(null)} />
       )}
       {view && view.phase === "investigation" && <LightsOut view={view} act={act} />}
+      {view && <WorldPhaseLayer view={view} act={act} busy={busy} />}
+      </div>
     </WorldContext.Provider>
   );
 }

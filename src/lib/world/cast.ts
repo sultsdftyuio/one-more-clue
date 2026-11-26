@@ -62,6 +62,8 @@ export type CastMember = {
   line: string;
   blurb: string | null;
   me: boolean;
+  /** The case's suspect id, for a suspect. */
+  suspect?: string;
 };
 
 /** Everyone in the building by person id, from the player's view (no view yet: nobody is named). */
@@ -86,7 +88,7 @@ export function castOf(people: { id: string; detective?: boolean; suspect?: stri
       continue;
     }
     const suspect = view.case.suspects.find((s) => s.id === person.suspect);
-    if (suspect) cast[person.id] = { id: person.id, tag: shortName(suspect.name), name: suspect.name, line: suspect.role ?? "Suspect", blurb: suspect.blurb, me: false };
+    if (suspect) cast[person.id] = { id: person.id, tag: shortName(suspect.name), name: suspect.name, line: suspect.role ?? "Suspect", blurb: suspect.blurb, me: false, suspect: suspect.id };
   }
   return cast;
 }

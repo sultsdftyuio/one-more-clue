@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "@/components/game/game.css";
 import { BoardPanel } from "@/components/game/BoardPanel";
-import { evidenceIn, GameProvider, nameOf, type Act } from "@/components/game/context";
+import { evidenceIn, GameProvider, type Act } from "@/components/game/context";
 import { Notebook } from "@/components/game/desk/DeskPanel";
-import { ArchivistTool } from "@/components/game/desk/roles/Archivist";
 import { InterviewerTool } from "@/components/game/desk/roles/Interviewer";
-import { ROLE_CARD } from "@/components/game/desk/roles/look";
 import { PhotographerTool } from "@/components/game/desk/roles/Photographer";
-import { TechTool } from "@/components/game/desk/roles/Tech";
 import { EvidenceCard } from "@/components/game/evidence/EvidenceCard";
 import { EvidenceShelf, useSeenEvidence } from "@/components/game/evidence/EvidenceShelf";
 import { SpotlightMoment } from "@/components/game/evidence/ShowEveryone";
@@ -19,7 +16,6 @@ import { ProposalBar } from "@/components/game/ProposalBar";
 import { SolvePanel } from "@/components/game/SolvePanel";
 import { AccessMoment, CrackMoment, Moments } from "@/components/game/story/Moments";
 import { TeamPanel } from "@/components/game/TeamPanel";
-import { Icon } from "@/components/game/ui/Icon";
 import { Sheet } from "@/components/game/ui/Sheet";
 import type { PlayerView } from "@/lib/game/engine";
 import type { WorldSpotView } from "@/lib/game/world";
@@ -27,11 +23,10 @@ import { cx } from "@/lib/cx";
 import { TimelineBar } from "./TimelineBar";
 import { useWorld } from "./useWorld";
 import { RewindBar } from "./WorldRewind";
-import { ABILITY_ICON } from "./WorldSpots";
+import { SpotSheetBody } from "./WorldSpotSheet";
 
-/** Each role's tool, the same ones the classic screens show (src/components/game/desk). */
-const TOOL = { search: TechTool, interview: InterviewerTool, inspect: PhotographerTool, crosscheck: ArchivistTool };
-const TOOL_NAME = { search: "The computer", interview: "The interrogation room", inspect: "The camera", crosscheck: "The evidence wall" };
+/** A role's tool opened from the building rather than a spot: the interrogation room on someone you walked up to (W5.3), or the camera from "then and now" (W5.1). */
+export type WorldTool = { kind: "interview"; who: string } | { kind: "camera" };
 const PANEL_TITLE: Record<Panel, string> = { evidence: "Evidence", board: "The board", solve: "Solve", team: "The team", notes: "Your notebook" };
 
 /**
@@ -49,12 +44,16 @@ export function WorldGame({
   onCloseSpot,
   panel,
   onPanel,
+  tool,
+  onCloseTool,
 }: {
   view: PlayerView;
   act: Act;
   busy: boolean;
   spot: WorldSpotView | null;
   onCloseSpot: () => void;
+  tool: WorldTool | null;
+  onCloseTool: () => void;
   panel: Panel | null;
   onPanel: (panel: Panel | null) => void;
 }) {
@@ -89,10 +88,9 @@ export function WorldGame({
   };
 
   if (view.phase !== "investigation") return null;
+  // The sheet follows the spot as the view changes (a pull brings a piece in, a find makes it fresh).
+  const here = spot ? (view.spots.find((s) => s.id === spot.id) ?? spot) : null;
 
-  const roles = spot ? spot.roles.map((id) => view.case.roles.find((r) => r.id === id)).filter((r) => r !== undefined) : [];
-  const mine = roles.find((r) => view.me.roles.includes(r.id) && r.ability !== "none");
-  const Tool = mine && mine.ability !== "none" ? TOOL[mine.ability] : null;
   const unread = view.evidence.filter(isNew).length;
   const badges: Partial<Record<Panel, string>> = {
     evidence: unread ? `${unread} new` : view.evidence.length ? String(view.evidence.length) : undefined,
@@ -126,36 +124,20 @@ export function WorldGame({
           <div className={cx(view.proposal && "pb-80")}>{panels[panel]}</div>
         </Sheet>
       )}
-      {spot && Tool && mine && mine.ability !== "none" && (
-        <Sheet title={TOOL_NAME[mine.ability]} onClose={onCloseSpot}>
-          <p className="mb-3 flex items-center gap-2 pr-12 text-sm font-bold text-cream/75">
-            <Icon name="target" className="size-4" /> {spot.name}
-          </p>
-          <Tool />
+      {here && (
+        <Sheet title={here.name} onClose={onCloseSpot}>
+          <SpotSheetBody spot={here} onClose={onCloseSpot} onCamera={onCloseSpot} />
         </Sheet>
       )}
-      {spot && !Tool && (
-        <Sheet title={spot.name} onClose={onCloseSpot}>
-          <h2 className="pr-12 font-display text-2xl text-cream">{spot.name}</h2>
-          <p className="mt-1 font-semibold text-cream/80">Someone else has something to look at here.</p>
-          <ul className="mt-4 grid gap-2">
-            {roles.map((r) => {
-              const holders = view.players.filter((p) => p.roles.includes(r.id));
-              return (
-                <li key={r.id} className="flex items-center gap-3 rounded-2xl border-2 border-ink bg-night/60 p-3">
-                  <span className={cx("grid size-9 shrink-0 place-items-center rounded-full border-2 border-ink", ROLE_CARD[r.ability])}>
-                    <Icon name={ABILITY_ICON[r.ability]} className="size-4" />
-                  </span>
-                  <span className="font-bold text-cream">
-                    {r.name}
-                    <span className="block text-sm font-semibold text-cream/70">
-                      {holders.length ? `Ask ${holders.map((p) => nameOf(view, p.id)).join(" or ")} to come and look.` : "Nobody has this role in your game."}
-                    </span>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+      {tool?.kind === "interview" && (
+        <Sheet title="The interrogation room" onClose={onCloseTool}>
+          <SoreLine view={view} name={tool.who} />
+          <InterviewerTool key={tool.who} who={tool.who} />
+        </Sheet>
+      )}
+      {tool?.kind === "camera" && (
+        <Sheet title="The camera" onClose={onCloseTool}>
+          <PhotographerTool />
         </Sheet>
       )}
       {piece && (
@@ -166,4 +148,12 @@ export function WorldGame({
       {seenChapter !== null && view.chapter.number > seenChapter && <ChapterStory view={view} onClose={closeChapter} />}
     </GameProvider>
   );
+}
+
+/** A sore spot the team has won for whoever is in the chair: the topic that makes them uneasy (never whether they lie). */
+function SoreLine({ view, name }: { view: PlayerView; name: string }) {
+  const sore = view.helps.sore.find((s) => s.name === name);
+  if (!sore) return null;
+  const short = name.split(" ")[0] === "Prof." ? name : name.split(" ")[0];
+  return <p className="mb-3 rounded-2xl border-2 border-ink bg-[#bfe0ff] px-3 py-2 text-sm font-extrabold text-ink">Sore spot: {short} gets uneasy about {sore.topic}.</p>;
 }

@@ -9,9 +9,10 @@ import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
 import { useWorld } from "./useWorld";
+import { HelpsChip } from "./WorldJobs";
 import { RewindButton } from "./WorldRewind";
 
-const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
+export const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
 // Solid, not frosted: a backdrop blur would re-blur the moving canvas every frame, which costs phones dearly.
 const glass = "rounded-2xl border-2 border-ink/80 bg-night/90";
 
@@ -97,6 +98,8 @@ export function WorldHud({
   stickers,
   minimap,
   onSolve,
+  personActions,
+  roleButtons,
 }: {
   code: string;
   view: PlayerView | null;
@@ -106,6 +109,10 @@ export function WorldHud({
   /** Shown under the title card. */
   minimap?: ReactNode;
   onSolve: () => void;
+  /** What you can do with someone you tapped (question them, W5.3), under their card. */
+  personActions?: (member: CastMember) => ReactNode;
+  /** More camera-row buttons for your role (the Photographer's flash, W5.1). */
+  roleButtons?: ReactNode;
 }) {
   const stage = useWorld((s) => s.status.stage);
   const failure = useWorld((s) => s.status.error);
@@ -173,6 +180,7 @@ export function WorldHud({
         </div>
         <div className="flex flex-col items-end gap-2">
           {view && playing && <NightChip view={view} />}
+          {view && playing && <HelpsChip view={view} />}
           <FrameMeter />
         </div>
       </header>
@@ -206,6 +214,7 @@ export function WorldHud({
             <h2 className="font-display text-2xl leading-tight">{member.name}</h2>
             <p className="text-sm font-extrabold text-ink/70">{member.line}</p>
             {member.blurb && <p className="mt-1.5 text-sm font-semibold">{member.blurb}</p>}
+            {playing && personActions?.(member)}
             <button
               type="button"
               onClick={() => select(null)}
@@ -240,6 +249,7 @@ export function WorldHud({
             </button>
           )}
           {playing && view?.rewind && <RewindButton className={chip} />}
+          {playing && !zoomedOut && roleButtons}
           {!playing && <InviteButton code={code} />}
           <Link href={`/r/${code}`} className={cx(chip, "bg-cream/80")}>
             Classic

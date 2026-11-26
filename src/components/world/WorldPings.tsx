@@ -25,7 +25,7 @@ export function WorldPings({ plate, view }: { plate: WorldPlate; view: PlayerVie
   const [now, setNow] = useState(() => Date.now());
   const nodes = useRef(new Map<string, HTMLDivElement>());
   const live = pings.filter((p) => now - p.at < PING_MS);
-  const key = (p: Ping) => `${p.by}:${p.at}`;
+  const key = (p: Ping) => `${p.by}:${p.spot}:${p.at}`;
 
   // Re-render as pings run out.
   useEffect(() => {
@@ -84,7 +84,7 @@ export function WorldPings({ plate, view }: { plate: WorldPlate; view: PlayerVie
             }}
             className="pointer-events-auto absolute top-full left-1/2 mt-1 -translate-x-1/2 rounded-full group-data-[side=left]:left-0 group-data-[side=left]:translate-x-0 group-data-[side=right]:right-0 group-data-[side=right]:left-auto group-data-[side=right]:translate-x-0 border-2 border-ink bg-coral px-2 py-0.5 text-xs font-extrabold whitespace-nowrap text-cream shadow-pop-sm"
           >
-            {p.by === view.me.id ? "You pinged this" : `${nameOf(view, p.by)}: look here`}
+            {p.note ?? (p.by === view.me.id ? "You pinged this" : `${nameOf(view, p.by)}: look here`)}
           </button>
         </div>
       ))}

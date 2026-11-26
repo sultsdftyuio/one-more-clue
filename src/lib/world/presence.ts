@@ -95,6 +95,13 @@ export class WorldPresence {
     transport.send({ k: "ping", id: me.id, x: spot.x, z: spot.z, r: roomAt(spot.x, spot.z), spot: spot.id });
   }
 
+  /** The Photographer's flash: the room lights up here at once, and on every other phone. */
+  flash(room: string) {
+    const { me, transport, store } = this.o;
+    store.getState().addFlash({ room, by: me.id, at: Date.now() });
+    transport.send({ k: "flash", id: me.id, r: room });
+  }
+
   /** My rewind slider (only the Archivist's phone sets one): drags at most CURSOR_HZ a second, freezes at once. */
   private lastCursor = -Infinity;
   private lastFrozen = false;
@@ -145,6 +152,8 @@ export class WorldPresence {
       store.getState().setPresenceStatus(sticker, message.s);
     } else if (message.k === "cursor") {
       store.getState().receiveCursor(message.id, message.m, message.f);
+    } else if (message.k === "flash" && typeof message.r === "string") {
+      store.getState().addFlash({ room: message.r, by: message.id, at: Date.now() });
     } else if (message.k === "ping" && message.z !== undefined) {
       store.getState().addPing({ by: message.id, spot: message.spot ?? null, x: message.x, z: message.z, at: Date.now() });
     }

@@ -177,35 +177,37 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 5 · Roles in the world · L
 
-- [ ] **W5.1** Photographer: the flash lights dark spots, plus "then and now" (hold an old photo over the live room).
-- [ ] **W5.2** Tech: laptops, badge readers, the security desk and the gate camera. Logs show numbers, not names.
-- [ ] **W5.3** Interviewer: talk to suspects where they stand, with their recorded voices. Pressure follows topics. Showing evidence breaks a story.
-- [ ] **W5.4** Archivist: the rewind, Freeze and the red-string wall.
-- [ ] **W5.5** Make the hand-offs physical: for example, the Photographer sees the password the Tech needs.
+- [x] **W5.1** Photographer: the flash lights dark spots, plus "then and now" (hold an old photo over the live room). *(Done 2026-11-26. At the spot where a photo was taken, "Then and now" flies the camera to that room and lays the photo over it, live, with a slider between the two; "Shoot it" opens the camera on it. A Flash button floods the room your detective is in with light on every phone (a `flash` message on the live channel). It's light, not a clue: nothing is found by it.)*
+- [x] **W5.2** Tech: laptops, badge readers, the security desk and the gate camera. Logs show numbers, not names. *(Done 2026-11-26. A `probe` engine action pulls a spot's records the way a search for the right word would: one record per pull, in the spot's order, still waiting on its leads and still locked behind its password. A pull before the lead says whose move opens it, for free. Any log you hold that covers the night has "Play it in the building", which steps the rewind through its rows. The full computer is one tap away in the same sheet. The case's logs already show badge numbers, not names, for the visitor.)*
+- [x] **W5.3** Interviewer: talk to suspects where they stand, with their recorded voices. Pressure follows topics. Showing evidence breaks a story. *(Done 2026-11-26. Tap someone in the building: the Interviewer gets "Question them", which opens the interrogation room with them in the chair (their recorded voice plays there, as on the classic screens); everyone else is told who can. Their name tag shows "?" for questions waiting and "!" for a lead. Answers come out of the suspect as a speech bubble on every phone: the words only where that player can read them, "talking to …" elsewhere. A crack is in everyone's bubble and cracks their face; a shrug makes them smug. Activities now carry `who`, the suspect they're about. Pressure on topics comes with the sore spots in W6.2.)*
+- [x] **W5.4** Archivist: the rewind, Freeze and the red-string wall. *(Done 2026-11-26. Rewind and Freeze came in W4; an Archivist spot now opens "Rewind the night", what's there, and the wall.)*
+- [x] **W5.5** Make the hand-offs physical: for example, the Photographer sees the password the Tech needs. *(Done 2026-11-26. Each spot in the view now lists the pieces you hold there and says whether one of your roles can pull something new (`fresh`). When a teammate's find opens something at a spot, it wears a "New" badge and your phone pings it: "Ali's find: new at Priya's laptop". Case 001's password (the guard's badge number on the visitor sheet) is a chapter 2–3 hand-off and works the same way.)*
 
 **Done when** chapter 1 can be solved entirely from inside the world.
 
 ### Phase 6 · Side mini-games and helps · L
 
-- [ ] **W6.1** The side-job frame: spot, sheet, result, help. Once per chapter, shared with the team, no fail state.
-- [ ] **W6.2** Helps in the engine:
+- [x] **W6.1** The side-job frame: spot, sheet, result, help. Once per chapter, shared with the team, no fail state. *(Done 2026-11-26. [WorldJobs](../src/components/world/WorldJobs.tsx) marks each job's spot with the help it wins, bobbing, and greys it with a tick once someone has done it. [SideJobFrame](../src/components/world/jobs/frame.tsx) is the mockups' frame: the way back, the job's name and where it is ("Favour · Ozzy", "Odd job · Maker space"), the help chip, a few-word prompt, and one win card with 1–3 stars. The help goes to the team the moment the game ends. Every game ends with at least a star, and the slow one (Rewire) offers "Fix it for me" after 25 s.)*
+- [x] **W6.2** Helps in the engine:
   - Coffee: the next question or search costs no time.
   - Lightbulb: a room glows.
   - Sore spot: one topic per suspect.
-- [ ] **W6.3** The eight Case 001 games from the mockups: Coffee run, Penalty with Ozzy, Lights out, Print it, Rewire, Tea for Squires, Breathe with Priya, Race Rena.
-- [ ] **W6.4** Team events: Lights out fires at a story beat, and every phone gets its own fuse.
+
+  *(Done 2026-11-26, in [helps.ts](../src/lib/game/helps.ts) with a `sideJob` action. Searches already cost nothing, so a Coffee keeps the next costly move off the clock: a question, or a shot, show or password that misses. Three stars make two cups. A Lightbulb lights the next room that still holds something to turn up this chapter (a record at its spots, or a detail in a photo kept there), and the glow goes out by itself once that room is searched out; in chapter 1 that's only ever Lab 4. A sore spot shows on the suspect's card and over the interrogation room, and a question on that topic (one of its `about` pieces) makes them visibly uneasy in the building, guilty or not. Jobs are once per chapter for the team; a sore spot, once won, stays won. The HUD shows the team's helps under the clock.)*
+- [x] **W6.3** The eight Case 001 games from the mockups: Coffee run, Penalty with Ozzy, Lights out, Print it, Rewire, Tea for Squires, Breathe with Priya, Race Rena. *(Done 2026-11-26 in DOM, SVG and CSS ([games-a](../src/components/world/jobs/games-a.tsx), [games-b](../src/components/world/jobs/games-b.tsx)), each in its mockup's setting and moves: tap on green, swipe up (or tap a side of the goal), tap to stack, turn tiles, drag in order (or tap), hold and let go, trace the wire (or hold a button). Ozzy, Priya and the others are their own drawn characters.)*
+- [x] **W6.4** Team events: Lights out fires at a story beat, and every phone gets its own fuse. *(Done 2026-11-26. It fires once, in chapter 1, after the team's third find. Every phone goes dark with its own fuse and sees whose are flipped; the lights come back when everyone has flipped, or after 20 s anyway, with one Lightbulb per flipped fuse.)*
 
 **Done when** the games run on phones at 60 fps, rewards apply, and none of them can block progress.
 
 ### Phase 7 · Feel, sound and access · M
 
-- [ ] **W7.1** Ambience and sound effects, plus the recorded voices on speech bubbles.
-- [ ] **W7.2** Accessibility: reduced motion, colour-blind-safe cues, readable sizes, and labels for the HUD and sheets.
-- [ ] **W7.3** A performance pass on a low-end phone, against the asset budget.
+- [x] **W7.1** Ambience and sound effects, plus the recorded voices on speech bubbles. *(Done 2026-11-26. The world screen had never woken the audio engine, so it was silent. [useWorldSound](../src/components/world/useWorldSound.ts) now wakes it on the first tap, plays the case's music like the classic screens (on the phone that carries the room's sound), and lays a room tone under it that follows the camera: rain loud outside and muffled indoors, the hum of Lab 4's servers or the dark maker space. Your own detective has footsteps, and a teammate's ping chimes. Bubbles speak in the suspect's recorded voice: on every phone when the team plays apart, only on the asker's phone in one room, and not while the interrogation room is open there (it speaks the line itself).)*
+- [x] **W7.2** Accessibility: reduced motion, colour-blind-safe cues, readable sizes, and labels for the HUD and sheets. *(Done 2026-11-26. Everything new holds still with reduced motion. Nothing is told by colour alone: spots carry role icons and "New", jobs a tick, lit rooms the words "Lit: something here". The smallest text went from 10 to 11 px. People in the building, drawn on the canvas, are also a list of buttons that shows on focus ([WorldPeople](../src/components/world/WorldPeople.tsx)), and side jobs and Lights out put focus on their first control.)*
+- [x] **W7.3** A performance pass on a low-end phone, against the asset budget. *(Partly, 2026-11-26. Assets: Case 001's building art is 1.1 MB and Phaser 352 KB gzipped, well inside the 3 MB first load; voice clips (1.4 MB for the case) load only when a line is spoken, and the side jobs are DOM and CSS with no art files. Every new overlay follows the camera by store subscription, not React renders. A headless phone on the dev server drew 100 fps. Not done: a real low-end phone, which needs the owner.)*
 
 ### Phase 8 · Case 001 chapter 1 playtest (the gate) · M
 
-- [ ] **W8.1** Chapter 1 end to end on the hidden route.
+- [x] **W8.1** Chapter 1 end to end on the hidden route. *(Done 2026-11-26 with two headless phones on `/r/<code>/world`: the Tech pulled HALO's dock log from Cabinet B's sheet, the Photographer caught HALO in the photo, both were pinned, the Archivist tied the chat to the dock log, the proof was presented and the other phone agreed in the world's vote bar. Both phones then played the proof replay ("Priya was gone. HALO wasn't.") and chapter 2's story, and the security desk spot opened for the Archivist and Tech. No page errors. The camera shot, pins, tie and proposal went through the API the world's own sheets call.)*
 - [ ] **W8.2** Friends play it beside the current version, following [playtest.md](playtest.md).
 - [ ] **W8.3** Fix what they hit, then decide: carry on, adjust or stop.
 
@@ -393,3 +395,15 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
     - no page errors
   - Fixed along the way: the tie had been offered for pieces the Archivist couldn't see, which the engine refuses.
   - Not tried on real phones. Phases 2 to 4 are done; next is phase 5, roles in the world.
+- 2026-11-26: Phase 5 (W5.1–W5.5) done on branch `world/w5-roles`. Checked with two headless Chrome phones on real LiveKit, the host as Tech and Photographer:
+  - Cabinet B's sheet said "Something new is waiting here"; a pull found HALO's dock log, and "Play it in the building" opened the rewind at 8:38
+  - "Then and now" laid the LinkedIn photo over Lab 4; the flash showed on both phones
+  - tapping Priya gave the Interviewer "Question Priya · 1 question waiting", which opened the room with her in the chair
+  - after the laptop question, the Interviewer read Priya's answer in a bubble, the Tech saw "talking to …" and a ping, "…'s find: new at Priya's laptop"
+  - showing Ozzy the photo put his crack in a bubble on both phones
+  - no page errors
+  
+  Chapter 1 can be played from the building alone. Not tried on real phones.
+- 2026-11-26: Phase 6 (W6.1–W6.4) done on branch `world/w6-sidejobs` (on top of W5). Checked with two headless Chrome phones: all seven spot jobs played through their own controls (Pour on the gauge, three penalties, the tea in the wrong order then the right one, six printed layers, seven taps on the fuse board, three held breaths, the wire traced by touch), each win card showed, the helps reached the other phone (two coffees or one, the Lab 4 glow, sore spots on Ozzy, Squires, Priya and Rena), and three finds brought Lights out to both phones, where both fuses flipped and the lights came back. A frame left open while another job was opened kept the first one's state; frames are now keyed by job.
+- 2026-11-26: Phase 7 (W7.1–W7.3) on branch `world/w7-feel` (on top of W6). Checked with two headless phones: after a question, only the asker's phone fetched Ozzy's recorded answer; the people list read out all six people with their rooms; opening a side job put focus on "Back to the building"; 100 fps; no page errors. Sound itself wasn't heard (headless), and no real low-end phone was tried.
+- 2026-11-26: W8.1 done (chapter 1 end to end in the world, two headless phones). Next is the gate itself: W0.6 (the owner's playtest of today's Case 001), then W8.2–W8.3 with friends.

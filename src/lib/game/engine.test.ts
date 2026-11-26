@@ -656,3 +656,105 @@ test("the world remembers where each detective last stood, checked against the b
   assert.equal(move(state, "home", 0).ok, false, "not into a room off the plate");
   assert.equal(move(state, "roof", 0).ok, false);
 });
+
+test("in the world the Tech pulls a spot's records, which still wait on their leads, and the spot lights up when one opens", () => {
+  let state = createRoom({ code: "PULL", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0, world: true });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, case001, id, { type: "ready" }, 0, newId));
+  const holder = (ability: "search" | "interview" | "inspect") => ["p1", "p2"].find((id) => viewFor(state, case001, id, new Set()).me.abilities.includes(ability))!;
+  const tech = holder("search");
+  const other = ["p1", "p2"].find((id) => id !== tech)!;
+  const spot = (id: string, who = tech) => viewFor(state, case001, who, new Set()).spots.find((s) => s.id === id)!;
+  const probe = (id: string, who = tech) => applyAction(state, case001, who, { type: "probe", spot: id }, 0, newId);
+
+  assert.equal(probe("cabinet", other).ok, other === tech, "only the Tech pulls records");
+  assert.equal(applyAction({ ...state, world: undefined }, case001, tech, { type: "probe", spot: "cabinet" }, 0, newId).ok, false, "not in a classic room");
+
+  // Cabinet B holds the dock's log and the asset register: one pull each, then nothing new.
+  assert.equal(spot("cabinet").fresh, true);
+  state = must(probe("cabinet"));
+  assert.ok(state.found["dock-log"]);
+  assert.match(state.activity.at(-2)?.text ?? state.activity.at(-1)!.text, /pulled the records at Cabinet B/);
+  state = must(probe("cabinet"));
+  assert.ok(state.found["asset-register"]);
+  assert.equal(spot("cabinet").fresh, false);
+  assert.deepEqual(spot("cabinet").pieces.sort(), ["asset-register", "dock-log"]);
+  assert.equal(probe("cabinet").ok, false, "nothing new there now");
+
+  // The laptop's log waits on the photo and on Priya's answer: pulling early says whose move it is, for free.
+  assert.equal(spot("laptop").fresh, false);
+  state = must(probe("laptop"));
+  assert.equal(state.found["device-log"], undefined);
+  assert.equal(state.searches.at(-1)!.waits, true);
+  state = { ...state, found: { ...state.found, "detail-laptop": { by: other, at: 0 } } };
+  state = must(applyAction(state, case001, holder("interview"), { type: "ask", evidenceId: "question-priya-laptop" }, 0, newId));
+  assert.equal(state.activity.find((a) => a.kind === "found" && a.evidenceId === "question-priya-laptop")?.who, "triangle", "a question says who it was put to");
+  assert.equal(spot("laptop").fresh, true, "the teammate's find lights the laptop up for the Tech");
+  state = must(probe("laptop"));
+  assert.ok(state.found["device-log"]);
+  assert.equal(probe("anpr").ok, false, "the gate camera has nothing until chapter 3");
+});
+
+test("side jobs win the team a help: a coffee off the clock, a lit room, a sore spot; once a chapter, never failed", () => {
+  let state = createRoom({ code: "JOBS", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0, world: true });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, case001, id, { type: "ready" }, 0, newId));
+  const job = (id: string, stars: number, who = "p1") => applyAction(state, case001, who, { type: "sideJob", job: id, stars }, 0, newId);
+  const view = () => viewFor(state, case001, "p1", new Set());
+  assert.equal(applyAction({ ...state, world: undefined }, case001, "p1", { type: "sideJob", job: "coffee-run", stars: 3 }, 0, newId).ok, false, "not in a classic room");
+  assert.equal(view().jobs.length, 7, "seven jobs to start from spots; Lights out is a team event");
+
+  // Coffee: three stars make two cups, and a question then costs no time.
+  state = must(job("coffee-run", 3));
+  assert.equal(view().helps.coffee, 2);
+  assert.equal(job("coffee-run", 3, "p2").ok, false, "once a chapter, for the whole team");
+  assert.equal(view().jobs.find((j) => j.id === "coffee-run")!.done?.by, "p1");
+  const interviewer = ["p1", "p2"].find((id) => viewFor(state, case001, id, new Set()).me.abilities.includes("interview"))!;
+  const before = state.clockSpent ?? 0;
+  state = must(applyAction(state, case001, interviewer, { type: "ask", evidenceId: "question-ozzy-found" }, 0, newId));
+  assert.equal(state.clockSpent ?? 0, before, "the coffee kept it off the clock");
+  assert.equal(view().helps.coffee, 1);
+
+  // A Lightbulb lights a room that still holds something to find, and goes dark once it's searched out.
+  state = must(job("print-it", 0));
+  assert.equal(state.jobs?.["1:print-it"]?.stars, 1, "a miss still wins, just less");
+  const lit = view().helps.lit;
+  assert.equal(lit.length, 1);
+  assert.ok(["lab4", "corridor", "lobby", "outside"].includes(lit[0]));
+
+  // A sore spot is one topic about one suspect, and stays won.
+  state = must(job("tea-squires", 2));
+  assert.deepEqual(view().helps.sore.map((s) => [s.name, s.topic]), [["Prof. Edmund Squires", "the visitor sheet"]]);
+  assert.equal(job("tea-squires", 3).ok, false);
+  assert.equal(job("lights-out", 3).ok, false, "a team event can't be started from a spot");
+});
+
+test("Lights out fires once at its story beat; everyone flips a fuse and the lights come back with a glow each", () => {
+  let state = createRoom({ code: "DARK", caseFile: case001, host: { id: "p1", token: "t1", name: "Ana" }, mode: "together", now: 0, world: true });
+  state = must(addPlayer(state, case001, { id: "p2", token: "t2", name: "Bo" }, 0));
+  state = must(applyAction(state, case001, "p1", { type: "start" }, 0, newId));
+  for (const id of ["p1", "p2"]) state = must(applyAction(state, case001, id, { type: "ready" }, 0, newId));
+  const tech = ["p1", "p2"].find((id) => viewFor(state, case001, id, new Set()).me.abilities.includes("search"))!;
+  // Two finds: nothing yet. The third brings the storm.
+  state = must(applyAction(state, case001, tech, { type: "probe", spot: "cabinet" }, 1000, newId));
+  state = must(applyAction(state, case001, tech, { type: "probe", spot: "cabinet" }, 2000, newId));
+  assert.equal(viewFor(state, case001, "p1", new Set()).event, null);
+  state = { ...state, found: { ...state.found, "detail-clock": { by: "p1", at: 0 } } };
+  state = must(applyAction(state, case001, "p1", { type: "chat", text: "hm" }, 3000, newId));
+  const event = viewFor(state, case001, "p2", new Set()).event;
+  assert.equal(event?.job, "lights-out");
+  assert.equal(event?.endsAt, 3000 + 20_000);
+  state = must(applyAction(state, case001, "p1", { type: "flipFuse" }, 4000, newId));
+  assert.equal(applyAction(state, case001, "p1", { type: "flipFuse" }, 4500, newId).ok, false, "one fuse each");
+  state = must(applyAction(state, case001, "p2", { type: "flipFuse" }, 5000, newId));
+  assert.equal(state.event, undefined, "everyone flipped: the lights are back");
+  // A glow for each fuse, but only rooms with something left: in chapter 1 that's Lab 4 alone (the laptop, the photo).
+  assert.deepEqual(viewFor(state, case001, "p1", new Set()).helps.lit, ["lab4"]);
+  assert.match(state.activity.at(-1)!.text, /Everyone flipped a fuse/);
+  // It never fires twice, and a late flip does nothing.
+  state = must(applyAction(state, case001, "p1", { type: "chat", text: "again?" }, 9000, newId));
+  assert.equal(state.event, undefined);
+  assert.equal(applyAction(state, case001, "p2", { type: "flipFuse" }, 9500, newId).ok, false);
+});

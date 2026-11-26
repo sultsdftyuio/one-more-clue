@@ -18,7 +18,7 @@ import { WorldMinimap } from "./WorldMinimap";
 import { WorldBubbles } from "./WorldBubbles";
 import { WorldFlash } from "./WorldFlash";
 import { WorldGame, type WorldTool } from "./WorldGame";
-import { chip } from "./WorldHud";
+import { IconButton } from "./WorldHud";
 import { WorldThenNow } from "./WorldThenNow";
 import { useHandOffs } from "./useHandOffs";
 import { useWorldSound } from "./useWorldSound";
@@ -238,9 +238,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     else s.addFlash({ room, by: view?.me.id ?? "", at: Date.now() });
   };
   const roleButtons = view?.me.abilities.includes("inspect") ? (
-    <button type="button" className={chip} onClick={flash}>
-      Flash
-    </button>
+    <IconButton icon="bolt" label="Flash: light up this room for everyone" onClick={flash} />
   ) : null;
 
   const theme = themeOf(view?.case.theme);

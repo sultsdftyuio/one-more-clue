@@ -11,7 +11,7 @@ import type { WorldPlate } from "@/lib/world/plates";
 import type { WorldState } from "@/lib/world/store";
 import { ROLE_CARD } from "@/components/game/desk/roles/look";
 import { Icon, type IconName } from "@/components/game/ui/Icon";
-import { useWorldStore } from "./useWorld";
+import { useWorld, useWorldStore } from "./useWorld";
 
 /** Each ability's mark on a spot: the same icons the role cards use elsewhere. */
 export const ABILITY_ICON: Record<Ability, IconName> = { search: "search", interview: "mic", inspect: "camera", crosscheck: "board", none: "eye" };
@@ -41,6 +41,7 @@ export function WorldSpots({
   onPing?: (spot: WorldSpotView) => void;
 }) {
   const store = useWorldStore();
+  const near = useWorld((s) => s.near);
   const hold = useRef<{ timer: number; fired: boolean } | null>(null);
   const press = (spot: WorldSpotView) => {
     if (!onPing) return;
@@ -74,7 +75,7 @@ export function WorldSpots({
     return store.subscribe((s, prev) => {
       if (s.camera !== prev.camera || s.viewport !== prev.viewport || s.range !== prev.range) place(s);
     });
-  }, [store, spots, plate]);
+  }, [store, spots, plate, near]);
 
   if (view.phase !== "investigation") return null;
   return (
@@ -83,6 +84,9 @@ export function WorldSpots({
         const roles = spot.roles.map((id) => view.case.roles.find((r) => r.id === id)).filter((r) => r !== undefined);
         const mine = roles.some((r) => view.me.roles.includes(r.id));
         const names = roles.map((r) => r.name).join(" and ");
+        const close = near?.kind === "spot" && near.id === spot.id;
+        // Far away, only a faint shimmer on your own role's things (and nothing on others'); walk up and it glows.
+        if (!close && !mine) return null;
         return (
           <button
             key={spot.id}
@@ -91,40 +95,42 @@ export function WorldSpots({
               else nodes.current.delete(spot.id);
             }}
             type="button"
+            tabIndex={close ? 0 : -1}
             onPointerDown={() => press(spot)}
             onPointerUp={release}
             onPointerLeave={release}
             onPointerCancel={release}
             onContextMenu={(e) => e.preventDefault()}
             onClick={() => {
-              // A hold that pinged doesn't also open the spot.
+              // A hold that pinged doesn't also open the spot; one far away opens only once you walk up to it.
               if (hold.current?.fired) {
                 hold.current = null;
                 return;
               }
-              onOpen(spot);
+              if (close) onOpen(spot);
             }}
-            aria-label={`${spot.name}: for the ${names}${mine ? " (you)" : ""}${spot.fresh ? ", something new for you" : ""}. Hold to point the team at it.`}
+            aria-label={close ? `${spot.name}: for the ${names}${mine ? " (you)" : ""}. Use it.` : `${spot.name}: walk up to it to use it. Hold to point the team at it.`}
             style={{ visibility: "hidden" }}
-            className="pointer-events-auto absolute top-0 left-0 grid size-11 place-items-center will-change-transform"
+            className={cx("absolute top-0 left-0 grid place-items-center will-change-transform", close ? "pointer-events-auto size-40" : "pointer-events-auto size-10 cursor-default")}
           >
-            <span aria-hidden="true" className={cx("absolute inset-1 animate-ping rounded-full opacity-60 [animation-duration:2.2s]", mine ? "bg-mustard" : "bg-cream/70")} />
-            <span
-              aria-hidden="true"
-              className={cx(
-                "relative flex items-center -space-x-1.5 rounded-full border-2 border-ink p-0.5 shadow-pop-sm",
-                mine ? "bg-mustard ring-2 ring-mustard ring-offset-1 ring-offset-ink" : "bg-cream",
-              )}
-            >
-              {roles.map((r) => (
-                <span key={r.id} className={cx("grid size-6 place-items-center rounded-full border border-ink", ROLE_CARD[r.ability])}>
-                  <Icon name={ABILITY_ICON[r.ability]} className="size-3.5" />
+            {close ? (
+              <>
+                <span aria-hidden="true" className="world-glow-spot absolute inset-0 rounded-full" />
+                <span aria-hidden="true" className="absolute inset-5 animate-ping rounded-full border-2 border-mustard [animation-duration:1.4s]" />
+                <span aria-hidden="true" className="relative flex items-center -space-x-1.5 rounded-full border-2 border-ink bg-mustard p-0.5 shadow-pop-sm">
+                  {roles.map((r) => (
+                    <span key={r.id} className={cx("grid size-7 place-items-center rounded-full border border-ink", ROLE_CARD[r.ability])}>
+                      <Icon name={ABILITY_ICON[r.ability]} className="size-4" />
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
+              </>
+            ) : (
+              <span aria-hidden="true" className={cx("world-shimmer block rounded-full", spot.fresh ? "size-4 bg-teal" : "size-3 bg-mustard/80")} />
+            )}
             {spot.fresh && (
-              <span aria-hidden="true" className="world-fresh absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-ink bg-teal px-1.5 text-[11px] font-black tracking-wider whitespace-nowrap text-ink uppercase shadow-pop-sm">
-                New
+              <span aria-hidden="true" className="world-fresh absolute -top-3 -right-1 grid size-6 place-items-center rounded-full border-2 border-ink bg-teal text-ink shadow-pop-sm">
+                <Icon name="sparkle" className="size-3.5" />
               </span>
             )}
           </button>

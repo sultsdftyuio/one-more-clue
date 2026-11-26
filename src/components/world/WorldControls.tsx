@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PlayerView } from "@/lib/game/engine";
 import type { SideJobView } from "@/lib/game/helps";
 import type { WorldSpotView } from "@/lib/game/world";
@@ -9,6 +9,10 @@ import type { CastMember } from "@/lib/world/cast";
 import type { Spot } from "@/lib/world/geometry";
 import type { WorldPlate } from "@/lib/world/plates";
 import { nearest, stairsFrom, type Reachable } from "@/lib/world/steer";
+import { Icon } from "@/components/game/ui/Icon";
+import { plateToScreen } from "@/lib/world/camera";
+import { spriteOf, toPlate } from "@/lib/world/geometry";
+import type { WorldState } from "@/lib/world/store";
 import { useWorldStore } from "./useWorld";
 
 const LEFT = new Set(["ArrowLeft", "a", "A"]);
@@ -84,6 +88,9 @@ export function WorldControls({
   }, [playing, view.spots, view.jobs, plate, cast, store]);
 
   const reach = at ? nearest(plate, at, things) : null;
+  useEffect(() => {
+    store.getState().setNear(reach ? { kind: reach.kind, id: reach.id } : null);
+  }, [store, reach?.kind, reach?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const up = at ? stairsFrom(plate, at, 1) : null;
   const down = at ? stairsFrom(plate, at, -1) : null;
 
@@ -159,29 +166,11 @@ export function WorldControls({
 
   return (
     <>
-      {/* What's in reach, and the stairs: said in words, with the key that does it. */}
-      {(reach || up || down) && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[calc(11.5rem+env(safe-area-inset-bottom))] z-10 flex justify-center px-20" aria-live="polite">
-          <p className="flex max-w-full items-center gap-2 truncate rounded-full border-2 border-ink bg-night/90 py-1 pr-3 pl-1 text-sm font-extrabold text-cream shadow-pop-sm">
-            {reach && (
-              <span className="flex min-w-0 items-center gap-1.5">
-                {!touch && <kbd className="rounded-md border-2 border-ink bg-mustard px-1.5 font-mono text-xs text-ink">E</kbd>}
-                <span className="truncate">
-                  {verb} {reach.label}
-                </span>
-              </span>
-            )}
-            {(up || down) && (
-              <span className="shrink-0 text-cream/80">
-                {!touch && <kbd className="rounded-md border-2 border-ink bg-cream px-1.5 font-mono text-xs text-ink">{up ? "↑" : "↓"}</kbd>} {up ? "Upstairs" : "Downstairs"}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
+      {/* What's in reach: a key bubble floating over the thing itself; the stairs: an arrow over your own head. */}
+      <KeyBubble plate={plate} reach={reach} mine={mine} touch={touch} stairs={up ? 1 : down ? -1 : 0} />
       {touch && (
         <>
-          <div className="pointer-events-none absolute bottom-[calc(11rem+env(safe-area-inset-bottom))] left-3 z-10 flex items-end gap-2">
+          <div className="pointer-events-none absolute bottom-[calc(14.75rem+env(safe-area-inset-bottom))] left-3 z-10 flex items-end gap-2">
             <button type="button" aria-label="Walk left" className={pad} {...hold(-1)}>
               ◀
             </button>
@@ -207,14 +196,81 @@ export function WorldControls({
             disabled={!reach}
             aria-label={reach ? `${verb} ${reach.label}` : "Nothing in reach"}
             className={cx(
-              "pointer-events-auto absolute right-3 bottom-[calc(11rem+env(safe-area-inset-bottom))] z-10 grid size-16 place-items-center rounded-full border-[3px] border-ink font-display text-lg shadow-pop-sm",
+              "pointer-events-auto absolute right-3 bottom-[calc(14.75rem+env(safe-area-inset-bottom))] z-10 grid size-16 place-items-center rounded-full border-[3px] border-ink font-display text-lg shadow-pop-sm",
               reach ? "bg-mustard text-ink" : "bg-cream/40 text-ink/50",
             )}
           >
-            Use
+            <Icon name={reach?.kind === "person" ? "chat" : reach?.kind === "job" ? "play" : "eye"} className="size-7" />
           </button>
         </>
       )}
     </>
+  );
+}
+
+/**
+ * The key bubble over whatever's in reach (E, or a tap on phones) with what it does as a picture: an eye to look,
+ * a speech bubble to talk, a play button for a side job. At the stairs, an arrow over your own head says which way
+ * they go. Placed from world coordinates as the camera moves, like the name tags.
+ */
+function KeyBubble({ plate, reach, mine, touch, stairs }: { plate: WorldPlate; reach: Reachable | null; mine: string; touch: boolean; stairs: number }) {
+  const store = useWorldStore();
+  const thing = useRef<HTMLDivElement>(null);
+  const arrow = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const place = (s: WorldState) => {
+      if (thing.current && reach) {
+        let p: { x: number; y: number };
+        const person = reach.kind === "person" ? plate.people.find((q) => q.id === reach.id) : undefined;
+        if (person) {
+          const { feet, box } = spriteOf(plate, person, s.positions[person.id]);
+          p = { x: feet.x, y: box.y - 10 };
+        } else {
+          const z = reach.kind === "job" ? (s.view?.jobs.find((j) => j.id === reach.id)?.spot.z ?? 0) : (s.view?.spots.find((q) => q.id === reach.id)?.z ?? 0);
+          const at = toPlate(plate, reach.x, z);
+          p = { x: at.x, y: at.y - 70 };
+        }
+        const sc = plateToScreen(s.camera, s.viewport, p.x, p.y);
+        thing.current.style.transform = `translate3d(${sc.x.toFixed(1)}px, ${sc.y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+      }
+      if (arrow.current && stairs) {
+        const me = plate.people.find((q) => q.id === mine);
+        if (me) {
+          const { feet, box } = spriteOf(plate, me, s.positions[mine]);
+          const sc = plateToScreen(s.camera, s.viewport, feet.x, box.y - 30);
+          arrow.current.style.transform = `translate3d(${sc.x.toFixed(1)}px, ${sc.y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+        }
+      }
+    };
+    place(store.getState());
+    return store.subscribe((s, prev) => {
+      if (s.camera !== prev.camera || s.viewport !== prev.viewport || s.positions !== prev.positions) place(s);
+    });
+  }, [store, plate, reach, mine, stairs]);
+  const icon = reach?.kind === "person" ? "chat" : reach?.kind === "job" ? "play" : "eye";
+  const verb = reach?.kind === "person" ? "Talk to" : reach?.kind === "job" ? "Play at" : "Look at";
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-live="polite">
+      {reach && (
+        <div ref={thing} key={`${reach.kind}-${reach.id}`} className="absolute top-0 left-0 will-change-transform">
+          <span className="world-bubble flex items-center gap-1 rounded-2xl border-[3px] border-ink bg-cream px-1.5 py-1 text-ink shadow-pop-sm">
+            {!touch && <kbd className="grid size-6 place-items-center rounded-lg border-2 border-ink bg-mustard font-mono text-sm font-black">E</kbd>}
+            <Icon name={icon} className="size-5" />
+            <span className="sr-only">
+              {verb} {reach.label}
+            </span>
+          </span>
+        </div>
+      )}
+      {stairs !== 0 && (
+        <div ref={arrow} className="absolute top-0 left-0 will-change-transform">
+          <span className="world-fresh flex items-center gap-1 rounded-2xl border-[3px] border-ink bg-teal px-1.5 py-1 text-ink shadow-pop-sm">
+            {!touch && <kbd className="grid size-6 place-items-center rounded-lg border-2 border-ink bg-cream font-mono text-sm font-black">{stairs > 0 ? "↑" : "↓"}</kbd>}
+            <Icon name={stairs > 0 ? "up" : "down"} className="size-5" />
+            <span className="sr-only">{stairs > 0 ? "Stairs up" : "Stairs down"}</span>
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

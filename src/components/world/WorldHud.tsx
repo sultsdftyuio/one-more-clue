@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { goalOf } from "@/components/game/context";
-import { Icon } from "@/components/game/ui/Icon";
+import { Icon, type IconName } from "@/components/game/ui/Icon";
 import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
@@ -13,8 +13,59 @@ import { HelpsChip } from "./WorldJobs";
 import { RewindButton } from "./WorldRewind";
 
 export const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
+/** A round icon button: the camera row and the HUD speak in pictures, with names for screen readers and on hover. */
+export const roundButton =
+  "pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full border-[3px] border-ink bg-cream text-ink shadow-pop-sm transition-transform hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-none aria-pressed:bg-mustard";
+
+export function IconButton({ icon, label, onClick, pressed, className }: { icon: IconName; label: string; onClick: () => void; pressed?: boolean; className?: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} title={label} aria-pressed={pressed} className={cx(roundButton, className)}>
+      <Icon name={icon} className="size-5" />
+    </button>
+  );
+}
 // Solid, not frosted: a backdrop blur would re-blur the moving canvas every frame, which costs phones dearly.
 const glass = "rounded-2xl border-2 border-ink/80 bg-night/90";
+
+/**
+ * The chapter and what the team is trying to prove, as a badge. When a chapter opens the question shows in full for a
+ * few seconds, then folds into the badge; tap it to read it again, and tap the question to go and solve it.
+ */
+function GoalBadge({ chapter, chapters, question, onSolve }: { chapter: number; chapters: number; question: string; onSolve: () => void }) {
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    setOpen(true);
+    const timer = window.setTimeout(() => setOpen(false), 8000);
+    return () => window.clearTimeout(timer);
+  }, [chapter]);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={`Chapter ${chapter} of ${chapters}: ${question}`}
+        className="flex items-center gap-1 rounded-full border-[3px] border-ink bg-mustard py-1 pr-1.5 pl-2.5 font-display text-lg text-ink shadow-pop-sm"
+      >
+        {chapter}
+        <span className="text-xs font-black text-ink/60">/{chapters}</span>
+        <span className="grid size-7 place-items-center rounded-full bg-ink text-mustard">
+          <Icon name="target" className="size-4" />
+        </span>
+      </button>
+      {open && (
+        <button
+          type="button"
+          onClick={onSolve}
+          className="world-bubble absolute top-full left-0 z-10 mt-2 flex w-[min(20rem,80vw)] items-start gap-2 rounded-2xl border-[3px] border-ink bg-night/95 p-3 text-left shadow-card"
+        >
+          <Icon name="target" className="mt-0.5 size-4 shrink-0 text-mustard" />
+          <span className="text-sm leading-snug font-bold text-cream">{question}</span>
+        </button>
+      )}
+    </div>
+  );
+}
 
 /** How smoothly the building is drawing, for checking on phones: add ?fps to the address to see it. */
 function FrameMeter() {
@@ -78,11 +129,7 @@ function InviteButton({ code }: { code: string }) {
       await navigator.share?.({ url }).catch(() => {});
     }
   };
-  return (
-    <button type="button" onClick={invite} className={chip}>
-      {done ? "Link copied" : "Invite"}
-    </button>
-  );
+  return <IconButton icon={done ? "check" : "share"} label={done ? "Link copied" : "Invite a friend"} onClick={invite} pressed={done} />;
 }
 
 /**
@@ -131,27 +178,17 @@ export function WorldHud({
     <>
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
         <div className="flex max-w-[75%] min-w-0 flex-col items-start gap-2">
-          <div className={cx(glass, "pointer-events-auto max-w-full px-3 py-2")}>
-            <p className="flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-mustard uppercase">
-              {view && playing && (
-                <span className="shrink-0 rounded-full border border-ink bg-mustard px-1.5 whitespace-nowrap text-ink">
-                  Ch. {view.chapter.number}/{view.case.chapterTitles.length}
-                </span>
-              )}
-              <span className="truncate">{view ? `${view.case.code} · ${view.case.title}` : "The building"}</span>
-            </p>
-            {goal ? (
-              <button type="button" onClick={onSolve} className="mt-1 flex w-full items-start gap-1.5 text-left">
-                <Icon name="target" className="mt-0.5 size-4 shrink-0 text-mustard" />
-                <span className="line-clamp-2 text-sm leading-snug font-bold text-cream">{goal.question}</span>
-              </button>
+          <div className="pointer-events-auto flex max-w-full items-center gap-2">
+            {view && playing && goal ? (
+              <GoalBadge chapter={view.chapter.number} chapters={view.case.chapterTitles.length} question={goal.question} onSolve={onSolve} />
             ) : (
-              <h1 className="truncate font-display text-xl leading-tight text-cream">{view ? view.case.title : "The building"}</h1>
+              <span className={cx(glass, "px-3 py-1.5 font-display text-lg leading-tight text-cream")}>{view ? view.case.title : "The building"}</span>
             )}
             {view && (
-              <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Your team">
+              <ul className="flex -space-x-1.5" aria-label="Your team">
                 {view.players.map((p) => {
                   const sticker = stickers[p.id];
+                  const me = p.id === view.me.id;
                   return (
                     <li key={p.id}>
                       <button
@@ -162,13 +199,15 @@ export function WorldHud({
                           select(sticker);
                           look({ kind: "person", id: sticker });
                         }}
+                        aria-label={me ? `${p.name} (you)` : `${p.name}${p.online ? "" : ", away"}: find them`}
+                        title={me ? `${p.name} (you)` : p.name}
                         className={cx(
-                          "flex items-center gap-1 rounded-full border border-cream/30 px-2 py-0.5 text-xs font-bold",
-                          p.id === view.me.id ? "bg-mustard text-ink" : "bg-cream/10 text-cream",
+                          "relative grid size-9 place-items-center rounded-full border-[3px] border-ink font-display text-base shadow-pop-sm",
+                          me ? "bg-mustard text-ink" : "bg-cream text-ink",
                         )}
                       >
-                        <span className={cx("size-1.5 rounded-full", p.online ? "bg-teal" : "bg-cream/40")} aria-hidden="true" />
-                        {p.id === view.me.id ? `${p.name} (you)` : p.name}
+                        {p.name.slice(0, 1).toUpperCase()}
+                        <span className={cx("absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-ink", p.online ? "bg-teal" : "bg-cream/50")} aria-hidden="true" />
                       </button>
                     </li>
                   );
@@ -225,34 +264,28 @@ export function WorldHud({
             </button>
           </section>
         )}
-        <nav className="pointer-events-auto flex flex-wrap items-center justify-center gap-2" aria-label="Camera">
+        <nav className="pointer-events-none flex flex-wrap items-center justify-center gap-2" aria-label="Camera">
           {zoomedOut ? (
-            <button type="button" className={chip} onClick={() => look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })}>
-              Close-up
-            </button>
+            <IconButton icon="crosshair" label="Close-up" onClick={() => look(mine ? { kind: "person", id: mine } : { kind: "closeUp" })} />
           ) : (
-            <button type="button" className={chip} onClick={() => look({ kind: "whole" })}>
-              Whole building
-            </button>
+            <IconButton icon="building" label="Whole building" onClick={() => look({ kind: "whole" })} />
           )}
           {mine && !zoomedOut && (
-            <button
-              type="button"
-              className={chip}
-              aria-pressed={followingMe}
+            <IconButton
+              icon="target"
+              label={followingMe ? "Following you" : "Find me"}
+              pressed={followingMe}
               onClick={() => {
                 select(mine);
                 look({ kind: "person", id: mine });
               }}
-            >
-              {followingMe ? "Following you" : "Find me"}
-            </button>
+            />
           )}
-          {playing && view?.rewind && <RewindButton className={chip} />}
+          {playing && view?.rewind && <RewindButton className={roundButton} />}
           {playing && !zoomedOut && roleButtons}
           {!playing && <InviteButton code={code} />}
-          <Link href={`/r/${code}`} className={cx(chip, "bg-cream/80")}>
-            Classic
+          <Link href={`/r/${code}`} aria-label="Classic screens" title="Classic screens" className={cx(roundButton, "bg-cream/80")}>
+            <Icon name="screen" className="size-5" />
           </Link>
         </nav>
       </footer>

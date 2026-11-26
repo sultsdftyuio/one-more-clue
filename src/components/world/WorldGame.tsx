@@ -112,7 +112,7 @@ export function WorldGame({
       ) : (
         !view.proposal && !(view.interrogation && !view.interrogation.over) && <TimelineBar view={view} onOpen={open} />
       )}
-      <Dock badges={badges} onOpen={onPanel} />
+      <Dock badges={badges} onOpen={onPanel} floating />
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />
       <Moments />

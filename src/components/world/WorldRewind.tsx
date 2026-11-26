@@ -27,9 +27,8 @@ export function RewindButton({ className }: { className: string }) {
   const openRewind = useWorld((s) => s.openRewind);
   if (open) return null;
   return (
-    <button type="button" onClick={() => openRewind(true)} className={className}>
-      <Icon name="clock" className="mr-1 inline size-4 align-[-3px]" />
-      Rewind
+    <button type="button" onClick={() => openRewind(true)} className={className} aria-label="Rewind the night" title="Rewind the night">
+      <Icon name="rewind" className="size-5" />
     </button>
   );
 }

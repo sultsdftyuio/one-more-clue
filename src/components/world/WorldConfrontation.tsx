@@ -43,6 +43,12 @@ export function WorldConfrontation({ plate, view, act, busy, quiet, onCallLie }:
     store.getState().setMood(person.id, !live ? (person.mood ?? "idle") : caught ? "shocked" : "smug");
   }, [live, caught, person, store]);
 
+  // Each new claim, they talk for a moment.
+  useEffect(() => {
+    if (!live || !person || !room) return;
+    store.getState().setTalking(person.id, Date.now() + 1800 + (room.claim?.length ?? 20) * 45);
+  }, [live, person, room?.index, room?.claim, store]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Their own recorded voice for the claim, on the Interviewer's phone, unless the panel is open and speaking it.
   const recording = room?.claim && !room.currentBroken && !quiet ? recordingOf(view.case.id, room.suspect, room.claim) : null;
   useVoice(recording, Boolean(room?.leads), room?.index);

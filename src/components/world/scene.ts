@@ -90,6 +90,11 @@ type Person = {
   walkingSince: number | null;
   facing: 1 | -1;
   pose: Pose | null;
+  /** When they next glance the other way while standing (scene time, ms). */
+  glanceAt: number;
+  /** When a startled hop began (a mood turning shocked, cracked or nervous), or null. */
+  hopFrom: number | null;
+  lastMood: string | null;
   tint: [number, number, number];
 };
 
@@ -113,6 +118,8 @@ class BuildingScene extends Phaser.Scene {
   /** Set when the GPU can't hold the full plate, so the small copy is always drawn. */
   private mapOnly = false;
   private people: Person[] = [];
+  /** Reduced motion: people keep still apart from walking and their moods. */
+  private readonly reduceMotion = typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   private ambience: Ambience | null = null;
   /** Someone was put somewhere without walking, so the store's positions need refreshing. */
   private placed = false;
@@ -190,6 +197,9 @@ class BuildingScene extends Phaser.Scene {
         at: { x: person.x, z: person.z },
         target: null,
         route: null,
+        glanceAt: 4000 + Math.random() * 6000,
+        hopFrom: null,
+        lastMood: null,
         walkingSince: null,
         facing: 1,
         pose: null,
@@ -295,14 +305,45 @@ class BuildingScene extends Phaser.Scene {
         if (frame) p.image.setTexture(`cast-${frame.sheet}`, frame.frame);
         p.pose = pose;
       }
-      p.image.setFlipX(p.facing < 0);
 
       const feet = toPlate(plate, p.at.x, p.at.z);
       const want = p.id === state.selected ? 1 + SELECTED_GROWTH : 1;
       p.grow += (want - p.grow) * ease;
       // Breathing only while standing: the walk has its own rise and fall.
       const breath = p.walkingSince === null ? Math.sin(((time + p.phase) / 1700) * Math.PI * 2) : 0;
-      p.image.setPosition(feet.x, feet.y);
+      // A little life: a bounce and lean in the walk; standing, a slow sway and now and then a glance the other way;
+      // a bob while they talk; a hop when they're startled.
+      let lift = 0;
+      let lean = 0;
+      if (p.walkingSince !== null) {
+        const t = (time - p.walkingSince) / 1000;
+        lift = Math.abs(Math.sin(t * Math.PI * 2.4)) * p.height * 0.03;
+        lean = Math.sin(t * Math.PI * 2.4) * 0.035;
+      } else {
+        lean = Math.sin(((time + p.phase * 3) / 2600) * Math.PI * 2) * 0.018;
+        const mine = p.id === state.me;
+        if (!mine && p.target === null && !p.route && time > p.glanceAt) {
+          p.facing = p.facing === 1 ? -1 : 1;
+          p.glanceAt = time + 3500 + Math.random() * 7000;
+        }
+      }
+      if ((state.talking[p.id] ?? 0) > Date.now()) lift += Math.abs(Math.sin(time / 85)) * p.height * 0.014;
+      if (mood !== p.lastMood) {
+        if (p.lastMood !== null && (mood === "shocked" || mood === "cracked" || mood === "nervous")) p.hopFrom = time;
+        p.lastMood = mood;
+      }
+      if (p.hopFrom !== null) {
+        const k = (time - p.hopFrom) / 460;
+        if (k >= 1) p.hopFrom = null;
+        else lift += Math.sin(k * Math.PI) * p.height * 0.09;
+      }
+      if (this.reduceMotion) {
+        lift = 0;
+        lean = 0;
+      }
+      p.image.setFlipX(p.facing < 0);
+      p.image.setPosition(feet.x, feet.y - lift);
+      p.image.setRotation(lean);
       p.image.setScale(p.scale * p.grow * (1 - 0.004 * breath), p.scale * p.grow * (1 + 0.012 * breath));
 
       // A foot off the floor makes the shadow a touch smaller and lighter.

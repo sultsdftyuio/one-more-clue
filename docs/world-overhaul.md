@@ -177,11 +177,11 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 5 · Roles in the world · L
 
-- [ ] **W5.1** Photographer: the flash lights dark spots, plus "then and now" (hold an old photo over the live room).
-- [ ] **W5.2** Tech: laptops, badge readers, the security desk and the gate camera. Logs show numbers, not names.
-- [ ] **W5.3** Interviewer: talk to suspects where they stand, with their recorded voices. Pressure follows topics. Showing evidence breaks a story.
-- [ ] **W5.4** Archivist: the rewind, Freeze and the red-string wall.
-- [ ] **W5.5** Make the hand-offs physical: for example, the Photographer sees the password the Tech needs.
+- [x] **W5.1** Photographer: the flash lights dark spots, plus "then and now" (hold an old photo over the live room). *(Done 2026-11-26. At the spot where a photo was taken, "Then and now" flies the camera to that room and lays the photo over it, live, with a slider between the two; "Shoot it" opens the camera on it. A Flash button floods the room your detective is in with light on every phone (a `flash` message on the live channel). It's light, not a clue: nothing is found by it.)*
+- [x] **W5.2** Tech: laptops, badge readers, the security desk and the gate camera. Logs show numbers, not names. *(Done 2026-11-26. A `probe` engine action pulls a spot's records the way a search for the right word would: one record per pull, in the spot's order, still waiting on its leads and still locked behind its password. A pull before the lead says whose move opens it, for free. Any log you hold that covers the night has "Play it in the building", which steps the rewind through its rows. The full computer is one tap away in the same sheet. The case's logs already show badge numbers, not names, for the visitor.)*
+- [x] **W5.3** Interviewer: talk to suspects where they stand, with their recorded voices. Pressure follows topics. Showing evidence breaks a story. *(Done 2026-11-26. Tap someone in the building: the Interviewer gets "Question them", which opens the interrogation room with them in the chair (their recorded voice plays there, as on the classic screens); everyone else is told who can. Their name tag shows "?" for questions waiting and "!" for a lead. Answers come out of the suspect as a speech bubble on every phone: the words only where that player can read them, "talking to …" elsewhere. A crack is in everyone's bubble and cracks their face; a shrug makes them smug. Activities now carry `who`, the suspect they're about. Pressure on topics comes with the sore spots in W6.2.)*
+- [x] **W5.4** Archivist: the rewind, Freeze and the red-string wall. *(Done 2026-11-26. Rewind and Freeze came in W4; an Archivist spot now opens "Rewind the night", what's there, and the wall.)*
+- [x] **W5.5** Make the hand-offs physical: for example, the Photographer sees the password the Tech needs. *(Done 2026-11-26. Each spot in the view now lists the pieces you hold there and says whether one of your roles can pull something new (`fresh`). When a teammate's find opens something at a spot, it wears a "New" badge and your phone pings it: "Ali's find: new at Priya's laptop". Case 001's password (the guard's badge number on the visitor sheet) is a chapter 2–3 hand-off and works the same way.)*
 
 **Done when** chapter 1 can be solved entirely from inside the world.
 
@@ -393,3 +393,12 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
     - no page errors
   - Fixed along the way: the tie had been offered for pieces the Archivist couldn't see, which the engine refuses.
   - Not tried on real phones. Phases 2 to 4 are done; next is phase 5, roles in the world.
+- 2026-11-26: Phase 5 (W5.1–W5.5) done on branch `world/w5-roles`. Checked with two headless Chrome phones on real LiveKit, the host as Tech and Photographer:
+  - Cabinet B's sheet said "Something new is waiting here"; a pull found HALO's dock log, and "Play it in the building" opened the rewind at 8:38
+  - "Then and now" laid the LinkedIn photo over Lab 4; the flash showed on both phones
+  - tapping Priya gave the Interviewer "Question Priya · 1 question waiting", which opened the room with her in the chair
+  - after the laptop question, the Interviewer read Priya's answer in a bubble, the Tech saw "talking to …" and a ping, "…'s find: new at Priya's laptop"
+  - showing Ozzy the photo put his crack in a bubble on both phones
+  - no page errors
+  
+  Chapter 1 can be played from the building alone. Not tried on real phones.

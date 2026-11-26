@@ -33,7 +33,7 @@ import type {
 } from "./types";
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
-import { checkWorld, spotsFor, type WorldSpotView } from "./world.ts";
+import { checkWorld, pullAt, spotsFor, type WorldSpotView } from "./world.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -317,8 +317,8 @@ function announceLeads(state: RoomState, caseFile: CaseFile, foundId: string, fi
   }
 }
 
-function log(state: RoomState, newId: () => string, now: number, kind: ActivityKind, text: string, playerId?: string, evidenceId?: string) {
-  state.activity.push({ id: newId(), at: now, kind, text, playerId, evidenceId } satisfies Activity);
+function log(state: RoomState, newId: () => string, now: number, kind: ActivityKind, text: string, playerId?: string, evidenceId?: string, who?: string) {
+  state.activity.push({ id: newId(), at: now, kind, text, playerId, evidenceId, ...(who ? { who } : {}) } satisfies Activity);
   state.activity = state.activity.slice(-ACTIVITY_KEPT);
 }
 
@@ -521,6 +521,29 @@ function resolveProposal(state: RoomState, caseFile: CaseFile, now: number, newI
   state.decided = state.decided.slice(-20);
 }
 
+/** A suspect's id from the name their questions use (a witness who isn't a suspect keeps their name). */
+const suspectIdOf = (caseFile: CaseFile, name: string) => caseFile.suspects.find((s) => s.name === name)?.id ?? name;
+
+/** A search, from the computer or pulled at a spot: kept for the history, and what it turned up (or a locked file). */
+function recordSearch(next: RoomState, caseFile: CaseFile, me: Player, query: string, hit: CaseEvidence | null | undefined, note: string | undefined, waits: boolean, now: number, newId: () => string, pulled = false) {
+  const how = pulled ? `pulled the records at ${query}` : `searched "${query}"`;
+  next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), ...(waits ? { waits: true } : {}), at: now });
+  next.searches = next.searches.slice(-SEARCHES_KEPT);
+  if (hit?.lock && !next.found[hit.id]) {
+    // A locked record turns up as its title and a hint; what's inside waits for the password.
+    if (!next.locked?.[hit.id]) {
+      next.locked = { ...next.locked, [hit.id]: { by: me.id, at: now } };
+      log(next, newId, now, "locked", `${me.name} found a locked file: ${hit.title}. ${hit.lock.hint}`, me.id);
+    }
+  } else if (hit && !next.found[hit.id]) {
+    next.found[hit.id] = { by: me.id, at: now };
+    log(next, newId, now, "found", `${me.name} ${how} and found: ${hit.title}`, me.id, hit.id);
+    announceLeads(next, caseFile, hit.id, me, now, newId);
+  } else if (!hit) {
+    log(next, newId, now, "miss", `${me.name} ${how}. ${waits ? "A sealed record: it needs a lead first." : "No records."}`, me.id);
+  }
+}
+
 export function applyAction(
   state: RoomState,
   caseFile: CaseFile,
@@ -606,21 +629,22 @@ export function applyAction(
       // The right word for a record that's still waiting on a lead says so, and whose move opens it.
       const sealed = hit ? undefined : sealedSearchHit(caseFile, state, term);
       const note = hit ? undefined : sealed ? sealedNote(caseFile, state, sealed) : searchNote(caseFile, term);
-      next.searches.push({ id: newId(), by: me.id, query, hit: hit?.id ?? null, ...(note ? { note } : {}), ...(sealed ? { waits: true } : {}), at: now });
-      next.searches = next.searches.slice(-SEARCHES_KEPT);
-      if (hit?.lock && !next.found[hit.id]) {
-        // A locked record turns up as its title and a hint; what's inside waits for the password.
-        if (!next.locked?.[hit.id]) {
-          next.locked = { ...next.locked, [hit.id]: { by: me.id, at: now } };
-          log(next, newId, now, "locked", `${me.name} found a locked file: ${hit.title}. ${hit.lock.hint}`, me.id);
-        }
-      } else if (hit && !next.found[hit.id]) {
-        next.found[hit.id] = { by: me.id, at: now };
-        log(next, newId, now, "found", `${me.name} searched "${query}" and found: ${hit.title}`, me.id, hit.id);
-        announceLeads(next, caseFile, hit.id, self, now, newId);
-      } else if (!hit) {
-        log(next, newId, now, "miss", `${me.name} searched "${query}". ${sealed ? "A sealed record: it needs a lead first." : "No records."}`, me.id);
-      }
+      recordSearch(next, caseFile, self, query, hit, note, Boolean(sealed), now, newId);
+      break;
+    }
+
+    case "probe": {
+      // The world (W5.2): the Tech walks up to a device or a cabinet and pulls what it holds, the way a search
+      // for the right word would. Its records still wait on their leads, and a locked one still wants its password.
+      if (!investigating) return fail("Nothing to pull yet.");
+      if (!abilities.includes("search")) return fail("Only the Tech can pull the records here.");
+      if (!state.world) return fail("That's for the building.");
+      const { spot, ready, waiting, locked } = pullAt(caseFile, String(action.spot ?? ""), state.chapter, self.roles, state, (e) => opened(state, e));
+      if (!spot || spot.kind === "sidejob") return fail("There's nothing to pull there.");
+      if (!ready && locked) return fail(`${locked.title} is locked. ${locked.lock?.hint ?? ""}`.trim());
+      if (!ready && !waiting) return fail(`Nothing new at ${spot.name}.`);
+      const query = spot.name.slice(0, MAX_QUERY);
+      recordSearch(next, caseFile, self, query, ready ?? null, ready ? undefined : sealedNote(caseFile, state, waiting!), !ready, now, newId, true);
       break;
     }
 
@@ -657,7 +681,7 @@ export function applyAction(
       const minutes = lead ? 0 : spend(next, caseFile, "question");
       if (!lead) next.questionsUsed++;
       next.found[question.id] = { by: me.id, at: now };
-      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id);
+      log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id, suspectIdOf(caseFile, question.access.suspect));
       announceLeads(next, caseFile, question.id, self, now, newId);
       break;
     }
@@ -736,11 +760,11 @@ export function applyAction(
       next.shows = [...(next.shows ?? []), { id: newId(), by: me.id, suspect, evidenceId: evidence.id, crack: crack?.id ?? null, time: now }].slice(-SHOWS_KEPT);
       if (crack) {
         next.found[crack.id] = { by: me.id, at: now };
-        log(next, newId, now, "crack", `${me.name} showed ${suspect} ${evidence.title}, and ${suspect} cracked.`, me.id, crack.id);
+        log(next, newId, now, "crack", `${me.name} showed ${suspect} ${evidence.title}, and ${suspect} cracked.`, me.id, crack.id, suspectIdOf(caseFile, suspect));
         announceLeads(next, caseFile, crack.id, self, now, newId);
       } else {
         const minutes = spend(next, caseFile, "miss");
-        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} showed ${suspect} ${evidence.title}. It didn't shake them.${costNote(next, caseFile, minutes)}`, me.id);
+        log(next, newId, now, minutes ? "clock" : "miss", `${me.name} showed ${suspect} ${evidence.title}. It didn't shake them.${costNote(next, caseFile, minutes)}`, me.id, undefined, suspectIdOf(caseFile, suspect));
       }
       break;
     }
@@ -1666,7 +1690,14 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
     shots: abilities.includes("inspect") ? (state.shots ?? []).filter((s) => s.by === me.id).map(({ id, scene, at, hit, time }) => ({ id, scene, at, hit, time })) : [],
     checked: abilities.includes("crosscheck") ? state.checked : [],
     nightMap: abilities.includes("crosscheck") ? mapFor(state, caseFile, me) : null,
-    spots: state.phase === "investigation" ? spotsFor(caseFile, state.chapter) : [],
+    spots:
+      state.phase === "investigation"
+        ? spotsFor(caseFile, state.chapter, {
+            sees: (id) => visibleIds.has(id),
+            canPull: (e) =>
+              Boolean(state.world) && abilities.includes("search") && me.roles.includes(e.role) && e.access.kind === "search" && !state.found[e.id] && !state.locked?.[e.id] && opened(state, e),
+          })
+        : [],
     rewind: state.world && state.phase === "investigation" ? rewindFor(state, caseFile) : null,
     wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
     strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),

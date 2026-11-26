@@ -73,11 +73,16 @@ export type WorldState = {
   cursor: { minute: number | null; frozen: boolean; n: number } | null;
   /** The ghosts the scene is drawing right now, for their tags and the clash lines. */
   ghosts: Ghost[];
+  /** The Photographer's last flash (W5.1): the room it lit, who fired it, and when (Date.now). */
+  flash: { room: string; by: string; at: number } | null;
+  /** "Then and now" (W5.1): an old photo held over the live room it was taken in, on this phone. */
+  thenNow: { evidenceId: string; room: string } | null;
   status: WorldStatus;
 };
 
 export type RemoteMove = { id: string; x: number; z: number; to: number | null; snap: boolean };
-export type Ping = { by: string; spot: string | null; x: number; z: number; at: number };
+/** `note` is a ping this phone made for itself (a hand-off, W5.5), with what to say instead of "look here". */
+export type Ping = { by: string; spot: string | null; x: number; z: number; at: number; note?: string };
 
 export type WorldActions = {
   setView(view: PlayerView | null): void;
@@ -113,6 +118,8 @@ export type WorldActions = {
   /** Someone's slider arrived on the live channel. */
   receiveCursor(by: string, minute: number | null, frozen: boolean): void;
   setGhosts(ghosts: Ghost[]): void;
+  addFlash(flash: { room: string; by: string; at: number }): void;
+  setThenNow(thenNow: WorldState["thenNow"]): void;
   setStatus(patch: Partial<WorldStatus>): void;
 };
 
@@ -141,6 +148,8 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     rewind: { open: false, minute: 0, frozenBy: null, following: null },
     cursor: null,
     ghosts: [],
+    flash: null,
+    thenNow: null,
     status: INITIAL_STATUS,
     ...initial,
 
@@ -225,6 +234,8 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
       else if (thawed !== r.frozenBy) set({ rewind: { ...r, frozenBy: thawed } });
     },
     setGhosts: (ghosts) => set({ ghosts }),
+    addFlash: (flash) => set({ flash }),
+    setThenNow: (thenNow) => set({ thenNow }),
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));
 }

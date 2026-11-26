@@ -81,12 +81,13 @@ function TheChair({ person, line }: { person: CaseSuspect; line: Line | null }) 
  * something from the board in front of them: if it breaks their story they
  * crack, on every phone; if it doesn't, it costs the night some time.
  */
-export function InterviewerTool() {
+export function InterviewerTool({ who }: { who?: string } = {}) {
   const { view, act, busy, open } = useGame();
   const coach = useCoach("interview");
   const questions = useMemo(() => view.questions ?? [], [view.questions]);
   const people = useMemo(() => [...new Set(questions.map((q) => q.suspect))], [questions]);
-  const [chairPick, setChair] = useState<string | null>(null);
+  // In the world (W5.3) the Interviewer walks up to someone, and they're the one in the chair.
+  const [chairPick, setChair] = useState<string | null>(who ?? null);
   // Whoever has something new to be asked comes in first.
   const fresh = questions.filter((q) => !q.asked);
   const chair = chairPick && people.includes(chairPick) ? chairPick : (fresh.at(-1)?.suspect ?? people[0] ?? null);

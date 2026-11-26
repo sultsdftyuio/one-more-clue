@@ -17,7 +17,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * subscribing to the store and moving their nodes directly, never through a React render, and they
  * fade out as the camera pulls back to the whole building.
  */
-export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<string, CastMember> }) {
+export function WorldTags({ plate, cast, marks = {} }: { plate: WorldPlate; cast: Record<string, CastMember>; marks?: Record<string, string> }) {
   const store = useWorldStore();
   const selected = useWorld((s) => s.selected);
   const statuses = useWorld((s) => s.statuses);
@@ -70,6 +70,7 @@ export function WorldTags({ plate, cast }: { plate: WorldPlate; cast: Record<str
         >
           {tag.me ? `You · ${tag.text}` : tag.text}
           {!tag.me && statuses[tag.id] && <span className="font-semibold text-ink/70"> · {statuses[tag.id]}</span>}
+          {marks[tag.id] && <span className="ml-1 rounded-full bg-lilac px-1.5 text-[10px] font-black text-ink">{marks[tag.id]}</span>}
         </span>
       ))}
     </div>

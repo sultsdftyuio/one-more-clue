@@ -104,7 +104,7 @@ export function WorldSpots({
               }
               onOpen(spot);
             }}
-            aria-label={`${spot.name}: for the ${names}${mine ? " (you)" : ""}. Hold to point the team at it.`}
+            aria-label={`${spot.name}: for the ${names}${mine ? " (you)" : ""}${spot.fresh ? ", something new for you" : ""}. Hold to point the team at it.`}
             style={{ visibility: "hidden" }}
             className="pointer-events-auto absolute top-0 left-0 grid size-11 place-items-center will-change-transform"
           >
@@ -122,6 +122,11 @@ export function WorldSpots({
                 </span>
               ))}
             </span>
+            {spot.fresh && (
+              <span aria-hidden="true" className="world-fresh absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border-2 border-ink bg-teal px-1.5 text-[10px] font-black tracking-wider whitespace-nowrap text-ink uppercase shadow-pop-sm">
+                New
+              </span>
+            )}
           </button>
         );
       })}

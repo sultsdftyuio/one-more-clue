@@ -126,7 +126,7 @@ test("the cast names the suspects from the case and the detectives from the play
     },
   };
   const cast = castOf(plate.people, view);
-  assert.deepEqual(cast.priya, { id: "priya", tag: "Priya", name: "Priya Tran", line: "PhD researcher", blurb: "Built HALO.", me: false });
+  assert.deepEqual(cast.priya, { id: "priya", tag: "Priya", name: "Priya Tran", line: "PhD researcher", blurb: "Built HALO.", me: false, suspect: "triangle" });
   assert.deepEqual(cast.jo, { id: "jo", tag: "Ana", name: "Ana (you)", line: "Tech · Photographer", blurb: null, me: true });
   assert.equal(cast.ali.tag, "Bo");
   assert.equal(cast.sam.tag, null, "nobody wears Sam's sticker in a two-player game");

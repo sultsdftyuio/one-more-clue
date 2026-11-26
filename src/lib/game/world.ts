@@ -4,7 +4,7 @@
  * and side jobs and sore spots only point at things that exist. See "The world" in docs/case-system.md.
  */
 import { parseTime } from "./clock.ts";
-import type { CaseFile, WorldBox } from "./types.ts";
+import type { CaseEvidence, CaseFile, RoomState, WorldBox } from "./types.ts";
 
 /** Evidence bodies that are things in the world (a log on a device, a sheet, a photo). Statements are people, findings live in other pieces. */
 const RECORDS = new Set(["chat", "log", "document", "scene", "footage", "recording"]);
@@ -165,22 +165,60 @@ export function checkWorld(caseFile: CaseFile): string[] {
   return problems;
 }
 
-/** A spot as a player's phone gets it: where it is, and the roles with something to open there by now. */
-export type WorldSpotView = { id: string; name: string; room: string; x: number; z: number; kind: "object" | "device" | "view"; roles: string[] };
+/**
+ * A spot as a player's phone gets it: where it is, and the roles with something to open there by now. `pieces` are
+ * the spot's pieces this player can already see (so a sheet can show what's here), and `fresh` says one of their
+ * roles can pull something new here right now (W5.5: a teammate's find just opened it), which lights the spot up.
+ */
+export type WorldSpotView = {
+  id: string;
+  name: string;
+  room: string;
+  x: number;
+  z: number;
+  kind: "object" | "device" | "view";
+  roles: string[];
+  pieces: string[];
+  fresh: boolean;
+};
+
+/** What a player can see and pull, for `spotsFor` to mark each spot with. Left out, spots carry no pieces. */
+export type SpotReader = { sees: (id: string) => boolean; canPull: (evidence: CaseEvidence) => boolean };
 
 /**
  * The spots that show in a chapter: those holding evidence that exists by then, each marked with the roles that
  * evidence belongs to (not every role the spot could ever open for), so a spot never hints at a later chapter.
  * Side-job spots wait for the side jobs (W6). Positions aren't secret; what's found there stays on the server.
  */
-export function spotsFor(caseFile: CaseFile, chapter: number): WorldSpotView[] {
+export function spotsFor(caseFile: CaseFile, chapter: number, reader?: SpotReader): WorldSpotView[] {
   const world = caseFile.world;
   if (!world) return [];
   const byId = new Map(caseFile.evidence.map((e) => [e.id, e]));
   return world.spots.flatMap((spot) => {
     if (spot.kind === "sidejob") return [];
-    const open = (spot.evidence ?? []).map((id) => byId.get(id)).filter((e) => e && e.chapter <= chapter);
-    const roles = [...new Set(open.map((e) => e!.role))].filter((r) => spot.roles?.includes(r));
-    return roles.length ? [{ id: spot.id, name: spot.name, room: spot.room, x: spot.x, z: spot.z, kind: spot.kind, roles }] : [];
+    const open = (spot.evidence ?? []).map((id) => byId.get(id)).filter((e): e is CaseEvidence => Boolean(e && e.chapter <= chapter));
+    const roles = [...new Set(open.map((e) => e.role))].filter((r) => spot.roles?.includes(r));
+    if (!roles.length) return [];
+    const pieces = reader ? open.filter((e) => reader.sees(e.id)).map((e) => e.id) : [];
+    const fresh = reader ? open.some((e) => reader.canPull(e)) : false;
+    return [{ id: spot.id, name: spot.name, room: spot.room, x: spot.x, z: spot.z, kind: spot.kind, roles, pieces, fresh }];
   });
+}
+
+/**
+ * The record a Tech pulls from a spot (W5.2), in the spot's own order: the first one that exists by this chapter,
+ * belongs to the Tech, is found by searching and isn't found yet. `ready` is one whose leads are all in; `waiting`
+ * is one still waiting on a teammate's find. Desk records at a spot are already on the Tech's desk.
+ */
+export function pullAt(caseFile: CaseFile, spotId: string, chapter: number, roles: string[], state: Pick<RoomState, "found" | "locked">, opened: (e: CaseEvidence) => boolean) {
+  const spot = caseFile.world?.spots.find((s) => s.id === spotId);
+  const pieces = (spot?.evidence ?? [])
+    .map((id) => caseFile.evidence.find((e) => e.id === id))
+    .filter((e): e is CaseEvidence => Boolean(e && e.chapter <= chapter && roles.includes(e.role) && e.access.kind === "search" && !state.found[e.id]));
+  return {
+    spot,
+    ready: pieces.find((e) => opened(e) && !state.locked?.[e.id]),
+    waiting: pieces.find((e) => !opened(e)),
+    locked: pieces.find((e) => state.locked?.[e.id]),
+  };
 }

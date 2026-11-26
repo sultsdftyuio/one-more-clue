@@ -385,7 +385,8 @@ export type Shot = { id: string; by: string; scene: string; frame: { x: number; 
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
 export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access" | "mark";
-export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string };
+/** `who`: the suspect it's about (a question, a crack, a shrug), by id, so the world can show them react. */
+export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string; who?: string };
 
 export type Score = { stars: number; culprit: boolean; motive: boolean; evidence: boolean; sharp: boolean };
 export type Outcome = { kind: "solved" | "wrong" | "gaveUp" | "tooLate" | "walkedOut"; report?: FinalReport; score: Score; at: number };
@@ -489,6 +490,8 @@ export type Action =
   | { type: "start" }
   | { type: "ready" }
   | { type: "search"; query: string }
+  /** The world only: the Tech pulls the records at a spot in the building (a laptop, a badge reader, a cabinet). */
+  | { type: "probe"; spot: string }
   | { type: "ask"; evidenceId: string }
   /** Kept for one release so phones still on the old page keep working: the camera's `shoot` replaced it. */
   | { type: "inspect"; scene: string; hotspot: string }

@@ -23,6 +23,7 @@ import { WorldThenNow } from "./WorldThenNow";
 import { useHandOffs } from "./useHandOffs";
 import { useWorldSound } from "./useWorldSound";
 import { WorldPeople } from "./WorldPeople";
+import { WorldControls } from "./WorldControls";
 import { SideJob } from "./jobs/SideJob";
 import { LightsOut, WorldGlow, WorldJobs } from "./WorldJobs";
 import type { SideJobView } from "@/lib/game/helps";
@@ -269,6 +270,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         <WorldTags plate={plate} cast={cast} marks={marks} />
         {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}
         <WorldPeople plate={plate} cast={cast} />
+        {view && <WorldControls plate={plate} view={view} cast={cast} mine={mine} onSpot={setSpot} onJob={setJob} />}
         {view && <WorldConfrontation plate={plate} view={view} act={act} busy={busy} quiet={panel === "solve"} onCallLie={() => setPanel("solve")} />}
         {view?.phase === "lobby" && <WorldLobby view={view} act={act} busy={busy} />}
         <WorldHud code={code} view={view} cast={cast} stickers={stickers} minimap={<WorldMinimap plate={plate} picture={art.plateMap} mine={mine} />} onSolve={() => setPanel("solve")} personActions={personActions} roleButtons={roleButtons} />

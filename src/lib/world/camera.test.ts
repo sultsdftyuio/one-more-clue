@@ -32,16 +32,20 @@ test("on a phone, all the way out shows the whole building across the screen, an
   const range = zoomRange(phone, plate);
   near(range.min, 390 / 3240);
   near(range.closeUp, 0.5, 1e-9);
-  near(range.max, 0.8, 1e-9);
+  near(range.max, 1, 1e-9);
   const whole = wholeBuilding(phone, plate);
   assert.deepEqual([whole.x, whole.y], [1620, 850], "centred");
   near(whole.zoom, range.min);
 });
 
-test("on a big screen the zoom limits still make sense", () => {
+test("on a big screen the zoom limits still make sense, and the close-up frames about a floor", () => {
+  const laptop = zoomRange({ w: 1366, h: 768 }, plate);
+  near(laptop.closeUp, 768 / 430 / 2, 1e-9);
+  assert.ok(laptop.closeUp > laptop.min * 2, "a laptop's close-up is well in from the whole building");
   const desk = zoomRange({ w: 2560, h: 1440 }, plate);
   near(desk.min, 2560 / 3240);
-  assert.equal(desk.closeUp, desk.min, "the close-up is never further out than the whole building");
+  near(desk.closeUp, 0.9, 1e-9);
+  assert.ok(desk.closeUp >= desk.min, "the close-up is never further out than the whole building");
   assert.ok(desk.max >= desk.closeUp);
   const wall = zoomRange({ w: 9000, h: 5000 }, plate);
   assert.ok(wall.min <= wall.closeUp && wall.closeUp <= wall.max);

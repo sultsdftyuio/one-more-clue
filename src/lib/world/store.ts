@@ -73,6 +73,10 @@ export type WorldState = {
   cursor: { minute: number | null; frozen: boolean; n: number } | null;
   /** The ghosts the scene is drawing right now, for their tags and the clash lines. */
   ghosts: Ghost[];
+  /** Walking with keys or the on-screen buttons: -1 left, 1 right, 0 standing (held, so it lasts while held). */
+  steer: number;
+  /** Take the stairs here: up (1) or down (-1), once, waiting for the scene. */
+  climb: { dir: 1 | -1; n: number } | null;
   /** The Photographer's last flash (W5.1): the room it lit, who fired it, and when (Date.now). */
   flash: { room: string; by: string; at: number } | null;
   /** "Then and now" (W5.1): an old photo held over the live room it was taken in, on this phone. */
@@ -119,6 +123,9 @@ export type WorldActions = {
   receiveCursor(by: string, minute: number | null, frozen: boolean): void;
   setGhosts(ghosts: Ghost[]): void;
   addFlash(flash: { room: string; by: string; at: number }): void;
+  setSteer(dx: number): void;
+  requestClimb(dir: 1 | -1): void;
+  takeClimb(): 1 | -1 | null;
   setThenNow(thenNow: WorldState["thenNow"]): void;
   setStatus(patch: Partial<WorldStatus>): void;
 };
@@ -150,6 +157,8 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     ghosts: [],
     flash: null,
     thenNow: null,
+    steer: 0,
+    climb: null,
     status: INITIAL_STATUS,
     ...initial,
 
@@ -235,6 +244,16 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     },
     setGhosts: (ghosts) => set({ ghosts }),
     addFlash: (flash) => set({ flash }),
+    setSteer: (dx) => {
+      const steer = Math.sign(dx);
+      if (get().steer !== steer) set({ steer });
+    },
+    requestClimb: (dir) => set({ climb: { dir, n: (get().climb?.n ?? 0) + 1 } }),
+    takeClimb: () => {
+      const climb = get().climb;
+      if (climb) set({ climb: null });
+      return climb?.dir ?? null;
+    },
     setThenNow: (thenNow) => set({ thenNow }),
     setStatus: (patch) => set({ status: { ...get().status, ...patch } }),
   }));

@@ -8,6 +8,7 @@ import type { PlayerView } from "@/lib/game/engine";
 import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
+import { getAudioSettings, setAudioSettings, subscribeAudio, unlock } from "@/components/game/audio/sound";
 import { useWorld } from "./useWorld";
 import { HelpsChip } from "./WorldJobs";
 import { RewindButton } from "./WorldRewind";
@@ -113,6 +114,30 @@ function NightChip({ view }: { view: PlayerView }) {
 }
 
 /** Copies the world link for friends (or opens the phone's share sheet). */
+/** Sound on this device, on and off (sound and music together). The tap itself starts the sound if nothing has yet. */
+function SoundButton() {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const read = () => setOn(getAudioSettings().sound);
+    read();
+    const stop = subscribeAudio(read);
+    return () => {
+      stop();
+    };
+  }, []);
+  return (
+    <IconButton
+      icon={on ? "speaker" : "speakerOff"}
+      label={on ? "Sound on: tap to mute" : "Sound off: tap to turn it on"}
+      pressed={!on}
+      onClick={() => {
+        unlock();
+        setAudioSettings({ sound: !on, music: !on });
+      }}
+    />
+  );
+}
+
 function InviteButton({ code }: { code: string }) {
   const [done, setDone] = useState(false);
   useEffect(() => {
@@ -284,6 +309,7 @@ export function WorldHud({
           {playing && view?.rewind && <RewindButton className={roundButton} />}
           {playing && !zoomedOut && roleButtons}
           {!playing && <InviteButton code={code} />}
+          <SoundButton />
           <Link href={`/r/${code}`} aria-label="Classic screens" title="Classic screens" className={cx(roundButton, "bg-cream/80")}>
             <Icon name="screen" className="size-5" />
           </Link>

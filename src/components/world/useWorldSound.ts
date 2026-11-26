@@ -26,9 +26,9 @@ function toneOf(plate: WorldPlate, room: string | null, zoomedOut: boolean, rain
 }
 
 /**
- * The world's sound (W7.1): wakes the audio engine on the first tap, plays the case's music as the classic screens
- * do (on the phone that carries the room's sound), lays the room tone of wherever the camera is under it, and gives
- * your own detective footsteps and teammates' pings a chime.
+ * The world's sound (W7.1): wakes the audio engine on the first tap, click or key, plays the case's music as the
+ * classic screens do (in One screen mode, only on the host's device, so it never echoes), and on every device lays
+ * the room tone of wherever the camera is, footsteps for your own detective and a chime for teammates' pings.
  */
 export function useWorldSound(store: WorldStore, plate: WorldPlate | null, view: PlayerView | null) {
   useEffect(() => {
@@ -65,7 +65,7 @@ export function useWorldSound(store: WorldStore, plate: WorldPlate | null, view:
 
   // Room tone follows the camera.
   useEffect(() => {
-    if (!plate || !loud) {
+    if (!plate) {
       Ambience.set(null);
       return;
     }
@@ -85,7 +85,7 @@ export function useWorldSound(store: WorldStore, plate: WorldPlate | null, view:
     return store.subscribe((s, prev) => {
       if (s.camera !== prev.camera || s.viewport !== prev.viewport) apply();
     });
-  }, [store, plate, loud]);
+  }, [store, plate]);
 
   // Footsteps for your own detective, and a chime for a teammate's ping.
   useEffect(() => {

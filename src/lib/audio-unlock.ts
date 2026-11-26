@@ -4,7 +4,7 @@
  * pointerdown alone leaves every phone silent. iPhones also mute web audio
  * while the ringer switch is on silent, unless the page asks to play through it.
  */
-const GESTURES = ["pointerup", "touchend", "click", "keydown"] as const;
+const GESTURES = ["pointerup", "touchend", "click", "keydown", "mousedown"] as const;
 
 /** Asks iOS to treat this page's sound like a video's, so the silent switch doesn't mute it. */
 export function playThroughSilentSwitch() {

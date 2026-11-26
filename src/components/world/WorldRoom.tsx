@@ -28,7 +28,7 @@ import { SideJob } from "./jobs/SideJob";
 import { LightsOut, WorldGlow, WorldJobs } from "./WorldJobs";
 import type { SideJobView } from "@/lib/game/helps";
 import { WorldPings } from "./WorldPings";
-import { RewindOverlay } from "./WorldRewind";
+import { RewindOverlay, RewindScreen } from "./WorldRewind";
 import { usePresence } from "./usePresence";
 import { WorldSpots } from "./WorldSpots";
 import { WorldRoomTags } from "./WorldRoomTags";
@@ -277,6 +277,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
           {view && <WorldJobs plate={plate} view={view} onOpen={setJob} />}
           {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
           <WorldRoomTags plate={plate} />
+          {view && <RewindScreen view={view} />}
           {view && <RewindOverlay plate={plate} view={view} act={act} />}
           <WorldTags plate={plate} cast={cast} marks={marks} />
           {view && <WorldBubbles plate={plate} view={view} quiet={tool?.kind === "interview"} />}

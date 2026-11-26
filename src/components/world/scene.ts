@@ -64,7 +64,7 @@ const SHADOW_FLAT = 0.17;
 const SHADOW_ALPHA = { rim: 0.3, core: 0.45 };
 const SHADOW_COLOUR = 0x06040e;
 /** The rewind's blue-grey over the painted building. */
-const REWIND_TINT = 0x7d8bb8;
+const REWIND_TINT = 0x6a7aae;
 /** How quickly someone's colour follows the room light they walk into, in ms. */
 const TINT_MS = 260;
 
@@ -266,6 +266,15 @@ class BuildingScene extends Phaser.Scene {
 
     this.updateRewind(state);
     if (!this.rewinding) this.ambience?.update(time, dt);
+    // Ghosts flicker a little, like a worn tape (steady with reduced motion).
+    if (this.rewinding) {
+      this.ghostSprites.forEach((g, i) => {
+        if (!g.image.visible) return;
+        const wobble = this.reduceMotion ? 1 : 0.86 + 0.14 * Math.sin(time / 70 + i * 1.7) * Math.sin(time / 330 + i);
+        g.image.setAlpha((g.image.getData("alpha") ?? 0.9) * wobble);
+        g.glow.setAlpha((g.glow.getData("alpha") ?? 0.2) * wobble);
+      });
+    }
     const walk = state.takeWalk();
     if (walk) this.walkTo(walk.id, walk.x, time);
     this.steerMe(state, time, dt);
@@ -364,8 +373,8 @@ class BuildingScene extends Phaser.Scene {
       const w = p.height * (TILE.w / TILE.h) * SHADOW_WIDTH * p.grow * (footUp ? 0.9 : 1);
       const fade = footUp ? 0.8 : 1;
       for (const part of [p.shadow.rim, p.shadow.core]) part.setPosition(feet.x, feet.y - p.height * 0.01).setScale(w / 100);
-      // In the rewind the living fade back, so the night's ghosts stand out.
-      const living = this.rewinding ? 0.22 : 1;
+      // In the rewind the living step out of the picture: only the night's ghosts are there.
+      const living = this.rewinding ? 0 : 1;
       p.image.setAlpha(living);
       p.shadow.rim.setAlpha(SHADOW_ALPHA.rim * fade * living);
       p.shadow.core.setAlpha(SHADOW_ALPHA.core * fade * living);
@@ -455,8 +464,10 @@ class BuildingScene extends Phaser.Scene {
       const frame = frameOf(person!.id, "idle");
       if (frame) sprite.image.setTexture(`cast-${frame.sheet}`, frame.frame);
       const s = spriteOf(plate, person!, { x: g.x, z: g.z });
-      sprite.image.setPosition(s.feet.x, s.feet.y).setScale(s.scale).setTint(g.says ? 0xd8c8ff : 0xbfeaff).setAlpha(g.says ? 0.42 : 0.88);
-      sprite.glow.setPosition(s.feet.x, s.feet.y - s.box.h * 0.45).setSize(s.box.w * 0.9, s.box.h * 0.95).setAlpha(g.says ? 0.08 : 0.2);
+      sprite.image.setPosition(s.feet.x, s.feet.y).setScale(s.scale).setTint(g.says ? 0xc9b5ff : 0x8fe3ff);
+      sprite.image.setData("alpha", g.says ? 0.55 : 0.95);
+      sprite.glow.setPosition(s.feet.x, s.feet.y - s.box.h * 0.45).setSize(s.box.w * 1.15, s.box.h * 1.1);
+      sprite.glow.setData("alpha", g.says ? 0.12 : 0.34);
     });
   }
 

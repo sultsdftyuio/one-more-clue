@@ -21,6 +21,7 @@ export function WorldTags({ plate, cast, marks = {} }: { plate: WorldPlate; cast
   const store = useWorldStore();
   const selected = useWorld((s) => s.selected);
   const statuses = useWorld((s) => s.statuses);
+  const rewinding = useWorld((s) => s.rewind.open);
   const nodes = useRef(new Map<string, HTMLSpanElement>());
 
   const tags = useMemo(
@@ -52,6 +53,7 @@ export function WorldTags({ plate, cast, marks = {} }: { plate: WorldPlate; cast
     });
   }, [store, tags, plate]);
 
+  if (rewinding) return null;
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       {tags.map((tag) => (

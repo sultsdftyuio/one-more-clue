@@ -21,6 +21,8 @@ import type { PlayerView } from "@/lib/game/engine";
 import type { WorldSpotView } from "@/lib/game/world";
 import { cx } from "@/lib/cx";
 import { useWorld } from "./useWorld";
+import { DOCK_ICONS } from "./WorldIcons";
+import { WorldMilestones } from "./WorldMilestones";
 import { RewindBar } from "./WorldRewind";
 import { SpotSheetBody, type PlatePicture } from "./WorldSpotSheet";
 
@@ -116,7 +118,8 @@ export function WorldGame({
   return (
     <GameProvider value={game}>
       {rewinding && view.rewind && <RewindBar view={view} map={view.rewind} />}
-      <Dock badges={badges} onOpen={onPanel} floating />
+      {!rewinding && <Dock badges={badges} onOpen={onPanel} floating icons={DOCK_ICONS} />}
+      <WorldMilestones view={view} />
       <ProposalBar view={view} act={act} busy={busy} />
       <ActivityToasts view={view} />
       <Moments />

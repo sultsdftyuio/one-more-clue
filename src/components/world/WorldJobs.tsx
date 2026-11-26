@@ -23,6 +23,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  */
 export function WorldJobs({ plate, view, onOpen }: { plate: WorldPlate; view: PlayerView; onOpen: (job: SideJobView) => void }) {
   const store = useWorldStore();
+  const rewinding = useWorld((s) => s.rewind.open);
   const near = useWorld((s) => s.near);
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const jobs = view.jobs;
@@ -46,7 +47,7 @@ export function WorldJobs({ plate, view, onOpen }: { plate: WorldPlate; view: Pl
     });
   }, [store, jobs, plate]);
 
-  if (view.phase !== "investigation") return null;
+  if (view.phase !== "investigation" || rewinding) return null;
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {jobs.map((job) => {

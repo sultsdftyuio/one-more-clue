@@ -73,6 +73,10 @@ export type WorldState = {
   cursor: { minute: number | null; frozen: boolean; n: number } | null;
   /** The ghosts the scene is drawing right now, for their tags and the clash lines. */
   ghosts: Ghost[];
+  /** Who is talking right now (a speech bubble is up), by person id, until when (Date.now ms): they bob as they talk. */
+  talking: Record<string, number>;
+  /** The thing my detective is standing at and can use, for the glow on it and the key bubble over it. */
+  near: { kind: "spot" | "job" | "person"; id: string } | null;
   /** Walking with keys or the on-screen buttons: -1 left, 1 right, 0 standing (held, so it lasts while held). */
   steer: number;
   /** Take the stairs here: up (1) or down (-1), once, waiting for the scene. */
@@ -124,6 +128,8 @@ export type WorldActions = {
   setGhosts(ghosts: Ghost[]): void;
   addFlash(flash: { room: string; by: string; at: number }): void;
   setSteer(dx: number): void;
+  setTalking(id: string, until: number): void;
+  setNear(near: WorldState["near"]): void;
   requestClimb(dir: 1 | -1): void;
   takeClimb(): 1 | -1 | null;
   setThenNow(thenNow: WorldState["thenNow"]): void;
@@ -159,6 +165,8 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     thenNow: null,
     steer: 0,
     climb: null,
+    talking: {},
+    near: null,
     status: INITIAL_STATUS,
     ...initial,
 
@@ -247,6 +255,11 @@ export function createWorldStore(initial: Partial<WorldState> = {}) {
     setSteer: (dx) => {
       const steer = Math.sign(dx);
       if (get().steer !== steer) set({ steer });
+    },
+    setTalking: (id, until) => set({ talking: { ...get().talking, [id]: until } }),
+    setNear: (near) => {
+      const now = get().near;
+      if (now?.kind !== near?.kind || now?.id !== near?.id) set({ near });
     },
     requestClimb: (dir) => set({ climb: { dir, n: (get().climb?.n ?? 0) + 1 } }),
     takeClimb: () => {

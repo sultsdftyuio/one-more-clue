@@ -52,6 +52,8 @@ export function WorldBubbles({ plate, view, quiet = false }: { plate: WorldPlate
     });
     if (!made.length) return;
     setBubbles((list) => [...list.filter((b) => b.until > now && !made.some((m) => m.person === b.person)), ...made]);
+    // They bob while they talk, for about as long as the line takes.
+    for (const b of made) store.getState().setTalking(b.person, Math.min(b.until, now + 1500 + b.text.length * 45));
     // Their recorded voice (W7.1), unless the interrogation room is open here and already speaking it.
     if (!quiet) {
       for (const b of made) {

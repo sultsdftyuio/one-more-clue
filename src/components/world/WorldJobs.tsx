@@ -13,7 +13,7 @@ import type { WorldPlate } from "@/lib/world/plates";
 import type { WorldState } from "@/lib/world/store";
 import { HELP_LOOK, HelpMark } from "./jobs/frame";
 import { coverRoom } from "./overRoom";
-import { useWorldStore } from "./useWorld";
+import { useWorld, useWorldStore } from "./useWorld";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -23,6 +23,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  */
 export function WorldJobs({ plate, view, onOpen }: { plate: WorldPlate; view: PlayerView; onOpen: (job: SideJobView) => void }) {
   const store = useWorldStore();
+  const near = useWorld((s) => s.near);
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const jobs = view.jobs;
 
@@ -59,14 +60,18 @@ export function WorldJobs({ plate, view, onOpen }: { plate: WorldPlate; view: Pl
               else nodes.current.delete(job.id);
             }}
             type="button"
-            onClick={() => !done && onOpen(job)}
+            onClick={() => !done && near?.kind === "job" && near.id === job.id && onOpen(job)}
             aria-label={done ? `${job.spot.name}: done${done.by ? ` by ${nameOf(view, done.by)}` : ""}` : `${job.spot.name}: a side job that wins ${look.label === "Sore spot" ? "a sore spot" : `a ${look.label.toLowerCase()}`}`}
             aria-disabled={Boolean(done)}
             style={{ visibility: "hidden" }}
-            className="pointer-events-auto absolute top-0 left-0 grid size-11 place-items-center will-change-transform"
+            className={cx("pointer-events-auto absolute top-0 left-0 grid place-items-center will-change-transform", near?.kind === "job" && near.id === job.id ? "size-40" : "size-11 cursor-default")}
           >
+            {near?.kind === "job" && near.id === job.id && !done && <span aria-hidden="true" className="world-glow-spot absolute inset-0 rounded-full" />}
             <span className={cx("relative grid place-items-center", !done && "world-fresh")}>
-              <HelpMark help={job.help} className={cx("size-8 shadow-pop-sm", done && "opacity-40 grayscale")} />
+              <HelpMark
+                help={job.help}
+                className={cx("shadow-pop-sm", done ? "size-7 opacity-40 grayscale" : near?.kind === "job" && near.id === job.id ? "size-11" : "size-6 opacity-60")}
+              />
               {done && <span className="absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full border border-ink bg-teal text-[10px] font-black text-ink">✓</span>}
             </span>
           </button>

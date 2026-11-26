@@ -35,6 +35,14 @@ const PATHS = {
   back: "M19 12H5M11 6l-6 6 6 6",
   marker: "M15 4l5 5L9 20H4v-5L15 4Zm-3 3 5 5",
   robot:"M5 9h14v10H5V9Zm7-5v5M9 14h.01M15 14h.01M9 17h6",
+  building: "M4 21V8l8-5 8 5v13M4 21h16M9 21v-5h6v5M8 11h2M14 11h2",
+  crosshair: "M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-17v4M12 17v4M3 12h4M17 12h4",
+  rewind: "M11 6 4 12l7 6V6Zm9 0-7 6 7 6V6Z",
+  bolt: "M13 2 4 14h7l-1 8 9-12h-7l1-8Z",
+  screen: "M3 4h18v12H3V4Zm5 16h8M12 16v4",
+  play: "M7 4v16l13-8L7 4Z",
+  up: "M12 19V5M6 11l6-6 6 6",
+  down: "M12 5v14M18 13l-6 6-6-6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

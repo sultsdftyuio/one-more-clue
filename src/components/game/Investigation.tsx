@@ -267,7 +267,42 @@ const DOCK: { id: Panel; label: string; icon: IconName }[] = [
 const urgent = (badge: string) => badge === "vote" || badge === "live" || badge.endsWith("new");
 
 /** Everything that isn't your own tool: one tap away, with a badge when something there needs you. */
-export function Dock({ badges, onOpen }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void }) {
+export function Dock({ badges, onOpen, floating = false }: { badges: Partial<Record<Panel, string>>; onOpen: (panel: Panel) => void; floating?: boolean }) {
+  // In the world it's a floating bar of icons over the building (names for screen readers and on hover).
+  if (floating) {
+    return (
+      <nav
+        className="fixed bottom-[max(0.6rem,env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full border-[3px] border-ink bg-night/90 px-1.5 py-1 shadow-card backdrop-blur"
+        aria-label="Open a panel"
+      >
+        <div className="flex gap-0.5">
+          {DOCK.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => onOpen(d.id)}
+              aria-label={badges[d.id] ? `${d.label} (${badges[d.id]})` : d.label}
+              title={d.label}
+              className="relative grid size-12 place-items-center rounded-full text-cream/80 transition-colors hover:bg-cream/10 hover:text-mustard"
+            >
+              <Icon name={d.icon} className="size-6" />
+              {badges[d.id] && (
+                <span
+                  aria-hidden="true"
+                  className={cx(
+                    "absolute -top-1 -right-1 min-w-5 rounded-full border-2 border-ink px-1 text-center text-[0.65rem] leading-4 font-black whitespace-nowrap",
+                    urgent(badges[d.id]!) || d.id === "team" ? "bg-coral text-cream" : "bg-cream text-ink",
+                  )}
+                >
+                  {badges[d.id]!.replace(" new", "")}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
+    );
+  }
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-ink bg-night/95 pb-[env(safe-area-inset-bottom)] backdrop-blur" aria-label="Open a panel">
       <div className="mx-auto grid max-w-2xl grid-cols-5">

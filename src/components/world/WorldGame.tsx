@@ -131,6 +131,7 @@ export function WorldGame({
       )}
       {tool?.kind === "interview" && (
         <Sheet title="The interrogation room" onClose={onCloseTool}>
+          <SoreLine view={view} name={tool.who} />
           <InterviewerTool key={tool.who} who={tool.who} />
         </Sheet>
       )}
@@ -147,4 +148,12 @@ export function WorldGame({
       {seenChapter !== null && view.chapter.number > seenChapter && <ChapterStory view={view} onClose={closeChapter} />}
     </GameProvider>
   );
+}
+
+/** A sore spot the team has won for whoever is in the chair: the topic that makes them uneasy (never whether they lie). */
+function SoreLine({ view, name }: { view: PlayerView; name: string }) {
+  const sore = view.helps.sore.find((s) => s.name === name);
+  if (!sore) return null;
+  const short = name.split(" ")[0] === "Prof." ? name : name.split(" ")[0];
+  return <p className="mb-3 rounded-2xl border-2 border-ink bg-[#bfe0ff] px-3 py-2 text-sm font-extrabold text-ink">Sore spot: {short} gets uneasy about {sore.topic}.</p>;
 }

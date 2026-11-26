@@ -34,6 +34,7 @@ import type {
 import { cleanFrame, framedHotspot, MIN_SHOT_ZOOM, zoomOf } from "./camera.ts";
 import { linesOf } from "./lines.ts";
 import { checkWorld, pullAt, spotsFor, type WorldSpotView } from "./world.ts";
+import { closeEventIfOver, drinkCoffee, finishSideJob, flipFuse, helpsFor, jobsFor, startEventIfDue, type HelpsView, type SideJobView } from "./helps.ts";
 import { clockTime, costMinutes, formatSpan, LOW_NIGHT, nightLeft, nightMinutes, parseTime, spentMinutes, type Spend } from "./clock.ts";
 
 export const MAX_NAME = 24;
@@ -373,8 +374,14 @@ export function scoreReport(state: RoomState, caseFile: CaseFile, report: FinalR
 const NO_SCORE: Score = { stars: 0, culprit: false, motive: false, evidence: false, sharp: false };
 
 /** Spends some of the story's night on a move. Returns the minutes it cost: none in a case without a clock. */
-function spend(state: RoomState, caseFile: CaseFile, kind: Spend) {
+function spend(state: RoomState, caseFile: CaseFile, kind: Spend, now = 0) {
   if (!caseFile.deadline) return 0;
+  // A coffee from a side job (W6.2) keeps the next costly move off the clock. A wrong answer still costs.
+  if (kind !== "wrong" && drinkCoffee(state)) {
+    state.activity.push({ id: `coffee-${state.version}-${state.activity.length}`, at: now, kind: "clock", text: "A coffee kept that one off the clock." });
+    state.activity = state.activity.slice(-ACTIVITY_KEPT);
+    return 0;
+  }
   const minutes = costMinutes(caseFile.deadline, kind);
   state.clockSpent = spentMinutes(state, caseFile) + minutes;
   return minutes;
@@ -663,7 +670,7 @@ export function applyAction(
         log(next, newId, now, "access", `${me.name} cracked the password. Access granted: ${record.title}`, me.id, record.id);
         announceLeads(next, caseFile, record.id, self, now, newId);
       } else {
-        const minutes = spend(next, caseFile, "miss");
+        const minutes = spend(next, caseFile, "miss", now);
         log(next, newId, now, minutes ? "clock" : "miss", `${me.name} tried a password on ${record.title}. Access denied.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
@@ -678,7 +685,7 @@ export function applyAction(
       if (!opened(state, question)) return fail("That isn't a question you can ask yet.");
       // A question takes time out of the night. Following a lead is free, so time never stands between the team and a chain.
       const lead = waitsOn(question).length > 0;
-      const minutes = lead ? 0 : spend(next, caseFile, "question");
+      const minutes = lead ? 0 : spend(next, caseFile, "question", now);
       if (!lead) next.questionsUsed++;
       next.found[question.id] = { by: me.id, at: now };
       log(next, newId, now, "found", `${me.name} asked ${question.access.suspect}: "${question.access.question}"${minutes ? ` (−${formatSpan(minutes)})` : ""}`, me.id, question.id, suspectIdOf(caseFile, question.access.suspect));
@@ -736,7 +743,7 @@ export function applyAction(
         log(next, newId, now, "found", `${me.name} photographed something in "${scene.title}": ${detail.title}`, me.id, detail.id);
         announceLeads(next, caseFile, detail.id, self, now, newId);
       } else {
-        const minutes = spend(next, caseFile, "miss");
+        const minutes = spend(next, caseFile, "miss", now);
         log(next, newId, now, minutes ? "clock" : "miss", `${me.name}'s shot of "${scene.title}" caught nothing.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
@@ -763,7 +770,7 @@ export function applyAction(
         log(next, newId, now, "crack", `${me.name} showed ${suspect} ${evidence.title}, and ${suspect} cracked.`, me.id, crack.id, suspectIdOf(caseFile, suspect));
         announceLeads(next, caseFile, crack.id, self, now, newId);
       } else {
-        const minutes = spend(next, caseFile, "miss");
+        const minutes = spend(next, caseFile, "miss", now);
         log(next, newId, now, minutes ? "clock" : "miss", `${me.name} showed ${suspect} ${evidence.title}. It didn't shake them.${costNote(next, caseFile, minutes)}`, me.id, undefined, suspectIdOf(caseFile, suspect));
       }
       break;
@@ -788,7 +795,7 @@ export function applyAction(
       } else {
         if (next.checked.includes(key)) return fail("You've already compared those two.");
         next.checked.push(key);
-        const minutes = spend(next, caseFile, "miss");
+        const minutes = spend(next, caseFile, "miss", now);
         log(next, newId, now, minutes ? "clock" : "miss", `${me.name} compared "${a.title}" with "${b.title}". They agree.${costNote(next, caseFile, minutes)}`, me.id);
       }
       break;
@@ -919,6 +926,20 @@ export function applyAction(
       break;
     }
 
+    case "sideJob": {
+      if (!investigating || !state.world) return fail("Side jobs are for the building, during the case.");
+      const problem = finishSideJob(next, caseFile, self, String(action.job ?? ""), Number(action.stars), now, (text, by) => log(next, newId, now, "help", text, by));
+      if (problem) return fail(problem);
+      break;
+    }
+
+    case "flipFuse": {
+      if (!investigating || !state.world) return fail("The lights are fine.");
+      const problem = flipFuse(next, self, now);
+      if (problem) return fail(problem);
+      break;
+    }
+
     case "chat": {
       const text = String(action.text ?? "").trim().slice(0, MAX_CHAT);
       if (!text) return fail("Say something first.");
@@ -991,6 +1012,11 @@ export function applyAction(
 
   resolveProposal(next, caseFile, now, newId);
   endIfOutOfTime(next, caseFile, now, newId);
+  // The world's team events (W6.4): one ends when everyone's done their part or its time is up, and the next starts
+  // at its story beat.
+  const say = (text: string) => log(next, newId, now, "help", text);
+  closeEventIfOver(next, caseFile, now, say);
+  startEventIfDue(next, caseFile, now, say);
   next.version++;
   return { ok: true, state: next };
 }
@@ -1360,6 +1386,12 @@ export type PlayerView = {
   spots: WorldSpotView[];
   /** The world's rewind: the night as the team knows it (world rooms with a map of the night, during the investigation). */
   rewind: NightMapView | null;
+  /** The world's side jobs (W6), with who did each this chapter. */
+  jobs: SideJobView[];
+  /** The team's helps from side jobs. */
+  helps: HelpsView;
+  /** A team event running now (Lights out), and who has done their part. */
+  event: { job: string; endsAt: number; flipped: string[] } | null;
   /** The last piece someone showed on every phone. */
   spotlight: { id: string; by: string; at: number; evidence: VisibleEvidence } | null;
   /** Where the Archivist has placed pinned pieces on the wall, in percent. Pieces without a place sit in the default grid. */
@@ -1699,6 +1731,9 @@ export function viewFor(state: RoomState, caseFile: CaseFile, playerId: string, 
           })
         : [],
     rewind: state.world && state.phase === "investigation" ? rewindFor(state, caseFile) : null,
+    jobs: jobsFor(state, caseFile),
+    helps: helpsFor(state, caseFile),
+    event: state.world && state.phase === "investigation" && state.event ? { job: state.event.job, endsAt: state.event.endsAt, flipped: state.event.flipped } : null,
     wall: Object.fromEntries(Object.entries(state.wall ?? {}).filter(([id]) => pinned.has(id))),
     strings: caseFile.evidence.flatMap((e) => (e.access.kind === "crosscheck" && state.found[e.id] ? [{ id: e.id, a: e.access.pair[0], b: e.access.pair[1] }] : [])),
     spotlight: state.spotlight && shown ? { id: state.spotlight.id, by: state.spotlight.by, at: state.spotlight.at, evidence: toVisible(shown) } : null,

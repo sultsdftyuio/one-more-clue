@@ -187,13 +187,15 @@ Tasks are numbered (`W0.1` …) so sessions can claim them. Size is a rough coun
 
 ### Phase 6 · Side mini-games and helps · L
 
-- [ ] **W6.1** The side-job frame: spot, sheet, result, help. Once per chapter, shared with the team, no fail state.
-- [ ] **W6.2** Helps in the engine:
+- [x] **W6.1** The side-job frame: spot, sheet, result, help. Once per chapter, shared with the team, no fail state. *(Done 2026-11-26. [WorldJobs](../src/components/world/WorldJobs.tsx) marks each job's spot with the help it wins, bobbing, and greys it with a tick once someone has done it. [SideJobFrame](../src/components/world/jobs/frame.tsx) is the mockups' frame: the way back, the job's name and where it is ("Favour · Ozzy", "Odd job · Maker space"), the help chip, a few-word prompt, and one win card with 1–3 stars. The help goes to the team the moment the game ends. Every game ends with at least a star, and the slow one (Rewire) offers "Fix it for me" after 25 s.)*
+- [x] **W6.2** Helps in the engine:
   - Coffee: the next question or search costs no time.
   - Lightbulb: a room glows.
   - Sore spot: one topic per suspect.
-- [ ] **W6.3** The eight Case 001 games from the mockups: Coffee run, Penalty with Ozzy, Lights out, Print it, Rewire, Tea for Squires, Breathe with Priya, Race Rena.
-- [ ] **W6.4** Team events: Lights out fires at a story beat, and every phone gets its own fuse.
+
+  *(Done 2026-11-26, in [helps.ts](../src/lib/game/helps.ts) with a `sideJob` action. Searches already cost nothing, so a Coffee keeps the next costly move off the clock: a question, or a shot, show or password that misses. Three stars make two cups. A Lightbulb lights the next room that still holds something to turn up this chapter (a record at its spots, or a detail in a photo kept there), and the glow goes out by itself once that room is searched out; in chapter 1 that's only ever Lab 4. A sore spot shows on the suspect's card and over the interrogation room, and a question on that topic (one of its `about` pieces) makes them visibly uneasy in the building, guilty or not. Jobs are once per chapter for the team; a sore spot, once won, stays won. The HUD shows the team's helps under the clock.)*
+- [x] **W6.3** The eight Case 001 games from the mockups: Coffee run, Penalty with Ozzy, Lights out, Print it, Rewire, Tea for Squires, Breathe with Priya, Race Rena. *(Done 2026-11-26 in DOM, SVG and CSS ([games-a](../src/components/world/jobs/games-a.tsx), [games-b](../src/components/world/jobs/games-b.tsx)), each in its mockup's setting and moves: tap on green, swipe up (or tap a side of the goal), tap to stack, turn tiles, drag in order (or tap), hold and let go, trace the wire (or hold a button). Ozzy, Priya and the others are their own drawn characters.)*
+- [x] **W6.4** Team events: Lights out fires at a story beat, and every phone gets its own fuse. *(Done 2026-11-26. It fires once, in chapter 1, after the team's third find. Every phone goes dark with its own fuse and sees whose are flipped; the lights come back when everyone has flipped, or after 20 s anyway, with one Lightbulb per flipped fuse.)*
 
 **Done when** the games run on phones at 60 fps, rewards apply, and none of them can block progress.
 
@@ -402,3 +404,4 @@ Each phone shows its numbers and can copy a report, and reports also go to the s
   - no page errors
   
   Chapter 1 can be played from the building alone. Not tried on real phones.
+- 2026-11-26: Phase 6 (W6.1–W6.4) done on branch `world/w6-sidejobs` (on top of W5). Checked with two headless Chrome phones: all seven spot jobs played through their own controls (Pour on the gauge, three penalties, the tea in the wrong order then the right one, six printed layers, seven taps on the fuse board, three held breaths, the wire traced by touch), each win card showed, the helps reached the other phone (two coffees or one, the Lab 4 glow, sore spots on Ozzy, Squires, Priya and Rena), and three finds brought Lights out to both phones, where both fuses flipped and the lights came back. A frame left open while another job was opened kept the first one's state; frames are now keyed by job.

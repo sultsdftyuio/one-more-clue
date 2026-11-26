@@ -21,6 +21,9 @@ import { WorldGame, type WorldTool } from "./WorldGame";
 import { chip } from "./WorldHud";
 import { WorldThenNow } from "./WorldThenNow";
 import { useHandOffs } from "./useHandOffs";
+import { SideJob } from "./jobs/SideJob";
+import { LightsOut, WorldGlow, WorldJobs } from "./WorldJobs";
+import type { SideJobView } from "@/lib/game/helps";
 import { WorldPings } from "./WorldPings";
 import { RewindOverlay } from "./WorldRewind";
 import { usePresence } from "./usePresence";
@@ -93,6 +96,7 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   const [spot, setSpot] = useState<WorldSpotView | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [tool, setTool] = useState<WorldTool | null>(null);
+  const [job, setJob] = useState<SideJobView | null>(null);
   const view = status.kind === "ready" ? status.view : null;
 
   useEffect(() => {
@@ -112,8 +116,10 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
 
   // The live channel (W3.1): teammates walking, what they're doing, and pings.
   const presence = usePresence({ code, store, plate, view, stickers });
-  const doing = spot
-    ? `at ${spot.name}`
+  const doing = job
+    ? `on a side job at ${job.spot.name}`
+    : spot
+      ? `at ${spot.name}`
     : tool?.kind === "interview"
       ? `questioning ${tool.who.split(" ")[0]}`
       : tool?.kind === "camera"
@@ -182,6 +188,16 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
   const interviewer = view?.players.find((p) => p.roles.some((r) => view.case.roles.find((x) => x.id === r)?.ability === "interview"));
   const personActions = (member: { suspect?: string; name: string }) => {
     if (!view || !member.suspect) return null;
+    const sore = view.helps.sore.find((s) => s.suspect === member.suspect);
+    return (
+      <>
+        {sore && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-[#bfe0ff] px-2.5 py-0.5 text-sm font-extrabold">Sore spot: {sore.topic}</p>}
+        {questionFor(member)}
+      </>
+    );
+  };
+  const questionFor = (member: { suspect?: string; name: string }) => {
+    if (!view || !member.suspect) return null;
     if (view.me.abilities.includes("interview")) {
       const waiting = questions?.filter((q) => q.suspect === member.name && !q.asked).length ?? 0;
       return (
@@ -229,9 +245,11 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     <WorldContext.Provider value={store}>
       <div className="fixed inset-0 touch-none overflow-hidden bg-[linear-gradient(#030820,#141829)] text-cream select-none">
         <WorldCanvas store={store} plate={plate} art={art} />
+        {view && <WorldGlow plate={plate} view={view} />}
         <WorldFlash plate={plate} />
         {view && <WorldThenNow plate={plate} view={view} onShoot={() => setTool({ kind: "camera" })} />}
         <WorldPings plate={plate} view={view} />
+        {view && <WorldJobs plate={plate} view={view} onOpen={setJob} />}
         {view && <WorldSpots plate={plate} view={view} onOpen={setSpot} onPing={(s) => presence.current?.ping(s)} />}
         <WorldRoomTags plate={plate} />
         {view && <RewindOverlay plate={plate} view={view} act={act} />}
@@ -265,6 +283,10 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
         )}
       </div>
       {view && <WorldGame view={view} act={act} busy={busy} spot={spot} onCloseSpot={() => setSpot(null)} panel={panel} onPanel={setPanel} tool={tool} onCloseTool={() => setTool(null)} />}
+      {view && job && view.phase === "investigation" && (
+        <SideJob key={job.id} job={job} view={view} act={act} roomName={plate.rooms.find((r) => r.id === job.spot.room)?.name ?? ""} onClose={() => setJob(null)} />
+      )}
+      {view && view.phase === "investigation" && <LightsOut view={view} act={act} />}
     </WorldContext.Provider>
   );
 }

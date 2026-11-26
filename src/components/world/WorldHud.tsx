@@ -9,6 +9,7 @@ import { cx } from "@/lib/cx";
 import { isZoomedOut } from "@/lib/world/camera";
 import type { CastMember } from "@/lib/world/cast";
 import { useWorld } from "./useWorld";
+import { HelpsChip } from "./WorldJobs";
 import { RewindButton } from "./WorldRewind";
 
 export const chip = "rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold text-ink shadow-pop-sm active:translate-y-0.5 active:shadow-none";
@@ -179,6 +180,7 @@ export function WorldHud({
         </div>
         <div className="flex flex-col items-end gap-2">
           {view && playing && <NightChip view={view} />}
+          {view && playing && <HelpsChip view={view} />}
           <FrameMeter />
         </div>
       </header>

@@ -13,13 +13,13 @@ import type { Mood } from "@/lib/world/sprites";
 import type { WorldState } from "@/lib/world/store";
 import { useWorldStore } from "./useWorld";
 
-type Tone = "answer" | "crack" | "shrug";
+type Tone = "answer" | "crack" | "shrug" | "sore";
 type Bubble = { key: string; person: string; text: string; caption: string | null; tone: Tone; until: number };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** What a suspect's face does after each kind of moment, and for how long. An answer leaves them as they were. */
-const REACTION: Partial<Record<Tone, { mood: Mood; ms: number }>> = { crack: { mood: "cracked", ms: 9000 }, shrug: { mood: "smug", ms: 4500 } };
+const REACTION: Partial<Record<Tone, { mood: Mood; ms: number }>> = { crack: { mood: "cracked", ms: 9000 }, shrug: { mood: "smug", ms: 4500 }, sore: { mood: "nervous", ms: 6000 } };
 
 /**
  * Speech bubbles in the building (W5.3): when the Interviewer questions someone, the answer comes out of that person
@@ -115,7 +115,7 @@ export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerV
             <div
               className={cx(
                 "world-bubble relative rounded-2xl border-[3px] border-ink px-3 py-2 shadow-card",
-                b.tone === "crack" ? "bg-coral text-cream" : b.tone === "shrug" ? "bg-lilac text-ink" : "bg-cream text-ink",
+                b.tone === "crack" ? "bg-coral text-cream" : b.tone === "shrug" ? "bg-lilac text-ink" : b.tone === "sore" ? "bg-[#bfe0ff] text-ink" : "bg-cream text-ink",
               )}
             >
               <p className="sr-only">{name} says:</p>
@@ -126,7 +126,7 @@ export function WorldBubbles({ plate, view }: { plate: WorldPlate; view: PlayerV
                 aria-hidden="true"
                 className={cx(
                   "absolute top-full -mt-[3px] size-0 -translate-x-1/2 border-x-[9px] border-t-[12px] border-x-transparent",
-                  b.tone === "crack" ? "border-t-coral" : b.tone === "shrug" ? "border-t-lilac" : "border-t-cream",
+                  b.tone === "crack" ? "border-t-coral" : b.tone === "shrug" ? "border-t-lilac" : b.tone === "sore" ? "border-t-[#bfe0ff]" : "border-t-cream",
                 )}
                 style={{ left: "50%" }}
               />
@@ -149,6 +149,9 @@ export function bubbleFor(a: Activity, view: PlayerView, plate: Pick<WorldPlate,
     const piece = view.evidence.find((e) => e.id === a.evidenceId);
     const text = piece?.body.type === "statement" ? `“${piece.body.text}”` : "…";
     const caption = piece ? (asker ? `to ${asker}` : null) : asker ? `talking to ${asker}` : "talking";
+    // Pressure follows topics (W5.3, W6.2): a question on a sore spot the team has won makes them uneasy, whoever they are.
+    const sore = view.helps.sore.find((s) => s.suspect === a.who && s.about.includes(a.evidenceId!));
+    if (sore) return { key: a.id, person: person.id, text, caption: `${caption ? `${caption} · ` : ""}uneasy: ${sore.topic}`, tone: "sore", until: hold(text) };
     return { key: a.id, person: person.id, text, caption, tone: "answer", until: hold(text) };
   }
   if (a.kind === "crack" && a.evidenceId) {

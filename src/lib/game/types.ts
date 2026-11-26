@@ -384,7 +384,7 @@ export type Show = { id: string; by: string; suspect: string; evidenceId: string
 export type Shot = { id: string; by: string; scene: string; frame: { x: number; y: number; w: number; h: number }; at?: number; hit: string | null; time: number };
 export type ChatLine = { id: string; playerId: string; text: string; at: number };
 
-export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access" | "mark";
+export type ActivityKind = "found" | "miss" | "pin" | "unpin" | "chapter" | "wrong" | "hint" | "join" | "leave" | "lie" | "lead" | "objection" | "clock" | "spotlight" | "crack" | "locked" | "access" | "mark" | "help";
 /** `who`: the suspect it's about (a question, a crack, a shrug), by id, so the world can show them react. */
 export type Activity = { id: string; at: number; kind: ActivityKind; playerId?: string; text: string; evidenceId?: string; who?: string };
 
@@ -458,6 +458,14 @@ export type RoomState = {
    * so a phone that joins late, or loses the live channel, can still draw them in the right place.
    */
   places?: Record<string, { room: string; x: number; at: number }>;
+  /** The team's helps from side jobs (W6): cups of coffee in hand, rooms lit by a Lightbulb (per chapter), sore spots won. */
+  helps?: { coffee: number; lit: { room: string; chapter: number }[]; sore: string[] };
+  /** Side jobs done, keyed "<chapter>:<job id>": who did it and how well (1–3 stars). */
+  jobs?: Record<string, { job: string; by: string; at: number; stars: number; chapter: number }>;
+  /** A team event running now (Lights out): when it ends, and who has done their part. */
+  event?: { job: string; at: number; endsAt: number; flipped: string[] };
+  /** Team events that have already fired, once each. */
+  events?: string[];
 };
 
 export type InterrogationState = {
@@ -519,6 +527,10 @@ export type Action =
   | { type: "pin"; evidenceId: string }
   | { type: "unpin"; evidenceId: string }
   | { type: "chat"; text: string }
+  /** The world only: a side job finished, with how well it went (1–3 stars; there's no failing). */
+  | { type: "sideJob"; job: string; stars: number }
+  /** The world only: my part of a team event (flip my fuse in Lights out). */
+  | { type: "flipFuse" }
   /** The world only: my detective walked into a new room and stands at x (cm). Saved, never scored. */
   | { type: "move"; room: string; x: number }
   | { type: "propose"; kind: ProposalKind; evidenceId?: string; report?: FinalReport }

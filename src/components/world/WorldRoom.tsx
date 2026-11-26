@@ -188,6 +188,12 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
     arrived.current = true;
     store.getState().look({ kind: "person", id: mine });
   }, [ready, mine, store]);
+  // And again when the briefing ends and the night starts, wherever the game put you, so a player who starts
+  // downstairs isn't left looking at someone else's room.
+  const playing = view?.phase === "investigation";
+  useEffect(() => {
+    if (ready && mine && playing) store.getState().look({ kind: "person", id: mine });
+  }, [ready, mine, playing, store]);
 
   // A teammate's find opens something for you (W5.5): the spot lights up and gets a ping on this phone.
   useHandOffs(store, view);

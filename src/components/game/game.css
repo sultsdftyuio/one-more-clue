@@ -1274,3 +1274,33 @@ body.tech-tapping [data-searchable] {
     animation: none;
   }
 }
+
+/* The Tech's screen: the download bar and the noise scrolling past. */
+.world-load {
+  animation: world-load 1.1s ease-in-out both;
+}
+@keyframes world-load {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.world-datascroll {
+  animation: world-datascroll 1.6s linear infinite;
+}
+@keyframes world-datascroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-load {
+    animation: none;
+    width: 100%;
+  }
+  .world-datascroll {
+    animation: none;
+  }
+}

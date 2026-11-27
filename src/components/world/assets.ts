@@ -10,7 +10,8 @@ import case001LaserCutter from "@/assets/world/case-001/front/laser-cutter.webp"
 import case001PrinterBench from "@/assets/world/case-001/front/printer-bench.webp";
 import case001Stool from "@/assets/world/case-001/front/stool.webp";
 import case001WaterCooler from "@/assets/world/case-001/front/water-cooler.webp";
-import case001Plate from "@/assets/world/case-001/plate.webp";
+import case001Plate0 from "@/assets/world/case-001/plate-0.webp";
+import case001Plate1 from "@/assets/world/case-001/plate-1.webp";
 import case001PlateMap from "@/assets/world/case-001/plate-map.webp";
 import case001Cast0 from "@/assets/world/case-001/cast-0.webp";
 import case001Cast1 from "@/assets/world/case-001/cast-1.webp";
@@ -18,7 +19,8 @@ import type { WorldArt } from "./scene";
 
 const ART: Record<string, WorldArt> = {
   "case-001": {
-    plate: case001Plate.src,
+    // The plate's two tiles, left to right (case-001.building.ts places them).
+    plates: [case001Plate0.src, case001Plate1.src],
     plateMap: case001PlateMap.src,
     // The characters (art/world/cast_sprites.py), in the order src/lib/world/sprites.ts lists them.
     sheets: [case001Cast0.src, case001Cast1.src],

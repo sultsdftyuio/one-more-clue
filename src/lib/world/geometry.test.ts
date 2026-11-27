@@ -11,19 +11,19 @@ import { case001World } from "../../data/cases/case-001.world.ts";
 const plate = worldOf("case-001")!;
 const person = (id: string) => plate.people.find((p) => p.id === id)!;
 
-test("the plate covers the world from x −60 to 1560 cm and z −70 to 780 cm at 2 px per cm", () => {
+test("the plate covers the world from x −60 to 3100 cm and z −70 to 780 cm at 2 px per cm", () => {
   assert.deepEqual(toPlate(plate, -60, 780), { x: 0, y: 0 });
-  assert.deepEqual(toPlate(plate, 1560, -70), { x: 3240, y: 1700 });
-  assert.deepEqual(fromPlate(plate, 3240, 1700), { x: 1560, z: -70 });
+  assert.deepEqual(toPlate(plate, 3100, -70), { x: 6320, y: 1700 });
+  assert.deepEqual(fromPlate(plate, 6320, 1700), { x: 3100, z: -70 });
   const p = toPlate(plate, 432.5, 17.25);
   assert.deepEqual(fromPlate(plate, p.x, p.y), { x: 432.5, z: 17.25 });
-  assert.deepEqual(roomBox(plate, plate.rooms.find((r) => r.id === "lab4")!), { x: 136, y: 400, w: 848, h: 560 });
+  assert.deepEqual(roomBox(plate, plate.rooms.find((r) => r.id === "lab4")!), { x: 1184, y: 400, w: 1016, h: 560 });
 });
 
 test("characters stand on their feet at 80% of the mockup's size", () => {
   assert.equal(CHARACTER_SCALE, 0.8);
   const priya = spriteOf(plate, person("priya"));
-  assert.deepEqual(priya.feet, toPlate(plate, 300, 306));
+  assert.deepEqual(priya.feet, toPlate(plate, 908, 306));
   assert.ok(Math.abs(priya.box.h - 235.5 * 0.8 * 2) < 1e-9, "a suspect's tile is 188.4 cm tall");
   assert.ok(Math.abs(priya.scale * 420 - priya.box.h) < 1e-9, "tiles are 300 x 420");
   assert.ok(Math.abs(priya.box.w / priya.box.h - 400 / 560) < 1e-9);
@@ -51,18 +51,18 @@ test("a tap lands on the person under it, not through the desk, and not on empty
   assert.equal(personAt(plate, ...at("priya", 0.5)), "priya");
   assert.equal(personAt(plate, ...at("squires", 0.3)), "squires");
   assert.equal(personAt(plate, ...at("ozzy", 0.8)), "ozzy", "his head shows over the desk");
-  const desk = toPlate(plate, 748, 60);
+  const desk = toPlate(plate, 1356, 60);
   assert.equal(personAt(plate, desk.x, desk.y), null, "his legs are behind the desk");
   const sky = toPlate(plate, 1200, 700);
   assert.equal(personAt(plate, sky.x, sky.y), null);
-  // Between Mei (x 165) and Priya (x 300): just left of Priya's body.
-  const beside = toPlate(plate, 250, 400);
+  // Between Mei (x 773) and Priya (x 908): just left of Priya's body.
+  const beside = toPlate(plate, 858, 400);
   assert.equal(personAt(plate, beside.x, beside.y), null);
   assert.equal(personAt(plate, beside.x, beside.y, 20), "priya", "fingers get some slack");
 });
 
 test("the desk cut-out sits on whole pixels, as the asset script cuts it", () => {
-  assert.deepEqual(outlineBox(plate, plate.occluders.find((o) => o.id === "desk")!.outline), { x: 1256, y: 1253, w: 460, h: 295 });
+  assert.deepEqual(outlineBox(plate, plate.occluders.find((o) => o.id === "desk")!.outline), { x: 2472, y: 1253, w: 460, h: 295 });
 });
 
 test("the front layer is the painter's: every piece of furniture in front.json, cut out and in its room", () => {
@@ -77,12 +77,12 @@ test("the front layer is the painter's: every piece of furniture in front.json, 
 });
 
 test("someone behind the lab bench is drawn before it and can't be tapped through it, but shows above it", () => {
-  const behind = { ...plate, people: [...plate.people, { id: "ghost", x: 90, z: 306, suspect: "triangle", behind: true, delay: 0 }] };
+  const behind = { ...plate, people: [...plate.people, { id: "ghost", x: 698, z: 306, suspect: "triangle", behind: true, delay: 0 }] };
   const order = drawOrder(behind).map((p) => p.id);
   assert.ok(order.indexOf("ghost") < order.indexOf("priya"), "behind people come first, so the furniture goes over them");
-  const knees = toPlate(behind, 90, 360);
+  const knees = toPlate(behind, 698, 360);
   assert.equal(personAt(behind, knees.x, knees.y), null, "the bench is in the way");
-  const head = toPlate(behind, 90, 470);
+  const head = toPlate(behind, 698, 470);
   assert.equal(personAt(behind, head.x, head.y), "ghost", "above the bench, they're tappable");
 });
 
@@ -136,29 +136,31 @@ test("the cast names the suspects from the case and the detectives from the play
 
 test("people take on their room's light, and white outside every room", () => {
   for (const room of plate.rooms) assert.equal(lightAt(plate, (room.x0 + room.x1) / 2, room.z0 + 6), room.light, room.id);
-  assert.equal(lightAt(plate, 440, 306), 0xffffff, "in the wall between Lab 4 and the corridor");
+  assert.equal(lightAt(plate, 1048, 306), 0xffffff, "in the wall between Lab 4 and the corridor");
   assert.ok(plate.rooms.every((r) => r.light !== undefined));
 });
 
 test("a tap on your floor walks you there, kept off the end walls; other floors are out of reach for now", () => {
-  const sam = { x: 630, z: 306 }; // in the corridor, upstairs
-  assert.equal(walkTarget(plate, sam, 800, 400), 800);
-  assert.equal(walkTarget(plate, sam, 200, 330), 200, "through the open door into Lab 4");
-  assert.equal(walkTarget(plate, sam, 0, 330), 8 + 30, "not into Lab 4's far wall");
-  assert.equal(walkTarget(plate, sam, 940, 330), 952 - 30);
-  assert.equal(walkTarget(plate, sam, 700, 100), null, "the lobby is downstairs");
-  const ali = { x: 600, z: 6 }; // in the lobby
-  assert.equal(walkTarget(plate, ali, 1200, 100), 1200, "out of the main door into the car park");
-  assert.equal(walkTarget(plate, ali, 100, 50), 100, "into the maker space");
+  const sam = { x: 1238, z: 306 }; // in the corridor, upstairs
+  assert.equal(walkTarget(plate, sam, 1408, 400), 1408);
+  assert.equal(walkTarget(plate, sam, 808, 330), 808, "through the open door into Lab 4");
+  assert.equal(walkTarget(plate, sam, 300, 330), 300, "and on through Lab 4 into the professor's office");
+  assert.equal(walkTarget(plate, sam, 0, 330), 8 + 30, "not into the office's far wall");
+  assert.equal(walkTarget(plate, sam, 2090, 330), 2076 - 30, "into the kitchen, not through its outer wall");
+  assert.equal(walkTarget(plate, sam, 1300, 100), null, "the lobby is downstairs");
+  const ali = { x: 1208, z: 6 }; // in the lobby
+  assert.equal(walkTarget(plate, ali, 2400, 100), 2400, "out of the main door into the car park");
+  assert.equal(walkTarget(plate, ali, 700, 50), 700, "into the security office");
+  assert.equal(walkTarget(plate, ali, 300, 50), 300, "and on into the maker space");
 });
 
 test("someone who has walked is drawn, and tapped, where they are now", () => {
   const sam = person("sam");
-  const moved = { x: 900, z: 306 };
-  assert.deepEqual(spriteOf(plate, sam, moved).feet, toPlate(plate, 900, 306));
-  const body = toPlate(plate, 900, 380);
+  const moved = { x: 1500, z: 306 };
+  assert.deepEqual(spriteOf(plate, sam, moved).feet, toPlate(plate, 1500, 306));
+  const body = toPlate(plate, 1500, 380);
   assert.equal(personAt(plate, body.x, body.y, 0, { sam: moved }), "sam");
-  const old = toPlate(plate, 630, 380);
+  const old = toPlate(plate, 1238, 380);
   assert.notEqual(personAt(plate, old.x, old.y, 0, { sam: moved }), "sam", "not where they used to be");
 });
 

@@ -2,8 +2,9 @@ import type { CaseWorld } from "@/lib/game/types";
 import { case001Building } from "./case-001.building.ts";
 
 /**
- * Case 001's building: the Halden Innovation Building at 12:40 AM, cut open. Lab 4 sits above the dark maker
- * space, the corridor above the lobby and its stairs; the car park and the North Gate are outside in the rain.
+ * Case 001's building: the Halden Innovation Building at 12:40 AM, cut open. Upstairs, the professor's office, Lab 4,
+ * the corridor and the staff kitchen; downstairs, the dark maker space, the security office and the lobby with its
+ * stairs; the car park and the North Gate are outside in the rain.
  *
  * Numbers come from the painter's manifest (art/world/world.json, painted by art/world/world.py) at 2 px per cm.
  *
@@ -15,12 +16,35 @@ import { case001Building } from "./case-001.building.ts";
 export const case001World: CaseWorld = {
   ...case001Building,
   spots: [
+    // The professor's office
+    {
+      id: "filing-cabinet",
+      name: "The professor's filing cabinet",
+      room: "office",
+      // The register lives in his filing cabinet now, not in Cabinet B: it's his record of the lab's kit.
+      x: 204,
+      z: 380,
+      kind: "object",
+      evidence: ["asset-register"],
+      roles: ["tech"],
+    },
+    {
+      id: "prof-screen",
+      name: "The professor's computer",
+      room: "office",
+      // His desk screen, asleep: the same inbox as his phone.
+      x: 406,
+      z: 418,
+      kind: "device",
+      evidence: ["northgate-email"],
+      roles: ["archivist"],
+    },
     // Lab 4
     {
       id: "laptop",
       name: "Priya's laptop",
       room: "lab4",
-      x: 228.8,
+      x: 836.8,
       z: 431.8,
       kind: "device",
       evidence: ["lab-chat", "device-log", "chat-history"],
@@ -30,10 +54,10 @@ export const case001World: CaseWorld = {
       id: "cabinet",
       name: "Cabinet B",
       room: "lab4",
-      x: 78.7,
+      x: 686.7,
       z: 473,
       kind: "object",
-      evidence: ["dock-log", "asset-register"],
+      evidence: ["dock-log"],
       roles: ["tech"],
     },
     {
@@ -41,7 +65,7 @@ export const case001World: CaseWorld = {
       name: "Lab 4, as the photos saw it",
       room: "lab4",
       // Up by the lab clock, which both photos show, clear of anyone standing in the lab.
-      x: 255,
+      x: 863,
       z: 530,
       kind: "view",
       evidence: ["photo-linkedin", "photo-incident"],
@@ -52,10 +76,33 @@ export const case001World: CaseWorld = {
       id: "lab-reader",
       name: "Lab 4's badge reader",
       room: "corridor",
-      x: 529,
+      x: 1137,
       z: 429,
       kind: "device",
       evidence: ["badge-log"],
+      roles: ["tech"],
+    },
+    // Security office
+    {
+      id: "security-screens",
+      name: "The camera screens",
+      room: "security",
+      // The bank of six screens over the desk: the lobby camera's footage plays here.
+      x: 860,
+      z: 205,
+      kind: "device",
+      evidence: ["cctv-lobby"],
+      roles: ["tech"],
+    },
+    {
+      id: "rounds-clipboard",
+      name: "The rounds clipboard",
+      room: "security",
+      // On its hook by the door to the lobby, with the tour wand's charger on the desk below.
+      x: 940,
+      z: 158,
+      kind: "object",
+      evidence: ["guard-tour"],
       roles: ["tech"],
     },
     // Lobby
@@ -63,7 +110,7 @@ export const case001World: CaseWorld = {
       id: "lobby-reader",
       name: "The main door's badge reader",
       room: "lobby",
-      x: 945.2,
+      x: 1653.2,
       z: 122,
       kind: "device",
       evidence: ["badge-log"],
@@ -73,30 +120,19 @@ export const case001World: CaseWorld = {
       id: "security-desk",
       name: "The security desk",
       room: "lobby",
-      // The key board and rounds rota on the wall behind the desk, between Ali and Ozzy.
-      x: 672,
+      // The key board and rounds rota on the wall behind the desk, between Ali and Ozzy: visitors sign in here.
+      x: 1280,
       z: 215,
       kind: "device",
-      evidence: ["visitor-sheet", "guard-tour"],
-      roles: ["archivist", "tech"],
-    },
-    {
-      id: "lobby-camera",
-      name: "The lobby camera",
-      room: "lobby",
-      // On its bracket under the ceiling, left of the EXIT sign.
-      x: 876,
-      z: 258,
-      kind: "device",
-      evidence: ["cctv-lobby"],
-      roles: ["tech"],
+      evidence: ["visitor-sheet"],
+      roles: ["archivist"],
     },
     // Outside: the North Gate's number-plate camera.
     {
       id: "anpr",
       name: "The North Gate camera",
       room: "outside",
-      x: 1392,
+      x: 2916,
       z: 280,
       kind: "device",
       evidence: ["anpr"],
@@ -104,12 +140,19 @@ export const case001World: CaseWorld = {
     },
     // Side jobs
     {
-      id: "drinks-machine",
-      name: "The drinks machine",
-      room: "lobby",
-      // Up the front of the machine, over Squires's head.
-      x: 912,
-      z: 225,
+      id: "coffee-machine",
+      name: "The coffee machine",
+      room: "kitchen",
+      x: 1923,
+      z: 434,
+      kind: "sidejob",
+    },
+    {
+      id: "kettle",
+      name: "The kettle",
+      room: "kitchen",
+      x: 1778,
+      z: 414,
       kind: "sidejob",
     },
     {
@@ -117,16 +160,7 @@ export const case001World: CaseWorld = {
       name: "Ozzy's phone",
       room: "lobby",
       // On the desk's front panel: Ozzy stands behind it, so his head and the phone stay tappable.
-      x: 690,
-      z: 50,
-      kind: "sidejob",
-    },
-    {
-      id: "flask",
-      name: "The flask on the desk",
-      room: "lobby",
-      // On the desk's front panel, clear of Squires.
-      x: 765,
+      x: 1298,
       z: 50,
       kind: "sidejob",
     },
@@ -134,7 +168,7 @@ export const case001World: CaseWorld = {
       id: "printer",
       name: "The 3D printers",
       room: "maker",
-      x: 118,
+      x: 202,
       z: 80,
       kind: "sidejob",
     },
@@ -143,7 +177,7 @@ export const case001World: CaseWorld = {
       name: "The fuse cupboard",
       room: "corridor",
       // On the wall over the water cooler, past Lab 5's door.
-      x: 935,
+      x: 1543,
       z: 478,
       kind: "sidejob",
     },
@@ -152,7 +186,7 @@ export const case001World: CaseWorld = {
       name: "Priya's stool",
       room: "lab4",
       // In the gap between Mei and Priya.
-      x: 230,
+      x: 838,
       z: 340,
       kind: "sidejob",
     },
@@ -161,21 +195,46 @@ export const case001World: CaseWorld = {
       name: "The breadboard",
       room: "lab4",
       // At the bench's left end, by the cutting mat, clear of Mei.
-      x: 95,
+      x: 703,
       z: 395,
+      kind: "sidejob",
+    },
+    {
+      id: "demo-case",
+      name: "The demo case",
+      room: "office",
+      // The aluminium flight case on the floor by the bookcase, packed for tomorrow's investor demo.
+      x: 332,
+      z: 330,
+      kind: "sidejob",
+    },
+    {
+      id: "monitor-desk",
+      name: "The monitor desk",
+      room: "security",
+      // The keyboard under the screens, left of the camera footage.
+      x: 750,
+      z: 110,
+      kind: "sidejob",
+    },
+    {
+      id: "barrier",
+      name: "The barrier",
+      room: "outside",
+      // The North Gate's arm, by the attendant's booth.
+      x: 2951,
+      z: 100,
       kind: "sidejob",
     },
   ],
   elsewhere: {
     "kestrel-staff": "Kestrel Dynamics' own website",
-    "northgate-email": "the professor's inbox, on his phone",
   },
-  // Where everyone waits at 12:40 AM, as the "001 · Close-up" board stands them. Ozzy is behind the security desk.
   sideJobs: [
     {
       id: "coffee-run",
       game: "coffee-run",
-      spot: "drinks-machine",
+      spot: "coffee-machine",
       help: "coffee",
     },
     {
@@ -197,7 +256,7 @@ export const case001World: CaseWorld = {
     {
       id: "tea-squires",
       game: "tea",
-      spot: "flask",
+      spot: "kettle",
       help: "sore-spot",
       suspect: "square",
     },
@@ -215,6 +274,10 @@ export const case001World: CaseWorld = {
       help: "sore-spot",
       suspect: "rectangle",
     },
+    // The bigger building's three: one for each new room that would otherwise only fill up in later chapters.
+    { id: "pack-case", game: "pack-case", spot: "demo-case", help: "lightbulb" },
+    { id: "watch-monitors", game: "watch-monitors", spot: "monitor-desk", help: "lightbulb" },
+    { id: "time-barrier", game: "time-barrier", spot: "barrier", help: "coffee" },
   ],
   // Rena's is "leaving at nine", the same story the professor tells, so it can't single her out.
   soreSpots: {

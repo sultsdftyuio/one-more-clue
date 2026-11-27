@@ -20,11 +20,11 @@ const at = (map: ReturnType<typeof wholeNight>, time: string) => {
 
 test("the building's routes go through its doors and stairs", () => {
   assert.deepEqual(route(building, "lab4", "outside"), ["lab4", "corridor", "lobby", "outside"]);
-  assert.deepEqual(route(building, "maker", "lab4"), ["maker", "lobby", "corridor", "lab4"]);
+  assert.deepEqual(route(building, "maker", "lab4"), ["maker", "security", "lobby", "corridor", "lab4"]);
   assert.equal(route(building, "lab4", "home"), null, "nowhere off the plate");
   const path = walkPath(building, "lab4", "lobby")!;
-  assert.deepEqual(path[0], { x: 220, z: 306 }, "from the middle of Lab 4");
-  assert.deepEqual(path.at(-1), { x: 700, z: 6 }, "to the middle of the lobby");
+  assert.deepEqual(path[0], { x: 786, z: 306 }, "from the middle of Lab 4");
+  assert.deepEqual(path.at(-1), { x: 1358, z: 6 }, "to the middle of the lobby");
   assert.ok(path.some((p) => p.z > 100 && p.z < 300), "down the stairs on the way");
   assert.deepEqual(along([{ x: 0, z: 0 }, { x: 100, z: 0 }], 0.25), { x: 25, z: 0 });
 });

@@ -35,7 +35,8 @@ import { Ambience } from "./ambience";
 import { ghostsAt, type Ghost } from "@/lib/world/rewind";
 
 /** Where the case's pictures are served from (see assets.ts). */
-export type WorldArt = { plate: string; plateMap: string; sheets: string[]; occluders: Record<string, string> };
+/** `plates` are the plate's tiles, left to right, as `WorldPlate.tiles` places them. */
+export type WorldArt = { plates: string[]; plateMap: string; sheets: string[]; occluders: Record<string, string> };
 
 export type WorldOptions = {
   store: WorldStore;
@@ -113,7 +114,8 @@ class BuildingScene extends Phaser.Scene {
   private following: string | null = null;
   /** A pinch happened since the fingers last all came up. */
   private pinched = false;
-  private plateImage: Phaser.GameObjects.Image | null = null;
+  /** The plate's tiles, left to right; empty until the scene is made. */
+  private plateImages: Phaser.GameObjects.Image[] = [];
   private mapImage: Phaser.GameObjects.Image | null = null;
   /** Set when the GPU can't hold the full plate, so the small copy is always drawn. */
   private mapOnly = false;
@@ -143,7 +145,7 @@ class BuildingScene extends Phaser.Scene {
 
   preload() {
     const { art, plate, store } = this.options;
-    this.load.image("plate", art.plate);
+    art.plates.forEach((src, i) => this.load.image(`plate-${i}`, src));
     this.load.image("plate-map", art.plateMap);
     for (let i = 0; i < SHEETS; i++) {
       this.load.spritesheet(`cast-${i}`, art.sheets[i], { frameWidth: TILE.w, frameHeight: TILE.h, margin: SHEET_GAP, spacing: SHEET_GAP });
@@ -158,12 +160,12 @@ class BuildingScene extends Phaser.Scene {
     const { plate, store } = this.options;
     const renderer = this.game.renderer;
     const webgl = renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer;
-    this.mapOnly = webgl && renderer.getMaxTextureSize() < Math.max(plate.size.w, plate.size.h);
+    this.mapOnly = webgl && renderer.getMaxTextureSize() < Math.max(...plate.tiles.map((t) => t.w), plate.size.h);
 
     // Back to front: the zoomed-out copy, the plate, a glow under whoever is selected, the people
     // behind furniture, the furniture cut out of the plate, then everyone else.
     this.mapImage = this.add.image(0, 0, "plate-map").setOrigin(0).setDisplaySize(plate.size.w, plate.size.h);
-    this.plateImage = this.add.image(0, 0, "plate").setOrigin(0).setVisible(!this.mapOnly);
+    this.plateImages = plate.tiles.map((t, i) => this.add.image(t.x, 0, `plate-${i}`).setOrigin(0).setVisible(!this.mapOnly));
     // Rain, flickers, steam, LEDs, clocks and clouds, over the plate and under the people.
     const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     this.ambience = new Ambience(this, plate, Boolean(reduced));
@@ -218,7 +220,7 @@ class BuildingScene extends Phaser.Scene {
 
   /** The canvas changed size or density: keep looking at the same place, at the same zoom if it still fits. */
   resized() {
-    if (!this.plateImage) return;
+    if (!this.plateImages.length) return;
     const wasWhole = this.cam.zoom <= this.range.min * 1.001;
     this.measure();
     this.cam = clampCamera(wasWhole ? { ...this.cam, zoom: this.range.min } : this.cam, this.view, this.options.plate, this.range);
@@ -258,9 +260,9 @@ class BuildingScene extends Phaser.Scene {
     main.centerOn(this.cam.x, this.cam.y);
 
     // Close up, the full plate; further out, its mipmapped copy, which stays smooth when shrunk.
-    if (this.plateImage && this.mapImage && !this.mapOnly) {
+    if (this.plateImages.length && this.mapImage && !this.mapOnly) {
       const sharp = clamp((this.cam.zoom * dpr - MAP_FROM) / (MAP_TO - MAP_FROM), 0, 1);
-      this.plateImage.setVisible(sharp > 0).setAlpha(sharp);
+      for (const image of this.plateImages) image.setVisible(sharp > 0).setAlpha(sharp);
       this.mapImage.setVisible(sharp < 1);
     }
 
@@ -424,7 +426,7 @@ class BuildingScene extends Phaser.Scene {
     if (open !== this.rewinding) {
       this.rewinding = open;
       const tint = open ? REWIND_TINT : 0xffffff;
-      for (const image of [this.plateImage, this.mapImage, ...this.occluderImages]) image?.setTint(tint);
+      for (const image of [...this.plateImages, this.mapImage, ...this.occluderImages]) image?.setTint(tint);
       if (!open) {
         for (const g of this.ghostSprites) {
           g.image.setVisible(false);
@@ -609,7 +611,7 @@ class BuildingScene extends Phaser.Scene {
    * is drawn, since there's no camera to move before that.
    */
   pointer(kind: "down" | "move" | "up" | "cancel", id: number, x: number, y: number, t: number) {
-    if (!this.plateImage) return;
+    if (!this.plateImages.length) return;
     if (kind === "down") this.apply(this.gestures.down(id, x, y, t));
     else if (kind === "move") this.apply(this.gestures.move(id, x, y, t));
     else if (kind === "up") this.apply(this.gestures.up(id, t));
@@ -627,7 +629,7 @@ class BuildingScene extends Phaser.Scene {
 
   /** A mouse wheel turn at (x, y): zoom around the cursor. */
   wheel(x: number, y: number, dy: number) {
-    if (!this.plateImage) return;
+    if (!this.plateImages.length) return;
     this.goal = null;
     this.fling = { vx: 0, vy: 0 };
     this.follow(null);

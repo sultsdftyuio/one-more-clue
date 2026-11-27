@@ -224,10 +224,11 @@ export type Sighting = { evidence: string; who: string; room: string; at: string
  */
 export type CaseWorld = {
   /**
-   * The painted art. `layers` are files in src/assets/world/<case id>/, back to front. `extent` is the world the
-   * plate covers, and `size` its pixels, which must be `extent` times `pxPerCm`.
+   * The painted art. `layers` are the plate's tiles, files in src/assets/world/<case id>/, left to right, and
+   * `tiles` where each sits on the plate, in px (each no wider than 4096, the widest texture every phone holds).
+   * `extent` is the world the plate covers, and `size` its pixels, which must be `extent` times `pxPerCm`.
    */
-  plate: { layers: string[]; extent: WorldBox; pxPerCm: number; size: { w: number; h: number } };
+  plate: { layers: string[]; tiles: { x: number; w: number }[]; extent: WorldBox; pxPerCm: number; size: { w: number; h: number } };
   /** Where each floor's floor is: people in a room on it stand at `z`. */
   floors: { id: string; name: string; z: number }[];
   /**

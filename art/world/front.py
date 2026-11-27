@@ -24,15 +24,16 @@ from halden import np, skia  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# id, room, and what world.py puts there: (x, floor z as put() takes it, painter function). No shadows: they stay on the floor.
+# id, room, and what world.py puts there: (x, floor z as put() takes it, painter function), in today's world cm (the four first
+# rooms are drawn shifted: world.py's SHIFT). No shadows: they stay on the floor.
 PIECES = [
-    ("lab-bench", "lab4", [(205, 300, Wd.lab_bench), (205, 402, Wd.bench_things)]),
-    ("lab-chair", "lab4", [(404, 300, Wd.office_chair)]),
-    ("printer-bench", "maker", [(118, 0, Wd.printer_bench)]),
-    ("stool", "maker", [(236, 0, Wd.stool)]),
-    ("laser-cutter", "maker", [(330, 0, Wd.laser_cutter)]),
-    ("corridor-bench", "corridor", [(760, 300, Wd.bench_seat)]),
-    ("water-cooler", "corridor", [(920, 300, Wd.water_cooler)]),
+    ("lab-bench", "lab4", [(813, 300, Wd.lab_bench), (813, 402, Wd.bench_things)]),
+    ("lab-chair", "lab4", [(1012, 300, Wd.office_chair)]),
+    ("printer-bench", "maker", [(202, 0, Wd.printer_bench)]),
+    ("stool", "maker", [(320, 0, Wd.stool)]),
+    ("laser-cutter", "maker", [(414, 0, Wd.laser_cutter)]),
+    ("corridor-bench", "corridor", [(1368, 300, Wd.bench_seat)]),
+    ("water-cooler", "corridor", [(1528, 300, Wd.water_cooler)]),
 ]
 
 

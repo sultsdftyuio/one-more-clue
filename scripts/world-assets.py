@@ -5,23 +5,27 @@ The characters are packed by art/world/cast_sprites.py.
 
 Phones' GPUs only make mipmaps (smooth zoomed-out pictures) for power-of-two textures, and some can't hold a
 texture wider than 4096 px. So:
-- plate.webp is the painted building as it is (3240 x 1700 at 2 px per cm, copied unchanged), for the close-up;
-- plate-map.webp is the same picture at 2048 x 1024, which the world shows when zoomed out;
+- plate-0.webp, plate-1.webp, ... are the painted building (6320 x 1700 at 2 px per cm) cut into tiles no wider
+  than TILE px, left to right, for the close-up. The cuts fall on walls (CUTS, in world cm), so no object's close-up
+  is split; src/data/cases/case-001.building.ts lists the same tiles (plate.tiles) and a test checks them;
+- plate-map.webp is the whole picture at 4096 x 1024, which the world shows when zoomed out;
 - front/<id>.webp is each piece of furniture people can stand behind (art/world/front.json), cut out of the plate
   with its exact shape from art/world/front-mask.png (python art/world/front.py makes both). The world draws them over
   whoever stands behind. Each box is the outline's, rounded out to whole pixels the way outlineBox() in
   src/lib/world/geometry.ts does.
 """
+import glob
 import json
 import math
 import os
-import shutil
 
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAINTED = os.path.join(ROOT, "art", "world")  # the plate and its front layer
 OUT = os.path.join(ROOT, "src", "assets", "world", "case-001")
+TILE = 4096  # the widest texture every phone can hold
+CUTS = [1668.0]  # where the tiles meet, in world cm: the wall between the corridor and the kitchen
 
 
 def save(img, name, quality):
@@ -34,17 +38,25 @@ def main():
     os.makedirs(OUT, exist_ok=True)
 
     plate = Image.open(os.path.join(PAINTED, "world.webp")).convert("RGB")
-    assert plate.size == (3240, 1700), plate.size
-    # The plate is copied byte for byte: encoding it again would only lose detail.
-    shutil.copyfile(os.path.join(PAINTED, "world.webp"), os.path.join(OUT, "plate.webp"))
-    print(f"plate.webp: {plate.size[0]} x {plate.size[1]}, {os.path.getsize(os.path.join(OUT, 'plate.webp')) // 1024} KB (copied)")
-    save(plate.resize((2048, 1024), Image.LANCZOS), "plate-map.webp", 88)
+    world = json.load(open(os.path.join(PAINTED, "world.json")))
+    assert list(plate.size) == world["plate"], (plate.size, world["plate"])
+    # Tiles cut on walls, each no wider than TILE.
+    for path in glob.glob(os.path.join(OUT, "plate*.webp")):
+        os.remove(path)
+    x0, ppc = world["extent"][0], world["px_per_cm"]
+    edges = [0] + [round((x - x0) * ppc) for x in CUTS] + [plate.size[0]]
+    for k in range(len(edges) - 1):
+        assert edges[k + 1] - edges[k] <= TILE, (k, edges)
+        tile = plate.crop((edges[k], 0, edges[k + 1], plate.size[1]))
+        path = os.path.join(OUT, f"plate-{k}.webp")
+        tile.save(path, "WEBP", quality=92, method=6)
+        print(f"plate-{k}.webp: x {edges[k]}, {edges[k + 1] - edges[k]} wide, {os.path.getsize(path) // 1024} KB")
+    save(plate.resize((4096, 1024), Image.LANCZOS), "plate-map.webp", 88)
 
     old = os.path.join(OUT, "sprites.webp")  # the mockup's twelve stills, before art/world/cast_sprites.py
     if os.path.exists(old):
         os.remove(old)
 
-    world = json.load(open(os.path.join(PAINTED, "world.json")))
     front = json.load(open(os.path.join(PAINTED, "front.json")))
     mask = Image.open(os.path.join(PAINTED, "front-mask.png")).convert("L")
     assert mask.size == plate.size, mask.size

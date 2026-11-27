@@ -1304,3 +1304,38 @@ body.tech-tapping [data-searchable] {
     animation: none;
   }
 }
+
+/* The bigger building's side games: a car through the North Gate, cleanly or after a soft bump on the arm. */
+.world-car-go {
+  animation: world-car-go 0.9s ease-in forwards;
+}
+@keyframes world-car-go {
+  to {
+    transform: translateX(260%);
+    opacity: 0;
+  }
+}
+.world-car-bump {
+  animation: world-car-bump 1.5s ease-in-out forwards;
+}
+@keyframes world-car-bump {
+  25% {
+    transform: translateX(70%);
+  }
+  32% {
+    transform: translateX(58%) rotate(-3deg);
+  }
+  55% {
+    transform: translateX(62%);
+  }
+  to {
+    transform: translateX(260%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-car-go,
+  .world-car-bump {
+    animation-duration: 0.01s;
+  }
+}

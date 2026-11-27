@@ -644,15 +644,15 @@ test("lobby reactions are kept briefly, rate-limited per player, and only in the
 test("the world remembers where each detective last stood, checked against the building", () => {
   let state = createRoom({ code: "W", caseFile: case001, host: { id: "p1", token: "t1", name: "A" }, mode: "together", now: 0 });
   const move = (s: typeof state, room: string, x: number) => applyAction(s, case001, "p1", { type: "move", room, x }, 5, () => "id");
-  assert.equal(move(state, "lab4", 200).ok, false, "a classic room has no world to walk in");
+  assert.equal(move(state, "lab4", 800).ok, false, "a classic room has no world to walk in");
   state = { ...state, world: true };
-  const moved = move(state, "lab4", 200);
+  const moved = move(state, "lab4", 800);
   assert.ok(moved.ok);
   if (!moved.ok) return;
-  assert.deepEqual(moved.state.places?.p1, { room: "lab4", x: 200, at: 5 });
-  assert.deepEqual(viewFor(moved.state, case001, "p1", new Set()).players[0].place, { room: "lab4", x: 200 });
+  assert.deepEqual(moved.state.places?.p1, { room: "lab4", x: 800, at: 5 });
+  assert.deepEqual(viewFor(moved.state, case001, "p1", new Set()).players[0].place, { room: "lab4", x: 800 });
   const clamped = move(state, "lab4", 9999);
-  assert.ok(clamped.ok && clamped.state.places?.p1.x === 432, "kept inside the room");
+  assert.ok(clamped.ok && clamped.state.places?.p1.x === 1040, "kept inside the room");
   assert.equal(move(state, "home", 0).ok, false, "not into a room off the plate");
   assert.equal(move(state, "roof", 0).ok, false);
 });
@@ -671,16 +671,17 @@ test("in the world the Tech pulls a spot's records, which still wait on their le
   assert.equal(probe("cabinet", other).ok, other === tech, "only the Tech pulls records");
   assert.equal(applyAction({ ...state, world: undefined }, case001, tech, { type: "probe", spot: "cabinet" }, 0, newId).ok, false, "not in a classic room");
 
-  // Cabinet B holds the dock's log and the asset register: one pull each, then nothing new.
+  // Cabinet B holds the dock's log, the professor's filing cabinet the asset register: one pull each, then nothing new.
   assert.equal(spot("cabinet").fresh, true);
   state = must(probe("cabinet"));
   assert.ok(state.found["dock-log"]);
   assert.match(state.activity.at(-2)?.text ?? state.activity.at(-1)!.text, /pulled the records at Cabinet B/);
-  state = must(probe("cabinet"));
-  assert.ok(state.found["asset-register"]);
   assert.equal(spot("cabinet").fresh, false);
-  assert.deepEqual(spot("cabinet").pieces.sort(), ["asset-register", "dock-log"]);
+  assert.deepEqual(spot("cabinet").pieces, ["dock-log"]);
   assert.equal(probe("cabinet").ok, false, "nothing new there now");
+  state = must(probe("filing-cabinet"));
+  assert.ok(state.found["asset-register"]);
+  assert.equal(probe("filing-cabinet").ok, false);
 
   // The laptop's log waits on the photo and on Priya's answer: pulling early says whose move it is, for free.
   assert.equal(spot("laptop").fresh, false);
@@ -704,7 +705,7 @@ test("side jobs win the team a help: a coffee off the clock, a lit room, a sore 
   const job = (id: string, stars: number, who = "p1") => applyAction(state, case001, who, { type: "sideJob", job: id, stars }, 0, newId);
   const view = () => viewFor(state, case001, "p1", new Set());
   assert.equal(applyAction({ ...state, world: undefined }, case001, "p1", { type: "sideJob", job: "coffee-run", stars: 3 }, 0, newId).ok, false, "not in a classic room");
-  assert.equal(view().jobs.length, 7, "seven jobs to start from spots; Lights out is a team event");
+  assert.equal(view().jobs.length, 10, "ten jobs to start from spots; Lights out is a team event");
 
   // Coffee: three stars make two cups, and a question then costs no time.
   state = must(job("coffee-run", 3));
@@ -722,7 +723,7 @@ test("side jobs win the team a help: a coffee off the clock, a lit room, a sore 
   assert.equal(state.jobs?.["1:print-it"]?.stars, 1, "a miss still wins, just less");
   const lit = view().helps.lit;
   assert.equal(lit.length, 1);
-  assert.ok(["lab4", "corridor", "lobby", "outside"].includes(lit[0]));
+  assert.ok(["office", "lab4", "corridor", "security", "lobby", "outside"].includes(lit[0]));
 
   // A sore spot is one topic about one suspect, and stays won.
   state = must(job("tea-squires", 2));
@@ -739,7 +740,7 @@ test("Lights out fires once at its story beat; everyone flips a fuse and the lig
   const tech = ["p1", "p2"].find((id) => viewFor(state, case001, id, new Set()).me.abilities.includes("search"))!;
   // Two finds: nothing yet. The third brings the storm.
   state = must(applyAction(state, case001, tech, { type: "probe", spot: "cabinet" }, 1000, newId));
-  state = must(applyAction(state, case001, tech, { type: "probe", spot: "cabinet" }, 2000, newId));
+  state = must(applyAction(state, case001, tech, { type: "probe", spot: "filing-cabinet" }, 2000, newId));
   assert.equal(viewFor(state, case001, "p1", new Set()).event, null);
   state = { ...state, found: { ...state.found, "detail-clock": { by: "p1", at: 0 } } };
   state = must(applyAction(state, case001, "p1", { type: "chat", text: "hm" }, 3000, newId));

@@ -7,12 +7,12 @@ import { SuspectPortrait } from "@/components/game/parts";
 import type { CaseSuspect } from "@/lib/game/types";
 import { cx } from "@/lib/cx";
 import { reducedMotion, useLoop, type GameProps, type Stars } from "./frame";
-import { CupboardScene, LobbyScene, MakerScene, PitchScene, Sparks } from "./scenes";
+import { CupboardScene, KitchenScene, MakerScene, PitchScene, Sparks } from "./scenes";
 
 const big = "rounded-full border-[3px] border-ink bg-mustard font-display text-ink shadow-pop-sm active:translate-y-1 active:shadow-none";
 
 // ---------------------------------------------------------------------------
-// Coffee run: the lobby's drinks machine. A needle sweeps the gauge on its face; tap Pour while it's on green.
+// Coffee run: the staff kitchen's coffee machine. A needle sweeps the gauge on its face; tap Pour while it's on green.
 // A coin drops, a cup lands, coffee pours and steams, and the display rates the cup.
 
 export function CoffeeRun({ onDone }: GameProps) {
@@ -34,9 +34,9 @@ export function CoffeeRun({ onDone }: GameProps) {
   const rating = poured === null ? null : poured < 0.06 ? "PERFECT CUP" : poured < 0.14 ? "GOOD CUP" : "IT'S COFFEE";
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-end gap-5 pb-16">
-      <LobbyScene />
-      {/* the machine */}
-      <div className={cx("relative z-10 w-[min(17rem,70vw)] rounded-[1.6rem] border-[4px] border-ink sm:w-[21rem] bg-[linear-gradient(90deg,#B8323E,#D9484F_40%,#B8323E)] p-4 shadow-card", stage === 1 && "animate-shake")}>
+      <KitchenScene />
+      {/* the machine: the kitchen's, dark grey like the one on the counter */}
+      <div className={cx("relative z-10 w-[min(17rem,70vw)] rounded-[1.6rem] border-[4px] border-ink sm:w-[21rem] bg-[linear-gradient(90deg,#2B2F3A,#3E4352_40%,#2B2F3A)] p-4 shadow-card", stage === 1 && "animate-shake")}>
         <div className="flex items-center gap-2">
           <div className="flex-1 rounded-xl border-[3px] border-ink bg-[#121019] px-2 py-1.5 text-center font-mono text-sm font-bold tracking-widest text-[#7ef0c6] [text-shadow:0_0_8px_#7ef0c6]">
             {rating ?? "SELECT · POUR"}

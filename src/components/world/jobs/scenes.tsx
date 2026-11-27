@@ -398,3 +398,97 @@ export function Sparks({ fire, x, y, colour = "#F2B33D" }: { fire: number; x: nu
     </div>
   );
 }
+
+/** Prof. Squires's office after hours: wood panelling, a rainy window, the bookcase, the framed HALO sketch, a lamp's pool of light. */
+export function OfficeScene() {
+  return (
+    <Cover bg="#3E4F58">
+      <rect width="1000" height="700" fill="#46606A" />
+      <rect x="0" y="420" width="1000" height="280" fill="#5E4630" />
+      {Array.from({ length: 21 }, (_, i) => (
+        <rect key={i} x={i * 50} y="420" width="3" height="280" fill="#3E2C1E" opacity="0.7" />
+      ))}
+      <rect x="0" y="412" width="1000" height="14" fill="#7A5A3E" stroke={INK} strokeWidth="3" />
+      <Window x={60} y={70} w={250} h={260} moon />
+      {/* the bookcase */}
+      <rect x="360" y="40" width="200" height="380" fill="#6B4E36" stroke={INK} strokeWidth="5" />
+      {[0, 1, 2, 3].map((r) => (
+        <g key={r}>
+          <rect x="372" y={130 + r * 90} width="176" height="9" fill="#7A5A3E" />
+          {Array.from({ length: 9 }, (_, i) => (
+            <rect key={i} x={378 + i * 19} y={70 + r * 90 + (i % 3) * 6} width="15" height={60 - (i % 3) * 6} fill={["#8E3B32", "#2C4A6E", "#3F6B4E", "#C9A877", "#5D4E9C"][(i + r) % 5]} stroke={INK} strokeWidth="2" />
+          ))}
+        </g>
+      ))}
+      {/* the framed sketch */}
+      <rect x="620" y="110" width="150" height="150" fill="#3A2C22" stroke={INK} strokeWidth="5" />
+      <rect x="634" y="124" width="122" height="122" fill="#F2EBD8" />
+      <circle cx="672" cy="186" r="22" fill="none" stroke="#5A5D64" strokeWidth="4" />
+      <circle cx="720" cy="186" r="22" fill="none" stroke="#5A5D64" strokeWidth="4" />
+      <line x1="694" y1="186" x2="698" y2="186" stroke="#5A5D64" strokeWidth="4" />
+      {/* the lamp's pool */}
+      <ellipse cx="880" cy="430" rx="190" ry="60" fill="#FFE2A8" opacity="0.18" />
+      <path d="M850 210 l60 -30 l20 30 l-60 30 Z" fill="#2E6B4E" stroke={INK} strokeWidth="4" />
+      <path d="M880 220 L800 420 L980 420 Z" fill="#FFE2A8" opacity="0.12" />
+      <Motes />
+    </Cover>
+  );
+}
+
+/** The security office: grey-blue walls, lockers, the bank of screens glowing over the desk. The game draws the screens. */
+export function SecurityScene() {
+  return (
+    <Cover bg="#3B4660">
+      <rect width="1000" height="700" fill="#55617A" />
+      <rect x="0" y="470" width="1000" height="230" fill="#3B4660" />
+      <rect x="0" y="462" width="1000" height="12" fill="#22293F" />
+      {[30, 110, 190].map((x) => (
+        <g key={x}>
+          <rect x={x} y="160" width="76" height="440" rx="4" fill="#7E8BA0" stroke={INK} strokeWidth="5" />
+          {[0, 1, 2, 3].map((i) => (
+            <rect key={i} x={x + 16} y={186 + i * 10} width="44" height="4" fill="#4A5268" />
+          ))}
+          <rect x={x + 54} y="380" width="10" height="40" rx="3" fill="#C9CDD6" stroke={INK} strokeWidth="2" />
+        </g>
+      ))}
+      <rect x="800" y="150" width="120" height="160" fill="#8A6A4A" stroke={INK} strokeWidth="4" />
+      <rect x="812" y="162" width="96" height="136" fill="#F2EFE6" />
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <rect key={i} x="822" y={180 + i * 18} width={70 - (i % 3) * 14} height="5" fill="#5A5D64" opacity="0.6" />
+      ))}
+      <ellipse cx="560" cy="330" rx="320" ry="220" fill="#7FA2FF" opacity="0.10" />
+    </Cover>
+  );
+}
+
+/** The car park at night, in the rain: wet tarmac, a street lamp, the gatehouse's lit window. The game draws the barrier and the cars. */
+export function CarParkScene() {
+  return (
+    <Cover bg="#0E1430">
+      <rect width="1000" height="700" fill="#121A3A" />
+      {Array.from({ length: 12 }, (_, i) => (
+        <rect key={i} x={i * 90 - 20} y={260 - ((i * 53) % 160)} width="80" height={300 + ((i * 53) % 160)} fill="#0C0F22" />
+      ))}
+      {Array.from({ length: 30 }, (_, i) => (
+        <rect key={i} x={(i * 71) % 980 + 10} y={200 + ((i * 37) % 220)} width="6" height="8" fill="#FFCF6B" opacity={0.3 + (i % 4) * 0.12} />
+      ))}
+      <circle cx="820" cy="90" r="34" fill="#F2EBD8" />
+      <rect x="0" y="470" width="1000" height="230" fill="#24262F" />
+      {Array.from({ length: 8 }, (_, i) => (
+        <rect key={i} x={i * 140 + 20} y="585" width="80" height="6" fill="#C9C2A0" opacity="0.45" />
+      ))}
+      <rect x="150" y="160" width="10" height="312" fill="#262A34" />
+      <rect x="120" y="150" width="70" height="20" rx="6" fill="#3A3E4A" stroke={INK} strokeWidth="3" />
+      <path d="M128 170 L60 470 L260 470 L182 170 Z" fill="#FFE6A8" opacity="0.12" />
+      <rect x="820" y="250" width="130" height="222" fill="#B9B3A6" stroke={INK} strokeWidth="5" />
+      <rect x="842" y="280" width="86" height="80" fill="#F6D9A0" stroke={INK} strokeWidth="4" />
+      <rect x="812" y="230" width="146" height="26" fill="#1F2C4E" stroke={INK} strokeWidth="4" />
+      <text x="885" y="249" textAnchor="middle" fontSize="16" fontWeight="900" fill="#F2E6D2" letterSpacing="2">NORTH GATE</text>
+      <g className="world-rain-fall" stroke="#9FB2E0" strokeWidth="1.6" strokeLinecap="round" opacity="0.45">
+        {Array.from({ length: 40 }, (_, i) => (
+          <line key={i} x1={(i * 97) % 1000} y1={(i * 61) % 700 - 30} x2={(i * 97) % 1000 - 6} y2={(i * 61) % 700} />
+        ))}
+      </g>
+    </Cover>
+  );
+}

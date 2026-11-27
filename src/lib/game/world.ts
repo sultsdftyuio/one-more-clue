@@ -32,6 +32,15 @@ export function checkWorld(caseFile: CaseFile): string[] {
   // The plate: its pixels cover its extent exactly.
   const { plate } = world;
   if (!plate.layers.length) problems.push("the world has no painted layers");
+  // Its tiles: one per layer, edge to edge across the plate, none too wide for a phone.
+  if (plate.tiles.length !== plate.layers.length) problems.push(`the plate has ${plate.layers.length} layers but ${plate.tiles.length} tiles`);
+  plate.tiles.forEach((t, i) => {
+    const start = i ? plate.tiles[i - 1].x + plate.tiles[i - 1].w : 0;
+    if (t.x !== start) problems.push(`plate tile ${i} starts at ${t.x} px, not ${start}`);
+    if (t.w > 4096) problems.push(`plate tile ${i} is ${t.w} px wide, more than a phone can hold`);
+  });
+  const last = plate.tiles[plate.tiles.length - 1];
+  if (last && last.x + last.w !== plate.size.w) problems.push(`the plate's tiles end at ${last.x + last.w} px, not ${plate.size.w}`);
   const span = { w: (plate.extent.x1 - plate.extent.x0) * plate.pxPerCm, h: (plate.extent.z1 - plate.extent.z0) * plate.pxPerCm };
   if (Math.abs(span.w - plate.size.w) > 0.5 || Math.abs(span.h - plate.size.h) > 0.5) {
     problems.push(`the plate is ${plate.size.w} × ${plate.size.h} px, but its extent at ${plate.pxPerCm} px per cm is ${span.w} × ${span.h}`);

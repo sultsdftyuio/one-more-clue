@@ -626,8 +626,8 @@ test("Case 001 has a complete, checked world, painted in files that exist", () =
   assert.deepEqual(case001.nightMap!.rooms.map((r) => r.id).filter((id) => !world.rooms.some((w) => w.id === id)), []);
   assert.deepEqual(Object.keys(world.people).sort(), case001.suspects.map((s) => s.id).sort());
   assert.deepEqual(Object.keys(world.soreSpots).sort(), case001.suspects.map((s) => s.id).sort());
-  // The eight side jobs from the mockups, and a sore spot to win for every suspect.
-  assert.equal(world.sideJobs.length, 8);
+  // The eight side jobs from the mockups and the bigger building's three, and a sore spot to win for every suspect.
+  assert.equal(world.sideJobs.length, 11);
   assert.deepEqual(world.sideJobs.filter((j) => j.help === "sore-spot").map((j) => j.suspect).sort(), case001.suspects.map((s) => s.id).sort());
 });
 
@@ -651,10 +651,10 @@ test("every record in the world has a spot, opened by its own role", () => {
 
 test("every room in the building can be walked to, and links run from room to room", () => {
   says(brokenWorld((w) => (w.links = w.links.filter((l) => l.from !== "maker"))), `room "maker" can't be reached`);
-  says(brokenWorld((w) => (w.links[0].path = [[600, 306], [460, 306]])), `doesn't start inside "lab4"`);
+  says(brokenWorld((w) => (w.links.find((l) => l.from === "lab4")!.path = [[1200, 306], [1068, 306]])), `doesn't start inside "lab4"`);
   says(brokenWorld((w) => w.links.push({ from: "lobby", to: "home", kind: "door", path: [[900, 6], [1000, 6]] })), "joins a room that isn't in the building");
   says(brokenWorld((w) => (w.rooms.find((r) => r.id === "lab4")!.box!.z0 = 310)), `"lab4" doesn't stand on its floor`);
-  says(brokenWorld((w) => (w.rooms.find((r) => r.id === "maker")!.box!.x1 = 500)), `"maker" and "lobby" overlap`);
+  says(brokenWorld((w) => (w.rooms.find((r) => r.id === "maker")!.box!.x1 = 600)), `"maker" and "security" overlap`);
 });
 
 test("side jobs start at real spots, and every suspect has a sore spot, innocent ones too", () => {
@@ -678,9 +678,17 @@ test("the world scene draws the case's own building: its rooms and where its sus
 
 test("the world's spots show chapter by chapter, marked only with roles that have something there by then", () => {
   const ids = (chapter: number) => spotsFor(case001, chapter).map((s) => s.id).sort();
-  assert.deepEqual(ids(1), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader"]);
-  assert.deepEqual(ids(2), ["cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader", "security-desk"], "the visitor sheet and the guard tour arrive");
-  assert.deepEqual(ids(3), ["anpr", "cabinet", "lab-reader", "lab-view", "laptop", "lobby-camera", "lobby-reader", "security-desk"], "the lobby and gate cameras in the last chapter");
+  assert.deepEqual(ids(1), ["cabinet", "filing-cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader"]);
+  assert.deepEqual(
+    ids(2),
+    ["cabinet", "filing-cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader", "rounds-clipboard", "security-desk"],
+    "the visitor sheet and the guard tour arrive",
+  );
+  assert.deepEqual(
+    ids(3),
+    ["anpr", "cabinet", "filing-cabinet", "lab-reader", "lab-view", "laptop", "lobby-reader", "prof-screen", "rounds-clipboard", "security-desk", "security-screens"],
+    "the lobby footage, the gate camera and the professor's inbox in the last chapter",
+  );
   const laptop = spotsFor(case001, 1).find((s) => s.id === "laptop")!;
   assert.deepEqual(laptop.roles.sort(), ["archivist", "tech"]);
   assert.equal(laptop.name, "Priya's laptop");

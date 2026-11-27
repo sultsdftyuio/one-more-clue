@@ -4,12 +4,18 @@ Paints a case's building as one flat 2D cutaway for the walkable world planned i
 [docs/world-overhaul.md](../../docs/world-overhaul.md). So far that's Case 001: the Halden Innovation Building
 at 12:40 AM.
 
+Since 2026-11-27 the building is two floors of four rooms. Upstairs: the professor's office, Lab 4, the corridor and
+the staff kitchen. Downstairs: the maker space, the security office and the lobby, then a covered entrance under the
+kitchen and the car park. Lab 4, the corridor, the lobby and the maker space keep their old painting code (it works
+in the old building's cm) and are drawn shifted into place (`SHIFT` in `world.py`), each 20% wider than before; the
+office, the kitchen, the security office and the entrance are painted fresh.
+
 ## Run it
 
 From the repo root:
 
 ```
-python art/world/world.py          # the plate: 3240 x 1700 at 2 px per cm, about 15 seconds
+python art/world/world.py          # the plate: 6320 x 1700 at 2 px per cm, about 20 seconds
 python art/world/world.py draft    # a quick look at 0.8 px per cm
 ```
 
@@ -23,7 +29,7 @@ Then the front layer, the furniture people can stand behind (W2.1):
 
 ```
 python art/world/front.py          # front.json and front-mask.png, about 10 seconds
-python scripts/world-assets.py     # cuts each piece out of the plate into src/assets/world/case-001/front/
+python scripts/world-assets.py     # cuts the plate into tiles and each piece out of it, into src/assets/world/case-001/
 ```
 
 The characters (W2.3):
@@ -75,14 +81,13 @@ The palette comes from `art/omc_art` and the fonts from `art/fonts`, both in thi
 These are copies, so a change on one side doesn't reach the other. The mockup in `art/mockups/case001/` is left as
 it was and still needs the videos repo: make changes here.
 
+`world-assets.py` cuts the plate into tiles on walls (`CUTS`), none wider than 4096 px (the widest texture every
+phone holds); `plate.tiles` in `src/data/cases/case-001.building.ts` lists the same and a test checks them.
+
 ## Checking a change
 
-The plate is byte-identical to `art/mockups/case001/world.webp`, the one the mockups were made from. A change that
-shouldn't alter the picture should keep it that way. This prints nothing when the two files match:
-
-```
-git diff --no-index --stat art/world/world.webp art/mockups/case001/world.webp
-```
+The plate no longer matches `art/mockups/case001/world.webp`: the building grew on 2026-11-27. Look at
+`world-draft.png` (`python art/world/world.py draft`) before a full render.
 
 Check any change to the picture against the case's timeline in `src/data/cases/case-001.ts`. Nothing in the
 building may hint at something the case file doesn't say (ground rule 4 in the plan).

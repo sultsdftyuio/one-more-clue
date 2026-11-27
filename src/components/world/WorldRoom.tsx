@@ -356,7 +356,10 @@ export function WorldRoom({ code, caseId }: { code: string; caseId: string }) {
             onCloseTool={() => setTool(null)}
             picture={(x, z) => {
               const at = pointOnPlate(plate, x, z - 25);
-              return { src: art.plate, w: plate.size.w, h: plate.size.h, px: at.x, py: at.y };
+              // The tile the point is on: the tiles meet on a wall, so no object's close-up is cut in two.
+              const i = Math.max(0, plate.tiles.findLastIndex((t) => t.x <= at.x));
+              const tile = plate.tiles[i];
+              return { src: art.plates[i], w: tile.w, h: plate.size.h, px: at.x - tile.x, py: at.y };
             }}
           />
         )}

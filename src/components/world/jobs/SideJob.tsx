@@ -9,6 +9,7 @@ import { shortName } from "@/lib/world/cast";
 import { SideJobFrame, type GameProps, type Stars } from "./frame";
 import { CoffeeRun, Penalty, PrintIt, Rewire } from "./games-a";
 import { Breathe, Race, Tea } from "./games-b";
+import { PackCase, TimeBarrier, WatchMonitors } from "./games-c";
 
 type GameSpec = {
   /** The job's name on screen: short, a word or two. */
@@ -24,13 +25,16 @@ type GameSpec = {
  * them new skins. Prompts are a few words: the pictures do the explaining.
  */
 export const GAMES: Record<string, GameSpec> = {
-  "coffee-run": { title: () => "Coffee run", prompt: "Tap Pour on green", backdrop: "bg-[linear-gradient(#b9aa90,#9c8e78_70%,#8a7c66)]", Game: CoffeeRun },
+  "coffee-run": { title: () => "Coffee run", prompt: "Tap Pour on green", backdrop: "bg-[#E9DFC9]", Game: CoffeeRun },
   penalty: { title: () => "Penalty", prompt: "Swipe up to shoot", backdrop: "bg-[#0E1430]", Game: ({ onDone, who }) => <Penalty onDone={onDone} keeper={who} /> },
   "print-it": { title: () => "Print it", prompt: "Tap to stack", backdrop: "bg-[linear-gradient(#1d2340,#2a2f4d)]", Game: PrintIt },
   rewire: { title: () => "Rewire", prompt: "Tap a tile to turn it", backdrop: "bg-[linear-gradient(#1c1d27,#2a2c3c)]", Game: Rewire },
   tea: { title: (s) => `Tea for ${s ?? "them"}`, prompt: "Drag them in, in order", backdrop: "bg-[#3B7C72]", Game: ({ onDone, who }) => <Tea onDone={onDone} host={who} /> },
   breathe: { title: () => "Breathe", prompt: "Hold, then let go on the ring", backdrop: "bg-[#25304a]", Game: ({ onDone, who }) => <Breathe onDone={onDone} friend={who} /> },
   race: { title: (s) => `Race ${s ?? ""}`.trim(), prompt: "Trace the wire, fast", backdrop: "bg-[#6E7A92]", Game: ({ onDone, who }) => <Race onDone={onDone} rival={who} /> },
+  "pack-case": { title: () => "Pack the case", prompt: "Tap the slot it fits", backdrop: "bg-[#3E4F58]", Game: PackCase },
+  "watch-monitors": { title: () => "Night watch", prompt: "Tap each alert", backdrop: "bg-[#3B4660]", Game: WatchMonitors },
+  "time-barrier": { title: () => "Time the barrier", prompt: "Go when it's up", backdrop: "bg-[#0E1430]", Game: TimeBarrier },
 };
 
 /** A side job, played: the frame, the game, and the help sent to the team when it ends. */
